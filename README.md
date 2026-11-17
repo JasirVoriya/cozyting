@@ -26,17 +26,16 @@ Android 手机作为发送端，经局域网把音频投送到小米音箱（MiP
 export ANDROID_HOME=...
 export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/<version>
 rustup target add aarch64-linux-android
-cargo install cargo-ndk --locked
+cargo install cargo-ndk --version 3.5.4 --locked   # 或兼容当前 rustc 的版本
 
-cargo test --workspace
-cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
-
-cd android
-./gradlew --no-daemon test assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
+./scripts/build-debug.sh
+# 正式 debug：android/app/build/outputs/apk/standard/debug/
+# 独立验收（包名 com.miplay.sender.acceptance，独立签名）：
+cd android && ./gradlew :app:assembleAcceptanceDebug \
+  :testtones:assembleADebug :testtones:assembleBDebug :testtones:assembleDenyDebug
 ```
 
-`android/local.properties` 仅本地使用，勿提交。不创建新签名密钥；release 默认可打出 unsigned 包。
+验收步骤见 `docs/ACCEPTANCE_AB_STEPS.md`。`android/local.properties` 与 `android/app/acceptance.keystore` 勿提交到对外镜像；正式包名/用户 release 密钥不变。
 
 ## 测试
 

@@ -1,0 +1,10 @@
+#Tue Nov 17 05:07:52 UTC 2026
+base.0=/agent/repos/tmp-e1085f34f1922edc/android/testtones/build/intermediates/dex/aDebug/mergeExtDexADebug/classes.dex
+base.1=/agent/repos/tmp-e1085f34f1922edc/android/testtones/build/intermediates/dex/aDebug/mergeProjectDexADebug/0/classes.dex
+base.2=/agent/repos/tmp-e1085f34f1922edc/android/testtones/build/intermediates/dex/aDebug/mergeProjectDexADebug/12/classes.dex
+path.0=classes.dex
+path.1=0/classes.dex
+path.2=12/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex

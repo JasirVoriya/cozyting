@@ -5,3 +5,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "MiPlaySender"
 include(":app")
+include(":testtones")

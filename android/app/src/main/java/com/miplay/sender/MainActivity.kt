@@ -163,10 +163,29 @@ class MainActivity : Activity() {
         val pad = dp(12)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
         root.addView(TextView(this).apply {
-            text = "MiPlay 发送端（局域网直连小米音箱）"
+            text = getString(R.string.app_name)
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
         })
+        if (BuildConfig.IS_ACCEPTANCE) {
+            root.addView(
+                TextView(this).apply {
+                    text = "验收变体 com.miplay.sender.acceptance（独立签名，不覆盖正式 debug/release）。\n" +
+                        "受控音源：A=1000Hz / B=2000Hz / deny=禁止捕获。\n" +
+                        "MediaProjection 须系统对话框授权，不用 adb appops 绕过。\n" +
+                        "若 PCM 探针为静音，不能据此证明 UID 过滤（音量0可能导致全静音）。"
+                    textSize = 12f
+                    setPadding(0, 0, 0, pad / 2)
+                },
+            )
+        } else {
+            root.addView(
+                TextView(this).apply {
+                    text = "局域网直连小米音箱 · 选定 App 音频严格 UID 过滤"
+                    textSize = 12f
+                },
+            )
+        }
         status = TextView(this).apply { text = "空闲"; setPadding(0, pad / 2, 0, pad / 2) }
         root.addView(status)
         val prow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
@@ -534,7 +553,12 @@ class MainActivity : Activity() {
                         rows.values.forEach { it.state.text = "" }
                     }
                 }
-                statsView.text = CastService.lastStats.replace(",\"", ",\n\"")
+                val probe = if (BuildConfig.IS_ACCEPTANCE && CastService.lastPcmProbe.isNotBlank()) {
+                    "\n\nPCM探针:\n${CastService.lastPcmProbe}"
+                } else {
+                    ""
+                }
+                statsView.text = CastService.lastStats.replace(",\"", ",\n\"") + probe
                 main.postDelayed(this, 1000)
             }
         }, 1000)

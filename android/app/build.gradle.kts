@@ -12,15 +12,43 @@ android {
         applicationId = "com.miplay.sender"
         minSdk = 34
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0-app-capture"
+        versionCode = 3
+        versionName = "0.3.0-acceptance-tools"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("boolean", "IS_ACCEPTANCE", "false")
     }
+
+    signingConfigs {
+        create("acceptance") {
+            val ks = file("acceptance.keystore")
+            if (ks.exists()) {
+                storeFile = ks
+                storePassword = "miplay-acceptance"
+                keyAlias = "acceptance"
+                keyPassword = "miplay-acceptance"
+            }
+        }
+    }
+
+    flavorDimensions += "channel"
+    productFlavors {
+        create("standard") {
+            dimension = "channel"
+            isDefault = true
+            buildConfigField("boolean", "IS_ACCEPTANCE", "false")
+        }
+        create("acceptance") {
+            dimension = "channel"
+            applicationId = "com.miplay.sender.acceptance"
+            versionNameSuffix = "-acceptance"
+            buildConfigField("boolean", "IS_ACCEPTANCE", "true")
+            signingConfig = signingConfigs.getByName("acceptance")
+        }
+    }
+
     buildTypes {
         debug { isDebuggable = true }
-        // 正式版：R8 压缩+混淆；包名加 .release，可与已装的 debug 版并存。
-        // 本环境只产出 debug / unsigned release，不创建新签名密钥。
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -29,6 +57,10 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -36,6 +68,19 @@ android {
     kotlinOptions { jvmTarget = "17" }
     testOptions {
         unitTests.isIncludeAndroidResources = false
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().withFlavor("channel" to "acceptance")) { variant ->
+        val cfg = android.signingConfigs.getByName("acceptance")
+        // AGP 8：通过 packaging/signing 由 flavor.signingConfig 提供；若 debug 覆盖则构建后 apksigner 重签
+        variant.signingConfig.setConfig(cfg)
     }
 }
 

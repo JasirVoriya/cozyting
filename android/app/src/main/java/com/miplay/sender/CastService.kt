@@ -24,6 +24,7 @@ import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.CaptureFailReason
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
+import com.miplay.sender.capture.PcmProbe
 import com.miplay.sender.capture.PlaybackCaptureFactory
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.ProjectionSessionPolicy
@@ -72,6 +73,8 @@ class CastService : Service() {
         @Volatile var source = "silent"
         @Volatile var targetPackage: String = ""
         @Volatile var lastFailMessage: String = ""
+        /** 最近一次捕获 PCM 探针摘要（验收变体用于 A/B 量化；静音时不可证明过滤） */
+        @Volatile var lastPcmProbe: String = ""
         val running = AtomicBoolean(false)
 
         fun autoDelayMs(ctx: Context): Int {
@@ -401,6 +404,15 @@ class CastService : Service() {
                     i += 2
                 }
                 blocks++
+                // 验收：约每秒对一块 PCM 做 RMS/Goertzel（不依赖扬声器音量听感）
+                if (BuildConfig.IS_ACCEPTANCE && blocks % 12 == 0L) {
+                    val snap = PcmProbe.analyzeInterleavedS16LeStereo(buf, chunk)
+                    lastPcmProbe =
+                        "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
+                            "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
+                            "⇒ ${snap.dominant} | ${snap.verdictZh}"
+                    Log.i(TAG, "PCM_PROBE $lastPcmProbe")
+                }
                 if (blocks % 470 == 0L) {
                     Log.i(TAG, "capture blocks=$blocks peak=$peak aacProduced=${enc.produced}")
                     peak = 0
