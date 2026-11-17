@@ -265,13 +265,26 @@ class CastService : Service() {
                 bg("stats") {
                     lastStats = NativeBridge.stats(h)
                     Log.i(TAG, "STATS pushed=$pushed dropped=$dropped " + lastStats)
+                    runCatching {
+                        val lat = JSONObject(lastStats).optJSONObject("latency")
+                        if (lat != null) {
+                            Log.i(
+                                TAG,
+                                "LATENCY kind=${lat.optString("kind")} e2e=${lat.opt("e2e_est_ms")} " +
+                                    "ahead=${lat.opt("schedule_ahead_ms")} delay_ms=${lat.optLong("playback_delay_ms")} " +
+                                    "flushed_aus=${lat.optLong("feed_flushed_aus_at_start")} " +
+                                    "def=${lat.optString("definition").take(120)}",
+                            )
+                        }
+                    }
                     if (source == "app" && pushed == 0L && !noAudioHintPosted && statsTick >= 5) {
                         noAudioHintPosted = true
                         event("未收到可捕获音频，可能未播放/禁止捕获/不支持")
                     }
                     if (++statsTick % 5 == 0) main.post { updateNotification() }
                 }
-                main.postDelayed(this, 2000)
+                // 1s 刷新，供界面持续更新延迟诊断
+                main.postDelayed(this, 1000)
             }
         })
     }
@@ -291,7 +304,9 @@ class CastService : Service() {
             r.getString("ip").substringAfterLast('.') + ":" + st + (if (rc > 0) "(重连$rc)" else "")
         }
         val src = if (source == "app") targetPackage.substringAfterLast('.') else "静音"
-        "${rs.length()} 台 · $src · 延迟 ${o.optLong("playback_delay_us") / 1000}ms · " + parts.joinToString(" ")
+        val e2e = LatencyDisplay.formatMs(LatencyDisplay.optLongOrNull(o.optJSONObject("latency"), "e2e_est_ms"))
+        val cfgDelay = o.optLong("playback_delay_us") / 1000
+        "${rs.length()} 台 · $src · 配置${cfgDelay}ms · E2E估$e2e · " + parts.joinToString(" ")
     }.getOrDefault(lastEvent)
 
     private fun buildNotification(): Notification {
@@ -361,7 +376,8 @@ class CastService : Service() {
         @Suppress("MissingPermission")
         val rec = try {
             AudioRecord.Builder().setAudioFormat(fmt).setAudioPlaybackCaptureConfig(config)
-                .setBufferSizeInBytes(maxOf(chunk * 16, minBuf)).build()
+                // 收紧捕获环缓：原 16×chunk≈341ms 容量；4×chunk≈85ms，降低捕获侧积压（可证伪：若 read 欠载再放大）。
+                .setBufferSizeInBytes(maxOf(chunk * 4, minBuf)).build()
         } catch (e: Exception) {
             lastFailMessage = "AudioRecord 创建失败（可能被拒绝捕获）：${e.message}"
             event(lastFailMessage)

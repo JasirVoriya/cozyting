@@ -11,6 +11,7 @@ use crate::clock_sync::TimerServer;
 use crate::commands as c;
 use crate::control::{ControlSession, RuntimeWriter, SourceIdentity};
 use crate::frame::{decode_notify, encode_volume, Frame};
+use crate::latency::{self, LATENCY_DEFINITION};
 use crate::media::{Packetizer, PacketizerState};
 use crate::rtsp::{read_message, SourceRtsp};
 use crate::timeline::{OutputTimestamp, SharedTimeline};
@@ -41,11 +42,19 @@ fn due_after_ms(sent: u64) -> f64 {
     }
 }
 
+/// 带捕获墙钟戳的 AAC AU（µs）。用于端到端延迟估计，不是协议字段。
+#[derive(Clone, Debug)]
+pub struct CapturedAu {
+    /// App：`pushAac` 时刻；静音源：生成该帧的时刻。
+    pub capture_us: i64,
+    pub aac: Vec<u8>,
+}
+
 /// AAC-LC 48k 立体声原始 AU 来源（不含 ADTS）。`None` = 结束。
 pub trait AuSource: Send {
-    fn next_au(&mut self) -> Option<Vec<u8>>;
-    /// 恢复播放前丢掉暂停前积压的数据（官方 Resume 前也丢弃暂停前的 PCM）。
-    fn flush(&mut self) {}
+    fn next_au(&mut self) -> Option<CapturedAu>;
+    /// 丢掉积压 AU；返回丢弃条数（连接期 backlog / 暂停前缓冲）。
+    fn flush(&mut self) -> usize { 0 }
 }
 
 /// 全零 PCM 编出的 AAC-LC 立体声静音帧（ffmpeg aac 编码器输出的稳定帧，6 字节）。
@@ -55,23 +64,25 @@ pub struct SilenceSource {
     pub remaining: Option<u64>,
 }
 impl AuSource for SilenceSource {
-    fn next_au(&mut self) -> Option<Vec<u8>> {
+    fn next_au(&mut self) -> Option<CapturedAu> {
         if let Some(r) = self.remaining.as_mut() {
             if *r == 0 { return None }
             *r -= 1;
         }
-        Some(SILENT_AAC_LC_STEREO.to_vec())
+        Some(CapturedAu { capture_us: now_us(), aac: SILENT_AAC_LC_STEREO.to_vec() })
     }
 }
 
 /// 由外部（JNI/MediaCodec）推入的 AU。
-pub struct ChannelSource(pub ChanRx<Vec<u8>>);
+pub struct ChannelSource(pub ChanRx<CapturedAu>);
 impl AuSource for ChannelSource {
-    fn next_au(&mut self) -> Option<Vec<u8>> {
+    fn next_au(&mut self) -> Option<CapturedAu> {
         self.0.recv().ok()
     }
-    fn flush(&mut self) {
-        while self.0.try_recv().is_ok() {}
+    fn flush(&mut self) -> usize {
+        let mut n = 0;
+        while self.0.try_recv().is_ok() { n += 1 }
+        n
     }
 }
 
@@ -200,6 +211,14 @@ pub struct ReceiverStats {
     pub aus_blackholed: u64,
     /// GetChannel(0x18) 的 ACK 载荷（十六进制）；None = 未查询或未应答。
     pub channel_ack: Option<String>,
+    /// 最近成功写出的 AU 的 PTS（µs，相对时间线）；None = 尚未写出。
+    pub last_pts_us: Option<i64>,
+    /// 该 AU 的捕获戳（µs）；None = 未知。
+    pub last_capture_us: Option<i64>,
+    /// 估计捕获→协议播放点（ms）；None = 未知（UI 显示 —）。
+    pub latency_e2e_est_ms: Option<i64>,
+    /// 相对墙钟的播放超前（ms）；None = 未知。
+    pub latency_schedule_ahead_ms: Option<i64>,
     pub error: Option<String>,
 }
 
@@ -225,13 +244,14 @@ impl ReceiverStats {
     pub fn to_json(&self) -> String {
         let n: Vec<String> = self.notifies.iter().rev().take(20).rev().map(|s| json_str(s)).collect();
         format!(
-            "{{\"ip\":{},\"auth\":{:?},\"device_channel\":{},\"phase\":{},\"volume_original\":{},\"volume_premute_ack\":{},\"volume_now\":{},\"mirror_mode\":{},\"state\":{},\"setup_transport\":{},\"time_offset_us\":{},\"timer_requests\":{},\"video_latency_msgs\":{},\"rtsp_runtime_requests\":{},\"heartbeat_acks\":{},\"aus_written\":{},\"bytes_written\":{},\"runtime_time_offsets_sent\":{},\"runtime_time_offsets_acked\":{},\"pauses_acked\":{},\"resumes_acked\":{},\"volume_after_play_ack\":{},\"reconnects\":{},\"joined_late\":{},\"aus_blackholed\":{},\"channel_ack\":{},\"notifies\":[{}],\"error\":{}}}",
+            "{{\"ip\":{},\"auth\":{:?},\"device_channel\":{},\"phase\":{},\"volume_original\":{},\"volume_premute_ack\":{},\"volume_now\":{},\"mirror_mode\":{},\"state\":{},\"setup_transport\":{},\"time_offset_us\":{},\"timer_requests\":{},\"video_latency_msgs\":{},\"rtsp_runtime_requests\":{},\"heartbeat_acks\":{},\"aus_written\":{},\"bytes_written\":{},\"runtime_time_offsets_sent\":{},\"runtime_time_offsets_acked\":{},\"pauses_acked\":{},\"resumes_acked\":{},\"volume_after_play_ack\":{},\"reconnects\":{},\"joined_late\":{},\"aus_blackholed\":{},\"channel_ack\":{},\"latency_e2e_est_ms\":{},\"latency_schedule_ahead_ms\":{},\"notifies\":[{}],\"error\":{}}}",
             json_str(&self.ip), self.auth, self.device_channel.as_ref().map(|c| json_str(c)).unwrap_or("null".into()), json_str(&self.phase), opt(&self.volume_original), opt(&self.volume_premute_ack), opt(&self.volume_now),
             opt(&self.mirror_mode), opt(&self.state), json_str(&self.setup_transport), opt(&self.time_offset_us), self.timer_requests,
             self.video_latency_msgs, self.rtsp_runtime_requests, self.heartbeat_acks, self.aus_written, self.bytes_written,
             self.runtime_time_offsets_sent, self.runtime_time_offsets_acked, self.pauses_acked, self.resumes_acked,
             opt(&self.volume_after_play_ack), self.reconnects, self.joined_late, self.aus_blackholed,
             self.channel_ack.as_deref().map(json_str).unwrap_or_else(|| "null".into()),
+            opt(&self.latency_e2e_est_ms), opt(&self.latency_schedule_ahead_ms),
             n.join(","), self.error.as_deref().map(json_str).unwrap_or_else(|| "null".into())
         )
     }
@@ -239,6 +259,8 @@ impl ReceiverStats {
 
 struct SharedAu {
     ts: OutputTimestamp,
+    pts_us: i64,
+    capture_us: i64,
     aac: Vec<u8>,
 }
 
@@ -324,6 +346,17 @@ impl OffsetBarrier {
         if !ready || self.value.lock().unwrap().is_some() { return }
         let v = {
             let mut m = media.lock().unwrap();
+            // 可证伪降延迟：丢掉连接期间 AudioPlaybackCapture 灌入的积压，
+            // 否则 TIME_OFFSET 会对着数秒前的内容，表现为「几秒」端到端延迟。
+            let flushed = m.source.flush();
+            m.runway.clear();
+            if flushed > 0 {
+                m.flushed_at_start = m.flushed_at_start.saturating_add(flushed as u64);
+                log::info!(
+                    "latency: flushed {flushed} connect-time AUs before runway (~{:.0}ms backlog dropped)",
+                    flushed as f64 * latency::AU_DURATION_MS
+                );
+            }
             let mut ok = true;
             while m.runway.len() < STARTUP_RUNWAY_AUS {
                 match m.source.next_au() { Some(au) => m.runway.push_back(au), None => { ok = false; break } }
@@ -358,7 +391,9 @@ impl OffsetBarrier {
 
 struct MediaState {
     source: Box<dyn AuSource>,
-    runway: VecDeque<Vec<u8>>,
+    runway: VecDeque<CapturedAu>,
+    /// TIME_OFFSET 屏障处冲刷掉的连接期积压 AU 数（诊断 / stats）。
+    flushed_at_start: u64,
 }
 
 /// 媒体时钟：共享时间线 + 已发送 AU 数 + 发送节奏原点。暂停/恢复时由控制线程重新锚定。
@@ -385,6 +420,8 @@ struct Inner {
     control_lock: Mutex<()>,
     /// 断线待重连成员的最后统计（重连计数延续）。
     pending: Mutex<Vec<(Ipv4Addr, ReceiverStats)>>,
+    /// 起播前冲刷掉的连接期积压 AU 数。
+    feed_flushed_at_start: AtomicU64,
 }
 
 pub struct CastSession {
@@ -738,6 +775,8 @@ fn connect_receiver(
             s.aus_written += 1;
             s.bytes_written += n as u64;
             s.timer_requests = timer_count.load(Ordering::Relaxed);
+            s.last_pts_us = Some(au.pts_us);
+            s.last_capture_us = Some(au.capture_us);
         }
     })?;
 
@@ -797,7 +836,7 @@ impl CastSession {
     /// 并行连接所有音箱，成功 ≥1 台即开始推流。
     pub fn start(ips: &[Ipv4Addr], source: Box<dyn AuSource>, cfg: CastConfig) -> Result<(Self, Vec<ReceiverStats>)> {
         if ips.is_empty() || ips.len() > MAX_RECEIVERS { return Err(Error::Protocol("bad receiver count".into())) }
-        let media = Arc::new(Mutex::new(MediaState { source, runway: VecDeque::new() }));
+        let media = Arc::new(Mutex::new(MediaState { source, runway: VecDeque::new(), flushed_at_start: 0 }));
         let barrier = Arc::new(OffsetBarrier::new(ips.len()));
         let mut joins = vec![];
         for &ip in ips {
@@ -834,6 +873,7 @@ impl CastSession {
             log::error!("connect failed summary: {summary}");
             return Err(Error::Protocol(format!("no receiver connected: {summary}")));
         }
+        let flushed_at_start = media.lock().unwrap().flushed_at_start;
         let inner = Arc::new(Inner {
             cfg,
             receivers: Mutex::new(receivers),
@@ -847,6 +887,7 @@ impl CastSession {
             removed: Mutex::new(vec![]),
             control_lock: Mutex::new(()),
             pending: Mutex::new(vec![]),
+            feed_flushed_at_start: AtomicU64::new(flushed_at_start),
         });
         let i2 = inner.clone();
         let media_thread = std::thread::Builder::new().name("media-clock".into()).spawn(move || {
@@ -857,15 +898,16 @@ impl CastSession {
                     let mut m = i2.media.lock().unwrap();
                     match m.runway.pop_front() { Some(a) => Some(a), None => m.source.next_au() }
                 };
-                let Some(aac) = au else { log::info!("source ended"); break };
+                let Some(CapturedAu { capture_us, aac }) = au else { log::info!("source ended"); break };
                 // 取 AU 期间可能被暂停（ChannelSource 阻塞）：暂停中取到的 AU 属于暂停前，丢弃
                 if i2.paused.load(Ordering::SeqCst) { continue }
                 let due = {
                     let mut ck = i2.clock.lock().unwrap();
                     let idx = ck.sent;
                     let ts = ck.timeline.stamp(idx, now_us());
+                    let pts_us = ck.timeline.next_pts_us(idx);
                     i2.timeline_corrections.store(ck.timeline.corrections, Ordering::Relaxed);
-                    let shared = Arc::new(SharedAu { ts, aac });
+                    let shared = Arc::new(SharedAu { ts, pts_us, capture_us, aac });
                     for r in i2.receivers.lock().unwrap().iter() {
                         if !r.alive.load(Ordering::Relaxed) { continue }
                         match r.media_tx.try_send(shared.clone()) {
@@ -1036,21 +1078,51 @@ impl CastSession {
     pub fn is_paused(&self) -> bool { self.inner.paused.load(Ordering::SeqCst) }
 
     pub fn stats(&self) -> Vec<ReceiverStats> {
+        let off = self.inner.offset.load(Ordering::SeqCst);
+        let now = now_us();
         self.inner.receivers.lock().unwrap().iter().map(|r| {
             let mut s = r.stats.lock().unwrap().clone();
             if !r.alive.load(Ordering::Relaxed) && s.error.is_none() { s.error = Some("not alive".into()) }
+            let pts = s.last_pts_us.unwrap_or(0);
+            let cap = s.last_capture_us.unwrap_or(0);
+            s.latency_e2e_est_ms = latency::capture_to_play_est_ms(off, pts, cap);
+            s.latency_schedule_ahead_ms = if s.last_pts_us.is_some() {
+                latency::schedule_ahead_ms(off, pts, now)
+            } else {
+                None
+            };
             s
         }).collect()
     }
 
     pub fn stats_json(&self) -> String {
-        let rs: Vec<String> = self.stats().iter().map(|s| s.to_json()).collect();
+        let rs = self.stats();
+        let rs_json: Vec<String> = rs.iter().map(|s| s.to_json()).collect();
         let off = self.inner.offset.load(Ordering::SeqCst);
+        let delay_us = self.inner.cfg.playback_delay_us;
+        let flushed = self.inner.feed_flushed_at_start.load(Ordering::Relaxed);
+        // 总体端到端：各接收端估计的最大值（组共享时间线，通常接近；缺测时 null）
+        let e2e_overall = rs.iter().filter_map(|s| s.latency_e2e_est_ms).max();
+        let ahead_overall = rs.iter().filter_map(|s| s.latency_schedule_ahead_ms).max();
+        let e2e_js = e2e_overall.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
+        let ahead_js = ahead_overall.map(|v| v.to_string()).unwrap_or_else(|| "null".into());
         format!(
-            "{{\"uptime_ms\":{},\"aus_sent\":{},\"timeline_corrections\":{},\"time_offset_us\":{},\"playback_delay_us\":{},\"paused\":{},\"receivers\":[{}]}}",
+            "{{\"uptime_ms\":{},\"aus_sent\":{},\"timeline_corrections\":{},\"time_offset_us\":{},\"playback_delay_us\":{},\"paused\":{},\
+\"latency\":{{\"kind\":\"estimate\",\"definition\":{},\"playback_delay_ms\":{},\"startup_runway_ms\":{},\
+\"feed_flushed_aus_at_start\":{},\"feed_flushed_est_ms\":{},\"e2e_est_ms\":{},\"schedule_ahead_ms\":{},\
+\"segments\":[\"capture_stamp\",\"encode_to_au\",\"sender_schedule\",\"playback_delay\",\"startup_runway_age\"],\
+\"unknown_segments\":[\"speaker_playout_buffer\",\"network_one_way\"]}},\"receivers\":[{}]}}",
             self.started_at.elapsed().as_millis(), self.inner.aus_sent.load(Ordering::Relaxed),
-            self.inner.timeline_corrections.load(Ordering::Relaxed), off, self.inner.cfg.playback_delay_us,
-            self.is_paused(), rs.join(",")
+            self.inner.timeline_corrections.load(Ordering::Relaxed), off, delay_us,
+            self.is_paused(),
+            json_str(LATENCY_DEFINITION),
+            delay_us / 1000,
+            latency::startup_runway_ms(STARTUP_RUNWAY_AUS),
+            flushed,
+            (flushed as f64 * latency::AU_DURATION_MS).round() as i64,
+            e2e_js,
+            ahead_js,
+            rs_json.join(",")
         )
     }
 
@@ -1121,6 +1193,27 @@ impl Drop for CastSession {
 mod tests {
     use super::*;
     use crate::control::{open_wfd_url, SourceIdentity};
+    use std::sync::mpsc::sync_channel;
+
+    #[test]
+    fn channel_source_flush_returns_dropped_count() {
+        let (tx, rx) = sync_channel(8);
+        for i in 0..5 {
+            tx.send(CapturedAu { capture_us: 1_000_000 + i, aac: vec![i as u8] }).unwrap();
+        }
+        let mut src = ChannelSource(rx);
+        assert_eq!(src.flush(), 5);
+        assert_eq!(src.flush(), 0);
+    }
+
+    #[test]
+    fn receiver_stats_latency_json_uses_null_not_zero_when_unknown() {
+        let s = ReceiverStats { ip: "192.168.1.10".into(), ..Default::default() };
+        let j = s.to_json();
+        assert!(j.contains("\"latency_e2e_est_ms\":null"), "{j}");
+        assert!(j.contains("\"latency_schedule_ahead_ms\":null"), "{j}");
+        assert!(!j.contains("\"latency_e2e_est_ms\":0"), "{j}");
+    }
 
     #[test]
     fn late_join_upgrades_single_room_to_multi_room() {

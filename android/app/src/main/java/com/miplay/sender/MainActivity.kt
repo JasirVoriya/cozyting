@@ -38,6 +38,7 @@ class MainActivity : Activity() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var status: TextView
     private lateinit var statsView: TextView
+    private lateinit var latencyView: TextView
     private lateinit var list: LinearLayout
     private lateinit var manualIps: EditText
     private lateinit var sourceGroup: RadioGroup
@@ -325,6 +326,13 @@ class MainActivity : Activity() {
         }
         btns.addView(startBtn); btns.addView(pauseBtn)
         root.addView(btns)
+        latencyView = TextView(this).apply {
+            typeface = Typeface.MONOSPACE
+            textSize = 11f
+            setPadding(0, pad / 2, 0, pad / 2)
+            text = "延迟诊断：未投送"
+        }
+        root.addView(latencyView)
         statsView = TextView(this).apply { typeface = Typeface.MONOSPACE; textSize = 9f }
         root.addView(statsView)
         val scroll = ScrollView(this).apply { addView(root) }
@@ -617,6 +625,11 @@ class MainActivity : Activity() {
                 }
                 runCatching {
                     val o = JSONObject(CastService.lastStats)
+                    if (on && o.has("latency")) {
+                        latencyView.text = LatencyDisplay.formatBlock(o)
+                    } else if (!on) {
+                        latencyView.text = "延迟诊断：未投送"
+                    }
                     val rs = o.getJSONArray("receivers")
                     val seen = mutableSetOf<String>()
                     for (i in 0 until rs.length()) {
@@ -624,7 +637,7 @@ class MainActivity : Activity() {
                         val ip = r.getString("ip"); seen += ip
                         val row = rows[ip] ?: continue
                         val st = r.optInt("state", -1)
-                        row.state.text = buildString {
+                        val base = buildString {
                             append(
                                 when {
                                     !r.isNull("error") -> "断开"
@@ -636,6 +649,7 @@ class MainActivity : Activity() {
                             if (r.optInt("reconnects") > 0) append(" 重连${r.optInt("reconnects")}")
                             if (!r.isNull("volume_now")) append(" 音量${r.optInt("volume_now")}")
                         }
+                        row.state.text = if (on) LatencyDisplay.appendReceiverLatency(base, r) else base
                     }
                     if (on) {
                         rows.values.filter { it.ip !in seen }.forEach {
@@ -644,6 +658,8 @@ class MainActivity : Activity() {
                     } else {
                         rows.values.forEach { it.state.text = "" }
                     }
+                }.onFailure {
+                    if (!on) latencyView.text = "延迟诊断：未投送"
                 }
                 val castProbe = if (BuildConfig.IS_ACCEPTANCE && CastService.lastPcmProbe.isNotBlank()) {
                     "\n\n投送PCM探针:\n${CastService.lastPcmProbe}"

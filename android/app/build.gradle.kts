@@ -87,4 +87,6 @@ androidComponents {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     testImplementation("junit:junit:4.13.2")
+    // 单元测试使用真实 org.json（平台 stub 会抛 Method not mocked）
+    testImplementation("org.json:json:20240303")
 }

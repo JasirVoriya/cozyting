@@ -19,6 +19,7 @@ pub mod media;
 pub mod timeline;
 pub mod group;
 pub mod netinfo;
+pub mod latency;
 pub mod session;
 pub mod inspect;
 pub mod ffi;

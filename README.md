@@ -5,6 +5,7 @@ Android 手机作为发送端，经局域网把音频投送到小米音箱（MiP
 ## 功能
 
 - 发现/多选分组、暂停恢复、加入移除、音量、延迟、Legacy/Safety 认证、断线重连、前台通知
+- **延迟诊断**：投送中按接收端显示估计 E2E ms（及约几秒）；定义见 `docs/LATENCY_BUDGET.md`（估计值≠协议 RTT；缺失显示 —）
 - 晚加入扩组 / Safety / Open-poll 等假设见 `docs/LX06_V8_POSTMORTEM.md`（**不宣称 LX06 已修好**）
 - 状态调查用 CLI：`miplay-cli inspect <IP> --auth legacy`（仅 GET_* + TCP shutdown；**旧 probe 会发协议 CLOSE，不是无副作用只读**）
 - 音源：**测试静音** 或 **选定 App 音频**（`AudioPlaybackCapture` + 严格单 UID + usage 过滤）

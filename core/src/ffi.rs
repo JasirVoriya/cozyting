@@ -4,7 +4,8 @@
 #[cfg(feature = "jni")]
 mod android {
     use crate::control::SourceIdentity;
-    use crate::session::{CastConfig, CastSession, ChannelSource, SilenceSource, AuSource};
+    use crate::clock::now_us;
+    use crate::session::{AuSource, CapturedAu, CastConfig, CastSession, ChannelSource, SilenceSource};
     use jni::objects::{JByteArray, JClass, JString};
     use jni::sys::{jboolean, jint, jlong, jstring};
     use jni::JNIEnv;
@@ -12,9 +13,13 @@ mod android {
     use std::sync::mpsc::{sync_channel, SyncSender};
     use std::sync::{Arc, Mutex};
 
+    /// 喂入队列上限：约 96×21.3ms ≈ 2s。连接期积压由 TIME_OFFSET 屏障 flush 丢掉；
+    /// 稳态若仍塞满则 pushAac 返回 -4（可观测），避免再堆到十余秒。
+    const FEED_QUEUE_AUS: usize = 96;
+
     pub struct Engine {
         session: Mutex<Option<Arc<CastSession>>>,
-        feed: Option<SyncSender<Vec<u8>>>,
+        feed: Option<SyncSender<CapturedAu>>,
         source: Mutex<Option<Box<dyn AuSource>>>,
         pub last_error: Mutex<String>,
     }
@@ -65,10 +70,10 @@ mod android {
     /// 创建引擎（立即返回）。silent=true 用内置 AAC 静音帧；否则通过 pushAac 喂 AU。
     #[no_mangle]
     pub extern "system" fn Java_com_miplay_sender_NativeBridge_create(_env: JNIEnv, _c: JClass, silent: jboolean) -> jlong {
-        let (source, feed): (Box<dyn AuSource>, Option<SyncSender<Vec<u8>>>) = if silent != 0 {
+        let (source, feed): (Box<dyn AuSource>, Option<SyncSender<CapturedAu>>) = if silent != 0 {
             (Box::new(SilenceSource { remaining: None }), None)
         } else {
-            let (tx, rx) = sync_channel(512);
+            let (tx, rx) = sync_channel(FEED_QUEUE_AUS);
             (Box::new(ChannelSource(rx)), Some(tx))
         };
         let engine = Box::new(Engine { session: Mutex::new(None), feed, source: Mutex::new(Some(source)), last_error: Mutex::new(String::new()) });
@@ -142,7 +147,10 @@ mod android {
         let Some(e) = engine(h) else { return -1 };
         let Some(feed) = &e.feed else { return -2 };
         let Ok(bytes) = env.convert_byte_array(&au) else { return -3 };
-        match feed.try_send(bytes) { Ok(()) => 0, Err(_) => -4 }
+        match feed.try_send(CapturedAu { capture_us: now_us(), aac: bytes }) {
+            Ok(()) => 0,
+            Err(_) => -4,
+        }
     }
 
     /// ip 为空 = 全组。返回 "ip:Ok(v);ip:Err(..)"。
