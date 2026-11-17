@@ -70,4 +70,23 @@ object LatencyDisplay {
         val e2e = formatMs(optLongOrNull(receiver, "latency_e2e_est_ms"), withSeconds = false)
         return if (baseState.isBlank()) "延迟$e2e" else "$baseState  延迟$e2e"
     }
+
+    /** 面板内一行小数：不破坏毛玻璃投送面板风格。 */
+    fun formatCompactLine(stats: JSONObject?): String {
+        if (stats == null || !stats.has("latency")) return "延迟 —"
+        val lat = stats.optJSONObject("latency") ?: return "延迟 —"
+        val e2e = formatMs(optLongOrNull(lat, "e2e_est_ms"), withSeconds = false)
+        val rs = stats.optJSONArray("receivers")
+        val parts = mutableListOf<String>()
+        if (rs != null) {
+            for (i in 0 until rs.length()) {
+                val r = rs.optJSONObject(i) ?: continue
+                val ip = r.optString("ip").substringAfterLast('.')
+                val ms = formatMs(optLongOrNull(r, "latency_e2e_est_ms"), withSeconds = false)
+                parts += "$ip $ms"
+            }
+        }
+        val per = if (parts.isEmpty()) "" else " · " + parts.joinToString(" ")
+        return "延迟 E2E $e2e$per（估计）"
+    }
 }

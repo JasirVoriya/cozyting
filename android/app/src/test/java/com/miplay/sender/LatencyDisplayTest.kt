@@ -69,4 +69,16 @@ class LatencyDisplayTest {
         val missing = JSONObject("""{}""")
         assertEquals("播放中  延迟—", LatencyDisplay.appendReceiverLatency("播放中", missing))
     }
+
+    @Test
+    fun compactLineUsesDashWhenMissing() {
+        assertEquals("延迟 —", LatencyDisplay.formatCompactLine(null))
+        assertEquals("延迟 —", LatencyDisplay.formatCompactLine(JSONObject("{}")))
+        val stats = JSONObject(
+            """{"latency":{"e2e_est_ms":null},"receivers":[{"ip":"1.2.3.4","latency_e2e_est_ms":null}]}""",
+        )
+        val line = LatencyDisplay.formatCompactLine(stats)
+        assertTrue(line.contains("—"))
+        assertFalse(line.contains("E2E 0ms"))
+    }
 }

@@ -20,6 +20,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
+import com.miplay.sender.cast.AndroidStreamMusicVolume
+import com.miplay.sender.cast.LocalOutputMute
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.CaptureFailReason
 import com.miplay.sender.capture.CaptureTargetResolver
@@ -75,6 +77,9 @@ class CastService : Service() {
         @Volatile var lastFailMessage: String = ""
         /** 最近一次捕获 PCM 探针摘要（验收变体用于 A/B 量化；静音时不可证明过滤） */
         @Volatile var lastPcmProbe: String = ""
+        /** 本机 STREAM_MUSIC 静音状态文案（估计/回退说明，非听感保证）。 */
+        @Volatile var localMuteStatusZh: String = "本机出声（未尝试静音）"
+        @Volatile var localMuteStatus: LocalOutputMute.Status = LocalOutputMute.Status.IDLE
         val running = AtomicBoolean(false)
 
         fun autoDelayMs(ctx: Context): Int {
@@ -98,8 +103,15 @@ class CastService : Service() {
     private var captureUid: Int = -1
     private val sessionPolicy = ProjectionSessionPolicy()
     private var noAudioHintPosted = false
+    private val localMute = LocalOutputMute(AndroidStreamMusicVolume(this))
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun publishMute(snap: LocalOutputMute.Snapshot) {
+        localMuteStatus = snap.status
+        localMuteStatusZh = snap.messageZh
+        Log.i(TAG, "LOCAL_MUTE status=${snap.status} api=${snap.api} msg=${snap.messageZh}")
+    }
 
     private fun event(s: String) {
         lastEvent = s.substringBefore('{').trim().trimEnd('：', ':').take(80).ifEmpty { s.take(80) }
@@ -215,6 +227,12 @@ class CastService : Service() {
             event("connect 返回：$st")
             if (st.contains("\"error\"") && !st.contains("\"receivers\"")) {
                 stopCast(); stopSelf(); return@bg
+            }
+            if (source == "app") {
+                publishMute(localMute.beginMuteForCast())
+                event(localMuteStatusZh)
+            } else {
+                publishMute(localMute.skip("silent source"))
             }
             statsLoop()
             if (secs > 0) main.postDelayed({ event("定时 ${secs}s 到，停止"); stopCast(); stopSelf() }, secs * 1000L)
@@ -422,14 +440,21 @@ class CastService : Service() {
                     i += 2
                 }
                 blocks++
-                // 验收：约每秒对一块 PCM 做 RMS/Goertzel（不依赖扬声器音量听感）
-                if (BuildConfig.IS_ACCEPTANCE && blocks % 12 == 0L) {
+                // 约每秒：验收频谱探针 + 本机静音捕获能量对照
+                if (blocks % 12 == 0L) {
                     val snap = PcmProbe.analyzeInterleavedS16LeStereo(buf, chunk)
-                    lastPcmProbe =
-                        "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
-                            "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
-                            "⇒ ${snap.dominant} | ${snap.verdictZh}"
-                    Log.i(TAG, "PCM_PROBE $lastPcmProbe")
+                    if (BuildConfig.IS_ACCEPTANCE) {
+                        lastPcmProbe =
+                            "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
+                                "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
+                                "⇒ ${snap.dominant} | ${snap.verdictZh}"
+                        Log.i(TAG, "PCM_PROBE $lastPcmProbe")
+                    }
+                    val muteSnap = localMute.onCaptureEnergy(snap.rms)
+                    if (muteSnap.status != localMuteStatus) {
+                        publishMute(muteSnap)
+                        event(muteSnap.messageZh)
+                    }
                 }
                 if (blocks % 470 == 0L) {
                     Log.i(TAG, "capture blocks=$blocks peak=$peak aacProduced=${enc.produced}")
@@ -444,6 +469,7 @@ class CastService : Service() {
     private fun stopCast() {
         if (!running.getAndSet(false)) return
         event("停止投送并清理资源")
+        publishMute(localMute.restore())
         captureThread?.interrupt()
         captureThread = null
         runCatching { record?.stop() }
