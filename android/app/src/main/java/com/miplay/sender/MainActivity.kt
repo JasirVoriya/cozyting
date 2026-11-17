@@ -19,6 +19,7 @@ import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.*
+import com.miplay.sender.capture.LocalFilterAcceptanceGate
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.ProjectionSessionPolicy
 import org.json.JSONObject
@@ -50,10 +51,13 @@ class MainActivity : Activity() {
     private lateinit var pickAppBtn: Button
     private lateinit var clearAppBtn: Button
     private lateinit var captureHint: TextView
+    private var localProbeBtn: Button? = null
+    private var localProbeStatus: TextView? = null
 
     private class Row(val ip: String, val check: CheckBox, val state: TextView, val vol: SeekBar, val volLabel: TextView)
     private val rows = linkedMapOf<String, Row>()
     private var pendingStart: Intent? = null
+    private var pendingLocalProbe: Intent? = null
     private var suppressCheck = false
     private var selectedPackage: String = ""
     private var selectedLabel: String = ""
@@ -167,13 +171,13 @@ class MainActivity : Activity() {
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
         })
-        if (BuildConfig.IS_ACCEPTANCE) {
+        if (LocalFilterAcceptanceGate.exposeLocalProbeEntry(BuildConfig.IS_ACCEPTANCE)) {
             root.addView(
                 TextView(this).apply {
-                    text = "验收变体 com.miplay.sender.acceptance（独立签名，不覆盖正式 debug/release）。\n" +
+                    text = "验收变体 com.miplay.sender.acceptance（独立签名，可覆盖升级上一版验收包）。\n" +
                         "受控音源：A=1000Hz / B=2000Hz / deny=禁止捕获。\n" +
-                        "MediaProjection 须系统对话框授权，不用 adb appops 绕过。\n" +
-                        "若 PCM 探针为静音，不能据此证明 UID 过滤（音量0可能导致全静音）。"
+                        "下方「本地音频过滤验收」可不选音箱；仍须系统投影授权。\n" +
+                        "若 PCM 探针为静音，不能据此证明 UID 过滤。"
                     textSize = 12f
                     setPadding(0, 0, 0, pad / 2)
                 },
@@ -239,22 +243,41 @@ class MainActivity : Activity() {
             isEnabled = false
             setOnClickListener { openAppPicker() }
         }
-        clearAppBtn = Button(this).apply {
-            text = "清除"
-            isEnabled = false
-            setOnClickListener {
-                if (CastService.running.get() && CastService.source == "app") {
-                    status.text = "切换/清除目标前先停止当前投送"
-                    stopCast()
+            clearAppBtn = Button(this).apply {
+                text = "清除"
+                isEnabled = false
+                setOnClickListener {
+                    if (CastService.running.get() && CastService.source == "app") {
+                        status.text = "切换/清除目标前先停止当前投送"
+                        stopCast()
+                    }
+                    if (BuildConfig.IS_ACCEPTANCE && LocalFilterProbeService.running.get()) {
+                        stopLocalProbe()
+                    }
+                    store.clearSelection()
+                    selectedPackage = ""; selectedLabel = ""; selectedCert = ""
+                    lastGrantSession = null
+                    refreshTargetUi()
                 }
-                store.clearSelection()
-                selectedPackage = ""; selectedLabel = ""; selectedCert = ""
-                lastGrantSession = null
-                refreshTargetUi()
             }
-        }
         arow.addView(pickAppBtn); arow.addView(clearAppBtn)
         root.addView(arow)
+
+        if (LocalFilterAcceptanceGate.exposeLocalProbeEntry(BuildConfig.IS_ACCEPTANCE)) {
+            localProbeStatus = TextView(this).apply {
+                text = "本地过滤验收：未运行（不需要音箱）"
+                textSize = 12f
+                setPadding(0, pad / 2, 0, 0)
+            }
+            root.addView(localProbeStatus)
+            localProbeBtn = Button(this).apply {
+                text = "本地音频过滤验收（不连接音箱）"
+                setOnClickListener {
+                    if (LocalFilterProbeService.running.get()) stopLocalProbe() else startLocalFilterAcceptance()
+                }
+            }
+            root.addView(localProbeBtn)
+        }
 
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         row.addView(TextView(this).apply { text = "延迟ms " })
@@ -334,9 +357,13 @@ class MainActivity : Activity() {
 
     private fun openAppPicker() {
         if (CastService.running.get() && CastService.source == "app") {
-            // 切目标：先停旧会话，再选，随后需重新授权
             stopCast()
             status.text = "已停止旧会话；选择新目标后需重新授权"
+            lastGrantSession = null
+        }
+        if (BuildConfig.IS_ACCEPTANCE && LocalFilterProbeService.running.get()) {
+            stopLocalProbe()
+            status.text = "已停止本地探针；选择新目标后需重新授权"
             lastGrantSession = null
         }
         startActivityForResult(Intent(this, AppPickerActivity::class.java), 43)
@@ -430,10 +457,59 @@ class MainActivity : Activity() {
         return rows.values.filter { it.check.isChecked }.joinToString(",") { it.ip }
     }
 
+    /** acceptance：无音箱本地 UID 过滤探针；真实 MediaProjection；不调用 MiPlay。 */
+    private fun startLocalFilterAcceptance() {
+        if (!LocalFilterAcceptanceGate.exposeLocalProbeEntry(BuildConfig.IS_ACCEPTANCE)) return
+        val gate = LocalFilterAcceptanceGate.validateStart(
+            mode = LocalFilterAcceptanceGate.Mode.LOCAL_PCM_PROBE,
+            targetPackageSelected = selectedPackage.isNotBlank(),
+            speakerCount = 0,
+        )
+        if (gate is LocalFilterAcceptanceGate.StartDecision.Block) {
+            status.text = gate.messageZh
+            return
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            status.text = "需要 RECORD_AUDIO（仅播放捕获，非麦克风）"
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 1)
+            return
+        }
+        if (CastService.running.get()) {
+            status.text = "请先停止音箱投送，再跑本地过滤验收"
+            return
+        }
+        val grantSession = UUID.randomUUID().toString()
+        lastGrantSession = grantSession
+        pendingLocalProbe = Intent(this, LocalFilterProbeService::class.java)
+            .setAction(LocalFilterProbeService.ACTION_START)
+            .putExtra(LocalFilterProbeService.EXTRA_TARGET_PACKAGE, selectedPackage)
+            .putExtra(LocalFilterProbeService.EXTRA_TARGET_CERT, selectedCert)
+            .putExtra(LocalFilterProbeService.EXTRA_GRANT_SESSION, grantSession)
+        val mpm = getSystemService(MediaProjectionManager::class.java)
+        startActivityForResult(mpm.createScreenCaptureIntent(), 44)
+        status.text = "本地过滤验收：等待系统投影授权（不可复用旧授权）…"
+    }
+
+    private fun stopLocalProbe() {
+        startService(Intent(this, LocalFilterProbeService::class.java).setAction(LocalFilterProbeService.ACTION_STOP))
+        status.text = "已请求停止本地探针"
+        localProbeBtn?.text = "本地音频过滤验收（不连接音箱）"
+    }
+
     private fun startCast(secs: Int) {
         val ips = selectedIps()
-        if (ips.isEmpty()) { status.text = "请勾选音箱"; return }
+        val speakerCount = if (ips.isEmpty()) 0 else ips.split(',').size
         val appMode = sourceGroup.checkedRadioButtonId == 2
+        val castGate = LocalFilterAcceptanceGate.validateStart(
+            mode = LocalFilterAcceptanceGate.Mode.MIPLAY_CAST,
+            targetPackageSelected = !appMode || selectedPackage.isNotBlank(),
+            speakerCount = speakerCount,
+        )
+        if (castGate is LocalFilterAcceptanceGate.StartDecision.Block) {
+            status.text = castGate.messageZh
+            return
+        }
+        if (ips.isEmpty()) { status.text = "请勾选音箱"; return }
         if (appMode && selectedPackage.isBlank()) {
             status.text = "请先选择投送的 App（不会回退全系统捕获）"
             return
@@ -496,7 +572,22 @@ class MainActivity : Activity() {
                 lastGrantSession = null // 切目标后旧授权作废
                 refreshTargetUi()
                 sourceGroup.check(2)
-                status.text = "已选择 $selectedLabel，开始投送时将重新授权并解析 UID"
+                status.text = "已选择 $selectedLabel；可用「本地音频过滤验收」或投送（均需重新授权）"
+            }
+            44 -> {
+                val p = pendingLocalProbe ?: return
+                pendingLocalProbe = null
+                if (resultCode != RESULT_OK || data == null) {
+                    status.text = "本地过滤验收：投影授权被拒绝"
+                    lastGrantSession = null
+                    return
+                }
+                startForegroundService(
+                    p.putExtra(LocalFilterProbeService.EXTRA_PROJ_CODE, resultCode)
+                        .putExtra(LocalFilterProbeService.EXTRA_PROJ_DATA, data),
+                )
+                status.text = "本地过滤验收已启动（不连接音箱）"
+                localProbeBtn?.text = "停止本地过滤验收"
             }
         }
     }
@@ -553,12 +644,33 @@ class MainActivity : Activity() {
                         rows.values.forEach { it.state.text = "" }
                     }
                 }
-                val probe = if (BuildConfig.IS_ACCEPTANCE && CastService.lastPcmProbe.isNotBlank()) {
-                    "\n\nPCM探针:\n${CastService.lastPcmProbe}"
+                val castProbe = if (BuildConfig.IS_ACCEPTANCE && CastService.lastPcmProbe.isNotBlank()) {
+                    "\n\n投送PCM探针:\n${CastService.lastPcmProbe}"
                 } else {
                     ""
                 }
-                statsView.text = CastService.lastStats.replace(",\"", ",\n\"") + probe
+                val localOn = BuildConfig.IS_ACCEPTANCE && LocalFilterProbeService.running.get()
+                localProbeBtn?.text = if (localOn) "停止本地过滤验收" else "本地音频过滤验收（不连接音箱）"
+                if (localOn) {
+                    val fail = LocalFilterProbeService.lastFail
+                    val body = LocalFilterProbeService.lastProbe.ifBlank { LocalFilterProbeService.lastEvent }
+                    localProbeStatus?.text = if (fail.isNotBlank() && !LocalFilterProbeService.running.get()) {
+                        "本地过滤：$fail"
+                    } else {
+                        "本地过滤：${LocalFilterProbeService.targetPackage}\n$body"
+                    }
+                    if (LocalFilterProbeService.lastFail.isNotBlank()) {
+                        status.text = LocalFilterProbeService.lastFail
+                    } else if (LocalFilterProbeService.lastEvent.isNotBlank()) {
+                        status.text = LocalFilterProbeService.lastEvent
+                    }
+                }
+                statsView.text = CastService.lastStats.replace(",\"", ",\n\"") + castProbe +
+                    if (localOn && LocalFilterProbeService.lastProbe.isNotBlank()) {
+                        "\n\n本地过滤探针:\n${LocalFilterProbeService.lastProbe}"
+                    } else {
+                        ""
+                    }
                 main.postDelayed(this, 1000)
             }
         }, 1000)

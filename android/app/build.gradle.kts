@@ -12,8 +12,8 @@ android {
         applicationId = "com.miplay.sender"
         minSdk = 34
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3.0-acceptance-tools"
+        versionCode = 4
+        versionName = "0.4.0-local-filter-probe"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
