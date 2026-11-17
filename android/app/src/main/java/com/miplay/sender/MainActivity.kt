@@ -38,11 +38,13 @@ import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
+import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.CastRouteSelection.Effect
 import com.miplay.sender.cast.CastRouteSelection.Kind
 import com.miplay.sender.cast.NowPlayingInfo
 import com.miplay.sender.cast.NowPlayingTracker
+import com.miplay.sender.cast.ProtocolBadge
 import com.miplay.sender.capture.LocalFilterAcceptanceGate
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
@@ -533,24 +535,34 @@ class MainActivity : Activity() {
                 when (d.kind) {
                     Kind.THIS_DEVICE -> android.R.drawable.ic_menu_mylocation
                     Kind.SPEAKER -> android.R.drawable.ic_lock_silent_mode_off
-                    Kind.OTHER -> android.R.drawable.ic_menu_view
+                    Kind.TV -> android.R.drawable.ic_menu_view
                 },
             )
             setColorFilter(if (selected) textOnLight else textOnDark)
-            layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(10) }
+            layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(8) }
         }
         val name = TextView(this).apply {
             text = d.name
             setTextColor(if (selected) textOnLight else textOnDark)
             textSize = 15f
+            maxLines = 1
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         row.addView(icon)
         row.addView(name)
-        if (d.kind == Kind.SPEAKER || d.kind == Kind.OTHER) {
+        // 协议小标：紧靠名称右侧；本机不标
+        val protoBadge = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply {
+                marginStart = dp(6)
+                marginEnd = dp(8)
+            }
+        }
+        ProtocolBadge.bind(protoBadge, d.protocol, selected)
+        row.addView(protoBadge)
+        if (d.isCastSink) {
             val mark = TextView(this).apply {
                 text = when {
-                    !d.castable -> "⊘"
+                    !d.castable -> "○"
                     selected -> "✓"
                     else -> "○"
                 }
@@ -562,11 +574,13 @@ class MainActivity : Activity() {
                     },
                 )
                 textSize = 16f
+                // 离线/未实现：灰圈，不用禁用叉，避免把电视误当成永久禁止
+                alpha = if (d.castable) 1f else 0.45f
             }
             row.addView(mark)
         }
         box.addView(row)
-        if (d.kind == Kind.SPEAKER && selected && d.castable) {
+        if (d.isCastSink && selected && d.castable) {
             val vol = SeekBar(this).apply {
                 max = 100
                 progress = speakerVolume[d.id] ?: volumeBar.progress
@@ -599,8 +613,7 @@ class MainActivity : Activity() {
         if (suppressRoute) return
         val transition = when (d.kind) {
             Kind.THIS_DEVICE -> CastRouteSelection.selectThisDevice(routeState)
-            Kind.SPEAKER -> CastRouteSelection.setSpeakerChecked(routeState, d.id, !d.selected)
-            Kind.OTHER -> CastRouteSelection.setSpeakerChecked(routeState, d.id, true)
+            Kind.SPEAKER, Kind.TV -> CastRouteSelection.setSpeakerChecked(routeState, d.id, !d.selected)
         }
         routeState = transition.state
         renderDevices()
@@ -730,27 +743,17 @@ class MainActivity : Activity() {
                     val ip = p[0]
                     val name = p.getOrElse(1) { ip }
                     val model = p.getOrElse(2) { "" }
-                    val miplay = p.getOrElse(3) { "1" } == "1"
+                    // 发现栈为 _mi-connect；电视/音箱均按 MiPlay 可投目标（产品行为）。
+                    // 验收脚本勿主动勾选电视；App 本身不得禁止用户点选电视。
                     val label = listOf(name, model).filter { it.isNotBlank() }.joinToString(" · ")
-                    val looksTv = model.contains("TV", true) ||
-                        name.contains("TV", true) ||
-                        name.contains("G Pro", true) ||
-                        name.contains("显示器", true) ||
-                        name.contains("REDMI G", true)
-                    if (miplay) {
-                        found += CastRouteSelection.Device(ip, label.ifBlank { ip }, Kind.SPEAKER, castable = true)
-                    } else {
-                        found += CastRouteSelection.Device(
-                            ip,
-                            label.ifBlank { ip },
-                            if (looksTv) Kind.OTHER else Kind.OTHER,
-                            castable = false,
-                            detail = "未接入 MiPlay，仅列出不投送",
-                        )
-                    }
-                    if (pendingIps?.contains(ip) == true && miplay) {
-                        // 自动化预选在 merge 后处理
-                    }
+                    val kind = if (CastRouteSelection.looksLikeTv(name, model)) Kind.TV else Kind.SPEAKER
+                    found += CastRouteSelection.Device(
+                        id = ip,
+                        name = label.ifBlank { ip },
+                        kind = kind,
+                        castable = true,
+                        protocol = CastProtocol.MIPLAY,
+                    )
                 }
                 var next = CastRouteSelection.mergeDiscovered(routeState, found)
                 pendingIps?.forEach { ip ->
@@ -759,10 +762,13 @@ class MainActivity : Activity() {
                     }
                 }
                 pendingIps = null
-                // 手动 IP
                 routeState = next
                 renderDevices()
-                status.text = if (found.isEmpty()) "未发现设备" else "发现 ${found.size} 台 · 勾选音箱投送"
+                status.text = if (found.isEmpty()) {
+                    "未发现设备"
+                } else {
+                    "发现 ${found.size} 台 · 勾选音箱/电视投送（会话支持多选）"
+                }
             }
         }.start()
     }
@@ -772,7 +778,13 @@ class MainActivity : Activity() {
             .filter { it.matches(Regex("""\d+\.\d+\.\d+\.\d+""")) }
         if (ips.isEmpty()) return
         val extra = ips.map {
-            CastRouteSelection.Device(it, "手动 $it", Kind.SPEAKER, castable = true)
+            CastRouteSelection.Device(
+                it,
+                "手动 $it",
+                Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+            )
         }
         val merged = routeState.devices.filter { it.kind != Kind.THIS_DEVICE } + extra
         routeState = CastRouteSelection.mergeDiscovered(routeState, merged.distinctBy { it.id })
@@ -833,7 +845,10 @@ class MainActivity : Activity() {
                             s = CastRouteSelection.mergeDiscovered(
                                 s,
                                 s.devices.filter { it.kind != Kind.THIS_DEVICE } +
-                                    CastRouteSelection.Device(ip, ip, Kind.SPEAKER, true),
+                                    CastRouteSelection.Device(
+                                        ip, ip, Kind.SPEAKER, true,
+                                        protocol = CastProtocol.MIPLAY,
+                                    ),
                             )
                         }
                         val t = CastRouteSelection.setSpeakerChecked(s, ip, true)

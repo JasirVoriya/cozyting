@@ -12,8 +12,8 @@ android {
         applicationId = "com.miplay.sender"
         minSdk = 34
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.9.0-cast-panel"
+        versionCode = 10
+        versionName = "0.9.1-cast-panel"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
