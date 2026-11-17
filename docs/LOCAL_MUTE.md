@@ -24,8 +24,11 @@ STREAM_MUSIC mute/音量衰减进入 AudioFlinger 的 stream 路径；PlaybackCa
 2. 用捕获 PCM 的 RMS 作探针（与听感无关）
 3. 若曾有能量基线，随后连续多拍低于阈值 → **立即 UNMUTE**，状态 `UNAVAILABLE_CAPTURE_SILENCED`
 4. 仅当 mute 后捕获仍有能量 → `ACTIVE_VERIFIED`（估计成功）
+5. 始终近零且超过等待拍数 → `UNVERIFIED_NO_CAPTURE_ENERGY`（**明确未验证，不假通过**）
 
 **无探针通过证据时，UI/文档不得写「已做到本机静音且捕获仍有声」。**
+
+验收变体：`restoreVolumeIndex=false`，停止投送不把本机音量索引拉回 mute 前值。
 
 ## 失败回退
 
@@ -33,6 +36,7 @@ STREAM_MUSIC mute/音量衰减进入 AudioFlinger 的 stream 路径；PlaybackCa
 |------|------|----------|
 | `ACTIVE_VERIFIED` | mute + 捕获仍有能量 | 否（估计） |
 | `UNAVAILABLE_CAPTURE_SILENCED` | mute 连带静音捕获，已回退 | **是** |
+| `UNVERIFIED_NO_CAPTURE_ENERGY` | 捕获持续近零，未能验证 | 已请求 mute（未假通过） |
 | `PENDING_VERIFY` | 等待源 App 出声基线 | 已请求 mute |
 | `RESTORED` / `IDLE` | 未投送或已恢复 | 是 |
 

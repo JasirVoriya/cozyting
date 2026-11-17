@@ -5,16 +5,18 @@ package com.miplay.sender.cast
  *
  * ## 选用 API
  * - `AudioManager.adjustStreamVolume(STREAM_MUSIC, ADJUST_MUTE, 0)` / `ADJUST_UNMUTE`
- * - 恢复时若仍静音则 UNMUTE；并尽量 `setStreamVolume` 回到 mute 前音量索引
+ * - 恢复时若仍静音则 UNMUTE；并按 [restoreVolumeIndex] 决定是否 `setStreamVolume` 回到 mute 前索引
  *
  * ## 为何不用「直接 mute 就宣称成功」
  * AOSP 上 STREAM_MUSIC mute/volume 会进入 AudioFlinger 的 stream 衰减路径；
  * AudioPlaybackCapture 混音是否在衰减之前取流因机型/厂商而异。
  * **没有捕获能量探针证据时，不得声称「本机已静音且捕获仍有音频」。**
  *
- * ## 失败回退
+ * ## 失败回退 / 未验证
  * mute 后若捕获 RMS/peak 从「有声」跌到「静音阈值以下」并持续 [verifySilentSamples] 次，
- * 立即 UNMUTE 并标记 [Status.UNAVAILABLE_CAPTURE_SILENCED]，UI 提示本机仍出声。
+ * 立即 UNMUTE 并标记 [Status.UNAVAILABLE_CAPTURE_SILENCED]。
+ * 若始终全零且达到 [maxPendingSamplesWithoutEnergy]，标记 [Status.UNVERIFIED_NO_CAPTURE_ENERGY]
+ *（明确未验证，不假通过）。
  *
  * 不做：重启音箱、改系统路由权限、提权、MODIFY_AUDIO_ROUTING 私有 API。
  */
@@ -22,6 +24,8 @@ class LocalOutputMute(
     private val volume: StreamMusicVolume,
     private val verifySilentSamples: Int = 4,
     private val energyFloor: Double = 80.0,
+    private val maxPendingSamplesWithoutEnergy: Int = 24,
+    private val restoreVolumeIndex: Boolean = true,
 ) {
     enum class Status {
         IDLE,
@@ -31,6 +35,8 @@ class LocalOutputMute(
         ACTIVE_VERIFIED,
         /** mute 导致捕获变静，已回退。 */
         UNAVAILABLE_CAPTURE_SILENCED,
+        /** 捕获持续近零，未能验证本机静音与捕获是否解耦（非假通过）。 */
+        UNVERIFIED_NO_CAPTURE_ENERGY,
         /** 已恢复本机音量（停止投送）。 */
         RESTORED,
         /** 静音测试源等场景跳过。 */
@@ -57,6 +63,7 @@ class LocalOutputMute(
     private var savedIndex: Int? = null
     private var hadEnergyBeforeOrDuring: Boolean = false
     private var silentStreak: Int = 0
+    private var pendingZeroStreak: Int = 0
 
     fun snapshot(): Snapshot = Snapshot(
         status = status,
@@ -67,6 +74,7 @@ class LocalOutputMute(
             Status.PENDING_VERIFY -> "已请求 STREAM_MUSIC mute，等待捕获探针…"
             Status.ACTIVE_VERIFIED -> "本机 STREAM_MUSIC 已 mute；捕获探针仍有能量（估计）"
             Status.UNAVAILABLE_CAPTURE_SILENCED -> "本机静音会连带静音捕获，已回退；本机仍出声"
+            Status.UNVERIFIED_NO_CAPTURE_ENERGY -> "捕获持续近零，本机静音未能验证（未假通过）"
             Status.RESTORED -> "已恢复本机 STREAM_MUSIC"
             Status.SKIPPED -> "已跳过本机静音（非 App 捕获源）"
         },
@@ -83,6 +91,7 @@ class LocalOutputMute(
         savedIndex = volume.getIndex()
         hadEnergyBeforeOrDuring = false
         silentStreak = 0
+        pendingZeroStreak = 0
         runCatching {
             volume.mute()
             status = Status.PENDING_VERIFY
@@ -102,12 +111,19 @@ class LocalOutputMute(
         if (captureEnergy >= energyFloor) {
             hadEnergyBeforeOrDuring = true
             silentStreak = 0
+            pendingZeroStreak = 0
             if (status == Status.PENDING_VERIFY) status = Status.ACTIVE_VERIFIED
             return snapshot()
         }
         // 能量过低
         if (!hadEnergyBeforeOrDuring) {
-            // 尚无「有声」基线（源 App 可能未播放）：保持 PENDING，不误判
+            // 尚无「有声」基线：不误判为「静音杀掉捕获」；超时则明确未验证
+            if (status == Status.PENDING_VERIFY) {
+                pendingZeroStreak++
+                if (pendingZeroStreak >= maxPendingSamplesWithoutEnergy) {
+                    status = Status.UNVERIFIED_NO_CAPTURE_ENERGY
+                }
+            }
             return snapshot()
         }
         silentStreak++
@@ -125,13 +141,16 @@ class LocalOutputMute(
     private fun restoreInternal(fromFailure: Boolean) {
         runCatching {
             if (volume.isMuted()) volume.unmute()
-            val idx = savedIndex
-            if (idx != null) {
-                val max = volume.getMaxIndex().coerceAtLeast(0)
-                volume.setIndex(idx.coerceIn(0, max))
+            if (restoreVolumeIndex) {
+                val idx = savedIndex
+                if (idx != null) {
+                    val max = volume.getMaxIndex().coerceAtLeast(0)
+                    volume.setIndex(idx.coerceIn(0, max))
+                }
             }
         }
         status = if (fromFailure) Status.UNAVAILABLE_CAPTURE_SILENCED else Status.RESTORED
         silentStreak = 0
+        pendingZeroStreak = 0
     }
 }

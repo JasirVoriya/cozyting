@@ -14,7 +14,8 @@ cd "$ROOT"
 # Android 15+ 部分设备要求 native LOAD 对齐 16KB
 export RUSTFLAGS="${RUSTFLAGS:--C link-arg=-Wl,-z,max-page-size=16384}"
 cargo test --workspace
-cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
+# --platform 29：与 app minSdk 对齐，避免 native 符号要求高于 API29
+cargo ndk -t arm64-v8a -p 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
 cd android
 ./gradlew --no-daemon test assembleDebug
 echo "APK: $ROOT/android/app/build/outputs/apk/debug/app-debug.apk"

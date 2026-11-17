@@ -11,8 +11,9 @@ Android 手机作为发送端，经局域网把音频投送到小米音箱（MiP
 - 晚加入扩组 / Safety / Open-poll 等假设见 `docs/LX06_V8_POSTMORTEM.md`（**不宣称 LX06 已修好**）
 - 状态调查用 CLI：`miplay-cli inspect <IP> --auth legacy`（仅 GET_* + TCP shutdown；**旧 probe 会发协议 CLOSE，不是无副作用只读**）
 - 音源：**测试静音** 或 **选定 App 音频**（`AudioPlaybackCapture` + 严格单 UID + usage 过滤）
-- minSdk 34（Android 14+），compile/targetSdk 36
-- 不申请 `QUERY_ALL_PACKAGES`；可启动 App 列表依赖 `<queries>` MAIN/LAUNCHER
+- minSdk **29**（Android 10+）～ target/compileSdk **36**；arm64-v8a
+- 毛玻璃在 API31+ 用 RenderEffect，API29–30 降级压暗（见 `BlurCompat`）
+- 不申请 `QUERY_ALL_PACKAGES`；API30+ 可启动列表依赖 `<queries>` MAIN/LAUNCHER；API29 无包可见性限制
 - 不采集麦克风；`RECORD_AUDIO` 仅用于播放捕获；FGS 类型为 `mediaProjection` / `mediaPlayback`
 - MediaProjection **每次会话重新授权**；切换目标会停止旧会话
 

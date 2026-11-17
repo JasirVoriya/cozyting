@@ -47,7 +47,12 @@ class LocalOutputMuteTest {
     @Test
     fun noBaselineDoesNotFalsePositiveUnavailable() {
         val vol = FakeVol()
-        val m = LocalOutputMute(vol, verifySilentSamples = 2, energyFloor = 50.0)
+        val m = LocalOutputMute(
+            vol,
+            verifySilentSamples = 2,
+            energyFloor = 50.0,
+            maxPendingSamplesWithoutEnergy = 100,
+        )
         m.beginMuteForCast()
         repeat(5) { m.onCaptureEnergy(0.0) }
         assertEquals(LocalOutputMute.Status.PENDING_VERIFY, m.snapshot().status)

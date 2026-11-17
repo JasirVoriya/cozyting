@@ -3,6 +3,7 @@ package com.miplay.sender.capture
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Process
+import com.miplay.sender.compat.PackageSigningCompat
 import java.security.MessageDigest
 
 /** 基于 PackageManager 的身份解析：同用户、共享 UID、签名摘要。 */
@@ -42,9 +43,9 @@ class AndroidPackageIdentityLookup(
     companion object {
         fun signingCertSha256(pm: PackageManager, packageName: String): String? {
             return try {
-                val flags = PackageManager.GET_SIGNING_CERTIFICATES
-                val pi = pm.getPackageInfo(packageName, flags)
-                val sigs = pi.signingInfo?.apkContentsSigners ?: return null
+                // API28+ GET_SIGNING_CERTIFICATES + 旧 getPackageInfo(String,int)；勿用 API33-only Flags 重载
+                val pi = PackageSigningCompat.packageInfoForSigning(pm, packageName)
+                val sigs = PackageSigningCompat.apkContentsSigners(pi) ?: return null
                 if (sigs.isEmpty()) return null
                 val md = MessageDigest.getInstance("SHA-256")
                 val dig = md.digest(sigs[0].toByteArray())

@@ -10,10 +10,10 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.miplay.sender"
-        minSdk = 34
+        minSdk = 29
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.9.2-cast-panel"
+        versionCode = 12
+        versionName = "0.9.3-api29"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
@@ -73,6 +73,18 @@ android {
         jniLibs {
             useLegacyPackaging = false
         }
+    }
+    lint {
+        abortOnError = true
+        warningsAsErrors = false
+        // API29 兼容硬门槛：NewApi 视为 fatal；ResourceType 为既有程序化 view id，不挡构建
+        fatal += "NewApi"
+        enable += setOf("NewApi", "InlinedApi")
+        disable += setOf(
+            "ResourceType",
+            "GradleDependency",
+            "AndroidGradlePluginVersion",
+        )
     }
 }
 

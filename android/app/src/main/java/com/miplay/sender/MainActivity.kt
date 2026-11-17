@@ -9,10 +9,13 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import com.miplay.sender.compat.AcceptanceAudioDefaults
+import com.miplay.sender.compat.BlurCompat
+import com.miplay.sender.compat.CaptureSelectionLayers
+import com.miplay.sender.compat.NotificationPermissionCompat
+import com.miplay.sender.compat.WindowInsetsApplyCompat
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.net.wifi.WifiManager
@@ -114,7 +117,7 @@ class MainActivity : Activity() {
         )
         buildUi()
         refreshTargetFromStore()
-        val need = arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS)
+        val need = NotificationPermissionCompat.runtimePermissionsForColdStart()
             .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
         nowPlayingTracker = NowPlayingTracker(this) { info ->
@@ -168,8 +171,7 @@ class MainActivity : Activity() {
         bgArt = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageBitmap(placeholderArt())
-            setRenderEffect(RenderEffect.createBlurEffect(48f, 48f, Shader.TileMode.CLAMP))
-            setColorFilter(Color.argb(120, 0, 0, 0))
+            BlurCompat.applyBackdrop(this)
         }
         rootFrame.addView(
             bgArt,
@@ -271,7 +273,7 @@ class MainActivity : Activity() {
         )
         volumeBar = SeekBar(this).apply {
             max = 100
-            progress = 30
+            progress = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(s: SeekBar?, p: Int, u: Boolean) {}
@@ -344,13 +346,7 @@ class MainActivity : Activity() {
             addView(glassCard)
         }
         scroll.addView(wrap)
-        scroll.setOnApplyWindowInsetsListener { v, insets ->
-            val bars = insets.getInsets(
-                android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout(),
-            )
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
+        WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
         rootFrame.addView(
             scroll,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
@@ -405,6 +401,22 @@ class MainActivity : Activity() {
             check(2)
         }
         box.addView(sourceGroup)
+        box.addView(
+            TextView(this).apply {
+                text = CaptureSelectionLayers.settingsHintZh()
+                setTextColor(accentMuted)
+                textSize = 11f
+            },
+        )
+        if (BuildConfig.IS_ACCEPTANCE) {
+            box.addView(
+                TextView(this).apply {
+                    text = "验收默认音箱音量=0（静音测试）；停止投送后不恢复本机 STREAM_MUSIC 索引。"
+                    setTextColor(accentMuted)
+                    textSize = 11f
+                },
+            )
+        }
         targetLabel = TextView(this).apply { setTextColor(accentMuted); textSize = 12f }
         box.addView(targetLabel)
         box.addView(
@@ -687,7 +699,8 @@ class MainActivity : Activity() {
                 getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
                 42,
             )
-            status.text = "等待录屏授权后投送到音箱…"
+            status.text =
+                "等待系统捕获授权…（UID 仍按已选 App=$selectedPackage；系统框选项不会改写 UID）"
         } else {
             startForegroundService(base.putExtra(CastService.EXTRA_SOURCE, "silent"))
             status.text = "启动静音测试投送…"
@@ -705,7 +718,7 @@ class MainActivity : Activity() {
             targetLabel.text = if (selectedPackage.isBlank()) {
                 "未选择投送 App"
             } else {
-                "投送目标：$selectedLabel\n$selectedPackage"
+                "投送目标：$selectedLabel\n$selectedPackage\n${CaptureSelectionLayers.settingsHintZh()}"
             }
         }
     }

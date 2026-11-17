@@ -23,6 +23,8 @@ import com.miplay.sender.capture.CaptureTargetResult
 import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
+import com.miplay.sender.compat.CaptureSelectionLayers
+import com.miplay.sender.compat.WindowInsetsApplyCompat
 
 /**
  * 选择投送的 App：仅列出同用户可见的 MAIN/LAUNCHER 应用。
@@ -58,7 +60,8 @@ class AppPickerActivity : Activity() {
         )
         root.addView(
             TextView(this).apply {
-                text = "仅显示可启动应用（非全部安装包）。共享 UID / 其他用户资料的应用在开始时会被拒绝。无法保证禁止捕获的第三方 App 可被捕获，也不会静音原 App 本地输出。"
+                text = "仅显示可启动应用（非全部安装包）。共享 UID / 其他用户资料的应用在开始时会被拒绝。无法保证禁止捕获的第三方 App 可被捕获，也不会静音原 App 本地输出。\n" +
+                    CaptureSelectionLayers.settingsHintZh()
                 textSize = 12f
                 setPadding(0, pad / 2, 0, pad / 2)
             },
@@ -82,13 +85,7 @@ class AppPickerActivity : Activity() {
             },
         )
         val scroll = ScrollView(this).apply { addView(root) }
-        scroll.setOnApplyWindowInsetsListener { v, insets ->
-            val bars = insets.getInsets(
-                android.view.WindowInsets.Type.systemBars() or android.view.WindowInsets.Type.displayCutout(),
-            )
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
+        WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
         setContentView(scroll)
         Thread {
             val apps = AndroidLaunchableApps.list(this)

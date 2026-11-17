@@ -21,6 +21,8 @@ import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import com.miplay.sender.cast.AndroidStreamMusicVolume
+import com.miplay.sender.compat.AcceptanceAudioDefaults
+import com.miplay.sender.compat.CaptureSelectionLayers
 import com.miplay.sender.cast.LocalOutputMute
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.CaptureFailReason
@@ -112,7 +114,10 @@ class CastService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        localMute = LocalOutputMute(AndroidStreamMusicVolume.fromAttachedContext(applicationContext))
+        localMute = LocalOutputMute(
+            AndroidStreamMusicVolume.fromAttachedContext(applicationContext),
+            restoreVolumeIndex = AcceptanceAudioDefaults.restoreLocalVolumeIndex(BuildConfig.IS_ACCEPTANCE),
+        )
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -174,6 +179,7 @@ class CastService : Service() {
             }
             targetPackage = resolved.packageName
             captureUid = resolved.uid
+            event(CaptureSelectionLayers.statusLine(targetPackage, captureUid))
 
             val code = intent!!.getIntExtra(EXTRA_PROJ_CODE, 0)
             val data: Intent? = if (Build.VERSION.SDK_INT >= 33) {
