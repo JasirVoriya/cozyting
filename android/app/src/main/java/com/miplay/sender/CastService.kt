@@ -103,7 +103,17 @@ class CastService : Service() {
     private var captureUid: Int = -1
     private val sessionPolicy = ProjectionSessionPolicy()
     private var noAudioHintPosted = false
-    private val localMute = LocalOutputMute(AndroidStreamMusicVolume(this))
+    /**
+     * 禁止在属性初始化器里 `AndroidStreamMusicVolume(this)`：Service 构造时 base context
+     * 尚未 attach，getApplicationContext() 会 NPE（真机 0.9.1 已复现）。
+     * 仅在 [onCreate] 之后赋值。
+     */
+    private lateinit var localMute: LocalOutputMute
+
+    override fun onCreate() {
+        super.onCreate()
+        localMute = LocalOutputMute(AndroidStreamMusicVolume.fromAttachedContext(applicationContext))
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
