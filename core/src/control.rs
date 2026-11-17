@@ -47,6 +47,21 @@ impl Default for SourceIdentity {
     }
 }
 
+impl SourceIdentity {
+    /// SetPlaySource(0x0040) 文本载荷。
+    pub fn set_play_source_json(&self) -> String {
+        format!(
+            r#"{{"ref_channel":"controlcenter","ref_function":"{}","ref_content":"music_wangyiyun"}}"#,
+            self.ref_function
+        )
+    }
+}
+
+/// Open(0x0000) 文本载荷（含官方抓包中的尾 `\0`）。
+pub fn open_wfd_url(local: Ipv4Addr, reverse_port: u16) -> String {
+    format!("wfd://{local}:{reverse_port}?mirrorMode=1\0")
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ReceiverStatus {
     pub volume: Option<u8>,
@@ -397,15 +412,33 @@ impl ControlSession {
         self.expect(c::GET_MIRROR_MODE_ACK, 11)?;
         self.send(&[Frame::empty(c::HEARTBEAT, 12)])?;
         self.expect(c::HEARTBEAT_ACK, 12)?;
-        let src = format!(
-            r#"{{"ref_channel":"controlcenter","ref_function":"{}","ref_content":"music_wangyiyun"}}"#,
-            id.ref_function
-        );
-        self.send(&[Self::text(c::SET_PLAY_SOURCE, 13, &src)])
+        self.send(&[Self::text(c::SET_PLAY_SOURCE, 13, &id.set_play_source_json())])
     }
 
     pub fn send_open(&self, local: Ipv4Addr, reverse_port: u16) -> Result<()> {
-        self.send(&[Self::text(c::OPEN, 14, &format!("wfd://{local}:{reverse_port}?mirrorMode=1\0"))])
+        self.send(&[Self::text(c::OPEN, 14, &open_wfd_url(local, reverse_port))])
+    }
+
+    /// Open 之后短暂排空控制通道上已到达的 ACK（0x0041 / 0x0001 等），只用于可观测性。
+    /// 不延长反向 RTSP 等待；读超时立即结束；不记录载荷正文。
+    pub fn poll_incoming(&mut self, budget: Duration) -> Result<Vec<(u16, u16, usize)>> {
+        self.reader.get_ref().set_read_timeout(Some(Duration::from_millis(20)))?;
+        let deadline = std::time::Instant::now() + budget;
+        let mut out = Vec::new();
+        while std::time::Instant::now() < deadline {
+            match self.read_frame() {
+                Ok(f) => {
+                    if f.command == c::NOTIFY {
+                        self.absorb_notify(&f);
+                        continue;
+                    }
+                    out.push((f.command, f.sequence, f.payload.len()));
+                }
+                Err(_) => break,
+            }
+        }
+        self.reader.get_ref().set_read_timeout(Some(Duration::from_secs(10)))?;
+        Ok(out)
     }
 
     pub fn send_media_info(&self, title: &str, artist: &str, source_name: &str, volume: u8) -> Result<()> {
@@ -527,4 +560,26 @@ impl RuntimeWriter {
     }
     pub fn close(&self) -> Result<u16> { self.write(c::CLOSE, vec![]) }
     pub fn mute_handle(&self) -> Arc<std::sync::atomic::AtomicI64> { self.writer.lock().unwrap().mute_until.clone() }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn set_play_source_json_embeds_ref_function() {
+        let id = SourceIdentity { source_name: "Phone".into(), ref_function: "multi_room".into() };
+        assert_eq!(
+            id.set_play_source_json(),
+            r#"{"ref_channel":"controlcenter","ref_function":"multi_room","ref_content":"music_wangyiyun"}"#
+        );
+    }
+
+    #[test]
+    fn open_wfd_url_matches_field_advertisement() {
+        // lx06-failure-core.txt: Open wfd://192.168.31.182:40159
+        let u = open_wfd_url(Ipv4Addr::new(192, 168, 31, 182), 40159);
+        assert!(u.starts_with("wfd://192.168.31.182:40159?mirrorMode=1"));
+        assert!(u.ends_with('\0'));
+    }
 }

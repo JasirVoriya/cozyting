@@ -32,3 +32,15 @@
 ## 回归
 
 暂停/恢复、加入/移除、通知栏停止、断线重连（可用 debugDrop）在静音源上各走一遍。
+
+## 双机晚加入（speakers-1452 回归）
+
+1. 先只勾选 L17A 起播至 `phase=streaming`（允许静音 AAC；勿把 PCM=0 当音乐通过）。
+2. 会话中再加入 LX06。日志须出现：
+   - `late-join ref_function single_room → multi_room`（若首台为自动/single_room）；
+   - `preparePlayback + SetPlaySource ref=multi_room`；
+   - `Open wfd://…, … ref=multi_room, listen=…`；
+   - `post-Open control`（有/无立即 ACK 均记录 cmd/seq/len，无载荷正文）。
+3. 成功判据：LX06 在既有 10s 反向等待内完成 RTSP，进入 streaming；**不得**靠加长超时“通过”。
+4. 若仍 `timeout: reverse RTSP connection`：保留上述日志 + 可选手机侧对广告端口的 `tcpdump`/`ss -l`（本 VM 不连用户 LAN）。此时 H1（ref_function）被证伪，需另查音箱→手机入站可达性或 Open 拒绝原因。
+5. PCM 全 0 / 未播 A/B 时：**不得**声称真音乐、隔离或同步通过。

@@ -380,6 +380,25 @@ fn accept_timeout(l: &TcpListener, t: Duration, what: &str) -> Result<TcpStream>
     }
 }
 
+/// 晚加入/扩组时选用的 `SetPlaySource.ref_function`。
+///
+/// 真机证据（speakers-1452 / speaker-phase1-result）：
+/// - L17A 单台先起播成功（自动路径 → 台数=1 → `single_room`），streaming 正常；
+/// - LX06 动态加入复用同一 `CastConfig`，premute/8899/SetPlaySource/Open 均成功，
+///   `Open wfd://192.168.31.182:40159` 后 10s `timeout: reverse RTSP connection`；
+/// - 同进程双机起播会把 ref 设为 `multi_room`（ffi：`ips.len() > 1`），旧原型双机同组曾通过。
+///
+/// 因此：组内已有 ≥1 台存活成员时，禁止继续对晚加入者宣称 `single_room`（`stereo` 保持不变）。
+/// 这是可证伪的协商缺陷；是否单独导致反向 RTSP 不回连需真机升级后验证，不得用延长超时掩盖。
+pub fn resolve_ref_function_for_join(current: &str, receivers_already_in_group: usize) -> String {
+    match current {
+        "stereo" => "stereo".into(),
+        _ if receivers_already_in_group >= 1 => "multi_room".into(),
+        "" => "single_room".into(),
+        other => other.to_string(),
+    }
+}
+
 /// 只做引导 + 设音量 + CLOSE，不建立播放会话。返回 (原音量, ACK 音量)。
 pub fn premute(ip: Ipv4Addr, id: &SourceIdentity, v: u8) -> Result<(Option<u8>, Option<u8>)> {
     premute_with(ip, id, v, AuthMode::Legacy)
@@ -467,7 +486,7 @@ fn connect_receiver(
     if let (Some(v), Some(now)) = (cfg.premute, ctl.status.volume) {
         if now != v { return Err(Error::Protocol(format!("receiver volume is {now}, expected premuted {v}; refusing to stream"))) }
     }
-    phase("preparePlayback + SetPlaySource");
+    phase(&format!("preparePlayback + SetPlaySource ref={}", cfg.identity.ref_function));
     ctl.prepare_playback(&cfg.identity)?;
     let local = *ctl.local_addr()?.ip();
 
@@ -481,8 +500,22 @@ fn connect_receiver(
 
     let listener = TcpListener::bind((local, 0))?;
     let port = listener.local_addr()?.port();
-    phase(&format!("Open wfd://{local}:{port}, timer udp {timer_port}"));
+    phase(&format!(
+        "Open wfd://{local}:{port}, timer udp {timer_port}, ref={}, listen={}",
+        cfg.identity.ref_function,
+        listener.local_addr()?
+    ));
     ctl.send_open(local, port)?;
+    // 观测 Open 后是否立刻回 0x0041/0x0001；不延长反向等待，不记录载荷正文。
+    match ctl.poll_incoming(Duration::from_millis(120)) {
+        Ok(frames) if !frames.is_empty() => {
+            for (cmd, seq, len) in frames {
+                log::info!("[{ip}] post-Open control {cmd:#06x}/{seq} len={len}");
+            }
+        }
+        Ok(_) => log::info!("[{ip}] post-Open control: no immediate ACK"),
+        Err(e) => log::warn!("[{ip}] post-Open poll: {e}"),
+    }
 
     let rtsp_sock = accept_timeout(&listener, Duration::from_secs(10), "RTSP")?;
     phase("RTSP connected back; handshake");
@@ -652,13 +685,20 @@ impl Inner {
         }
         let off = self.offset.load(Ordering::SeqCst);
         if off == 0 { return Err(Error::Protocol("no TIME_OFFSET yet".into())) }
+        let already = self.receivers.lock().unwrap().iter().filter(|r| r.alive.load(Ordering::Relaxed)).count();
+        let mut cfg = self.cfg.clone();
+        let before = cfg.identity.ref_function.clone();
+        cfg.identity.ref_function = resolve_ref_function_for_join(&before, already);
+        if cfg.identity.ref_function != before {
+            log::info!("[{ip}] late-join ref_function {before} → {} (already_in_group={already})", cfg.identity.ref_function);
+        }
         let mut init = ReceiverStats { ip: ip.to_string(), joined_late: true, ..Default::default() };
         if let Some(p) = prior { init.reconnects = p.reconnects + 1; init.volume_original = p.volume_original; }
         let stats = Arc::new(Mutex::new(init));
         self.removed.lock().unwrap().retain(|x| *x != ip);
         // offset 可能在连接期间因恢复播放而更新：provider 在 PLAY 时刻读取最新值
         let off_now = self.offset.load(Ordering::SeqCst);
-        let h = connect_receiver(ip, &self.cfg, stats.clone(), Box::new(move || Ok(off_now)))?;
+        let h = connect_receiver(ip, &cfg, stats.clone(), Box::new(move || Ok(off_now)))?;
         let latest = self.offset.load(Ordering::SeqCst);
         if latest != off_now { let _ = h.send_time_offset(latest); }
         let mut rs = self.receivers.lock().unwrap();
@@ -985,5 +1025,44 @@ fn pending_insert(inner: &Inner, ip: Ipv4Addr, st: ReceiverStats) {
 impl Drop for CastSession {
     fn drop(&mut self) {
         if !self.inner.stop.load(Ordering::Relaxed) { self.stop() }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::control::{open_wfd_url, SourceIdentity};
+
+    #[test]
+    fn late_join_upgrades_single_room_to_multi_room() {
+        // 回归：speakers-1452 路径 — 先单台 single_room，再 add_receiver 不得继续 single_room
+        assert_eq!(resolve_ref_function_for_join("single_room", 1), "multi_room");
+        assert_eq!(resolve_ref_function_for_join("", 1), "multi_room");
+        assert_eq!(resolve_ref_function_for_join("single_room", 0), "single_room");
+        assert_eq!(resolve_ref_function_for_join("multi_room", 1), "multi_room");
+        assert_eq!(resolve_ref_function_for_join("stereo", 1), "stereo");
+    }
+
+    #[test]
+    fn late_join_set_play_source_json_must_not_claim_single_room() {
+        let mut id = SourceIdentity::default();
+        assert_eq!(id.ref_function, "single_room");
+        id.ref_function = resolve_ref_function_for_join(&id.ref_function, 1);
+        let json = id.set_play_source_json();
+        assert!(json.contains(r#""ref_function":"multi_room""#), "got {json}");
+        assert!(!json.contains(r#""ref_function":"single_room""#), "got {json}");
+    }
+
+    #[test]
+    fn open_url_keeps_official_mirror_mode_and_nul() {
+        let u = open_wfd_url("192.168.31.182".parse().unwrap(), 40159);
+        assert_eq!(u, "wfd://192.168.31.182:40159?mirrorMode=1\0");
+    }
+
+    #[test]
+    fn accept_timeout_message_matches_field_error() {
+        // 与 group-numeric.txt 中的错误文案对齐，避免误改超时文案掩盖回归检索
+        let err = Error::Timeout("reverse RTSP connection".into());
+        assert_eq!(err.to_string(), "timeout: reverse RTSP connection");
     }
 }

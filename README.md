@@ -5,6 +5,7 @@ Android 手机作为发送端，经局域网把音频投送到小米音箱（MiP
 ## 功能
 
 - 发现/多选分组、暂停恢复、加入移除、音量、延迟、Legacy/Safety 认证、断线重连、前台通知
+- 晚加入扩组：组内已有成员时自动将晚加入者的 `SetPlaySource.ref_function` 升为 `multi_room`（`stereo` 不变；不盲目加长反向 RTSP 超时）
 - 音源：**测试静音** 或 **选定 App 音频**（`AudioPlaybackCapture` + 严格单 UID + usage 过滤）
 - minSdk 34（Android 14+），compile/targetSdk 36
 - 不申请 `QUERY_ALL_PACKAGES`；可启动 App 列表依赖 `<queries>` MAIN/LAUNCHER

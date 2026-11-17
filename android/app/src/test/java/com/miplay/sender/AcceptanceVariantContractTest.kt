@@ -39,8 +39,14 @@ class AcceptanceVariantContractTest {
     }
 
     @Test
-    fun buildConfig_acceptanceFlag_isBoolean() {
-        // standard 单测默认 IS_ACCEPTANCE=false；acceptance 变体 APK 为 true
-        assertFalse(BuildConfig.IS_ACCEPTANCE)
+    fun buildConfig_acceptanceFlag_matchesApplicationId() {
+        // standard：IS_ACCEPTANCE=false / com.miplay.sender*
+        // acceptance：IS_ACCEPTANCE=true / com.miplay.sender.acceptance*
+        if (BuildConfig.IS_ACCEPTANCE) {
+            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender.acceptance"))
+        } else {
+            assertFalse(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender.acceptance"))
+            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender"))
+        }
     }
 }
