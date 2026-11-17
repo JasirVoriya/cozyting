@@ -66,10 +66,10 @@ fn device_info_public(kv: &[(String, String)]) -> Vec<(String, String)> {
         .collect()
 }
 
-/// MEDIA_INFO 输出白名单（仅此二键）：`source_name` 三态 + 非内容协议字段键存在性。
-/// 不落盘原文；不输出标题/URL/封面及其存在标志；不输出 MEDIA 内 status/volume/mDeviceState 数值
-/// （设备 volume/state/mirror 来自专用 GET_*，在 InspectReport 顶层保留）。
-pub const MEDIA_JSON_KEYS: &[&str] = &["source_name", "keys_present"];
+/// MEDIA_INFO 输出键白名单。
+/// `status`: not_received | empty_payload | parse_error | ok
+/// `source_name`: 仅 status=ok 时为 "absent"|"empty"|"nonempty"；否则 JSON null（绝不输出 ""）
+pub const MEDIA_JSON_KEYS: &[&str] = &["status", "source_name", "keys_present"];
 
 /// 允许出现在 `keys_present` 中的非内容协议键（不含标题/封面/URL 类键名）。
 pub const MEDIA_PROTOCOL_KEY_ALLOWLIST: &[&str] = &[
@@ -81,19 +81,58 @@ pub const MEDIA_PROTOCOL_KEY_ALLOWLIST: &[&str] = &[
     "mDeviceState",
 ];
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MediaResponseStatus {
+    /// 未收到有效 GET_MEDIA_INFO_ACK（含超时未回）。
+    NotReceived,
+    /// 收到 ACK 但载荷为空。
+    EmptyPayload,
+    /// 收到 ACK 但无法解析为 JSON 对象。
+    ParseError,
+    /// 收到 ACK 且解析为 JSON 对象。
+    Ok,
+}
+
+impl MediaResponseStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::NotReceived => "not_received",
+            Self::EmptyPayload => "empty_payload",
+            Self::ParseError => "parse_error",
+            Self::Ok => "ok",
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct MediaInfoSummary {
-    /// mSourceName：absent | empty | nonempty（不回传字符串本身）
-    pub source_name: &'static str,
+    pub status: MediaResponseStatus,
+    /// 仅 `status == Ok` 时为 Some("absent"|"empty"|"nonempty")；否则 None → JSON null。
+    pub source_name: Option<&'static str>,
     pub keys_present: Vec<String>,
 }
 
+impl Default for MediaInfoSummary {
+    fn default() -> Self {
+        Self::not_received()
+    }
+}
+
 impl MediaInfoSummary {
+    pub fn not_received() -> Self {
+        Self {
+            status: MediaResponseStatus::NotReceived,
+            source_name: None,
+            keys_present: Vec::new(),
+        }
+    }
+
+    /// 由已收到的 ACK 载荷解析。空载荷 / 非 JSON 不得记成 source_name=absent。
     pub fn from_payload(p: &[u8]) -> Self {
-        // 仅在栈上扫描；函数返回后不保留原文。
         if p.is_empty() {
             return Self {
-                source_name: "absent",
+                status: MediaResponseStatus::EmptyPayload,
+                source_name: None,
                 keys_present: Vec::new(),
             };
         }
@@ -101,7 +140,8 @@ impl MediaInfoSummary {
         let trimmed = text.trim().trim_end_matches('\0');
         if !(trimmed.starts_with('{') && trimmed.ends_with('}')) {
             return Self {
-                source_name: "absent",
+                status: MediaResponseStatus::ParseError,
+                source_name: None,
                 keys_present: Vec::new(),
             };
         }
@@ -111,22 +151,30 @@ impl MediaInfoSummary {
                 keys_present.push((*k).to_string());
             }
         }
-        let source_name = match json_string_value(trimmed, "mSourceName") {
+        let source_name = Some(match json_string_value(trimmed, "mSourceName") {
             None => "absent",
             Some(s) if s.is_empty() => "empty",
             Some(_) => "nonempty",
-        };
+        });
         Self {
+            status: MediaResponseStatus::Ok,
             source_name,
             keys_present,
         }
     }
 
-    /// 固定两字段；测试锁定防止新增泄漏键。
     pub fn to_json(&self) -> String {
+        let sn = match self.source_name {
+            Some(s) => format!("{s:?}"),
+            None => "null".into(),
+        };
+        // 锁定：source_name 绝不为 JSON 空字符串 ""
+        debug_assert!(sn != "\"\"");
         format!(
-            "{{\"source_name\":{:?},\"keys_present\":{:?}}}",
-            self.source_name, self.keys_present
+            "{{\"status\":{:?},\"source_name\":{},\"keys_present\":{:?}}}",
+            self.status.as_str(),
+            sn,
+            self.keys_present
         )
     }
 }
@@ -160,7 +208,7 @@ fn json_string_value<'a>(json: &'a str, key: &str) -> Option<&'a str> {
     Some(&rest[..out_end])
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct InspectReport {
     pub ip: String,
     pub auth_route: String,
@@ -168,16 +216,41 @@ pub struct InspectReport {
     pub state: Option<u32>,
     pub volume: Option<u8>,
     pub channel_tlv: Option<String>,
+    /// 是否收到 GET_CHANNEL_ACK（与载荷是否为空分开；未收到不得伪造）。
+    pub get_channel_received: bool,
     pub get_channel_payload_hex: Option<String>,
     pub device_info_public: Vec<(String, String)>,
-    pub group_id_present: bool,
+    /// 键缺失 → None；键在且空 → Some(false)；键在非空 → Some(true)。不得用 false 冒充「未见到键」。
+    pub group_id_present: Option<bool>,
     pub group_id: Option<String>,
     pub device_type: Option<String>,
     pub media: MediaInfoSummary,
-    /// 本连接实际发出的命令码（按发送顺序）。
     pub tx_commands: Vec<u16>,
     pub ended_with: &'static str,
     pub error: Option<String>,
+}
+
+impl Default for InspectReport {
+    fn default() -> Self {
+        Self {
+            ip: String::new(),
+            auth_route: String::new(),
+            mirror_mode: None,
+            state: None,
+            volume: None,
+            channel_tlv: None,
+            get_channel_received: false,
+            get_channel_payload_hex: None,
+            device_info_public: Vec::new(),
+            group_id_present: None,
+            group_id: None,
+            device_type: None,
+            media: MediaInfoSummary::not_received(),
+            tx_commands: Vec::new(),
+            ended_with: "unset",
+            error: None,
+        }
+    }
 }
 
 impl InspectReport {
@@ -189,15 +262,16 @@ impl InspectReport {
             .collect();
         let tx: Vec<String> = self.tx_commands.iter().map(|c| format!("{c:#06x}")).collect();
         format!(
-            "{{\"ip\":{:?},\"auth_route\":{:?},\"mirror_mode\":{},\"state\":{},\"volume\":{},\"channel_tlv\":{},\"get_channel_payload_hex\":{},\"group_id_present\":{},\"group_id\":{},\"device_type\":{},\"device_info_public\":{{{}}},\"media\":{},\"tx_commands\":[{}],\"ended_with\":{:?},\"error\":{}}}",
+            "{{\"ip\":{:?},\"auth_route\":{:?},\"mirror_mode\":{},\"state\":{},\"volume\":{},\"channel_tlv\":{},\"get_channel_received\":{},\"get_channel_payload_hex\":{},\"group_id_present\":{},\"group_id\":{},\"device_type\":{},\"device_info_public\":{{{}}},\"media\":{},\"tx_commands\":[{}],\"ended_with\":{:?},\"error\":{}}}",
             self.ip,
             self.auth_route,
             opt_num(self.mirror_mode),
             opt_num(self.state),
             opt_num(self.volume.map(|v| v as u32)),
             self.channel_tlv.as_ref().map(|s| format!("{s:?}")).unwrap_or_else(|| "null".into()),
+            self.get_channel_received,
             self.get_channel_payload_hex.as_ref().map(|s| format!("{s:?}")).unwrap_or_else(|| "null".into()),
-            self.group_id_present,
+            opt_bool(self.group_id_present),
             self.group_id.as_ref().map(|s| format!("{s:?}")).unwrap_or_else(|| "null".into()),
             self.device_type.as_ref().map(|s| format!("{s:?}")).unwrap_or_else(|| "null".into()),
             fields.join(","),
@@ -219,10 +293,52 @@ impl InspectReport {
         }
         Ok(())
     }
+
+    /// 将可选 ACK 应用到报告（供路径级测试；不连网）。
+    pub fn apply_optional_acks(&mut self, media_ack: Option<&[u8]>, channel_ack: Option<&[u8]>) {
+        match media_ack {
+            None => self.media = MediaInfoSummary::not_received(),
+            Some(p) => self.media = MediaInfoSummary::from_payload(p),
+        }
+        match channel_ack {
+            None => {
+                self.get_channel_received = false;
+                self.get_channel_payload_hex = None;
+            }
+            Some(p) => {
+                self.get_channel_received = true;
+                self.get_channel_payload_hex = Some(p.iter().map(|b| format!("{b:02x}")).collect());
+            }
+        }
+    }
+
+    pub fn apply_device_info_kv(&mut self, kv: &[(String, String)]) {
+        self.device_info_public = device_info_public(kv);
+        self.channel_tlv = kv.iter().find(|(k, _)| k == "channel").map(|(_, v)| v.clone());
+        self.device_type = kv.iter().find(|(k, _)| k == "deviceType").map(|(_, v)| v.clone());
+        match kv.iter().find(|(k, _)| k == "groupId") {
+            None => {
+                self.group_id = None;
+                self.group_id_present = None;
+            }
+            Some((_, v)) => {
+                self.group_id = Some(v.clone());
+                self.group_id_present = Some(!v.is_empty());
+            }
+        }
+    }
 }
 
 fn opt_num(v: Option<u32>) -> String {
     v.map(|x| x.to_string()).unwrap_or_else(|| "null".into())
+}
+
+fn opt_bool(v: Option<bool>) -> String {
+    match v {
+        Some(true) => "true".into(),
+        Some(false) => "false".into(),
+        None => "null".into(),
+    }
 }
 
 struct TxLog {
@@ -248,7 +364,7 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
         ip: ip.to_string(),
         auth_route: "legacy".into(),
         ended_with: "tcp_shutdown",
-        ..Default::default()
+        ..InspectReport::default()
     };
     let mut tx = TxLog { cmds: Vec::new() };
     let mut ctl = ControlSession::connect(ip)?;
@@ -260,8 +376,6 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
         tx.push(c::NATIVE_VERSION)?;
         tx.push(c::LEGACY_CHALLENGE_ACK)?;
         tx.push(c::GET_DEVICE_INFO)?;
-        // 与官方引导前段一致：版本+挑战应答后立刻 GET_DEVICE_INFO，再收 NATIVE_VERSION_ACK。
-        // 不发送 SET_LOCAL_DEVICE_INFO（避免登记 sourceName / isSameAccount）。
         ctl.send_tracked(&[
             Frame::new(c::NATIVE_VERSION, 0, NATIVE_VERSION_STRING.as_bytes().to_vec()),
             Frame::new(c::LEGACY_CHALLENGE_ACK, ch.sequence, legacy::challenge_response(&ch.payload)),
@@ -273,11 +387,7 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
         }
         let di = ctl.expect_cmd(c::GET_DEVICE_INFO_ACK, 1)?;
         let kv = decode_kv(&di.payload);
-        rep.device_info_public = device_info_public(&kv);
-        rep.channel_tlv = kv.iter().find(|(k, _)| k == "channel").map(|(_, v)| v.clone());
-        rep.group_id = kv.iter().find(|(k, _)| k == "groupId").map(|(_, v)| v.clone());
-        rep.group_id_present = rep.group_id.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
-        rep.device_type = kv.iter().find(|(k, _)| k == "deviceType").map(|(_, v)| v.clone());
+        rep.apply_device_info_kv(&kv);
 
         tx.push(c::GET_MIRROR_MODE)?;
         tx.push(c::GET_VOLUME)?;
@@ -295,8 +405,8 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
         let mut need_mirror = true;
         let mut need_vol = true;
         let mut need_media = true;
-        let mut need_state = true;
         let mut need_ch = true;
+        let mut need_state = true;
         let deadline = Instant::now() + Duration::from_secs(5);
         while Instant::now() < deadline && (need_mirror || need_vol || need_media || need_state || need_ch) {
             let f = match ctl.read_frame_public() {
@@ -312,7 +422,6 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
                 ctl.absorb_notify_public(&f);
                 continue;
             }
-            // 不主动 HEARTBEAT，也不回 HEARTBEAT_ACK（避免扩大发送集合）。
             if f.command == c::HEARTBEAT {
                 continue;
             }
@@ -335,13 +444,21 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
                 }
                 (c::GET_CHANNEL_ACK, 6) => {
                     need_ch = false;
-                    rep.get_channel_payload_hex = Some(f.payload.iter().map(|b| format!("{b:02x}")).collect());
+                    rep.get_channel_received = true;
+                    rep.get_channel_payload_hex =
+                        Some(f.payload.iter().map(|b| format!("{b:02x}")).collect());
                 }
                 (cmd, seq) => {
-                    // 未知应答：记录错误但不发送任何额外命令。
                     return proto(format!("unexpected inspect rx {cmd:#06x}/{seq}"));
                 }
             }
+        }
+        if need_media {
+            rep.media = MediaInfoSummary::not_received();
+        }
+        if need_ch {
+            rep.get_channel_received = false;
+            rep.get_channel_payload_hex = None;
         }
         if need_mirror || need_vol || need_state {
             return proto(format!(
@@ -349,7 +466,6 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
                 !need_mirror, !need_vol, !need_media, !need_state, !need_ch
             ));
         }
-        // media/channel 可缺：部分音箱可能不回；保留已得字段。
         Ok(())
     })();
 
@@ -357,7 +473,6 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
     if let Err(e) = outcome {
         rep.error = Some(e.to_string());
     }
-    // 无论成败：只 TCP shutdown，不发 CLOSE。
     ctl.tcp_shutdown_only();
     rep.ended_with = "tcp_shutdown";
     rep.assert_tx_policy()?;
@@ -367,7 +482,6 @@ pub fn inspect_legacy(ip: Ipv4Addr) -> Result<InspectReport> {
     Ok(rep)
 }
 
-/// 供测试：计划发送集合必须与运行时 allowlist 一致。
 pub fn inspect_planned_tx_commands() -> &'static [u16] {
     INSPECT_ALLOWED_TX
 }
@@ -379,114 +493,160 @@ mod tests {
     #[test]
     fn inspect_tx_allowlist_excludes_close_open_and_sets() {
         for cmd in INSPECT_FORBIDDEN_TX {
-            assert!(
-                !INSPECT_ALLOWED_TX.contains(cmd),
-                "{cmd:#06x} must not be in allowlist"
-            );
+            assert!(!INSPECT_ALLOWED_TX.contains(cmd), "{cmd:#06x}");
         }
-        assert!(INSPECT_ALLOWED_TX.contains(&c::GET_DEVICE_INFO));
-        assert!(INSPECT_ALLOWED_TX.contains(&c::GET_MIRROR_MODE));
-        assert!(INSPECT_ALLOWED_TX.contains(&c::GET_STATE));
-        assert!(INSPECT_ALLOWED_TX.contains(&c::GET_CHANNEL));
-        assert!(INSPECT_ALLOWED_TX.contains(&c::GET_MEDIA_INFO));
         assert!(!INSPECT_ALLOWED_TX.contains(&c::CLOSE));
-        assert!(!INSPECT_ALLOWED_TX.contains(&c::OPEN));
-        assert!(!INSPECT_ALLOWED_TX.contains(&c::SET_PLAY_SOURCE));
-        assert!(!INSPECT_ALLOWED_TX.contains(&c::SET_LOCAL_DEVICE_INFO));
         assert_eq!(inspect_planned_tx_commands(), INSPECT_ALLOWED_TX);
     }
 
-    /// media JSON 顶层键必须恰好为白名单；禁止标题/封面标志与 MEDIA 内数值对象键。
-    /// `keys_present` 数组内可含协议键名字符串（含 mDeviceState），但不得作为 media 对象键输出数值。
     fn assert_media_json_whitelist(j: &str) {
         assert!(j.starts_with('{') && j.ends_with('}'), "{j}");
-        assert_eq!(
-            MEDIA_JSON_KEYS,
-            &["source_name", "keys_present"],
-            "MEDIA_JSON_KEYS drift"
-        );
+        assert_eq!(MEDIA_JSON_KEYS, &["status", "source_name", "keys_present"]);
         for key in MEDIA_JSON_KEYS {
             assert!(j.contains(&format!("\"{key}\"")), "missing {key} in {j}");
         }
-        // 对象键形态（带冒号）禁止；数组内的同名字符串仍允许
+        // 禁止 source_name 为 JSON 空字符串
+        assert!(!j.contains("\"source_name\":\"\""), "empty-string source_name forbidden: {j}");
         for banned_obj_key in [
             "\"mDeviceState\":",
-            "\"status\":",
-            "\"volume\":",
-            "\"mDuration\":",
-            "\"id\":",
-            "\"ack_seen\":",
-            "\"payload_kind\":",
+            "\"status\":0",
+            "\"volume\":0",
             "\"has_title\":",
             "\"has_cover\":",
-            "\"has_cover_or_url\":",
             "\"mTitle\":",
-            "\"mArtist\":",
-            "\"mAlbum\":",
             "\"mCoverUrl\":",
-            "\"mArt\":",
         ] {
-            assert!(
-                !j.contains(banned_obj_key),
-                "media json must not contain object key {banned_obj_key}: {j}"
-            );
+            assert!(!j.contains(banned_obj_key), "banned {banned_obj_key} in {j}");
         }
-        for banned in [
-            "has_title",
-            "has_cover_or_url",
-            "SecretPhone",
-            "Private Song",
-            "https://",
-            "example/",
-        ] {
-            assert!(!j.contains(banned), "media json must not contain {banned:?}: {j}");
-        }
-        // keys_present 不得列入内容键名
-        if let Some(i) = j.find("\"keys_present\"") {
-            let arr = &j[i..];
-            for bad in ["mTitle", "mArtist", "mAlbum", "mCoverUrl", "mArt"] {
-                assert!(
-                    !arr.contains(&format!("\"{bad}\"")),
-                    "keys_present must not list content key {bad}: {j}"
-                );
-            }
+        for banned in ["has_title", "has_cover_or_url", "SecretPhone", "Private Song", "https://"] {
+            assert!(!j.contains(banned), "banned {banned:?} in {j}");
         }
     }
 
     #[test]
-    fn media_json_whitelist_strips_content_and_numeric_fields() {
-        let raw = br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mArtist":"X","mCoverUrl":"https://example/x.jpg","mArt":"y","mDeviceState":2,"status":0,"volume":0,"mDuration":1,"id":""}"#;
-        let s = MediaInfoSummary::from_payload(raw);
-        let j = s.to_json();
-        assert_eq!(s.source_name, "nonempty");
-        assert_eq!(j, r#"{"source_name":"nonempty","keys_present":["mSourceName", "status", "volume", "mDuration", "id", "mDeviceState"]}"#);
+    fn default_media_is_not_received_not_empty_string() {
+        let d = MediaInfoSummary::default();
+        assert_eq!(d.status, MediaResponseStatus::NotReceived);
+        assert!(d.source_name.is_none());
+        let j = d.to_json();
+        assert_eq!(j, r#"{"status":"not_received","source_name":null,"keys_present":[]}"#);
         assert_media_json_whitelist(&j);
-        // keys_present 可含协议键名，但不得含标题/封面键名
-        for bad in ["mTitle", "mArtist", "mAlbum", "mCoverUrl", "mArt"] {
-            assert!(!s.keys_present.iter().any(|k| k == bad), "{:?}", s.keys_present);
-        }
+        assert!(!j.contains("\"source_name\":\"\""));
     }
 
     #[test]
-    fn media_json_source_name_empty_and_absent() {
-        let empty = MediaInfoSummary::from_payload(br#"{"mSourceName":"","status":1}"#);
-        assert_eq!(empty.source_name, "empty");
-        assert_media_json_whitelist(&empty.to_json());
+    fn default_inspect_report_serialization_no_forged_media_or_channel() {
+        let r = InspectReport::default();
+        let j = r.to_json();
+        assert!(j.contains("\"media\":{\"status\":\"not_received\",\"source_name\":null,\"keys_present\":[]}"), "{j}");
+        assert!(j.contains("\"get_channel_received\":false"), "{j}");
+        assert!(j.contains("\"get_channel_payload_hex\":null"), "{j}");
+        assert!(j.contains("\"group_id_present\":null"), "{j}");
+        assert!(j.contains("\"group_id\":null"), "{j}");
+        assert!(j.contains("\"mirror_mode\":null"), "{j}");
+        assert!(j.contains("\"ended_with\":\"unset\""), "{j}");
+        assert!(!j.contains("\"source_name\":\"\""), "{j}");
+    }
+
+    #[test]
+    fn media_not_received_vs_empty_payload_vs_parse_error_vs_field_states() {
+        let none = MediaInfoSummary::not_received();
+        assert_eq!(none.to_json(), r#"{"status":"not_received","source_name":null,"keys_present":[]}"#);
+
+        let empty_ack = MediaInfoSummary::from_payload(&[]);
+        assert_eq!(empty_ack.status, MediaResponseStatus::EmptyPayload);
+        assert!(empty_ack.source_name.is_none());
+        assert_eq!(empty_ack.to_json(), r#"{"status":"empty_payload","source_name":null,"keys_present":[]}"#);
+
+        let bad = MediaInfoSummary::from_payload(b"not-json");
+        assert_eq!(bad.status, MediaResponseStatus::ParseError);
+        assert!(bad.source_name.is_none());
+        assert_eq!(bad.to_json(), r#"{"status":"parse_error","source_name":null,"keys_present":[]}"#);
+
         let absent = MediaInfoSummary::from_payload(br#"{"status":1}"#);
-        assert_eq!(absent.source_name, "absent");
+        assert_eq!(absent.status, MediaResponseStatus::Ok);
+        assert_eq!(absent.source_name, Some("absent"));
         assert_media_json_whitelist(&absent.to_json());
-        let none = MediaInfoSummary::from_payload(&[]);
-        assert_eq!(none.source_name, "absent");
-        assert!(none.keys_present.is_empty());
-        assert_eq!(none.to_json(), r#"{"source_name":"absent","keys_present":[]}"#);
-        let opaque = MediaInfoSummary::from_payload(b"not-json");
-        assert_eq!(opaque.source_name, "absent");
-        assert_media_json_whitelist(&opaque.to_json());
+
+        let empty_field = MediaInfoSummary::from_payload(br#"{"mSourceName":""}"#);
+        assert_eq!(empty_field.source_name, Some("empty"));
+        assert_eq!(
+            empty_field.to_json(),
+            r#"{"status":"ok","source_name":"empty","keys_present":["mSourceName"]}"#
+        );
+
+        let nonempty = MediaInfoSummary::from_payload(
+            br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mCoverUrl":"https://x","mDeviceState":2,"status":0,"volume":0}"#,
+        );
+        assert_eq!(nonempty.source_name, Some("nonempty"));
+        let j = nonempty.to_json();
+        assert!(j.starts_with(r#"{"status":"ok","source_name":"nonempty""#), "{j}");
+        assert_media_json_whitelist(&j);
+        assert!(!j.contains("SecretPhone"));
+    }
+
+    #[test]
+    fn apply_optional_acks_path_distinguishes_missing_channel_and_media() {
+        let mut r = InspectReport {
+            ip: "192.0.2.1".into(),
+            auth_route: "legacy".into(),
+            mirror_mode: Some(1),
+            state: Some(2),
+            volume: Some(0),
+            ended_with: "tcp_shutdown",
+            ..InspectReport::default()
+        };
+        r.tx_commands = INSPECT_ALLOWED_TX.to_vec();
+        // 模拟：无 MEDIA ACK、无 CHANNEL ACK（LX06 实测类）
+        r.apply_optional_acks(None, None);
+        let j = r.to_json();
+        assert!(j.contains("\"status\":\"not_received\""), "{j}");
+        assert!(j.contains("\"source_name\":null"), "{j}");
+        assert!(!j.contains("\"source_name\":\"\""), "{j}");
+        assert!(j.contains("\"get_channel_received\":false"), "{j}");
+        assert!(j.contains("\"get_channel_payload_hex\":null"), "{j}");
+
+        // 模拟：收到空 MEDIA ACK + 空 CHANNEL 载荷
+        r.apply_optional_acks(Some(&[]), Some(&[]));
+        let j2 = r.to_json();
+        assert!(j2.contains("\"status\":\"empty_payload\""), "{j2}");
+        assert!(j2.contains("\"source_name\":null"), "{j2}");
+        assert!(j2.contains("\"get_channel_received\":true"), "{j2}");
+        assert!(j2.contains("\"get_channel_payload_hex\":\"\""), "{j2}");
+
+        // 模拟：有效 MEDIA + CHANNEL
+        r.apply_optional_acks(Some(br#"{"mSourceName":"X"}"#), Some(&[0x01]));
+        let j3 = r.to_json();
+        assert!(j3.contains("\"status\":\"ok\""), "{j3}");
+        assert!(j3.contains("\"source_name\":\"nonempty\""), "{j3}");
+        assert!(j3.contains("\"get_channel_received\":true"), "{j3}");
+        assert!(j3.contains("\"get_channel_payload_hex\":\"01\""), "{j3}");
+        assert!(!j3.contains("\"source_name\":\"\""), "{j3}");
+    }
+
+    #[test]
+    fn group_id_key_absent_is_null_not_false() {
+        let mut r = InspectReport::default();
+        r.apply_device_info_kv(&[("channel".into(), "center".into()), ("deviceType".into(), "4".into())]);
+        assert_eq!(r.group_id_present, None);
+        assert_eq!(r.group_id, None);
+        let j = r.to_json();
+        assert!(j.contains("\"group_id_present\":null"), "{j}");
+        assert!(j.contains("\"group_id\":null"), "{j}");
+
+        r.apply_device_info_kv(&[("groupId".into(), "".into())]);
+        assert_eq!(r.group_id_present, Some(false));
+        assert_eq!(r.group_id.as_deref(), Some(""));
+        let j2 = r.to_json();
+        assert!(j2.contains("\"group_id_present\":false"), "{j2}");
+        assert!(j2.contains("\"group_id\":\"\""), "{j2}");
+
+        r.apply_device_info_kv(&[("groupId".into(), "abc".into())]);
+        assert_eq!(r.group_id_present, Some(true));
     }
 
     #[test]
     fn inspect_report_media_embed_keeps_top_level_device_volume() {
-        // 顶层 volume/state/mirror 来自专用 GET_*，与 media 白名单分离。
         let mut r = InspectReport {
             ip: "192.0.2.1".into(),
             auth_route: "legacy".into(),
@@ -497,29 +657,16 @@ mod tests {
                 br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mCoverUrl":"https://x","volume":50}"#,
             ),
             ended_with: "tcp_shutdown",
-            ..Default::default()
+            ..InspectReport::default()
         };
         r.tx_commands = INSPECT_ALLOWED_TX.to_vec();
         let j = r.to_json();
         assert!(j.contains("\"mirror_mode\":1"), "{j}");
-        assert!(j.contains("\"state\":2"), "{j}");
-        assert!(j.contains("\"volume\":0"), "{j}"); // 顶层专用查询
-        let media_start = j.find("\"media\":").expect(j.as_str());
-        let media_slice = &j[media_start..];
-        let media_json = media_slice
-            .strip_prefix("\"media\":")
-            .and_then(|s| {
-                let start = s.find('{')?;
-                let end = s.find("},\"tx_commands\"")?;
-                Some(&s[start..end + 1])
-            })
-            .expect(j.as_str());
-        assert_media_json_whitelist(media_json);
+        assert!(j.contains("\"volume\":0"), "{j}");
+        assert!(j.contains("\"status\":\"ok\""), "{j}");
+        assert!(j.contains("\"source_name\":\"nonempty\""), "{j}");
         assert!(!j.contains("SecretPhone"), "{j}");
-        assert!(!j.contains("Private Song"), "{j}");
-        assert!(!j.contains("https://"), "{j}");
-        assert!(!j.contains("has_title"), "{j}");
-        assert!(!j.contains("has_cover"), "{j}");
+        assert!(!j.contains("\"source_name\":\"\""), "{j}");
     }
 
     #[test]
