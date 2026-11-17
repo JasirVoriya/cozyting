@@ -412,11 +412,26 @@ impl ControlSession {
         self.expect(c::GET_MIRROR_MODE_ACK, 11)?;
         self.send(&[Frame::empty(c::HEARTBEAT, 12)])?;
         self.expect(c::HEARTBEAT_ACK, 12)?;
-        self.send(&[Self::text(c::SET_PLAY_SOURCE, 13, &id.set_play_source_json())])
+        let body = id.set_play_source_json();
+        log::info!(
+            "ctrl send SET_PLAY_SOURCE cmd={:#06x} seq=13 ref_function={} bytes={} secure={}",
+            c::SET_PLAY_SOURCE,
+            id.ref_function,
+            body.len(),
+            self.secure
+        );
+        self.send(&[Self::text(c::SET_PLAY_SOURCE, 13, &body)])
     }
 
     pub fn send_open(&self, local: Ipv4Addr, reverse_port: u16) -> Result<()> {
-        self.send(&[Self::text(c::OPEN, 14, &open_wfd_url(local, reverse_port))])
+        let url = open_wfd_url(local, reverse_port);
+        log::info!(
+            "ctrl send OPEN cmd={:#06x} seq=14 url_bytes={} secure={} (no payload body log)",
+            c::OPEN,
+            url.len(),
+            self.secure
+        );
+        self.send(&[Self::text(c::OPEN, 14, &url)])
     }
 
     /// Open 之后短暂排空控制通道上已到达的 ACK（0x0041 / 0x0001 等），只用于可观测性。

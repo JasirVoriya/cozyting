@@ -90,17 +90,23 @@ mod android {
         let sn = jstr(&mut env, &source_name);
         if !sn.is_empty() { id.source_name = sn; }
         let (delay_us, freq) = if delay_ms > 0 { (delay_ms.clamp(200, 3000) as i64 * 1000, None) } else { crate::netinfo::auto_playback_delay_us() };
-        log::info!("playback delay {delay_us} us (wifi freq {freq:?}, requested {delay_ms} ms)");
+        let auth = match AUTH_MODE.load(std::sync::atomic::Ordering::SeqCst) {
+            1 => crate::session::AuthMode::Legacy,
+            2 => crate::session::AuthMode::Safety,
+            _ => crate::session::AuthMode::Auto,
+        };
+        log::info!(
+            "connect auth_mode_requested={} ref_function={} source_name_len={} delay_us={delay_us} wifi_freq={freq:?}",
+            auth.as_str(),
+            id.ref_function,
+            id.source_name.len()
+        );
         let cfg = CastConfig {
             identity: id,
             playback_delay_us: delay_us,
             premute: (premute >= 0).then(|| premute.min(100) as u8),
             volume_after_play: (volume_after_play >= 0).then(|| volume_after_play.min(100) as u8),
-            auth: match AUTH_MODE.load(std::sync::atomic::Ordering::SeqCst) {
-                1 => crate::session::AuthMode::Legacy,
-                2 => crate::session::AuthMode::Safety,
-                _ => crate::session::AuthMode::Auto,
-            },
+            auth,
             ..Default::default()
         };
         let Some(e) = engine(h) else { return out(&mut env, "{\"error\":\"no engine\"}".into()) };
@@ -236,6 +242,8 @@ mod android {
     #[no_mangle]
     pub extern "system" fn Java_com_miplay_sender_NativeBridge_setAuthMode(_e: JNIEnv, _c: JClass, mode: jint) {
         AUTH_MODE.store(mode, std::sync::atomic::Ordering::SeqCst);
+        let label = match mode { 1 => "legacy", 2 => "safety", _ => "auto" };
+        log::info!("AUTH_MODE set to {mode} ({label})");
     }
 
     #[no_mangle]

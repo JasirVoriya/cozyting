@@ -208,7 +208,9 @@ class CastService : Service() {
                     return@bg
                 }
             }
-            NativeBridge.setAuthMode(intent?.getIntExtra(EXTRA_AUTH, 0) ?: 0)
+            val authReq = intent?.getIntExtra(EXTRA_AUTH, 0) ?: 0
+            event("auth_mode_requested=$authReq (${AuthModeResolve.label(authReq)})")
+            NativeBridge.setAuthMode(authReq)
             val st = NativeBridge.connect(handle, ips, delay, premute, premute, ref, Build.MODEL ?: "Android")
             event("connect 返回：$st")
             if (st.contains("\"error\"") && !st.contains("\"receivers\"")) {

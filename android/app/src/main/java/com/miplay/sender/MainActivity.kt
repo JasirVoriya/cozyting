@@ -143,11 +143,8 @@ class MainActivity : Activity() {
             selectedCert = i.getStringExtra("target_cert").orEmpty()
             refreshTargetUi()
         }
-        when (i.getStringExtra("auth")) {
-            "legacy" -> authSpinner.setSelection(1)
-            "safety" -> authSpinner.setSelection(2)
-            "auto" -> authSpinner.setSelection(0)
-        }
+        val authFromIntent = AuthModeResolve.fromIntent(i)
+        authFromIntent?.let { authSpinner.setSelection(it) }
         i.getStringExtra("ref")?.let { r ->
             (0 until refSpinner.count).firstOrNull { refSpinner.getItemAtPosition(it) == r }?.let(refSpinner::setSelection)
         }
@@ -158,7 +155,10 @@ class MainActivity : Activity() {
         i.getStringExtra("add")?.let { service(CastService.ACTION_ADD) { putExtra(CastService.EXTRA_IP, it) } }
         i.getStringExtra("remove")?.let { service(CastService.ACTION_REMOVE) { putExtra(CastService.EXTRA_IP, it) } }
         if (i.hasExtra("set_volume")) setVolume(i.getStringExtra("ip").orEmpty(), i.getIntExtra("set_volume", 0))
-        if (i.getBooleanExtra("autostart", false)) startCast(i.getIntExtra("secs", 0))
+        if (i.getBooleanExtra("autostart", false)) {
+            // 显式传入解析结果，避免只依赖 spinner 时序；日志侧以 CastService/JNI 的 auth_mode_requested 为准
+            startCast(i.getIntExtra("secs", 0), authOverride = authFromIntent)
+        }
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -496,7 +496,7 @@ class MainActivity : Activity() {
         localProbeBtn?.text = "本地音频过滤验收（不连接音箱）"
     }
 
-    private fun startCast(secs: Int) {
+    private fun startCast(secs: Int, authOverride: Int? = null) {
         val ips = selectedIps()
         val speakerCount = if (ips.isEmpty()) 0 else ips.split(',').size
         val appMode = sourceGroup.checkedRadioButtonId == 2
@@ -520,13 +520,14 @@ class MainActivity : Activity() {
             return
         }
         val ref = (refSpinner.selectedItem as String).let { if (it == "自动") "" else it }
+        val authMode = AuthModeResolve.coerceMode(authOverride ?: authSpinner.selectedItemPosition)
         val base = Intent(this, CastService::class.java).setAction(CastService.ACTION_START)
             .putExtra(CastService.EXTRA_IPS, ips)
             .putExtra(CastService.EXTRA_DELAY, delayEdit.text.toString().toIntOrNull() ?: 0)
             .putExtra(CastService.EXTRA_PREMUTE, volume.progress)
             .putExtra(CastService.EXTRA_REF, ref)
             .putExtra(CastService.EXTRA_SECS, secs)
-            .putExtra(CastService.EXTRA_AUTH, authSpinner.selectedItemPosition)
+            .putExtra(CastService.EXTRA_AUTH, authMode)
         rows.values.forEach { it.vol.progress = volume.progress }
         if (appMode) {
             val grantSession = UUID.randomUUID().toString()

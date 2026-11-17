@@ -113,6 +113,24 @@ impl AuthMode {
     pub fn parse(s: &str) -> Self {
         match s { "safety" => Self::Safety, "legacy" => Self::Legacy, _ => Self::Auto }
     }
+    pub fn as_str(self) -> &'static str {
+        match self { Self::Auto => "auto", Self::Legacy => "legacy", Self::Safety => "safety" }
+    }
+}
+
+/// 全失败时的结构化摘要（含 auth/phase；无密钥/音频）。v6 全失败路径曾只回 `ip: error`，丢掉 auth。
+pub fn connect_failure_summary(stats: &[ReceiverStats]) -> String {
+    stats.iter().map(|s| {
+        format!(
+            "{}: auth={} phase={} mirror={:?} state={:?} err={}",
+            s.ip,
+            if s.auth.is_empty() { "?" } else { s.auth.as_str() },
+            s.phase,
+            s.mirror_mode,
+            s.state,
+            s.error.as_deref().unwrap_or("")
+        )
+    }).collect::<Vec<_>>().join(" | ")
 }
 
 /// 按模式建立已引导的控制会话；返回 (会话, 实际使用的链路名)。
@@ -422,7 +440,9 @@ pub fn premute(ip: Ipv4Addr, id: &SourceIdentity, v: u8) -> Result<(Option<u8>, 
 }
 
 pub fn premute_with(ip: Ipv4Addr, id: &SourceIdentity, v: u8, mode: AuthMode) -> Result<(Option<u8>, Option<u8>)> {
-    let (ctl, _) = connect_bootstrapped(ip, id, mode)?;
+    log::info!("[{ip}] premute auth_requested={}", mode.as_str());
+    let (ctl, route) = connect_bootstrapped(ip, id, mode)?;
+    log::info!("[{ip}] premute auth_resolved={route}");
     let orig = ctl.status.volume;
     let ack = ctl.set_volume_then_close(v)?;
     Ok((orig, ack))
@@ -486,8 +506,14 @@ fn connect_receiver(
         }
         std::thread::sleep(Duration::from_millis(300));
     }
-    phase("8899 connect + bootstrap");
+    phase(&format!("8899 connect + bootstrap auth_requested={}", cfg.auth.as_str()));
     let (mut ctl, route) = connect_bootstrapped(ip, &cfg.identity, cfg.auth)?;
+    let native_ver = if route == "safety" {
+        crate::control::SAFETY_NATIVE_VERSION
+    } else {
+        crate::control::NATIVE_VERSION_STRING.trim_end_matches('\0')
+    };
+    log::info!("[{ip}] auth_resolved={route} native_ver={native_ver} secure={}", ctl.secure);
     {
         let mut s = stats.lock().unwrap();
         s.auth = route.to_string();
@@ -790,7 +816,12 @@ impl CastSession {
             all_stats.push(stats.lock().unwrap().clone());
         }
         if receivers.is_empty() {
-            return Err(Error::Protocol(format!("no receiver connected: {}", all_stats.iter().map(|s| format!("{}: {}", s.ip, s.error.clone().unwrap_or_default())).collect::<Vec<_>>().join("; "))));
+            for s in &all_stats {
+                log::error!("connect failed receiver_stats {}", s.to_json());
+            }
+            let summary = connect_failure_summary(&all_stats);
+            log::error!("connect failed summary: {summary}");
+            return Err(Error::Protocol(format!("no receiver connected: {summary}")));
         }
         let inner = Arc::new(Inner {
             cfg,
@@ -1128,5 +1159,23 @@ mod tests {
         // 与 group-numeric.txt 中的错误文案对齐，避免误改超时文案掩盖回归检索
         let err = Error::Timeout("reverse RTSP connection".into());
         assert_eq!(err.to_string(), "timeout: reverse RTSP connection");
+    }
+
+    #[test]
+    fn connect_failure_summary_must_include_auth_not_only_ip_error() {
+        // v6 全失败只回 "ip: timeout…"，D1 无法证明 Safety；锁定摘要含 auth=
+        let s = ReceiverStats {
+            ip: "192.168.31.234".into(),
+            auth: "legacy".into(),
+            phase: "Open wfd://x".into(),
+            mirror_mode: Some(1),
+            state: Some(2),
+            error: Some("timeout: reverse RTSP connection".into()),
+            ..Default::default()
+        };
+        let msg = connect_failure_summary(&[s]);
+        assert!(msg.contains("auth=legacy"), "{msg}");
+        assert!(msg.contains("timeout: reverse RTSP connection"), "{msg}");
+        assert!(msg.contains("192.168.31.234"), "{msg}");
     }
 }
