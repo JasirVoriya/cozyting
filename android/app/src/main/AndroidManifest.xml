@@ -5,13 +5,22 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- RECORD_AUDIO：仅用于 AudioPlaybackCapture（播放捕获投送），不采集麦克风；FGS 类型为 mediaProjection，不是 microphone -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- HyperOS 在 Doze/后台会冻结（Greeze）非豁免应用，前台服务 + WakeLock 也会被禁用；需用户点确认加入电池优化白名单 -->
+    <!-- 可选电池优化入口：不等于跨品牌保活保证；不依赖 OEM 私有权限/root/adb -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- 包可见性：仅声明可启动 MAIN/LAUNCHER；不申请 QUERY_ALL_PACKAGES -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:label="MiPlay 发送端"
@@ -24,7 +33,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".CastService"
+        <activity
+            android:name=".AppPickerActivity"
+            android:exported="false"
+            android:label="选择投送的 App" />
+        <service
+            android:name=".CastService"
             android:foregroundServiceType="mediaProjection|mediaPlayback"
             android:exported="false" />
     </application>
