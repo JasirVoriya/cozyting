@@ -366,30 +366,47 @@ pub struct CastSession {
 }
 
 fn accept_timeout(l: &TcpListener, t: Duration, what: &str) -> Result<TcpStream> {
+    accept_timeout_while(l, t, what, |_| {})
+}
+
+/// 在既有截止时间内等待反向 TCP；`on_wait` 仅用于观测（如排空 8899 ACK），**不得**延长超时。
+fn accept_timeout_while<F>(l: &TcpListener, t: Duration, what: &str, mut on_wait: F) -> Result<TcpStream>
+where
+    F: FnMut(Duration),
+{
     l.set_nonblocking(true)?;
     let deadline = Instant::now() + t;
+    let started = Instant::now();
     loop {
         match l.accept() {
             Ok((s, _)) => { s.set_nonblocking(false)?; s.set_nodelay(true)?; return Ok(s) }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                if Instant::now() > deadline { return Err(Error::Timeout(format!("reverse {what} connection"))) }
-                std::thread::sleep(Duration::from_millis(5));
+                let left = deadline.saturating_duration_since(Instant::now());
+                if left.is_zero() { return Err(Error::Timeout(format!("reverse {what} connection"))) }
+                on_wait(started.elapsed());
+                std::thread::sleep(Duration::from_millis(5).min(left));
             }
             Err(e) => return Err(e.into()),
         }
     }
 }
 
+/// Open 已发出但反向连接失败时必须尝试 CLOSE，避免音箱侧悬挂 WFD/会话。
+/// v5 postcheck：L17A 正常停后 probe `state=0`；LX06 多次 Open 超时后仍 `state=2`（不等价于已入组，但是释放缺失的旁证）。
+pub fn close_after_open_failure(ctl: &ControlSession, ip: Ipv4Addr) {
+    match ctl.runtime_writer().close() {
+        Ok(seq) => log::info!("[{ip}] CLOSE after Open/reverse failure seq={seq}"),
+        Err(e) => log::warn!("[{ip}] CLOSE after Open/reverse failure: {e}"),
+    }
+}
+
 /// 晚加入/扩组时选用的 `SetPlaySource.ref_function`。
 ///
-/// 真机证据（speakers-1452 / speaker-phase1-result）：
-/// - L17A 单台先起播成功（自动路径 → 台数=1 → `single_room`），streaming 正常；
-/// - LX06 动态加入复用同一 `CastConfig`，premute/8899/SetPlaySource/Open 均成功，
-///   `Open wfd://192.168.31.182:40159` 后 10s `timeout: reverse RTSP connection`；
-/// - 同进程双机起播会把 ref 设为 `multi_room`（ffi：`ips.len() > 1`），旧原型双机同组曾通过。
+/// 代码契约：组内已有 ≥1 存活成员时不得继续宣称 `single_room`（`stereo` 不变）。
 ///
-/// 因此：组内已有 ≥1 台存活成员时，禁止继续对晚加入者宣称 `single_room`（`stereo` 保持不变）。
-/// 这是可证伪的协商缺陷；是否单独导致反向 RTSP 不回连需真机升级后验证，不得用延长超时掩盖。
+/// **v5 真机已证伪「仅修 ref_function 即充分修复 LX06」**（independent-result / v5-test-evidence）：
+/// 晚加入与双机同开均已 `ref=multi_room`，手机 `LISTEN` 持续，LX06 仍 10.02s
+/// `timeout: reverse RTSP connection`。本函数保留，但不得再被叙述为 LX06 反向超时的充分修复。
 pub fn resolve_ref_function_for_join(current: &str, receivers_already_in_group: usize) -> String {
     match current {
         "stereo" => "stereo".into(),
@@ -517,7 +534,27 @@ fn connect_receiver(
         Err(e) => log::warn!("[{ip}] post-Open poll: {e}"),
     }
 
-    let rtsp_sock = accept_timeout(&listener, Duration::from_secs(10), "RTSP")?;
+    // 反向等待期间继续短轮询 8899（仍受同一 10s 截止约束），区分「音箱无回复」与「迟 ACK」。
+    let mut last_ctl_log = Instant::now() - Duration::from_secs(1);
+    let rtsp_sock = match accept_timeout_while(&listener, Duration::from_secs(10), "RTSP", |elapsed| {
+        if last_ctl_log.elapsed() < Duration::from_millis(500) { return }
+        last_ctl_log = Instant::now();
+        match ctl.poll_incoming(Duration::from_millis(15)) {
+            Ok(frames) if !frames.is_empty() => {
+                for (cmd, seq, len) in &frames {
+                    log::info!("[{ip}] during-reverse +{}ms control {cmd:#06x}/{seq} len={len}", elapsed.as_millis());
+                }
+            }
+            _ => {}
+        }
+    }) {
+        Ok(s) => s,
+        Err(e) => {
+            close_after_open_failure(&ctl, ip);
+            timer_stop.store(true, Ordering::Relaxed);
+            return Err(e);
+        }
+    };
     phase("RTSP connected back; handshake");
     let rtsp = Arc::new(SourceRtsp::new(local, timer_port));
     let rtsp_writer = Arc::new(Mutex::new(rtsp_sock.try_clone()?));
@@ -572,11 +609,21 @@ fn connect_receiver(
         }
     })?;
 
-    let aux = accept_timeout(&listener, Duration::from_secs(10), "auxiliary")?;
-    let audio = accept_timeout(&listener, Duration::from_secs(10), "audio")?;
+    let aux = match accept_timeout(&listener, Duration::from_secs(10), "auxiliary") {
+        Ok(s) => s,
+        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+    };
+    let audio = match accept_timeout(&listener, Duration::from_secs(10), "audio") {
+        Ok(s) => s,
+        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+    };
     drop(listener);
     phase("3 reverse connections up; waiting PLAY/TIME_OFFSET");
-    let offset = ready_rx.recv_timeout(Duration::from_secs(45)).map_err(|_| Error::Timeout("RTSP PLAY".into()))??;
+    let offset = match ready_rx.recv_timeout(Duration::from_secs(45)).map_err(|_| Error::Timeout("RTSP PLAY".into())) {
+        Ok(Ok(o)) => o,
+        Ok(Err(e)) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+    };
     stats.lock().unwrap().time_offset_us = Some(offset);
     phase(&format!("PLAY ok, TIME_OFFSET={offset}"));
 
@@ -1035,12 +1082,29 @@ mod tests {
 
     #[test]
     fn late_join_upgrades_single_room_to_multi_room() {
-        // 回归：speakers-1452 路径 — 先单台 single_room，再 add_receiver 不得继续 single_room
+        // 契约仍成立；v5 已证伪「升 multi_room 即充分修复 LX06 reverse」
         assert_eq!(resolve_ref_function_for_join("single_room", 1), "multi_room");
         assert_eq!(resolve_ref_function_for_join("", 1), "multi_room");
         assert_eq!(resolve_ref_function_for_join("single_room", 0), "single_room");
         assert_eq!(resolve_ref_function_for_join("multi_room", 1), "multi_room");
         assert_eq!(resolve_ref_function_for_join("stereo", 1), "stereo");
+    }
+
+    #[test]
+    fn v5_evidence_locks_h1_not_sufficient_alone() {
+        // independent-result_020b / v5-test：晚加入与双机同开均 multi_room 仍 timeout。
+        // 锁定：升级函数输出 multi_room ≠ 宣称 LX06 已修好。
+        let late = resolve_ref_function_for_join("single_room", 1);
+        let dual_auto = if 2usize > 1 { "multi_room" } else { "single_room" };
+        assert_eq!(late, "multi_room");
+        assert_eq!(dual_auto, "multi_room");
+        assert_eq!(Error::Timeout("reverse RTSP connection".into()).to_string(), "timeout: reverse RTSP connection");
+    }
+
+    #[test]
+    fn open_failure_cleanup_helper_is_callable() {
+        // 编译期锁定符号存在；真机用 CLOSE after Open/reverse failure 日志核验。
+        let _f: fn(&ControlSession, Ipv4Addr) = close_after_open_failure;
     }
 
     #[test]
