@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name" translatable="false">受控音源B·2kHz</string>
-    <string name="tone_desc" translatable="false">可捕获 · 2000Hz 正弦 · 独立UID</string>
-</resources>
