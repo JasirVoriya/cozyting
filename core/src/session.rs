@@ -133,6 +133,17 @@ pub fn connect_failure_summary(stats: &[ReceiverStats]) -> String {
     }).collect::<Vec<_>>().join(" | ")
 }
 
+/// 历史真成功（04 Safety / 07 安装 App / E3 L17A）INITIAL：mirror_mode=2,state=0。
+/// 来自 bootstrap/prepare 的 GET_*，不是 PLAY 后的 notify。
+pub fn preopen_matches_historical_success(mirror: Option<u32>, state: Option<u32>) -> bool {
+    mirror == Some(2) && state == Some(0)
+}
+
+/// v7 E1/E2/E2A LX06 失败摘要：mirror_mode=1,state=2（Open 超时前无 notify 刷新）。
+pub fn preopen_matches_v7_lx06_timeout(mirror: Option<u32>, state: Option<u32>) -> bool {
+    mirror == Some(1) && state == Some(2)
+}
+
 /// 按模式建立已引导的控制会话；返回 (会话, 实际使用的链路名)。
 pub fn connect_bootstrapped(ip: Ipv4Addr, id: &SourceIdentity, mode: AuthMode) -> Result<(ControlSession, &'static str)> {
     let safety = |ip| -> Result<(ControlSession, &'static str)> {
@@ -531,6 +542,20 @@ fn connect_receiver(
     }
     phase(&format!("preparePlayback + SetPlaySource ref={}", cfg.identity.ref_function));
     ctl.prepare_playback(&cfg.identity)?;
+    {
+        let mut s = stats.lock().unwrap();
+        s.mirror_mode = ctl.status.mirror_mode;
+        s.state = ctl.status.state;
+    }
+    // 与历史成功对照：成功 INITIAL 为 mirror=2/state=0；v7 LX06 失败为 mirror=1/state=2。
+    // Open 前打点，避免再把采样阶段差当成「无法对照」。
+    log::info!(
+        "[{ip}] pre-Open mirror_mode={:?} state={:?} secure={} ref={}",
+        ctl.status.mirror_mode,
+        ctl.status.state,
+        ctl.secure,
+        cfg.identity.ref_function
+    );
     let local = *ctl.local_addr()?.ip();
 
     let timer = TimerServer::bind(local)?;
@@ -549,31 +574,10 @@ fn connect_receiver(
         listener.local_addr()?
     ));
     ctl.send_open(local, port)?;
-    // 观测 Open 后是否立刻回 0x0041/0x0001；不延长反向等待，不记录载荷正文。
-    match ctl.poll_incoming(Duration::from_millis(120)) {
-        Ok(frames) if !frames.is_empty() => {
-            for (cmd, seq, len) in frames {
-                log::info!("[{ip}] post-Open control {cmd:#06x}/{seq} len={len}");
-            }
-        }
-        Ok(_) => log::info!("[{ip}] post-Open control: no immediate ACK"),
-        Err(e) => log::warn!("[{ip}] post-Open poll: {e}"),
-    }
-
-    // 反向等待期间继续短轮询 8899（仍受同一 10s 截止约束），区分「音箱无回复」与「迟 ACK」。
-    let mut last_ctl_log = Instant::now() - Duration::from_secs(1);
-    let rtsp_sock = match accept_timeout_while(&listener, Duration::from_secs(10), "RTSP", |elapsed| {
-        if last_ctl_log.elapsed() < Duration::from_millis(500) { return }
-        last_ctl_log = Instant::now();
-        match ctl.poll_incoming(Duration::from_millis(15)) {
-            Ok(frames) if !frames.is_empty() => {
-                for (cmd, seq, len) in &frames {
-                    log::info!("[{ip}] during-reverse +{}ms control {cmd:#06x}/{seq} len={len}", elapsed.as_millis());
-                }
-            }
-            _ => {}
-        }
-    }) {
+    // 恢复历史成功路径：Open 后立即 accept，不再 poll 8899。
+    // v7 诊断 poll 在成功机型（L17A）上无害，但是相对 06:10/11:59 成功路径的唯一
+    // Open→RTSP 窗口内协议差；根因未证，先去掉诊断读以免干扰 LX06。
+    let rtsp_sock = match accept_timeout(&listener, Duration::from_secs(10), "RTSP") {
         Ok(s) => s,
         Err(e) => {
             close_after_open_failure(&ctl, ip);
@@ -1177,5 +1181,42 @@ mod tests {
         assert!(msg.contains("auth=legacy"), "{msg}");
         assert!(msg.contains("timeout: reverse RTSP connection"), "{msg}");
         assert!(msg.contains("192.168.31.234"), "{msg}");
+    }
+
+    #[test]
+    fn history_success_vs_v7_fail_preopen_mirror_state_differs() {
+        // history-comparison：04/07/E3 INITIAL mirror=2 state=0；v7 E1/E2/E2A mirror=1 state=2。
+        // 区分力锁定：不得再把 LX06 失败解释成「未选中 Safety」。
+        assert!(preopen_matches_historical_success(Some(2), Some(0)));
+        assert!(preopen_matches_v7_lx06_timeout(Some(1), Some(2)));
+        assert!(!preopen_matches_historical_success(Some(1), Some(2)));
+        assert!(!preopen_matches_v7_lx06_timeout(Some(2), Some(0)));
+        let success_summary = connect_failure_summary(&[ReceiverStats {
+            ip: "lx06".into(),
+            auth: "safety".into(),
+            phase: "streaming".into(),
+            mirror_mode: Some(2),
+            state: Some(0),
+            ..Default::default()
+        }]);
+        let fail_summary = connect_failure_summary(&[ReceiverStats {
+            ip: "lx06".into(),
+            auth: "safety".into(),
+            phase: "Open".into(),
+            mirror_mode: Some(1),
+            state: Some(2),
+            error: Some("timeout: reverse RTSP connection".into()),
+            ..Default::default()
+        }]);
+        assert!(success_summary.contains("mirror=Some(2)"), "{success_summary}");
+        assert!(fail_summary.contains("mirror=Some(1)"), "{fail_summary}");
+        assert!(fail_summary.contains("auth=safety"), "{fail_summary}");
+    }
+
+    #[test]
+    fn default_open_path_uses_plain_accept_not_poll_loop() {
+        // 编译期锁定：默认反向等待入口是 accept_timeout（无 8899 poll 回调）。
+        let _f: fn(&TcpListener, Duration, &str) -> Result<TcpStream> = accept_timeout;
+        let _cleanup: fn(&ControlSession, Ipv4Addr) = close_after_open_failure;
     }
 }

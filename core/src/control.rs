@@ -409,16 +409,20 @@ impl ControlSession {
         self.send(&[Self::text(c::SET_LOCAL_DEVICE_INFO, 10, r#"{"isSameAccount":0}"#)])?;
         self.expect(c::SET_LOCAL_DEVICE_INFO_ACK, 10)?;
         self.send(&[Frame::empty(c::GET_MIRROR_MODE, 11)])?;
-        self.expect(c::GET_MIRROR_MODE_ACK, 11)?;
+        let mirror_ack = self.expect(c::GET_MIRROR_MODE_ACK, 11)?;
+        // prepare 二次 GET_MIRROR_MODE 必须写回 status；历史成功 INITIAL 的 mirror_mode
+        // 来自引导/prepare 查询值，丢弃 ACK 会把失败摘要钉在过期 bootstrap 快照上。
+        self.status.mirror_mode = decode_scalar5(&mirror_ack.payload);
         self.send(&[Frame::empty(c::HEARTBEAT, 12)])?;
         self.expect(c::HEARTBEAT_ACK, 12)?;
         let body = id.set_play_source_json();
         log::info!(
-            "ctrl send SET_PLAY_SOURCE cmd={:#06x} seq=13 ref_function={} bytes={} secure={}",
+            "ctrl send SET_PLAY_SOURCE cmd={:#06x} seq=13 ref_function={} bytes={} secure={} prepare_mirror={:?}",
             c::SET_PLAY_SOURCE,
             id.ref_function,
             body.len(),
-            self.secure
+            self.secure,
+            self.status.mirror_mode
         );
         self.send(&[Self::text(c::SET_PLAY_SOURCE, 13, &body)])
     }
@@ -596,5 +600,13 @@ mod tests {
         let u = open_wfd_url(Ipv4Addr::new(192, 168, 31, 182), 40159);
         assert!(u.starts_with("wfd://192.168.31.182:40159?mirrorMode=1"));
         assert!(u.ends_with('\0'));
+    }
+
+    #[test]
+    fn prepare_mirror_ack_scalar_decodes_history_and_v7_values() {
+        // GET_MIRROR_MODE_ACK 5 字节标量；历史成功常见 2，v7 LX06 失败摘要常见 1。
+        assert_eq!(decode_scalar5(&[0, 0, 0, 0, 2]), Some(2));
+        assert_eq!(decode_scalar5(&[0, 0, 0, 0, 1]), Some(1));
+        assert_eq!(decode_scalar5(&[0, 0, 0, 0, 0]), Some(0));
     }
 }

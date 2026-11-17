@@ -5,7 +5,7 @@ Android 手机作为发送端，经局域网把音频投送到小米音箱（MiP
 ## 功能
 
 - 发现/多选分组、暂停恢复、加入移除、音量、延迟、Legacy/Safety 认证、断线重连、前台通知
-- 晚加入扩组：`multi_room` 升级（v5 已证伪「仅此即修 LX06」）；Open 失败 CLOSE；连接失败摘要含实际 `auth=`；见 `docs/LX06_REVERSE_DIAG.md`（**不宣称 LX06 已修好**）
+- 晚加入扩组：`multi_room` 升级（v5 已证伪「仅此即修 LX06」）；v7 已证伪「仅 Safety 即修」；v8 对照历史真成功后还原 Open→accept（去掉诊断 poll）并打 `pre-Open mirror/state`；见 `docs/LX06_HISTORY_VS_V7.md`（**不宣称 LX06 已修好**）
 - 音源：**测试静音** 或 **选定 App 音频**（`AudioPlaybackCapture` + 严格单 UID + usage 过滤）
 - minSdk 34（Android 14+），compile/targetSdk 36
 - 不申请 `QUERY_ALL_PACKAGES`；可启动 App 列表依赖 `<queries>` MAIN/LAUNCHER
