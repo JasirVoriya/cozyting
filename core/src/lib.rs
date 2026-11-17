@@ -20,6 +20,7 @@ pub mod timeline;
 pub mod group;
 pub mod netinfo;
 pub mod session;
+pub mod inspect;
 pub mod ffi;
 
 #[derive(Debug, thiserror::Error)]

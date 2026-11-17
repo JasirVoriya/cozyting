@@ -459,8 +459,7 @@ pub fn premute_with(ip: Ipv4Addr, id: &SourceIdentity, v: u8, mode: AuthMode) ->
     Ok((orig, ack))
 }
 
-/// 只读：查询音箱当前声道（0=中置/立体声，1=左，2=右）。返回 ACK 原始载荷。
-/// 独立 8899 连接上只做 Safety 握手（认证互验），完成后不发任何业务帧，直接关闭。
+/// Safety 握手探测（认证互验）；与下方 `get_channel`/`probe` 不同路径。
 pub fn safety_probe(ip: Ipv4Addr, version: &str) -> Result<crate::control::SafetyReport> {
     safety_probe_ex(ip, version, &[])
 }
@@ -471,6 +470,7 @@ pub fn safety_probe_ex(ip: Ipv4Addr, version: &str, post_auth: &[u32]) -> Result
     ctl.safety_handshake(version, post_auth)
 }
 
+/// 引导后 GET_CHANNEL，然后协议 **CLOSE**（`command_then_close`）。非无 CLOSE 只查询。
 pub fn get_channel(ip: Ipv4Addr, id: &SourceIdentity) -> Result<Option<Vec<u8>>> {
     let mut ctl = ControlSession::connect(ip)?;
     ctl.bootstrap_legacy(id)?;
@@ -485,7 +485,9 @@ pub fn set_channel(ip: Ipv4Addr, id: &SourceIdentity, ch: u8) -> Result<Option<V
     Ok(ctl.command_then_close(c::SET_CHANNEL, vec![ch], c::SET_CHANNEL_ACK)?.map(|f| f.payload))
 }
 
-/// 只做引导读取状态然后 CLOSE。
+/// 引导读取 mirror/state/volume 后发送协议 **CLOSE(0x0002)**，再结束连接。
+/// **不是**无副作用只查询：无证据证明该 CLOSE 仅作用于本探测连接。
+/// 状态调查请用 [`crate::inspect::inspect_legacy`]（禁止 CLOSE，仅 TCP shutdown）。
 pub fn probe(ip: Ipv4Addr, id: &SourceIdentity) -> Result<ReceiverStats> {
     let mut ctl = ControlSession::connect(ip)?;
     ctl.bootstrap_legacy(id)?;
@@ -495,6 +497,11 @@ pub fn probe(ip: Ipv4Addr, id: &SourceIdentity) -> Result<ReceiverStats> {
     };
     let _ = ctl.runtime_writer().close();
     Ok(st)
+}
+
+/// 显式只查询入口（legacy 认证 + 仅 GET_*；结束 TCP shutdown，不发 CLOSE）。
+pub fn inspect(ip: Ipv4Addr) -> Result<crate::inspect::InspectReport> {
+    crate::inspect::inspect_legacy(ip)
 }
 
 fn connect_receiver(

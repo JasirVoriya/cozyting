@@ -26,7 +26,7 @@ use crate::frame::{decode_notify, decode_scalar5, encode_volume, Frame};
 use crate::auth::legacy;
 use crate::{proto, Result};
 use std::io::{BufReader, BufWriter, Write};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream};
+use std::net::{Ipv4Addr, Shutdown, SocketAddr, SocketAddrV4, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -166,6 +166,38 @@ impl ControlSession {
         }
         w.w.flush()?;
         Ok(())
+    }
+
+    /// 供 `inspect`：发送已由调用方校验过的帧（调用方负责命令 allowlist）。
+    pub(crate) fn send_tracked(&self, frames: &[Frame]) -> Result<()> {
+        self.send(frames)
+    }
+
+    pub(crate) fn read_frame_public(&mut self) -> Result<Frame> {
+        self.read_frame()
+    }
+
+    pub(crate) fn read_skipping_notify_public(&mut self) -> Result<Frame> {
+        self.read_skipping_notify()
+    }
+
+    pub(crate) fn absorb_notify_public(&mut self, f: &Frame) {
+        self.absorb_notify(f)
+    }
+
+    pub(crate) fn expect_cmd(&mut self, cmd: u16, seq: u16) -> Result<Frame> {
+        self.expect(cmd, seq)
+    }
+
+    /// 仅关闭本 TCP 套接字（shutdown Both + flush）。**不**发送协议 `CLOSE(0x0002)`。
+    /// `ControlSession` 无 Drop→CLOSE；正式播放路径的 `RuntimeWriter::close()` 语义不变。
+    pub fn tcp_shutdown_only(self) {
+        if let Ok(mut w) = self.writer.lock() {
+            let _ = w.w.flush();
+            let _ = w.w.get_ref().shutdown(Shutdown::Both);
+        }
+        let _ = self.reader.get_ref().shutdown(Shutdown::Both);
+        // self drop → BufWriter/TcpStream drop；不再写 CLOSE。
     }
 
     fn text(cmd: u16, seq: u16, s: &str) -> Frame {
@@ -498,7 +530,8 @@ impl ControlSession {
         Ok(result)
     }
 
-    /// 旧式引导之后、不 Open：发一条命令并等待指定 ACK（同序号），然后 CLOSE。用于只读查询（如 GetChannel）。
+    /// 旧式引导之后、不 Open：发一条命令并等待指定 ACK（同序号），然后发协议 **CLOSE**。
+    /// 名称含 close：不是「仅 TCP 断开」的只查询；状态调查请用 `crate::inspect`。
     pub fn command_then_close(mut self, cmd: u16, payload: Vec<u8>, ack: u16) -> Result<Option<Frame>> {
         let w = self.runtime_writer();
         let seq = w.write(cmd, payload)?;
