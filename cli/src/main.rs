@@ -18,8 +18,9 @@ fn print_help() {
          \tmiplay-cli inspect IP [--auth legacy]\n\
          \t  显式只查询：legacy 挑战应答后仅 GET_DEVICE_INFO / GET_MIRROR_MODE / GET_VOLUME /\n\
          \t  GET_MEDIA_INFO / GET_STATE / GET_CHANNEL；结束 TCP shutdown，不发 CLOSE/Open/\n\
-         \t  SetPlaySource/SetChannel/SetVolume/SetLocalDeviceInfo。MEDIA_INFO 只输出键存在性\n\
-         \t  与 source_name absent|empty|nonempty，不输出标题/URL/原文。\n\
+         \t  SetPlaySource/SetChannel/SetVolume/SetLocalDeviceInfo。media 仅\n\
+         \t  source_name(absent|empty|nonempty)+非内容协议键 keys_present；无标题/封面\n\
+         \t  标志与 MEDIA 内数值；设备 mirror/state/volume 在顶层专用 GET 字段。\n\
          \tmiplay-cli discover [--local IP] [--secs N]\n\
          \tmiplay-cli probe IP          # 引导后发协议 CLOSE — 非无副作用只查询\n\
          \tmiplay-cli mute IP [--volume 0]\n\

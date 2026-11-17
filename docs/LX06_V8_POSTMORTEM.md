@@ -9,7 +9,7 @@
 | `probe` | `runtime_writer().close()` → 协议 **CLOSE 0x0002** | **否** |
 | `devinfo`（源码） | 同上 CLOSE | **否**；且现存手机 CLI **help 未列出** |
 | `channel`（源码） | `command_then_close` → CLOSE | **否**；help 未列出 |
-| **`inspect`（新）** | 仅 **TCP shutdown**；allowlist 锁定无 CLOSE/Open/SET_* | 专为状态调查；**仍不证明**对音箱其它会话零影响（不猜固件） |
+| **`inspect`（新）** | 仅 **TCP shutdown**；allowlist 锁定无 CLOSE/Open/SET_*；`media` 仅 `source_name`+`keys_present` | 专为状态调查；**仍不证明**对音箱其它会话零影响（不猜固件） |
 
 `ControlSession` **无** Drop→CLOSE；正式播放路径的 CLOSE 语义未改。  
 **无证据**断言 CLOSE「只作用本连接」；此前 probe 前后 state 不变也不能独立证明无副作用。

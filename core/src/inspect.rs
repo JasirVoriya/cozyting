@@ -66,75 +66,49 @@ fn device_info_public(kv: &[(String, String)]) -> Vec<(String, String)> {
         .collect()
 }
 
-/// MEDIA_INFO：只报键是否存在与来源字段有无值；不输出标题/URL/封面/原文。
-#[derive(Clone, Debug)]
+/// MEDIA_INFO 输出白名单（仅此二键）：`source_name` 三态 + 非内容协议字段键存在性。
+/// 不落盘原文；不输出标题/URL/封面及其存在标志；不输出 MEDIA 内 status/volume/mDeviceState 数值
+/// （设备 volume/state/mirror 来自专用 GET_*，在 InspectReport 顶层保留）。
+pub const MEDIA_JSON_KEYS: &[&str] = &["source_name", "keys_present"];
+
+/// 允许出现在 `keys_present` 中的非内容协议键（不含标题/封面/URL 类键名）。
+pub const MEDIA_PROTOCOL_KEY_ALLOWLIST: &[&str] = &[
+    "mSourceName",
+    "status",
+    "volume",
+    "mDuration",
+    "id",
+    "mDeviceState",
+];
+
+#[derive(Clone, Debug, Default)]
 pub struct MediaInfoSummary {
-    pub ack_seen: bool,
-    pub payload_kind: &'static str,
-    pub keys_present: Vec<String>,
     /// mSourceName：absent | empty | nonempty（不回传字符串本身）
     pub source_name: &'static str,
-    pub has_title: bool,
-    pub has_cover_or_url: bool,
-    pub device_state: Option<u64>,
-    pub status: Option<u64>,
-    pub volume: Option<u64>,
-}
-
-impl Default for MediaInfoSummary {
-    fn default() -> Self {
-        Self {
-            ack_seen: false,
-            payload_kind: "absent",
-            keys_present: Vec::new(),
-            source_name: "absent",
-            has_title: false,
-            has_cover_or_url: false,
-            device_state: None,
-            status: None,
-            volume: None,
-        }
-    }
+    pub keys_present: Vec<String>,
 }
 
 impl MediaInfoSummary {
     pub fn from_payload(p: &[u8]) -> Self {
+        // 仅在栈上扫描；函数返回后不保留原文。
         if p.is_empty() {
             return Self {
-                ack_seen: true,
-                payload_kind: "empty",
                 source_name: "absent",
-                ..Default::default()
+                keys_present: Vec::new(),
             };
         }
         let text = String::from_utf8_lossy(p);
         let trimmed = text.trim().trim_end_matches('\0');
         if !(trimmed.starts_with('{') && trimmed.ends_with('}')) {
             return Self {
-                ack_seen: true,
-                payload_kind: "opaque",
                 source_name: "absent",
-                ..Default::default()
+                keys_present: Vec::new(),
             };
         }
-        // 极简键扫描：不引入 JSON crate；未知结构不猜语义，只标 presence。
         let mut keys_present = Vec::new();
-        let watch = [
-            "mSourceName",
-            "mTitle",
-            "mArtist",
-            "mAlbum",
-            "mCoverUrl",
-            "mArt",
-            "status",
-            "volume",
-            "mDuration",
-            "id",
-            "mDeviceState",
-        ];
-        for k in watch {
+        for k in MEDIA_PROTOCOL_KEY_ALLOWLIST {
             if trimmed.contains(&format!("\"{k}\"")) {
-                keys_present.push(k.to_string());
+                keys_present.push((*k).to_string());
             }
         }
         let source_name = match json_string_value(trimmed, "mSourceName") {
@@ -142,42 +116,19 @@ impl MediaInfoSummary {
             Some(s) if s.is_empty() => "empty",
             Some(_) => "nonempty",
         };
-        let has_title = json_string_value(trimmed, "mTitle").map(|s| !s.is_empty()).unwrap_or(false)
-            || json_string_value(trimmed, "mArtist").map(|s| !s.is_empty()).unwrap_or(false)
-            || json_string_value(trimmed, "mAlbum").map(|s| !s.is_empty()).unwrap_or(false);
-        let has_cover_or_url = json_string_value(trimmed, "mCoverUrl").map(|s| !s.is_empty()).unwrap_or(false)
-            || json_string_value(trimmed, "mArt").map(|s| !s.is_empty()).unwrap_or(false);
         Self {
-            ack_seen: true,
-            payload_kind: "json",
-            keys_present,
             source_name,
-            has_title,
-            has_cover_or_url,
-            device_state: json_u64(trimmed, "mDeviceState"),
-            status: json_u64(trimmed, "status"),
-            volume: json_u64(trimmed, "volume"),
+            keys_present,
         }
     }
 
+    /// 固定两字段；测试锁定防止新增泄漏键。
     pub fn to_json(&self) -> String {
         format!(
-            "{{\"ack_seen\":{},\"payload_kind\":{:?},\"keys_present\":{:?},\"source_name\":{:?},\"has_title\":{},\"has_cover_or_url\":{},\"mDeviceState\":{},\"status\":{},\"volume\":{}}}",
-            self.ack_seen,
-            self.payload_kind,
-            self.keys_present,
-            self.source_name,
-            self.has_title,
-            self.has_cover_or_url,
-            opt_u64(self.device_state),
-            opt_u64(self.status),
-            opt_u64(self.volume),
+            "{{\"source_name\":{:?},\"keys_present\":{:?}}}",
+            self.source_name, self.keys_present
         )
     }
-}
-
-fn opt_u64(v: Option<u64>) -> String {
-    v.map(|x| x.to_string()).unwrap_or_else(|| "null".into())
 }
 
 fn json_string_value<'a>(json: &'a str, key: &str) -> Option<&'a str> {
@@ -207,17 +158,6 @@ fn json_string_value<'a>(json: &'a str, key: &str) -> Option<&'a str> {
         }
     }
     Some(&rest[..out_end])
-}
-
-fn json_u64(json: &str, key: &str) -> Option<u64> {
-    let pat = format!("\"{key}\"");
-    let i = json.find(&pat)?;
-    let after = json[i + pat.len()..].trim_start().trim_start_matches(':').trim_start();
-    let end = after.find(|c: char| !c.is_ascii_digit()).unwrap_or(after.len());
-    if end == 0 {
-        return None;
-    }
-    after[..end].parse().ok()
 }
 
 #[derive(Clone, Debug, Default)]
@@ -456,24 +396,130 @@ mod tests {
         assert_eq!(inspect_planned_tx_commands(), INSPECT_ALLOWED_TX);
     }
 
-    #[test]
-    fn media_summary_strips_title_and_url_values() {
-        let raw = br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mCoverUrl":"https://example/x.jpg","mDeviceState":2,"status":0,"volume":0}"#;
-        let s = MediaInfoSummary::from_payload(raw);
-        let j = s.to_json();
-        assert_eq!(s.source_name, "nonempty");
-        assert!(s.has_title);
-        assert!(s.has_cover_or_url);
-        assert_eq!(s.device_state, Some(2));
-        assert!(!j.contains("SecretPhone"), "{j}");
-        assert!(!j.contains("Private Song"), "{j}");
-        assert!(!j.contains("https://"), "{j}");
+    /// media JSON 顶层键必须恰好为白名单；禁止标题/封面标志与 MEDIA 内数值对象键。
+    /// `keys_present` 数组内可含协议键名字符串（含 mDeviceState），但不得作为 media 对象键输出数值。
+    fn assert_media_json_whitelist(j: &str) {
+        assert!(j.starts_with('{') && j.ends_with('}'), "{j}");
+        assert_eq!(
+            MEDIA_JSON_KEYS,
+            &["source_name", "keys_present"],
+            "MEDIA_JSON_KEYS drift"
+        );
+        for key in MEDIA_JSON_KEYS {
+            assert!(j.contains(&format!("\"{key}\"")), "missing {key} in {j}");
+        }
+        // 对象键形态（带冒号）禁止；数组内的同名字符串仍允许
+        for banned_obj_key in [
+            "\"mDeviceState\":",
+            "\"status\":",
+            "\"volume\":",
+            "\"mDuration\":",
+            "\"id\":",
+            "\"ack_seen\":",
+            "\"payload_kind\":",
+            "\"has_title\":",
+            "\"has_cover\":",
+            "\"has_cover_or_url\":",
+            "\"mTitle\":",
+            "\"mArtist\":",
+            "\"mAlbum\":",
+            "\"mCoverUrl\":",
+            "\"mArt\":",
+        ] {
+            assert!(
+                !j.contains(banned_obj_key),
+                "media json must not contain object key {banned_obj_key}: {j}"
+            );
+        }
+        for banned in [
+            "has_title",
+            "has_cover_or_url",
+            "SecretPhone",
+            "Private Song",
+            "https://",
+            "example/",
+        ] {
+            assert!(!j.contains(banned), "media json must not contain {banned:?}: {j}");
+        }
+        // keys_present 不得列入内容键名
+        if let Some(i) = j.find("\"keys_present\"") {
+            let arr = &j[i..];
+            for bad in ["mTitle", "mArtist", "mAlbum", "mCoverUrl", "mArt"] {
+                assert!(
+                    !arr.contains(&format!("\"{bad}\"")),
+                    "keys_present must not list content key {bad}: {j}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn media_summary_empty_and_opaque() {
-        assert_eq!(MediaInfoSummary::from_payload(&[]).payload_kind, "empty");
-        assert_eq!(MediaInfoSummary::from_payload(b"not-json").payload_kind, "opaque");
+    fn media_json_whitelist_strips_content_and_numeric_fields() {
+        let raw = br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mArtist":"X","mCoverUrl":"https://example/x.jpg","mArt":"y","mDeviceState":2,"status":0,"volume":0,"mDuration":1,"id":""}"#;
+        let s = MediaInfoSummary::from_payload(raw);
+        let j = s.to_json();
+        assert_eq!(s.source_name, "nonempty");
+        assert_eq!(j, r#"{"source_name":"nonempty","keys_present":["mSourceName", "status", "volume", "mDuration", "id", "mDeviceState"]}"#);
+        assert_media_json_whitelist(&j);
+        // keys_present 可含协议键名，但不得含标题/封面键名
+        for bad in ["mTitle", "mArtist", "mAlbum", "mCoverUrl", "mArt"] {
+            assert!(!s.keys_present.iter().any(|k| k == bad), "{:?}", s.keys_present);
+        }
+    }
+
+    #[test]
+    fn media_json_source_name_empty_and_absent() {
+        let empty = MediaInfoSummary::from_payload(br#"{"mSourceName":"","status":1}"#);
+        assert_eq!(empty.source_name, "empty");
+        assert_media_json_whitelist(&empty.to_json());
+        let absent = MediaInfoSummary::from_payload(br#"{"status":1}"#);
+        assert_eq!(absent.source_name, "absent");
+        assert_media_json_whitelist(&absent.to_json());
+        let none = MediaInfoSummary::from_payload(&[]);
+        assert_eq!(none.source_name, "absent");
+        assert!(none.keys_present.is_empty());
+        assert_eq!(none.to_json(), r#"{"source_name":"absent","keys_present":[]}"#);
+        let opaque = MediaInfoSummary::from_payload(b"not-json");
+        assert_eq!(opaque.source_name, "absent");
+        assert_media_json_whitelist(&opaque.to_json());
+    }
+
+    #[test]
+    fn inspect_report_media_embed_keeps_top_level_device_volume() {
+        // 顶层 volume/state/mirror 来自专用 GET_*，与 media 白名单分离。
+        let mut r = InspectReport {
+            ip: "192.0.2.1".into(),
+            auth_route: "legacy".into(),
+            mirror_mode: Some(1),
+            state: Some(2),
+            volume: Some(0),
+            media: MediaInfoSummary::from_payload(
+                br#"{"mSourceName":"SecretPhone","mTitle":"Private Song","mCoverUrl":"https://x","volume":50}"#,
+            ),
+            ended_with: "tcp_shutdown",
+            ..Default::default()
+        };
+        r.tx_commands = INSPECT_ALLOWED_TX.to_vec();
+        let j = r.to_json();
+        assert!(j.contains("\"mirror_mode\":1"), "{j}");
+        assert!(j.contains("\"state\":2"), "{j}");
+        assert!(j.contains("\"volume\":0"), "{j}"); // 顶层专用查询
+        let media_start = j.find("\"media\":").expect(j.as_str());
+        let media_slice = &j[media_start..];
+        let media_json = media_slice
+            .strip_prefix("\"media\":")
+            .and_then(|s| {
+                let start = s.find('{')?;
+                let end = s.find("},\"tx_commands\"")?;
+                Some(&s[start..end + 1])
+            })
+            .expect(j.as_str());
+        assert_media_json_whitelist(media_json);
+        assert!(!j.contains("SecretPhone"), "{j}");
+        assert!(!j.contains("Private Song"), "{j}");
+        assert!(!j.contains("https://"), "{j}");
+        assert!(!j.contains("has_title"), "{j}");
+        assert!(!j.contains("has_cover"), "{j}");
     }
 
     #[test]
