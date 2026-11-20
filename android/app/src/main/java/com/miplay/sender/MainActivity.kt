@@ -1,110 +1,108 @@
 package com.miplay.sender
 
 import android.Manifest
+import android.animation.ObjectAnimator
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
-import com.miplay.sender.compat.AcceptanceAudioDefaults
-import com.miplay.sender.compat.BlurCompat
-import com.miplay.sender.compat.CaptureSelectionLayers
-import com.miplay.sender.compat.NotificationPermissionCompat
-import com.miplay.sender.compat.WindowInsetsApplyCompat
 import android.media.projection.MediaProjectionManager
-import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.text.InputType
+import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
+import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
-import android.widget.ImageButton
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.SeekBar
-import android.widget.Spinner
 import android.widget.TextView
-import com.miplay.sender.cast.CastProtocol
-import com.miplay.sender.cast.CastRouteSelection
-import com.miplay.sender.cast.CastRouteSelection.Effect
-import com.miplay.sender.cast.CastRouteSelection.Kind
-import com.miplay.sender.cast.NowPlayingInfo
-import com.miplay.sender.cast.NowPlayingTracker
-import android.widget.HorizontalScrollView
-import com.miplay.sender.cast.PrefsDiscoveredDeviceStore
-import com.miplay.sender.cast.ProtocolBadge
 import com.miplay.sender.capture.AndroidLaunchableApps
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
 import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.LaunchableAppCatalog
-import com.miplay.sender.capture.LocalFilterAcceptanceGate
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
+import com.miplay.sender.cast.CastProtocol
+import com.miplay.sender.cast.CastRouteSelection
+import com.miplay.sender.cast.CastRouteSelection.Effect
+import com.miplay.sender.cast.CastRouteSelection.Kind
+import com.miplay.sender.cast.NowPlayingInfo
+import com.miplay.sender.cast.NowPlayingTracker
+import com.miplay.sender.cast.PrefsDiscoveredDeviceStore
+import com.miplay.sender.cast.ProtocolBadge
+import com.miplay.sender.compat.AcceptanceAudioDefaults
+import com.miplay.sender.compat.BlurCompat
+import com.miplay.sender.compat.NotificationPermissionCompat
+import com.miplay.sender.compat.WindowInsetsApplyCompat
+import com.miplay.sender.ui.PrefsCastSettingsStore
+import com.miplay.sender.ui.ThemeMode
+import com.miplay.sender.ui.UiComponents
+import com.miplay.sender.ui.UiIconCache
+import com.miplay.sender.ui.UiPalette
 import org.json.JSONObject
 import java.util.UUID
 
 /**
- * 主界面按小米系统「音乐投送」面板重做：毛玻璃卡片、本机/音箱互斥路由、MediaSession 正在播放。
- * 次要项（认证/延迟/验收探针）收在底部设置区，不另起花哨设计。
+ * 主界面（对齐跨端设计规范 `design/UI_SPEC.md` 第一版样式 B · 明暗双主题）：
+ * 顶栏（状态胶囊 + 刷新 + 明暗快切 + 设置）→ 正在播放卡 → 音源卡 → 输出设备列表。
+ * 配置与调试选项统一收纳至独立 [SettingsActivity]，保持主面板克制清晰。
  */
 class MainActivity : Activity() {
+    companion object {
+        private const val REQ_PERMS = 1
+        private const val REQ_PROJECTION = 42
+        private const val REQ_APP_PICKER = 43
+        private const val REQ_SETTINGS = 45
+    }
+
     private val main = Handler(Looper.getMainLooper())
     private lateinit var store: PrefsTargetAppStore
     private lateinit var deviceStore: PrefsDiscoveredDeviceStore
+    private lateinit var settingsStore: PrefsCastSettingsStore
     private lateinit var routeState: CastRouteSelection.State
+    private lateinit var palette: UiPalette
 
-    private lateinit var rootFrame: FrameLayout
     private lateinit var bgArt: ImageView
-    private lateinit var glassCard: LinearLayout
+    private lateinit var headerStatusDot: View
+    private lateinit var headerStatusLabel: TextView
+    private lateinit var refreshBtn: FrameLayout
+    private lateinit var nowPlayingFullBox: LinearLayout
+    private lateinit var nowPlayingHintBanner: LinearLayout
     private lateinit var albumArt: ImageView
     private lateinit var titleView: TextView
     private lateinit var artistView: TextView
-    private lateinit var playBtn: ImageButton
+    private lateinit var playBtnIcon: ImageView
     private lateinit var posView: TextView
     private lateinit var durView: TextView
     private lateinit var progressBar: SeekBar
     private lateinit var volumeBar: SeekBar
-    private lateinit var muteLine: TextView
+    private lateinit var volumePctView: TextView
     private lateinit var mainTargetIcon: ImageView
     private lateinit var mainTargetTitle: TextView
     private lateinit var mainTargetSubtitle: TextView
     private lateinit var quickSwitchRow: LinearLayout
-    private var cachedLaunchableApps: List<LaunchableApp> = emptyList()
+    private lateinit var deviceCountView: TextView
     private lateinit var deviceList: LinearLayout
-    private lateinit var status: TextView
-    private lateinit var settingsBox: LinearLayout
-    private lateinit var targetLabel: TextView
-    private lateinit var sourceGroup: RadioGroup
-    private lateinit var delayEdit: EditText
-    private lateinit var refSpinner: Spinner
-    private lateinit var authSpinner: Spinner
-    private lateinit var manualIps: EditText
-    private var localProbeBtn: Button? = null
-    private var localProbeStatus: TextView? = null
+    private lateinit var statusLine: TextView
 
+    private var cachedLaunchableApps: List<LaunchableApp> = emptyList()
     private var pendingStart: Intent? = null
-    private var pendingLocalProbe: Intent? = null
     private var selectedPackage: String = ""
     private var selectedLabel: String = ""
     private var selectedCert: String = ""
@@ -112,12 +110,19 @@ class MainActivity : Activity() {
     private var pendingIps: Set<String>? = null
     private var suppressRoute = false
     private var nowPlaying: NowPlayingInfo = NowPlayingInfo.unavailable("加载中…")
+    private var nowPlayingUpdatedAtMs: Long = 0L
+    private var draggingProgress = false
     private var nowPlayingTracker: NowPlayingTracker? = null
+    private var masterVolume: Int = 30
     private val speakerVolume = linkedMapOf<String, Int>()
     private val latencyIndicators = linkedMapOf<String, LatencyIndicatorViews>()
-    private var showAllDiscovered: Boolean = false
-    private var keepLocalOutput: Boolean = false
+    private val speakerSubtitles = linkedMapOf<String, TextView>()
+    private val speakerVolumeViews = linkedMapOf<String, Pair<SeekBar, TextView>>()
     private var castRequested: Boolean = false
+    private var discovering: Boolean = false
+    private var refreshAnim: ObjectAnimator? = null
+    private var lastRenderedDark: Boolean = true
+    private var lastStatusMessage: String = "本机出声 · 点击下方音箱开始投送"
 
     private data class LatencyIndicatorViews(
         val container: LinearLayout,
@@ -126,41 +131,56 @@ class MainActivity : Activity() {
         val unit: TextView,
     )
 
-    // 面板色（对齐截图：深色玻璃 + 选中浅底）
-    private val glassBg = Color.argb(200, 28, 32, 40)
-    private val rowDark = Color.argb(160, 40, 44, 52)
-    private val rowSelected = Color.argb(230, 220, 228, 236)
-    private val textOnDark = Color.WHITE
-    private val textOnLight = Color.rgb(20, 24, 28)
-    private val accentMuted = Color.argb(180, 200, 210, 220)
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            if (CastService.running.get()) {
+                castRequested = false
+                val ev = CastService.lastEvent
+                if (ev.isNotBlank()) setStatusText(ev)
+            } else if (CastService.lastFailMessage.isNotBlank()) {
+                castRequested = false
+                setStatusText(CastService.lastFailMessage)
+            }
+            val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
+            updateLatencyAndSubtitleIndicators(stats)
+            updateHeaderStatusPill()
+            tickNowPlayingProgress()
+            main.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
         store = PrefsTargetAppStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
+        settingsStore = PrefsCastSettingsStore(this)
+        masterVolume = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
         val cachedDevices = deviceStore.loadDevices()
         routeState = CastRouteSelection.initial(
-            listOf(CastRouteSelection.Device("this", "This device", Kind.THIS_DEVICE, true)) + cachedDevices,
+            listOf(CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true)) + cachedDevices,
         )
         buildUi()
         refreshTargetFromStore()
         loadLaunchableAppsAsync()
         val need = NotificationPermissionCompat.runtimePermissionsForColdStart()
             .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
-        if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), 1)
+        if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), REQ_PERMS)
         nowPlayingTracker = NowPlayingTracker(this) { info ->
             main.post {
                 nowPlaying = info
+                nowPlayingUpdatedAtMs = System.currentTimeMillis()
                 bindNowPlaying()
             }
         }.also { it.start() }
-        refreshLoop()
+        main.postDelayed(refreshRunnable, 1000)
         if (intent?.extras == null) discover()
         handleAutomation(intent)
     }
 
     override fun onDestroy() {
+        main.removeCallbacks(refreshRunnable)
+        stopRefreshSpinner()
         nowPlayingTracker?.stop()
         super.onDestroy()
     }
@@ -172,210 +192,459 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        if (::store.isInitialized) refreshTargetFromStore()
+        if (!::settingsStore.isInitialized) return
+        val wantDark = settingsStore.isDark(this)
+        if (wantDark != lastRenderedDark) {
+            buildUi()
+        }
+        refreshTargetFromStore()
+        renderDevices()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != 1) return
+        if (requestCode != REQ_PERMS) return
         permissions.forEachIndexed { i, p ->
             val ok = grantResults.getOrNull(i) == PackageManager.PERMISSION_GRANTED
             if (p == Manifest.permission.RECORD_AUDIO && !ok) {
-                status.text = "未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）"
+                setStatusText("未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）")
             }
         }
     }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun dp(v: Int) = UiComponents.dp(this, v)
+    private fun dpf(v: Float) = UiComponents.dpf(this, v)
 
-    private fun rounded(color: Int, radiusDp: Float): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radiusDp.toInt()).toFloat()
-        }
+    private fun setStatusText(msg: String) {
+        lastStatusMessage = msg
+        if (::statusLine.isInitialized) statusLine.text = msg
+    }
 
     private fun buildUi() {
-        val pad = dp(16)
-        rootFrame = FrameLayout(this)
+        val isDark = settingsStore.isDark(this)
+        lastRenderedDark = isDark
+        palette = UiPalette.forMode(isDark)
+        WindowInsetsApplyCompat.applyEdgeToEdge(this, isDark)
+
+        val rootFrame = FrameLayout(this).apply {
+            setBackgroundColor(palette.bgCanvas)
+        }
         bgArt = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
-            setImageBitmap(placeholderArt())
-            BlurCompat.applyBackdrop(this)
+            setImageDrawable(UiComponents.ambientBackdropDrawable(palette))
+            BlurCompat.applyBackdrop(this, isDark)
         }
         rootFrame.addView(
             bgArt,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
 
-        val scroll = ScrollView(this)
-        glassCard = LinearLayout(this).apply {
+        val pad = dp(16)
+        val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(glassBg, 28f)
-            setPadding(pad, pad, pad, pad)
+            setPadding(pad, dp(10), pad, dp(24))
         }
 
-        // —— 正在播放 ——
-        val mediaRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        // —— 1. 顶栏（标题 + 运行状态胶囊 + 刷新 / 明暗快切 / 设置） ——
+        val topBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), 0, dp(2), dp(12))
+        }
+        val titleWrap = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        titleWrap.addView(
+            TextView(this).apply {
+                text = "音频投送"
+                textSize = 20f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { marginEnd = dp(8) }
+            },
+        )
+        val statusPill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = palette.panelBg,
+                radiusPx = dpf(999f),
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(9), dp(4), dp(9), dp(4))
+        }
+        val dotSize = dp(7)
+        headerStatusDot = View(this).apply {
+            background = UiComponents.roundedDrawable(palette.textTertiary, dotSize / 2f)
+            layoutParams = LinearLayout.LayoutParams(dotSize, dotSize).apply { marginEnd = dp(6) }
+        }
+        headerStatusLabel = TextView(this).apply {
+            text = "本机出声"
+            textSize = 11f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.textPrimary)
+            maxLines = 1
+        }
+        statusPill.addView(headerStatusDot)
+        statusPill.addView(headerStatusLabel)
+        titleWrap.addView(statusPill)
+        topBar.addView(titleWrap)
+
+        refreshBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_refresh, "重新发现设备") {
+            discover()
+        }.apply {
+            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(8)
+        }
+        val themeBtn = UiComponents.iconCircleButton(
+            context = this,
+            palette = palette,
+            iconRes = if (isDark) R.drawable.ic_ui_sun else R.drawable.ic_ui_moon,
+            contentDesc = if (isDark) "切换浅色模式" else "切换深色模式",
+        ) {
+            settingsStore.themeMode = ThemeMode.quickToggleTarget(palette.isDark)
+            buildUi()
+        }.apply {
+            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(8)
+        }
+        val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
+            startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
+        }
+        topBar.addView(refreshBtn)
+        topBar.addView(themeBtn)
+        topBar.addView(settingsBtn)
+        content.addView(topBar)
+
+        // —— 主面板容器 ——
+        val mainCard = UiComponents.panelCard(this, palette, padDp = 16)
+
+        // —— 2. 正在播放区 ——
+        nowPlayingFullBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val mediaRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
         albumArt = ImageView(this).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
-            background = rounded(Color.argb(80, 255, 255, 255), 12f)
-            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72)).apply { marginEnd = dp(12) }
-            setImageBitmap(placeholderArt())
+            background = UiComponents.roundedDrawable(palette.controlSurface, dpf(12f))
+            layoutParams = LinearLayout.LayoutParams(dp(58), dp(58)).apply { marginEnd = dp(12) }
+            setImageResource(R.drawable.ic_ui_music_note)
+            setColorFilter(palette.textSecondary)
             clipToOutline = true
         }
         val meta = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
         }
         titleView = TextView(this).apply {
             text = "未知标题"
-            setTextColor(textOnDark)
-            textSize = 18f
+            setTextColor(palette.textPrimary)
+            textSize = 16f
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
         }
         artistView = TextView(this).apply {
             text = "未取得正在播放"
-            setTextColor(accentMuted)
-            textSize = 13f
-            maxLines = 2
+            setTextColor(palette.textSecondary)
+            textSize = 12.5f
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(2), 0, 0)
         }
+        meta.addView(titleView)
+        meta.addView(artistView)
+
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, 0)
         }
-        fun ctl(res: Int, click: () -> Unit) = ImageButton(this).apply {
-            setImageResource(res)
-            setBackgroundColor(Color.TRANSPARENT)
-            setColorFilter(Color.WHITE)
-            setOnClickListener { click() }
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+        fun transportBtn(res: Int, desc: String, onClick: () -> Unit): FrameLayout {
+            val sz = dp(34)
+            return FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(sz, sz)
+                background = UiComponents.rippleSurface(Color.TRANSPARENT, sz / 2f, palette.ripple)
+                isClickable = true
+                isFocusable = true
+                contentDescription = desc
+                setOnClickListener { onClick() }
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(res)
+                        setColorFilter(palette.textPrimary)
+                        layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
+                    },
+                )
+            }
         }
-        controls.addView(ctl(android.R.drawable.ic_media_previous) { nowPlayingTracker?.skipPrevious() })
-        playBtn = ctl(android.R.drawable.ic_media_play) { nowPlayingTracker?.playPause() }
-        controls.addView(playBtn)
-        controls.addView(ctl(android.R.drawable.ic_media_next) { nowPlayingTracker?.skipNext() })
-        meta.addView(titleView)
-        meta.addView(artistView)
-        meta.addView(controls)
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, "上一首") { nowPlayingTracker?.skipPrevious() })
+        val playWrapSize = dp(38)
+        playBtnIcon = ImageView(this).apply {
+            setImageResource(R.drawable.ic_ui_play)
+            setColorFilter(if (palette.isDark) palette.bgCanvas else Color.WHITE)
+            layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
+        }
+        val playWrap = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(playWrapSize, playWrapSize).apply {
+                marginStart = dp(4)
+                marginEnd = dp(4)
+            }
+            background = UiComponents.rippleSurface(
+                fillColor = palette.textPrimary,
+                radiusPx = playWrapSize / 2f,
+                rippleColor = if (palette.isDark) palette.rippleOnSelected else Color.argb(48, 255, 255, 255),
+            )
+            isClickable = true
+            isFocusable = true
+            contentDescription = "播放或暂停"
+            setOnClickListener { nowPlayingTracker?.playPause() }
+            addView(playBtnIcon)
+        }
+        controls.addView(playWrap)
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_next, "下一首") { nowPlayingTracker?.skipNext() })
+
         mediaRow.addView(albumArt)
         mediaRow.addView(meta)
-        glassCard.addView(mediaRow)
+        mediaRow.addView(controls)
+        nowPlayingFullBox.addView(mediaRow)
 
-        progressBar = SeekBar(this).apply {
+        val progressRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, dp(4))
+        }
+        posView = TextView(this).apply {
+            setTextColor(palette.textTertiary)
+            textSize = 11f
+            text = "—:—"
+            minWidth = dp(34)
+        }
+        durView = TextView(this).apply {
+            setTextColor(palette.textTertiary)
+            textSize = 11f
+            text = "—:—"
+            minWidth = dp(34)
+            gravity = Gravity.END
+        }
+        progressBar = UiComponents.styledSeekBar(
+            context = this,
+            activeColor = palette.textPrimary,
+            trackColor = palette.trackIdle,
+            thumbFillColor = palette.textPrimary,
+            thumbStrokeColor = palette.panelBg,
+        ).apply {
             max = 1000
             progress = 0
-            setPadding(0, dp(12), 0, 0)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dp(6)
+                marginEnd = dp(6)
+            }
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {}
-                override fun onStartTrackingTouch(s: SeekBar?) {}
+                override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        val dur = nowPlaying.durationMs ?: return
+                        posView.text = NowPlayingInfo.formatTime(dur * p / 1000L)
+                    }
+                }
+                override fun onStartTrackingTouch(s: SeekBar?) {
+                    draggingProgress = true
+                }
                 override fun onStopTrackingTouch(s: SeekBar?) {
+                    draggingProgress = false
                     val dur = nowPlaying.durationMs ?: return
                     nowPlayingTracker?.seekTo(dur * progress / 1000L)
                 }
             })
         }
-        glassCard.addView(progressBar)
-        val times = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        posView = TextView(this).apply { setTextColor(accentMuted); textSize = 11f; text = "—:—" }
-        durView = TextView(this).apply {
-            setTextColor(accentMuted); textSize = 11f; text = "—:—"
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            gravity = Gravity.END
-        }
-        times.addView(posView)
-        times.addView(durView)
-        glassCard.addView(times)
+        progressRow.addView(posView)
+        progressRow.addView(progressBar)
+        progressRow.addView(durView)
+        nowPlayingFullBox.addView(progressRow)
+        mainCard.addView(nowPlayingFullBox)
 
+        // 未开启通知使用权/无活跃媒体会话时的精简可点击引导条
+        nowPlayingHintBanner = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = palette.rowIdleBg,
+                radiusPx = dpf(UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                rippleColor = palette.ripple,
+                strokeColor = palette.rowIdleBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(4) }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
+            addView(
+                ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_ui_music_note)
+                    setColorFilter(palette.accentBright)
+                    layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(10) }
+                },
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "开启通知使用权以显示曲目与切歌"
+                    textSize = 12.5f
+                    setTextColor(palette.textSecondary)
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                },
+            )
+            addView(
+                ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_ui_chevron_right)
+                    setColorFilter(palette.textTertiary)
+                    layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+                },
+            )
+        }
+        mainCard.addView(nowPlayingHintBanner)
+
+        // —— 总音量条（带实时百分比，拖动时增量更新音箱行不整表重建） ——
         val volRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(4), 0, dp(8))
+            setPadding(0, dp(6), 0, dp(12))
         }
         volRow.addView(
             ImageView(this).apply {
-                setImageResource(android.R.drawable.ic_lock_silent_mode_off)
-                setColorFilter(accentMuted)
-                layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(8) }
+                setImageResource(R.drawable.ic_ui_volume)
+                setColorFilter(palette.textSecondary)
+                layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(8) }
             },
         )
-        volumeBar = SeekBar(this).apply {
+        volumePctView = TextView(this).apply {
+            text = "$masterVolume%"
+            textSize = 11.5f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.textSecondary)
+            gravity = Gravity.END
+            minWidth = dp(34)
+        }
+        volumeBar = UiComponents.styledSeekBar(
+            context = this,
+            activeColor = palette.accent,
+            trackColor = palette.trackIdle,
+            thumbFillColor = Color.WHITE,
+            thumbStrokeColor = palette.accent,
+        ).apply {
             max = 100
-            progress = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            progress = masterVolume
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(6)
+            }
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(s: SeekBar?, p: Int, u: Boolean) {}
+                override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                    masterVolume = p
+                    volumePctView.text = "$p%"
+                    if (fromUser) {
+                        routeState.selectedSpeakerIds.forEach { id ->
+                            speakerVolume[id] = p
+                            speakerVolumeViews[id]?.let { (bar, pct) ->
+                                bar.progress = p
+                                pct.text = "$p%"
+                            }
+                        }
+                    }
+                }
                 override fun onStartTrackingTouch(s: SeekBar?) {}
                 override fun onStopTrackingTouch(s: SeekBar?) {
-                    if (CastService.running.get()) {
-                        setVolume("", progress)
-                        routeState.selectedSpeakerIds.forEach { speakerVolume[it] = progress }
-                        renderDevices()
+                    if (CastService.running.get() || castRequested) {
+                        setVolume("", masterVolume)
                     }
                 }
             })
         }
         volRow.addView(volumeBar)
-        glassCard.addView(volRow)
+        volRow.addView(volumePctView)
+        mainCard.addView(volRow)
 
-        // —— 投送音源（主面板直接展示与快捷切换） ——
+        // —— 3. 投送音源卡 ——
         val sourceCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(rowDark, 18f)
+            background = UiComponents.roundedDrawable(
+                fillColor = palette.rowIdleBg,
+                radiusPx = dpf(UiPalette.RADIUS_CARD_DP.toFloat()),
+                strokeColor = palette.rowIdleBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
             setPadding(dp(12), dp(10), dp(12), dp(10))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { bottomMargin = dp(10) }
+            ).apply { bottomMargin = dp(12) }
         }
         val sourceHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(Color.TRANSPARENT, dpf(10f), palette.ripple)
             isClickable = true
             isFocusable = true
             setOnClickListener { openAppPicker() }
         }
         mainTargetIcon = ImageView(this).apply {
-            setImageResource(android.R.drawable.sym_def_app_icon)
+            setImageResource(R.drawable.ic_ui_music_note)
+            setColorFilter(palette.accentBright)
             layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(10) }
         }
         val sourceMeta = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
         }
         mainTargetTitle = TextView(this).apply {
             text = "投送音源：未选择"
-            setTextColor(textOnDark)
+            setTextColor(palette.textPrimary)
             textSize = 14f
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
         }
         mainTargetSubtitle = TextView(this).apply {
             text = "点击选择需要投送的音乐或音频 App"
-            setTextColor(accentMuted)
-            textSize = 11f
+            setTextColor(palette.textSecondary)
+            textSize = 11.5f
             maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
         }
         sourceMeta.addView(mainTargetTitle)
         sourceMeta.addView(mainTargetSubtitle)
-        val changeAppBtn = TextView(this).apply {
-            text = "更多 App ▸"
-            setTextColor(textOnDark)
-            textSize = 12f
-            setTypeface(null, Typeface.BOLD)
-            setPadding(dp(8), dp(4), dp(4), dp(4))
+
+        val moreAppPill = UiComponents.pillBadge(
+            context = this,
+            bgColor = palette.accentSoftBg,
+            textColor = palette.accentBright,
+            label = "更多",
+        ).apply {
             setOnClickListener { openAppPicker() }
         }
         sourceHeader.addView(mainTargetIcon)
         sourceHeader.addView(sourceMeta)
-        sourceHeader.addView(changeAppBtn)
+        sourceHeader.addView(moreAppPill)
         sourceCard.addView(sourceHeader)
 
         quickSwitchRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, 0)
+            setPadding(0, dp(9), 0, 0)
             visibility = View.GONE
         }
         val quickScroll = HorizontalScrollView(this).apply {
@@ -383,271 +652,187 @@ class MainActivity : Activity() {
             addView(quickSwitchRow)
         }
         sourceCard.addView(quickScroll)
-        glassCard.addView(sourceCard)
+        mainCard.addView(sourceCard)
+
+        // —— 4. 输出设备区 ——
+        val devHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), 0, dp(2), dp(8))
+        }
+        devHeader.addView(
+            TextView(this).apply {
+                text = "输出设备"
+                textSize = 12f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textSecondary)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        deviceCountView = TextView(this).apply {
+            text = "支持多音箱同频投送"
+            textSize = 11f
+            setTextColor(palette.textTertiary)
+        }
+        devHeader.addView(deviceCountView)
+        mainCard.addView(devHeader)
 
         deviceList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        glassCard.addView(deviceList)
+        mainCard.addView(deviceList)
 
-        status = TextView(this).apply {
-            setTextColor(accentMuted)
-            textSize = 12f
-            text = "本机出声 · 勾选音箱开始投送"
-            setPadding(0, dp(10), 0, dp(6))
+        statusLine = TextView(this).apply {
+            setTextColor(palette.textSecondary)
+            textSize = 11.5f
+            text = lastStatusMessage
+            setPadding(dp(4), dp(8), dp(4), dp(2))
         }
-        glassCard.addView(status)
+        mainCard.addView(statusLine)
 
-        // —— 高级与调试选项（折叠） ——
-        val settingsToggle = TextView(this).apply {
-            text = "高级与调试选项 ▸"
-            setTextColor(accentMuted)
-            textSize = 12f
-            setPadding(0, dp(8), 0, dp(4))
-            setOnClickListener {
-                settingsBox.visibility =
-                    if (settingsBox.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-                text = if (settingsBox.visibility == View.VISIBLE) {
-                    "高级与调试选项 ▾"
-                } else {
-                    "高级与调试选项 ▸"
-                }
-            }
-        }
-        glassCard.addView(settingsToggle)
-        settingsBox = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-        }
-        buildSettings(settingsBox)
-        glassCard.addView(settingsBox)
+        content.addView(mainCard)
 
-        val wrap = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad + dp(24), pad, pad)
-            addView(glassCard)
+        val scroll = ScrollView(this).apply {
+            addView(content)
         }
-        scroll.addView(wrap)
         WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
         rootFrame.addView(
             scroll,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         setContentView(rootFrame)
+
+        if (discovering) startRefreshSpinner()
+        refreshTargetFromStore()
         renderDevices()
         bindNowPlaying()
+        updateHeaderStatusPill()
     }
 
-    private fun buildSettings(box: LinearLayout) {
-        box.addView(
-            Button(this).apply {
-                text = "重新发现设备"
-                setOnClickListener { discover() }
-            },
-        )
-        box.addView(
-            Button(this).apply {
-                text = "打开通知使用权（正在播放）"
-                setOnClickListener {
-                    startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                }
-            },
-        )
-        box.addView(
-            Button(this).apply {
-                text = "电池优化豁免"
-                setOnClickListener {
-                    try {
-                        startActivity(
-                            Intent(
-                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                Uri.parse("package:$packageName"),
-                            ),
-                        )
-                    } catch (_: Exception) {
-                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                    }
-                }
-            },
-        )
-        sourceGroup = RadioGroup(this).apply {
-            orientation = RadioGroup.VERTICAL
-            addView(RadioButton(context).apply { id = 1; text = "测试静音"; setTextColor(textOnDark) })
-            addView(
-                RadioButton(context).apply {
-                    id = 2
-                    text = "选定 App 音频（UID 过滤）"
-                    setTextColor(textOnDark)
-                },
-            )
-            check(2)
-        }
-        box.addView(sourceGroup)
-        box.addView(
-            CheckBox(this).apply {
-                text = "投送时手机静音（静音全局 STREAM_MUSIC；取消勾选则保留手机本机出声）"
-                setTextColor(textOnDark)
-                isChecked = !keepLocalOutput
-                setOnCheckedChangeListener { _, checked ->
-                    keepLocalOutput = !checked
-                }
-            },
-        )
-        muteLine = TextView(this).apply {
-            setTextColor(Color.argb(180, 185, 195, 208))
-            textSize = 11f
-            text = CastService.localMuteStatusZh
-            setPadding(dp(4), dp(2), 0, dp(4))
-        }
-        box.addView(muteLine)
-        box.addView(
-            TextView(this).apply {
-                text = "说明：Android 普通权限仅支持按 App UID 捕获音频，无公开 API 单独静音第三方 App 本机输出；默认开启投送时全局 STREAM_MUSIC 静音（切歌保持静音，但会影响同流其它视频 App）。"
-                setTextColor(accentMuted)
-                textSize = 11f
-                setPadding(dp(4), 0, 0, dp(6))
-            },
-        )
-        box.addView(
-            CheckBox(this).apply {
-                text = "显示全部发现设备（含未声明 MiPlay 节点）"
-                setTextColor(textOnDark)
-                isChecked = showAllDiscovered
-                setOnCheckedChangeListener { _, checked ->
-                    showAllDiscovered = checked
-                    renderDevices()
-                }
-            },
-        )
-        box.addView(
-            TextView(this).apply {
-                text = CaptureSelectionLayers.settingsHintZh()
-                setTextColor(accentMuted)
-                textSize = 11f
-            },
-        )
-        if (BuildConfig.IS_ACCEPTANCE) {
-            box.addView(
-                TextView(this).apply {
-                    text = "验收默认音箱音量=0（静音测试）；停止投送后不恢复本机 STREAM_MUSIC 索引。"
-                    setTextColor(accentMuted)
-                    textSize = 11f
-                },
-            )
-        }
-        targetLabel = TextView(this).apply { setTextColor(accentMuted); textSize = 12f }
-        box.addView(targetLabel)
-        box.addView(
-            Button(this).apply {
-                text = "选择投送的 App"
-                setOnClickListener { openAppPicker() }
-            },
-        )
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        row.addView(TextView(this).apply { text = "延迟ms "; setTextColor(accentMuted) })
-        delayEdit = EditText(this).apply {
-            hint = "自动(${CastService.autoDelayMs(this@MainActivity)})"
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setTextColor(textOnDark)
-            setHintTextColor(accentMuted)
-            minEms = 4
-        }
-        row.addView(delayEdit)
-        refSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_spinner_dropdown_item,
-                listOf("自动", "single_room", "multi_room", "stereo"),
-            )
-        }
-        row.addView(refSpinner)
-        box.addView(row)
-        authSpinner = Spinner(this).apply {
-            adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_spinner_dropdown_item,
-                listOf("认证:自动", "明文", "Safety加密"),
-            )
-        }
-        box.addView(authSpinner)
-        val mrow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        manualIps = EditText(this).apply {
-            hint = "手动 IP"
-            setTextColor(textOnDark)
-            setHintTextColor(accentMuted)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        mrow.addView(manualIps)
-        mrow.addView(Button(this).apply { text = "加入"; setOnClickListener { addManualRows() } })
-        box.addView(mrow)
-        if (LocalFilterAcceptanceGate.exposeLocalProbeEntry(BuildConfig.IS_ACCEPTANCE)) {
-            localProbeStatus = TextView(this).apply {
-                text = "本地过滤验收：未运行"
-                setTextColor(accentMuted)
-                textSize = 11f
-            }
-            box.addView(localProbeStatus)
-            localProbeBtn = Button(this).apply {
-                text = "本地音频过滤验收"
-                setOnClickListener {
-                    if (LocalFilterProbeService.running.get()) stopLocalProbe() else startLocalFilterAcceptance()
-                }
-            }
-            box.addView(localProbeBtn)
+    private fun startRefreshSpinner() {
+        stopRefreshSpinner()
+        val icon = refreshBtn.getChildAt(0) ?: return
+        refreshAnim = ObjectAnimator.ofFloat(icon, View.ROTATION, 0f, 360f).apply {
+            duration = 850
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = LinearInterpolator()
+            start()
         }
     }
 
-    private fun placeholderArt(): Bitmap {
-        val b = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
-        val c = Canvas(b)
-        c.drawColor(Color.rgb(50, 60, 80))
-        val p = Paint().apply { color = Color.rgb(80, 100, 130) }
-        c.drawRect(0f, 0f, 4f, 8f, p)
-        return b
+    private fun stopRefreshSpinner() {
+        refreshAnim?.cancel()
+        refreshAnim = null
+        if (::refreshBtn.isInitialized) refreshBtn.getChildAt(0)?.rotation = 0f
+    }
+
+    private fun updateHeaderStatusPill() {
+        if (!::headerStatusLabel.isInitialized) return
+        val selectedCount = routeState.selectedSpeakerIds.size
+        val running = CastService.running.get()
+        val failed = CastService.lastFailMessage.isNotBlank() && !running && !castRequested
+        val (dotColor, label) = when {
+            failed -> palette.statusError to "投送异常"
+            running && selectedCount > 0 -> palette.statusSuccess to "投送中 · $selectedCount 台"
+            castRequested && selectedCount > 0 -> palette.statusWarning to "连接中…"
+            settingsStore.sourceMode == "silent" -> palette.textTertiary to "静音测试模式"
+            else -> palette.textTertiary to "本机出声"
+        }
+        headerStatusDot.background = UiComponents.roundedDrawable(dotColor, dp(7) / 2f)
+        headerStatusLabel.text = label
     }
 
     private fun bindNowPlaying() {
-        titleView.text = NowPlayingInfo.displayTitle(nowPlaying)
-        artistView.text = NowPlayingInfo.displayArtist(nowPlaying)
+        if (!::nowPlayingFullBox.isInitialized) return
+        val available = nowPlaying.available
+        nowPlayingFullBox.visibility = if (available) View.VISIBLE else View.GONE
+        nowPlayingHintBanner.visibility = if (available) View.GONE else View.VISIBLE
+
         val art = nowPlaying.artwork
         if (art != null) {
+            albumArt.clearColorFilter()
             albumArt.setImageBitmap(art)
-            bgArt.setImageBitmap(art)
+            bgArt.setImageBitmap(BlurCompat.softBlurForBackdrop(art))
+            BlurCompat.applyBackdrop(bgArt, palette.isDark)
         } else {
-            val ph = placeholderArt()
-            albumArt.setImageBitmap(ph)
-            bgArt.setImageBitmap(ph)
+            albumArt.setImageResource(R.drawable.ic_ui_music_note)
+            albumArt.setColorFilter(palette.textSecondary)
+            bgArt.clearColorFilter()
+            bgArt.setImageDrawable(UiComponents.ambientBackdropDrawable(palette))
         }
-        playBtn.setImageResource(
-            if (nowPlaying.isPlaying == true) android.R.drawable.ic_media_pause
-            else android.R.drawable.ic_media_play,
+
+        if (!available) return
+        titleView.text = NowPlayingInfo.displayTitle(nowPlaying)
+        artistView.text = NowPlayingInfo.displayArtist(nowPlaying)
+        playBtnIcon.setImageResource(
+            if (nowPlaying.isPlaying == true) R.drawable.ic_ui_pause else R.drawable.ic_ui_play,
         )
-        posView.text = NowPlayingInfo.formatTime(nowPlaying.positionMs)
         durView.text = NowPlayingInfo.formatTime(nowPlaying.durationMs)
+        tickNowPlayingProgress()
+    }
+
+    private fun tickNowPlayingProgress() {
+        if (!::progressBar.isInitialized || !nowPlaying.available || draggingProgress) return
         val dur = nowPlaying.durationMs
-        val pos = nowPlaying.positionMs
-        if (dur != null && dur > 0 && pos != null) {
-            progressBar.progress = ((pos * 1000L) / dur).toInt().coerceIn(0, 1000)
+        val basePos = nowPlaying.positionMs
+        if (dur != null && dur > 0 && basePos != null) {
+            val elapsed = if (nowPlaying.isPlaying == true && nowPlayingUpdatedAtMs > 0L) {
+                (System.currentTimeMillis() - nowPlayingUpdatedAtMs).coerceAtLeast(0L)
+            } else {
+                0L
+            }
+            val currentPos = (basePos + elapsed).coerceIn(0L, dur)
+            posView.text = NowPlayingInfo.formatTime(currentPos)
+            progressBar.progress = ((currentPos * 1000L) / dur).toInt().coerceIn(0, 1000)
         } else {
+            posView.text = "—:—"
             progressBar.progress = 0
         }
     }
 
     private fun renderDevices() {
+        if (!::deviceList.isInitialized) return
         deviceList.removeAllViews()
         latencyIndicators.clear()
+        speakerSubtitles.clear()
+        speakerVolumeViews.clear()
         suppressRoute = true
-        val visible = CastRouteSelection.filterVisibleDevices(routeState.devices, showAllDiscovered)
+        val visible = CastRouteSelection.filterVisibleDevices(
+            routeState.devices,
+            settingsStore.showAllDiscovered,
+        )
+        val castableSinks = visible.count { it.isCastSink && it.castable }
+        deviceCountView.text = if (castableSinks > 0) "发现 $castableSinks 台可投设备" else "支持多音箱同频投送"
         visible.forEach { d ->
             deviceList.addView(deviceRow(d))
         }
         suppressRoute = false
+        val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
+        updateLatencyAndSubtitleIndicators(stats)
+        updateHeaderStatusPill()
     }
 
     private fun deviceRow(d: CastRouteSelection.Device): View {
         val selected = d.selected
+        val bgColor = if (selected) palette.rowSelectedBg else palette.rowIdleBg
+        val borderColor = if (selected) palette.rowSelectedBorder else palette.rowIdleBorder
+        val borderW = if (selected && !palette.isDark) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
+        val titleColor = if (selected) palette.onSelectedPrimary else palette.textPrimary
+        val subColor = if (selected) palette.onSelectedSecondary else palette.textSecondary
+        val iconColor = when {
+            selected && !palette.isDark -> palette.accent
+            selected -> palette.onSelectedPrimary
+            else -> palette.textSecondary
+        }
+
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(if (selected) rowSelected else rowDark, 18f)
-            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = UiComponents.rippleSurface(
+                fillColor = bgColor,
+                radiusPx = dpf(UiPalette.RADIUS_CARD_DP.toFloat()),
+                rippleColor = if (selected) palette.rippleOnSelected else palette.ripple,
+                strokeColor = borderColor,
+                strokeWidthPx = borderW,
+            )
+            setPadding(dp(14), dp(11), dp(14), dp(11))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -656,6 +841,7 @@ class MainActivity : Activity() {
             isFocusable = true
             setOnClickListener { onDeviceClicked(d) }
         }
+
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -663,44 +849,76 @@ class MainActivity : Activity() {
         val icon = ImageView(this).apply {
             setImageResource(
                 when (d.kind) {
-                    Kind.THIS_DEVICE -> android.R.drawable.ic_menu_mylocation
-                    Kind.SPEAKER -> android.R.drawable.ic_lock_silent_mode_off
-                    Kind.TV -> android.R.drawable.ic_menu_view
+                    Kind.THIS_DEVICE -> R.drawable.ic_ui_phone
+                    Kind.SPEAKER -> R.drawable.ic_ui_speaker
+                    Kind.TV -> R.drawable.ic_ui_tv
                 },
             )
-            setColorFilter(if (selected) textOnLight else textOnDark)
-            layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { marginEnd = dp(8) }
+            setColorFilter(iconColor)
+            layoutParams = LinearLayout.LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(10) }
         }
+        val textCol = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
+        }
+        val displayName = if (d.kind == Kind.THIS_DEVICE) "本机播放" else d.name
         val name = TextView(this).apply {
-            text = d.name
-            setTextColor(if (selected) textOnLight else textOnDark)
-            textSize = 15f
+            text = displayName
+            setTextColor(titleColor)
+            textSize = 14.5f
+            setTypeface(null, Typeface.BOLD)
             maxLines = 2
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            ellipsize = TextUtils.TruncateAt.END
         }
+        val sub = TextView(this).apply {
+            text = when {
+                d.kind == Kind.THIS_DEVICE -> if (selected) "手机扬声器 · 当前输出" else "手机扬声器"
+                !d.castable && d.detail.isNotBlank() -> d.detail
+                else -> d.id
+            }
+            setTextColor(subColor)
+            textSize = 11f
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(1), 0, 0)
+        }
+        if (d.isCastSink) speakerSubtitles[d.id] = sub
+        textCol.addView(name)
+        textCol.addView(sub)
+
         row.addView(icon)
-        row.addView(name)
+        row.addView(textCol)
+
         if (d.isCastSink) {
+            val pillTextColor = if (selected) palette.selectedPillText else palette.textSecondary
             val value = TextView(this).apply {
-                setTextColor(if (selected) textOnLight else accentMuted)
+                setTextColor(pillTextColor)
                 textSize = 11f
+                setTypeface(null, Typeface.BOLD)
             }
             val spinner = ProgressBar(this, null, android.R.attr.progressBarStyleSmall).apply {
                 isIndeterminate = true
-                indeterminateTintList = android.content.res.ColorStateList.valueOf(
-                    if (selected) textOnLight else accentMuted,
-                )
-                layoutParams = LinearLayout.LayoutParams(dp(14), dp(14)).apply { marginEnd = dp(3) }
+                indeterminateTintList = ColorStateList.valueOf(pillTextColor)
+                layoutParams = LinearLayout.LayoutParams(dp(13), dp(13)).apply { marginEnd = dp(3) }
             }
             val unit = TextView(this).apply {
                 text = "ms"
-                setTextColor(if (selected) textOnLight else accentMuted)
+                setTextColor(pillTextColor)
                 textSize = 11f
+                setTypeface(null, Typeface.BOLD)
             }
             val indicator = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
+                background = UiComponents.roundedDrawable(palette.selectedPillBg, dpf(999f))
+                setPadding(dp(7), dp(2), dp(7), dp(2))
                 visibility = View.GONE
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { marginEnd = dp(6) }
                 addView(spinner)
                 addView(unit)
                 addView(value)
@@ -708,43 +926,58 @@ class MainActivity : Activity() {
             latencyIndicators[d.id] = LatencyIndicatorViews(indicator, value, spinner, unit)
             row.addView(indicator)
         }
-        // 协议小标：紧靠名称右侧；本机不标
+
         val protoBadge = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply {
-                marginStart = dp(6)
-                marginEnd = dp(8)
-            }
+            layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(8) }
         }
-        ProtocolBadge.bind(protoBadge, d.protocol, selected)
+        ProtocolBadge.bindWithTint(protoBadge, d.protocol, subColor)
         row.addView(protoBadge)
+
         if (d.isCastSink) {
-            val mark = TextView(this).apply {
-                text = when {
-                    !d.castable -> "○"
-                    selected -> "✓"
-                    else -> "○"
-                }
-                setTextColor(
-                    when {
-                        !d.castable -> Color.GRAY
-                        selected -> Color.rgb(40, 100, 200)
-                        else -> accentMuted
-                    },
-                )
-                textSize = 16f
-                // 离线/未实现：灰圈，不用禁用叉，避免把电视误当成永久禁止
-                alpha = if (d.castable) 1f else 0.45f
-            }
-            row.addView(mark)
+            row.addView(UiComponents.checkCircle(this, palette, selected = selected, enabled = d.castable))
+        } else if (selected) {
+            val dotSz = dp(8)
+            row.addView(
+                View(this).apply {
+                    background = UiComponents.roundedDrawable(palette.accent, dotSz / 2f)
+                    layoutParams = LinearLayout.LayoutParams(dotSz, dotSz)
+                },
+            )
         }
         box.addView(row)
+
         if (d.isCastSink && selected && d.castable) {
-            val vol = SeekBar(this).apply {
+            val initialVol = speakerVolume[d.id] ?: masterVolume
+            val volLine = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(8), 0, 0)
+            }
+            val pctView = TextView(this).apply {
+                text = "$initialVol%"
+                textSize = 11f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(subColor)
+                gravity = Gravity.END
+                minWidth = dp(32)
+            }
+            val vol = UiComponents.styledSeekBar(
+                context = this,
+                activeColor = palette.accent,
+                trackColor = palette.trackOnSelected,
+                thumbFillColor = Color.WHITE,
+                thumbStrokeColor = palette.accent,
+            ).apply {
                 max = 100
-                progress = speakerVolume[d.id] ?: volumeBar.progress
-                setPadding(dp(4), dp(6), dp(4), 0)
+                progress = initialVol
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(6)
+                }
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(s: SeekBar?, p: Int, u: Boolean) {}
+                    override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                        pctView.text = "$p%"
+                        if (fromUser) speakerVolume[d.id] = p
+                    }
                     override fun onStartTrackingTouch(s: SeekBar?) {}
                     override fun onStopTrackingTouch(s: SeekBar?) {
                         speakerVolume[d.id] = progress
@@ -752,17 +985,10 @@ class MainActivity : Activity() {
                     }
                 })
             }
-            box.addView(vol)
-        }
-        if (!d.castable && d.detail.isNotBlank()) {
-            box.addView(
-                TextView(this).apply {
-                    text = d.detail
-                    setTextColor(Color.GRAY)
-                    textSize = 11f
-                    setPadding(dp(32), dp(2), 0, 0)
-                },
-            )
+            speakerVolumeViews[d.id] = vol to pctView
+            volLine.addView(vol)
+            volLine.addView(pctView)
+            box.addView(volLine)
         }
         return box
     }
@@ -785,20 +1011,21 @@ class MainActivity : Activity() {
                     castRequested = false
                     pendingStart = null
                     stopCast()
-                    updateLatencyIndicators(null)
-                    status.text = "已切回 This device · 本机出声"
+                    updateLatencyAndSubtitleIndicators(null)
+                    updateHeaderStatusPill()
+                    setStatusText("已切回本机播放")
                 }
                 is Effect.StartCast -> startCastTo(e.speakerIds)
                 is Effect.AddSpeaker -> {
                     if (CastService.running.get() || castRequested) {
                         CastService.primeConnectingReceivers(setOf(e.id))
-                        updateLatencyIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+                        updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                         service(CastService.ACTION_ADD) { putExtra(CastService.EXTRA_IP, e.id) }
-                        status.text = "加入音箱 ${e.id}"
+                        setStatusText("正在加入音箱 ${e.id}…")
                     } else if (pendingStart != null) {
                         val ips = routeState.selectedSpeakerIds.joinToString(",")
                         pendingStart?.putExtra(CastService.EXTRA_IPS, ips)
-                        status.text = "已加入待投送列表：${e.id}"
+                        setStatusText("已加入待投送列表：${e.id}")
                     } else {
                         startCastTo(routeState.selectedSpeakerIds)
                     }
@@ -809,13 +1036,13 @@ class MainActivity : Activity() {
                         pendingStart?.putExtra(CastService.EXTRA_IPS, ips)
                     } else {
                         CastService.lastStats = CastService.removeReceiverFromStatsJson(CastService.lastStats, e.id)
-                        updateLatencyIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+                        updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                         service(CastService.ACTION_REMOVE) { putExtra(CastService.EXTRA_IP, e.id) }
                     }
-                    status.text = "移除音箱 ${e.id}"
+                    setStatusText("已移除音箱 ${e.id}")
                 }
                 is Effect.RejectNonCastable -> {
-                    status.text = "无法投送：${e.reason}"
+                    setStatusText("无法投送：${e.reason}")
                 }
             }
         }
@@ -823,36 +1050,33 @@ class MainActivity : Activity() {
 
     private fun startCastTo(speakerIds: Set<String>) {
         if (speakerIds.isEmpty()) return
-        val appMode = sourceGroup.checkedRadioButtonId != 1
+        val appMode = settingsStore.sourceMode != "silent"
         if (appMode && selectedPackage.isBlank()) {
-            status.text = "请先在设置中选择投送的 App"
-            settingsBox.visibility = View.VISIBLE
-            // 回滚到 This device，避免勾选了却未投送
+            setStatusText("请先选择要投送的音频 App")
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
+            openAppPicker()
             return
         }
         if (appMode && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            status.text = "需要 RECORD_AUDIO（播放捕获，非麦克风）"
-            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 1)
+            setStatusText("需要音频捕获权限（仅用于播放捕获，不采集麦克风）")
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_PERMS)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             return
         }
         val ips = speakerIds.joinToString(",")
-        val ref = (refSpinner.selectedItem as String).let { if (it == "自动") "" else it }
-        val authMode = AuthModeResolve.coerceMode(authSpinner.selectedItemPosition)
         val base = Intent(this, CastService::class.java).setAction(CastService.ACTION_START)
             .putExtra(CastService.EXTRA_IPS, ips)
-            .putExtra(CastService.EXTRA_DELAY, delayEdit.text.toString().toIntOrNull() ?: 0)
-            .putExtra(CastService.EXTRA_PREMUTE, volumeBar.progress)
-            .putExtra(CastService.EXTRA_REF, ref)
-            .putExtra(CastService.EXTRA_AUTH, authMode)
+            .putExtra(CastService.EXTRA_DELAY, settingsStore.delayMs)
+            .putExtra(CastService.EXTRA_PREMUTE, masterVolume)
+            .putExtra(CastService.EXTRA_REF, settingsStore.refFunction)
+            .putExtra(CastService.EXTRA_AUTH, AuthModeResolve.coerceMode(settingsStore.authMode))
             .putExtra(
                 CastService.EXTRA_LOCAL_MUTE_POLICY,
-                if (keepLocalOutput) "keep_local" else "global_mute",
+                if (settingsStore.keepLocalOutput) "keep_local" else "global_mute",
             )
-        speakerIds.forEach { speakerVolume[it] = volumeBar.progress }
+        speakerIds.forEach { speakerVolume[it] = masterVolume }
         if (appMode) {
             val grantSession = UUID.randomUUID().toString()
             lastGrantSession = grantSession
@@ -863,16 +1087,16 @@ class MainActivity : Activity() {
                 .putExtra(CastService.EXTRA_GRANT_SESSION, grantSession)
             startActivityForResult(
                 getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
-                42,
+                REQ_PROJECTION,
             )
-            status.text =
-                "等待系统捕获授权…（UID 仍按已选 App=$selectedPackage；系统框选项不会改写 UID）"
+            setStatusText("等待系统播放捕获授权（UID 锁定 $selectedLabel）…")
         } else {
             castRequested = true
             CastService.primeConnectingReceivers(speakerIds)
-            updateLatencyIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+            updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+            updateHeaderStatusPill()
             startForegroundService(base.putExtra(CastService.EXTRA_SOURCE, "silent"))
-            status.text = "启动静音测试投送…"
+            setStatusText("正在启动静音测试投送…")
         }
     }
 
@@ -883,27 +1107,16 @@ class MainActivity : Activity() {
             selectedLabel = sel.label
             selectedCert = sel.signingCertSha256
         }
-        if (::targetLabel.isInitialized) {
-            targetLabel.text = if (selectedPackage.isBlank()) {
-                "未选择投送 App"
-            } else {
-                "投送目标：$selectedLabel\n$selectedPackage\n${CaptureSelectionLayers.settingsHintZh()}"
-            }
-        }
         if (::mainTargetTitle.isInitialized) {
             if (selectedPackage.isBlank()) {
                 mainTargetTitle.text = "投送音源：未选择"
                 mainTargetSubtitle.text = "点击选择需要投送的音乐或音频 App"
-                mainTargetIcon.setImageResource(android.R.drawable.sym_def_app_icon)
+                mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)
+                mainTargetIcon.setColorFilter(palette.accentBright)
             } else {
-                mainTargetTitle.text = "投送音源：$selectedLabel"
+                mainTargetTitle.text = "音源 · $selectedLabel"
                 mainTargetSubtitle.text = selectedPackage
-                val icon = AndroidLaunchableApps.loadIcon(this, selectedPackage)
-                if (icon != null) {
-                    mainTargetIcon.setImageDrawable(icon)
-                } else {
-                    mainTargetIcon.setImageResource(android.R.drawable.sym_def_app_icon)
-                }
+                UiIconCache.bindAppIcon(this, mainTargetIcon, selectedPackage)
             }
         }
         renderQuickSwitchRow()
@@ -937,14 +1150,20 @@ class MainActivity : Activity() {
         quickSwitchRow.visibility = View.VISIBLE
         candidates.forEach { app ->
             val isCurrent = app.packageName == selectedPackage
+            val bgColor = if (isCurrent) palette.rowSelectedBg else palette.controlSurface
+            val borderColor = if (isCurrent) palette.rowSelectedBorder else palette.panelBorder
+            val txtColor = if (isCurrent) palette.onSelectedPrimary else palette.textPrimary
             val chip = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = rounded(
-                    if (isCurrent) rowSelected else Color.argb(180, 56, 62, 74),
-                    14f,
+                background = UiComponents.rippleSurface(
+                    fillColor = bgColor,
+                    radiusPx = dpf(999f),
+                    rippleColor = if (isCurrent) palette.rippleOnSelected else palette.ripple,
+                    strokeColor = borderColor,
+                    strokeWidthPx = dp(1).coerceAtLeast(1),
                 )
-                setPadding(dp(10), dp(6), dp(10), dp(6))
+                setPadding(dp(9), dp(5), dp(11), dp(5))
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -954,19 +1173,15 @@ class MainActivity : Activity() {
                 setOnClickListener { quickSelectApp(app) }
             }
             val icon = ImageView(this).apply {
-                val drawable = AndroidLaunchableApps.loadIcon(this@MainActivity, app.packageName)
-                if (drawable != null) {
-                    setImageDrawable(drawable)
-                } else {
-                    setImageResource(android.R.drawable.sym_def_app_icon)
-                }
-                layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(6) }
+                layoutParams = LinearLayout.LayoutParams(dp(17), dp(17)).apply { marginEnd = dp(6) }
+                setColorFilter(txtColor)
             }
+            UiIconCache.bindAppIcon(this, icon, app.packageName)
             val label = TextView(this).apply {
-                text = if (isCurrent) "${app.label} ✓" else app.label
+                text = app.label
                 textSize = 12f
                 setTypeface(null, if (isCurrent) Typeface.BOLD else Typeface.NORMAL)
-                setTextColor(if (isCurrent) textOnLight else textOnDark)
+                setTextColor(txtColor)
             }
             chip.addView(icon)
             chip.addView(label)
@@ -975,16 +1190,14 @@ class MainActivity : Activity() {
     }
 
     private fun quickSelectApp(app: LaunchableApp) {
-        if (app.packageName == selectedPackage && sourceGroup.checkedRadioButtonId == 2) {
-            status.text = "当前音源已是 ${app.label}"
+        if (app.packageName == selectedPackage && settingsStore.sourceMode != "silent") {
+            setStatusText("当前音源已是 ${app.label}")
             return
         }
         Thread {
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
             when (val r = resolver.resolveForCapture(app.packageName)) {
-                is CaptureTargetResult.Fail -> main.post {
-                    status.text = r.messageZh
-                }
+                is CaptureTargetResult.Fail -> main.post { setStatusText(r.messageZh) }
                 is CaptureTargetResult.Ok -> {
                     store.saveSelection(
                         TargetAppSelection(
@@ -998,15 +1211,15 @@ class MainActivity : Activity() {
                         selectedLabel = app.label
                         selectedCert = r.signingCertSha256
                         lastGrantSession = null
-                        sourceGroup.check(2)
+                        settingsStore.sourceMode = "app"
                         refreshTargetFromStore()
                         if (CastService.running.get() && CastService.source == "app") {
                             stopCast()
                             routeState = CastRouteSelection.selectThisDevice(routeState).state
                             renderDevices()
-                            status.text = "已切换音源为 ${app.label} · 请重新勾选音箱开始投送"
+                            setStatusText("已切换音源为 ${app.label} · 请重新勾选音箱开始投送")
                         } else {
-                            status.text = "已选择音源：${app.label}"
+                            setStatusText("已选择音源：${app.label}")
                         }
                     }
                 }
@@ -1020,7 +1233,7 @@ class MainActivity : Activity() {
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
         }
-        startActivityForResult(Intent(this, AppPickerActivity::class.java), 43)
+        startActivityForResult(Intent(this, AppPickerActivity::class.java), REQ_APP_PICKER)
     }
 
     private fun localIp(): String {
@@ -1030,7 +1243,10 @@ class MainActivity : Activity() {
     }
 
     private fun discover() {
-        status.text = "正在发现…"
+        if (discovering) return
+        discovering = true
+        startRefreshSpinner()
+        setStatusText("正在扫描局域网音箱…")
         Thread {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val lock = wm.createMulticastLock("miplay-mdns").apply { setReferenceCounted(false); acquire() }
@@ -1041,6 +1257,8 @@ class MainActivity : Activity() {
             }
             Log.i(CastService.TAG, "discover: ${r.replace('\n', ';')}")
             main.post {
+                discovering = false
+                stopRefreshSpinner()
                 val found = mutableListOf<CastRouteSelection.Device>()
                 r.lines().mapNotNull(CastRouteSelection::parseDiscoveredLine).forEach { row ->
                     Log.i(CastService.TAG, row.logLine)
@@ -1062,35 +1280,16 @@ class MainActivity : Activity() {
                 renderDevices()
                 val castableCount = found.count { it.castable }
                 val hiddenCount = found.size - castableCount
-                status.text = if (found.isEmpty()) {
-                    "未发现设备"
-                } else if (hiddenCount > 0 && !showAllDiscovered) {
-                    "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
-                } else {
-                    "发现 ${found.size} 台 · 勾选音箱/电视投送（会话支持多选）"
-                }
+                setStatusText(
+                    when {
+                        found.isEmpty() -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
+                        hiddenCount > 0 && !settingsStore.showAllDiscovered ->
+                            "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
+                        else -> "发现 ${found.size} 台设备 · 点击音箱即可投送"
+                    },
+                )
             }
         }.start()
-    }
-
-    private fun addManualRows() {
-        val ips = manualIps.text.toString().split(',').map { it.trim() }
-            .filter { it.matches(Regex("""\d+\.\d+\.\d+\.\d+""")) }
-        if (ips.isEmpty()) return
-        val extra = ips.map {
-            CastRouteSelection.Device(
-                it,
-                "手动 $it",
-                Kind.SPEAKER,
-                castable = true,
-                protocol = CastProtocol.MIPLAY,
-            )
-        }
-        val merged = (routeState.devices.filter { it.kind != Kind.THIS_DEVICE } + extra).distinctBy { it.id }
-        deviceStore.saveDevices(merged)
-        routeState = CastRouteSelection.mergeDiscovered(routeState, merged)
-        renderDevices()
-        manualIps.setText("")
     }
 
     private fun handleAutomation(i: Intent?) {
@@ -1099,20 +1298,18 @@ class MainActivity : Activity() {
             pendingIps = it.split(',').map { s -> s.trim() }.filter { s -> s.isNotEmpty() }.toSet()
         }
         when (i.getStringExtra("source")) {
-            "app", "system" -> sourceGroup.check(2)
-            "silent" -> sourceGroup.check(1)
+            "app", "system" -> settingsStore.sourceMode = "app"
+            "silent" -> settingsStore.sourceMode = "silent"
         }
         i.getStringExtra("target_package")?.let { pkg ->
             selectedPackage = pkg
             selectedLabel = i.getStringExtra("target_label") ?: pkg
             selectedCert = i.getStringExtra("target_cert").orEmpty()
             refreshTargetFromStore()
-            targetLabel.text = "投送目标：$selectedLabel\n$selectedPackage"
         }
-        AuthModeResolve.fromIntent(i)?.let { authSpinner.setSelection(it) }
+        AuthModeResolve.fromIntent(i)?.let { settingsStore.authMode = it }
         i.getStringExtra("ref")?.let { r ->
-            (0 until refSpinner.count).firstOrNull { refSpinner.getItemAtPosition(it) == r }
-                ?.let(refSpinner::setSelection)
+            settingsStore.refFunction = if (r == "自动") "" else r
         }
         if (i.getBooleanExtra("discover", false)) discover()
         if (i.getBooleanExtra("stop", false)) {
@@ -1149,7 +1346,10 @@ class MainActivity : Activity() {
                                 s,
                                 s.devices.filter { it.kind != Kind.THIS_DEVICE } +
                                     CastRouteSelection.Device(
-                                        ip, ip, Kind.SPEAKER, true,
+                                        ip,
+                                        ip,
+                                        Kind.SPEAKER,
+                                        true,
                                         protocol = CastProtocol.MIPLAY,
                                     ),
                             )
@@ -1165,51 +1365,16 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun startLocalFilterAcceptance() {
-        if (!LocalFilterAcceptanceGate.exposeLocalProbeEntry(BuildConfig.IS_ACCEPTANCE)) return
-        val gate = LocalFilterAcceptanceGate.validateStart(
-            LocalFilterAcceptanceGate.Mode.LOCAL_PCM_PROBE,
-            selectedPackage.isNotBlank(),
-            0,
-        )
-        if (gate is LocalFilterAcceptanceGate.StartDecision.Block) {
-            status.text = gate.messageZh
-            return
-        }
-        if (CastService.running.get()) {
-            status.text = "请先停止音箱投送"
-            return
-        }
-        val grantSession = UUID.randomUUID().toString()
-        lastGrantSession = grantSession
-        pendingLocalProbe = Intent(this, LocalFilterProbeService::class.java)
-            .setAction(LocalFilterProbeService.ACTION_START)
-            .putExtra(LocalFilterProbeService.EXTRA_TARGET_PACKAGE, selectedPackage)
-            .putExtra(LocalFilterProbeService.EXTRA_TARGET_CERT, selectedCert)
-            .putExtra(LocalFilterProbeService.EXTRA_GRANT_SESSION, grantSession)
-        startActivityForResult(
-            getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
-            44,
-        )
-        status.text = "本地过滤验收：等待投影授权…"
-    }
-
-    private fun stopLocalProbe() {
-        startService(Intent(this, LocalFilterProbeService::class.java).setAction(LocalFilterProbeService.ACTION_STOP))
-        localProbeBtn?.text = "本地音频过滤验收"
-        status.text = "已停止本地探针"
-    }
-
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            42 -> {
+            REQ_PROJECTION -> {
                 val p = pendingStart ?: return
                 pendingStart = null
                 if (resultCode != RESULT_OK || data == null) {
                     castRequested = false
-                    status.text = "录屏授权被拒绝 · 已回 This device"
+                    setStatusText("播放捕获授权已取消 · 已切回本机播放")
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
                     renderDevices()
                     lastGrantSession = null
@@ -1218,7 +1383,7 @@ class MainActivity : Activity() {
                 val currentIps = routeState.selectedSpeakerIds
                 if (currentIps.isEmpty()) {
                     castRequested = false
-                    status.text = "未选择投送音箱 · 已回 This device"
+                    setStatusText("未选择投送音箱 · 已切回本机播放")
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
                     renderDevices()
                     lastGrantSession = null
@@ -1227,14 +1392,15 @@ class MainActivity : Activity() {
                 p.putExtra(CastService.EXTRA_IPS, currentIps.joinToString(","))
                 castRequested = true
                 CastService.primeConnectingReceivers(currentIps)
-                updateLatencyIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+                updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+                updateHeaderStatusPill()
                 startForegroundService(
                     p.putExtra(CastService.EXTRA_PROJ_CODE, resultCode)
                         .putExtra(CastService.EXTRA_PROJ_DATA, data),
                 )
-                status.text = "正在投送到音箱…"
+                setStatusText("正在连接并投送到音箱…")
             }
-            43 -> {
+            REQ_APP_PICKER -> {
                 if (resultCode != RESULT_OK || data == null) return
                 selectedPackage = data.getStringExtra(AppPickerActivity.EXTRA_PACKAGE).orEmpty()
                 selectedLabel = data.getStringExtra(AppPickerActivity.EXTRA_LABEL).orEmpty()
@@ -1247,23 +1413,19 @@ class MainActivity : Activity() {
                     ),
                 )
                 lastGrantSession = null
+                settingsStore.sourceMode = "app"
                 refreshTargetFromStore()
-                sourceGroup.check(2)
-                status.text = "已选择 $selectedLabel"
+                setStatusText("已选择音源：$selectedLabel")
             }
-            44 -> {
-                val p = pendingLocalProbe ?: return
-                pendingLocalProbe = null
-                if (resultCode != RESULT_OK || data == null) {
-                    status.text = "本地过滤验收：授权被拒绝"
-                    return
+            REQ_SETTINGS -> {
+                if (data?.getBooleanExtra(SettingsActivity.EXTRA_DEVICES_CHANGED, false) == true) {
+                    val saved = deviceStore.loadDevices()
+                    routeState = CastRouteSelection.mergeDiscovered(routeState, saved)
+                    renderDevices()
                 }
-                startForegroundService(
-                    p.putExtra(LocalFilterProbeService.EXTRA_PROJ_CODE, resultCode)
-                        .putExtra(LocalFilterProbeService.EXTRA_PROJ_DATA, data),
-                )
-                localProbeBtn?.text = "停止本地过滤验收"
-                status.text = "本地过滤验收已启动"
+                if (data?.getBooleanExtra(SettingsActivity.EXTRA_TRIGGER_DISCOVER, false) == true) {
+                    discover()
+                }
             }
         }
     }
@@ -1279,39 +1441,37 @@ class MainActivity : Activity() {
         if (ip.isNotEmpty()) putExtra(CastService.EXTRA_IP, ip)
     }
 
-    private fun refreshLoop() {
-        main.postDelayed(object : Runnable {
-            override fun run() {
-                if (CastService.running.get()) {
-                    castRequested = false
-                    status.text = CastService.lastEvent.ifBlank { status.text }
-                } else if (CastService.lastFailMessage.isNotBlank()) {
-                    castRequested = false
-                }
-                muteLine.text = CastService.localMuteStatusZh
-                val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
-                updateLatencyIndicators(stats)
-                if (BuildConfig.IS_ACCEPTANCE && LocalFilterProbeService.running.get()) {
-                    localProbeStatus?.text = LocalFilterProbeService.lastProbe.ifBlank {
-                        LocalFilterProbeService.lastEvent
-                    }
-                }
-                // 若投送已停但 UI 仍勾选音箱（异常断线），保持勾选；用户可点 This device
-                main.postDelayed(this, 1000)
-            }
-        }, 1000)
-    }
-
-    private fun updateLatencyIndicators(stats: JSONObject?) {
+    private fun updateLatencyAndSubtitleIndicators(stats: JSONObject?) {
         val failed = CastService.lastFailMessage.isNotBlank()
         val isCasting = CastService.running.get() || castRequested
+        val receivers = stats?.optJSONArray("receivers")
         latencyIndicators.forEach { (deviceId, views) ->
             val device = routeState.devices.firstOrNull { it.id == deviceId }
+            val selected = device?.selected == true
+            val receiverObj = if (receivers != null) {
+                (0 until receivers.length())
+                    .mapNotNull(receivers::optJSONObject)
+                    .firstOrNull { it.optString("ip") == deviceId }
+            } else {
+                null
+            }
+            val uiState = receiverObj?.optString("ui_state", "").orEmpty().lowercase()
+            speakerSubtitles[deviceId]?.let { sub ->
+                if (device != null && device.castable) {
+                    sub.text = when {
+                        !selected || !isCasting -> device.id
+                        uiState == "reconnecting" -> "${device.id} · 重连中…"
+                        uiState == "error" -> "${device.id} · 连接异常"
+                        uiState == "streaming" -> "${device.id} · 投送中"
+                        else -> "${device.id} · 连接中…"
+                    }
+                }
+            }
             when (
                 val indicator = LatencyDisplay.receiverIndicator(
                     stats = stats,
                     deviceId = deviceId,
-                    selected = device?.selected == true,
+                    selected = selected,
                     casting = isCasting,
                     failed = failed,
                 )
