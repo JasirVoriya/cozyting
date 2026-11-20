@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 原创：扇形波纹 + 端点，示意广播投送（非 Google Cast 官方标） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:pathData="M3,13 L3,10.2 A4.8,4.8 0 0 1 7.8,5.4"
+        android:strokeWidth="1.35"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M3,13 L3,11.6 A2.4,2.4 0 0 1 5.4,9.2"
+        android:strokeWidth="1.35"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M3,13m-0.95,0a0.95,0.95 0,1 1,1.9 0a0.95,0.95 0,1 1,-1.9 0"
+        android:fillColor="#FFFFFF" />
+    <path
+        android:pathData="M9.2,4.2 L13,4.2 L13,12.2 L9.8,12.2"
+        android:strokeWidth="1.3"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

@@ -1,0 +1,14 @@
+target/
+*.pcapng
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/keystore.properties
+android/app/src/main/jniLibs/
+android/app/acceptance.keystore
+*.keystore
+*.jks
+android/testtones/build/
+._*
+.DS_Store

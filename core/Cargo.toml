@@ -1,0 +1,32 @@
+[package]
+name = "miplay-sender-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "MiPlay LAN audio sender core: mDNS discovery, TCP 8899 control, WFD RTSP source, UDP timer master, RTP/MPEG-TS AAC packetizer, multi-speaker group timeline"
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[features]
+default = []
+# Android JNI 桥接（cargo ndk -t arm64-v8a build --features jni）
+jni = ["dep:jni", "dep:android_logger"]
+
+[dependencies]
+aes = "0.8"
+cbc = "0.1"
+md-5 = "0.10"
+hmac = "0.12"
+sha1 = "0.10"
+sha2 = "0.10"
+hex = "0.4"
+rand = "0.8"
+thiserror = "1"
+log = "0.4"
+jni = { version = "0.21", optional = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = { version = "0.14", optional = true }
