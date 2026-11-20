@@ -1,0 +1,373 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 910" width="1360" height="910" role="img" aria-labelledby="rt-title rt-desc">
+  <title id="rt-title">MiPlay Sender 软件运行时整体架构</title>
+  <desc id="rt-desc">展示单 Android 应用进程内 Kotlin 线程组、JNI 有界队列与句柄表、Rust 共享媒体时钟与监督线程、每台接收端独立的 5 线程与 6 条局域网通路以及核心生命周期状态流转。</desc>
+  <defs>
+    <linearGradient id="rt-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070b14"/>
+      <stop offset="50%" stop-color="#0b1120"/>
+      <stop offset="100%" stop-color="#070a12"/>
+    </linearGradient>
+    <linearGradient id="proc-surface" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0e172a" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#09101f" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="zone-surface" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#131e36" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#0d1527" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="node-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#182542"/>
+      <stop offset="100%" stop-color="#10192e"/>
+    </linearGradient>
+    <linearGradient id="jni-bar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <radialGradient id="rt-glow-1" cx="30%" cy="62%" r="42%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.11"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rt-glow-2" cx="84%" cy="50%" r="36%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="rt-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#334155" opacity="0.34"/>
+    </pattern>
+    <filter id="rt-orb" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="rt-shadow" x="-6%" y="-10%" width="112%" height="126%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+
+    <marker id="rt-arr-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#22d3ee"/>
+    </marker>
+    <marker id="rt-arr-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#fbbf24"/>
+    </marker>
+    <marker id="rt-arr-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#34d399"/>
+    </marker>
+    <marker id="rt-arr-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#c084fc"/>
+    </marker>
+
+    <!--
+      CLEAN ZERO-OVERLAP ROUTES:
+      Subzone A: Resources bar on TOP (y=168..232); 3 Active Threads on BOTTOM (y=256..364) -> drop directly to JNI (y=402) with ZERO box crossings!
+      Subzone C: gap between left col (x=70..354) and right col (x=384..862) is x=354..384 (gutter x=369).
+      Right LAN ports centers:
+        ① mDNS:       y=342
+        ② TCP 8899:   y=402
+        ③ RTSP #1:    y=464
+        ④ Aux #2:     y=522
+        ⑤ Audio #3:   y=582
+        ⑥ UDP Timer:  y=642
+    -->
+    <!-- Media Path -->
+    <path id="rp-cap-jni" d="M 520 364 L 520 384 L 680 384 L 680 404"/>
+    <path id="rp-jni-clk" d="M 680 458 L 680 472 L 369 472 L 369 578 L 342 578"/>
+    <path id="rp-clk-med" d="M 342 608 L 408 608"/>
+    <path id="rp-med-lan" d="M 862 582 L 966 582"/>
+
+    <!-- Control & Auth Path -->
+    <path id="rp-ui-rec" d="M 318 308 L 330 308 L 330 245 L 740 245 L 740 256"/>
+    <path id="rp-rec-jni" d="M 768 364 L 768 404"/>
+    <path id="rp-ctl-lan" d="M 862 678 L 916 678 L 916 402 L 966 402"/>
+    <path id="rp-sup-rec" d="M 342 700 L 369 700 L 369 678 L 408 678"/>
+
+    <!-- RTSP & Timer Sync Paths -->
+    <path id="rp-rtsp-lan" d="M 862 562 L 900 562 L 900 464 L 966 464"/>
+    <path id="rp-tmr-lan" d="M 862 770 L 930 770 L 930 642 L 966 642"/>
+
+    <!-- Stats Feedback -> UI -->
+    <path id="rp-stat-ui" d="M 196 404 L 196 364"/>
+
+    <style>
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif; }
+      .mono { font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; }
+      .title { font-size: 22px; font-weight: 700; fill: #f8fafc; letter-spacing: 0.2px; }
+      .sub { font-size: 11.8px; fill: #94a3b8; }
+      .proc-box { fill: url(#proc-surface); stroke: #233354; stroke-width: 1.4; }
+      .zone-box { fill: url(#zone-surface); stroke: #243554; stroke-width: 1.15; }
+      .node { fill: url(#node-card); stroke: #2b3c60; stroke-width: 1.15; filter: url(#rt-shadow); }
+      .tag { font-size: 10.4px; font-weight: 700; letter-spacing: 0.6px; }
+      .ntitle { font-size: 12.8px; font-weight: 700; fill: #f1f5f9; }
+      .nmono { font-size: 9.8px; fill: #7dd3fc; }
+      .nbody { font-size: 10.6px; fill: #cbd5e1; }
+      .nmeta { font-size: 9.8px; fill: #94a3b8; }
+      .wbase { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.24; }
+      .wcyan { fill: none; stroke: #22d3ee; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9 13; animation: rt-flow 1.3s linear infinite; }
+      .wamber { fill: none; stroke: #fbbf24; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 7 12; animation: rt-flow 1.85s linear infinite; }
+      .wemerald { fill: none; stroke: #34d399; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 4 10; animation: rt-flow 2.1s linear infinite; }
+      .wviolet { fill: none; stroke: #c084fc; stroke-width: 1.85; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 5 9; animation: rt-flow 2.2s linear infinite; }
+      .hb-dot { animation: hb 1.6s ease-in-out infinite; }
+      @keyframes rt-flow { from { stroke-dashoffset: 44; } to { stroke-dashoffset: 0; } }
+      @keyframes hb { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        .wcyan, .wamber, .wemerald, .wviolet, .hb-dot { animation: none !important; }
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1360" height="910" rx="18" fill="url(#rt-bg)"/>
+  <rect width="1360" height="910" rx="18" fill="url(#rt-grid)"/>
+  <rect width="1360" height="910" rx="18" fill="url(#rt-glow-1)"/>
+  <rect width="1360" height="910" rx="18" fill="url(#rt-glow-2)"/>
+  <rect x="1" y="1" width="1358" height="908" rx="17" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- ==================== HEADER ==================== -->
+  <g transform="translate(36, 22)">
+    <rect x="0" y="4" width="6" height="42" rx="3" fill="url(#jni-bar)"/>
+    <text x="18" y="24" class="sans title">MiPlay Sender · 软件运行时整体架构（进程 · 线程 · 队列 · 网络拓扑）</text>
+    <text x="18" y="44" class="mono sub">Single Android Process (ART + libmiplay_sender_core.so) · Bounded Queues (96 / 256) · Per-Receiver 5 Threads &amp; 6 Network Paths</text>
+  </g>
+
+  <!-- ==================== LEFT: ANDROID APP PROCESS ==================== -->
+  <g>
+    <rect x="36" y="92" width="858" height="790" rx="16" class="proc-box"/>
+    <rect x="52" y="104" width="256" height="22" rx="6" fill="#0d2342" stroke="#2563eb" stroke-width="0.9"/>
+    <text x="180" y="119" text-anchor="middle" class="mono tag" fill="#93c5fd">ANDROID PROCESS · com.miplay.sender</text>
+    <text x="322" y="119" class="sans nmeta">单进程承载 UI / FGS / MediaCodec，并在同地址空间加载 Rust 动态库 (.so)</text>
+
+    <!-- SUBZONE A: ART / Kotlin Runtime (Resources bar on TOP, Threads on BOTTOM for zero wire-crossing!) -->
+    <rect x="54" y="138" width="822" height="240" rx="12" class="zone-box"/>
+    <rect x="54" y="138" width="4" height="240" rx="2" fill="#38bdf8"/>
+    <text x="70" y="158" class="mono tag" fill="#7dd3fc">ART / KOTLIN 托管运行区（资源 + 活跃线程组）</text>
+
+    <!-- Held Resources Bar (Top) -->
+    <rect x="70" y="168" width="790" height="64" rx="10" fill="#0b1325" stroke="#253658" stroke-width="1"/>
+    <text x="86" y="187" class="mono tag" fill="#cbd5e1">托管系统资源 &amp; 短生命周期后台线程</text>
+    <rect x="86" y="197" width="184" height="24" rx="6" fill="#13223e" stroke="#334155"/>
+    <text x="178" y="213" text-anchor="middle" class="mono nmeta" fill="#e2e8f0">FGS mediaProjection|Playback</text>
+    <rect x="280" y="197" width="164" height="24" rx="6" fill="#13223e" stroke="#334155"/>
+    <text x="362" y="213" text-anchor="middle" class="mono nmeta" fill="#e2e8f0">WakeLock · WifiLock</text>
+    <rect x="454" y="197" width="190" height="24" rx="6" fill="#13223e" stroke="#334155"/>
+    <text x="549" y="213" text-anchor="middle" class="mono nmeta" fill="#e2e8f0">stats(1Hz) · discover · vol</text>
+    <rect x="654" y="197" width="190" height="24" rx="6" fill="#13223e" stroke="#334155"/>
+    <text x="749" y="213" text-anchor="middle" class="mono nmeta" fill="#e2e8f0">cast_ops.log (64KB 轮转)</text>
+
+    <!-- Main Thread (Bottom-Left) -->
+    <rect x="70" y="256" width="248" height="108" rx="10" class="node"/>
+    <circle cx="86" cy="274" r="4" fill="#38bdf8"/>
+    <text x="97" y="278" class="sans ntitle">Main Thread (UI)</text>
+    <text x="80" y="296" class="mono nmono">1Hz refreshLoop · 原位刷新</text>
+    <text x="80" y="315" class="sans nbody">• 仅更新设备行内 ms 与转圈</text>
+    <text x="80" y="332" class="sans nbody">• 驱动路由互斥状态机</text>
+    <text x="80" y="350" class="sans nmeta">• MediaProjection 授权回调</text>
+
+    <!-- Capture Thread (Bottom-Mid) -->
+    <rect x="342" y="256" width="250" height="108" rx="10" class="node" stroke="#0891b2"/>
+    <circle cx="358" cy="274" r="4" fill="#22d3ee" class="hb-dot"/>
+    <text x="369" y="278" class="sans ntitle">capture (MAX_PRIORITY)</text>
+    <text x="352" y="296" class="mono nmono">AudioRecord (4×4096B ≈ 85ms)</text>
+    <text x="352" y="315" class="sans nbody">• 严格单 UID 捕获 48kHz PCM</text>
+    <text x="352" y="332" class="sans nbody">• 每 12 块送 PcmProbe + 静音锁定</text>
+    <text x="352" y="350" class="sans nmeta">• MediaCodec AAC → pushAac()</text>
+
+    <!-- Reconcile Thread (Bottom-Right) -->
+    <rect x="616" y="256" width="244" height="108" rx="10" class="node" stroke="#b45309"/>
+    <circle cx="632" cy="274" r="4" fill="#fbbf24"/>
+    <text x="643" y="278" class="sans ntitle">cast-start / reconcile</text>
+    <text x="626" y="296" class="mono nmono">routeLock 串行协调队列</text>
+    <text x="626" y="315" class="sans nbody">• 对齐 desired 与 active 音箱集</text>
+    <text x="626" y="332" class="sans nbody">• 建连窗口期点击不丢失</text>
+    <text x="626" y="350" class="sans nmeta">• 延迟音量排队 · 取消即刻中断</text>
+
+    <!-- SUBZONE B: JNI Bounded Boundary -->
+    <rect x="54" y="404" width="822" height="54" rx="10" fill="#141836" stroke="url(#jni-bar)" stroke-width="1.4"/>
+    <text x="70" y="425" class="mono tag" fill="#e0f2fe">JNI 边界 · ENGINES Registry</text>
+    <text x="70" y="444" class="mono nmeta">OnceLock&lt;Mutex&lt;HashMap&lt;jlong, Arc&lt;Engine&gt;&gt;&gt;&gt; · stop() 先 drop(feed) 防死锁</text>
+    <rect x="576" y="415" width="286" height="32" rx="8" fill="#082f49" stroke="#22d3ee" stroke-width="1"/>
+    <text x="719" y="435" text-anchor="middle" class="mono nmono" fill="#67e8f9">FEED_QUEUE_AUS = sync_channel(96) ≈ 2s</text>
+
+    <!-- SUBZONE C: Rust Native Runtime -->
+    <rect x="54" y="486" width="822" height="380" rx="12" class="zone-box"/>
+    <rect x="54" y="486" width="4" height="380" rx="2" fill="#fb923c"/>
+    <text x="70" y="507" class="mono tag" fill="#fdba74">RUST NATIVE RUNTIME · core .so</text>
+
+    <!-- Session-Global Column -->
+    <rect x="70" y="520" width="284" height="330" rx="10" fill="#0c1426" stroke="#293a5c" stroke-width="1"/>
+    <text x="84" y="541" class="mono tag" fill="#94a3b8">会话级共享线程与时钟（1 份/会话）</text>
+
+    <!-- media-clock thread -->
+    <rect x="84" y="554" width="258" height="96" rx="9" class="node" stroke="#0891b2"/>
+    <circle cx="98" cy="572" r="4" fill="#22d3ee" class="hb-dot"/>
+    <text x="109" y="576" class="sans ntitle">media-clock 线程</text>
+    <text x="94" y="594" class="mono nmono">poll_au(50ms) · 21.333ms 节拍</text>
+    <text x="94" y="611" class="sans nbody">• OffsetBarrier: flush 积压 + 14 AU</text>
+    <text x="94" y="627" class="sans nbody">• 推进共享 PTS (前向修正) 广播 Arc</text>
+    <text x="94" y="642" class="sans nmeta">• 满队接收端单端剔除，不堵全局</text>
+
+    <!-- supervisor thread -->
+    <rect x="84" y="662" width="258" height="82" rx="9" class="node" stroke="#b45309"/>
+    <circle cx="98" cy="680" r="4" fill="#fbbf24"/>
+    <text x="109" y="684" class="sans ntitle">supervisor 监督线程 (1Hz)</text>
+    <text x="94" y="702" class="mono nmono">heartbeat_timeout = 15s</text>
+    <text x="94" y="719" class="sans nbody">• 失活成员迁入 pending (reconnecting)</text>
+    <text x="94" y="735" class="sans nmeta">• 指数退避重连 2→4→8→16→30s</text>
+
+    <!-- EPOCH Clock -->
+    <rect x="84" y="756" width="258" height="78" rx="9" class="node" stroke="#059669"/>
+    <circle cx="98" cy="774" r="4" fill="#34d399"/>
+    <text x="109" y="778" class="sans ntitle">EPOCH 统一单调时钟</text>
+    <text x="94" y="796" class="mono nmono">CLOCK_MONOTONIC · now_us()</text>
+    <text x="94" y="816" class="sans nbody">Timer / TIME_OFFSET / PCR 严格同源</text>
+
+    <!-- Per-Receiver Thread Pool -->
+    <rect x="384" y="520" width="478" height="330" rx="10" fill="#0c1426" stroke="#0d9488" stroke-width="1.15"/>
+    <text x="400" y="541" class="mono tag" fill="#6ee7b7">PER-RECEIVER 接收端线程池（每台音箱独立 × N，上限 63）</text>
+
+    <!-- media-<ip> -->
+    <rect x="408" y="554" width="454" height="76" rx="9" class="node" stroke="#0891b2"/>
+    <circle cx="424" cy="572" r="4" fill="#22d3ee" class="hb-dot"/>
+    <text x="435" y="576" class="sans ntitle">media-&lt;ip&gt; 线程 + rtsp-&lt;ip&gt; 线程</text>
+    <text x="418" y="594" class="mono nmono">media_rx: sync_channel(256) → Packetizer (ADTS/PES/TS/RTP/$24)</text>
+    <text x="418" y="614" class="sans nbody">独立 RTP 序号与 TS CC 写入 Audio TCP；rtsp 维护 M1–M5 / PLAY / TIME_OFFSET</text>
+
+    <!-- ctl-<ip> & hb-<ip> -->
+    <rect x="408" y="642" width="454" height="84" rx="9" class="node" stroke="#b45309"/>
+    <circle cx="424" cy="660" r="4" fill="#fbbf24" class="hb-dot"/>
+    <text x="435" y="664" class="sans ntitle">ctl-&lt;ip&gt; 读循环 + hb-&lt;ip&gt; 心跳线程</text>
+    <text x="418" y="682" class="mono nmono">TCP 8899 · SecureWriter (Legacy 明文 / Safety 双向链式 AES-128-CBC)</text>
+    <text x="418" y="700" class="sans nbody">• hb 每 5s 发 HEARTBEAT；ctl 15s 读超时看门狗 + 精确匹配 SetVolume ACK</text>
+    <text x="418" y="716" class="sans nmeta">• 吸收 NOTIFY (state / first-audiopcm) 更新 ReceiverStats</text>
+
+    <!-- timer-<ip> & Aux & Cancel -->
+    <rect x="408" y="738" width="454" height="96" rx="9" class="node" stroke="#059669"/>
+    <circle cx="424" cy="756" r="4" fill="#34d399" class="hb-dot"/>
+    <text x="435" y="760" class="sans ntitle">timer-&lt;ip&gt; 时钟主 + Aux 保活 + 取消令牌</text>
+    <text x="418" y="778" class="mono nmono">UDP TimerServer (40B 小端报文: recv_us / send_us)</text>
+    <text x="418" y="796" class="sans nbody">• 仅响应白名单 IP 采样，让所有音箱把本地时钟锁定到手机单调时钟</text>
+    <text x="418" y="814" class="sans nmeta">• Aux 反向 TCP 保持打开 · Arc&lt;AtomicBool&gt; 隔离“中途取消后立即重勾”</text>
+  </g>
+
+  <!-- ==================== RIGHT: SYSTEM & LAN TOPOLOGY ==================== -->
+  <g>
+    <!-- Android System Boundary -->
+    <rect x="944" y="92" width="380" height="164" rx="14" class="proc-box"/>
+    <rect x="944" y="92" width="5" height="164" rx="2.5" fill="#818cf8"/>
+    <rect x="962" y="104" width="212" height="20" rx="6" fill="#1e1b4b" stroke="#4f46e5" stroke-width="0.9"/>
+    <text x="1068" y="118" text-anchor="middle" class="mono tag" fill="#a5b4fc">ANDROID FRAMEWORK 边界</text>
+
+    <rect x="962" y="134" width="344" height="108" rx="10" class="node"/>
+    <text x="976" y="155" class="sans ntitle">系统多媒体与网络服务</text>
+    <text x="976" y="174" class="sans nbody">• AudioFlinger：按单 UID 混音捕获 + STREAM_MUSIC mute</text>
+    <text x="976" y="192" class="sans nbody">• MediaProjectionManager：每次会话重新授权 Token</text>
+    <text x="976" y="210" class="sans nbody">• MediaSessionManager：读取当前播放元数据与播控</text>
+    <text x="976" y="228" class="sans nbody">• WifiManager：频段 (5GHz→800ms) + MulticastLock</text>
+
+    <!-- LAN 6 Network Channels -->
+    <rect x="944" y="274" width="380" height="406" rx="14" class="proc-box"/>
+    <rect x="944" y="274" width="5" height="406" rx="2.5" fill="#34d399"/>
+    <rect x="962" y="286" width="240" height="20" rx="6" fill="#062e23" stroke="#059669" stroke-width="0.9"/>
+    <text x="1082" y="300" text-anchor="middle" class="mono tag" fill="#6ee7b7">LAN · 每台接收端 6 条网络通路</text>
+
+    <!-- Port 1: mDNS -->
+    <rect x="966" y="318" width="340" height="48" rx="8" class="node" stroke="#7e22ce"/>
+    <text x="980" y="338" class="mono nmono" fill="#e9d5ff">① UDP 224.0.0.251:5353 (mDNS 组播)</text>
+    <text x="980" y="356" class="sans nmeta">发现 _mi-connect (apps=[5]) 与 _lyra-mdns 节点</text>
+
+    <!-- Port 2: TCP 8899 (center y=402) -->
+    <rect x="966" y="376" width="340" height="52" rx="8" class="node" stroke="#b45309"/>
+    <text x="980" y="396" class="mono nmono" fill="#fde68a">② 手机 → 音箱 · TCP 8899 (正向控制)</text>
+    <text x="980" y="414" class="sans nmeta">Legacy / Safety 认证 · Open · 音量 · 暂停/恢复 · 心跳</text>
+
+    <!-- Port 3: Reverse RTSP (center y=464) -->
+    <rect x="966" y="438" width="340" height="52" rx="8" class="node" stroke="#059669"/>
+    <text x="980" y="458" class="mono nmono" fill="#6ee7b7">③ 音箱 → 手机 · 反向 TCP #1 (WFD RTSP)</text>
+    <text x="980" y="476" class="sans nmeta">M1–M5 能力协商 · SETUP/PLAY · 下发共享 TIME_OFFSET</text>
+
+    <!-- Port 4: Reverse Aux (center y=522) -->
+    <rect x="966" y="500" width="340" height="44" rx="8" class="node"/>
+    <text x="980" y="519" class="mono nmono" fill="#cbd5e1">④ 音箱 → 手机 · 反向 TCP #2 (Aux 辅助)</text>
+    <text x="980" y="536" class="sans nmeta">同一监听端口接受的第二条连接，运行期保持打开</text>
+
+    <!-- Port 5: Reverse Audio (center y=582) -->
+    <rect x="966" y="555" width="340" height="54" rx="8" class="node" stroke="#0891b2"/>
+    <text x="980" y="575" class="mono nmono" fill="#67e8f9">⑤ 音箱 → 手机 · 反向 TCP #3 (媒体音频流)</text>
+    <text x="980" y="593" class="sans nmeta">$+24bit 长度帧封装 RTP(PT=33) / MPEG-TS / PES / ADTS</text>
+
+    <!-- Port 6: UDP Timer (center y=642) -->
+    <rect x="966" y="618" width="340" height="48" rx="8" class="node" stroke="#059669"/>
+    <text x="980" y="638" class="mono nmono" fill="#6ee7b7">⑥ 音箱 ⇄ 手机 · UDP Timer (随机端口)</text>
+    <text x="980" y="655" class="sans nmeta">40B 双向时间戳采样，校准音箱本地时钟偏移与频偏</text>
+
+    <!-- Lifecycle State Strip -->
+    <rect x="944" y="696" width="380" height="186" rx="14" class="proc-box"/>
+    <rect x="944" y="696" width="5" height="186" rx="2.5" fill="#c084fc"/>
+    <rect x="962" y="708" width="188" height="20" rx="6" fill="#23123a" stroke="#9333ea" stroke-width="0.9"/>
+    <text x="1056" y="722" text-anchor="middle" class="mono tag" fill="#e9d5ff">核心运行时生命周期</text>
+
+    <g transform="translate(964, 742)">
+      <rect x="0" y="0" width="104" height="32" rx="7" fill="#13223e" stroke="#334155"/>
+      <text x="52" y="20" text-anchor="middle" class="sans nbody">1. mDNS 发现</text>
+      <text x="114" y="20" class="mono nmeta">→</text>
+      <rect x="128" y="0" width="104" height="32" rx="7" fill="#13223e" stroke="#334155"/>
+      <text x="180" y="20" text-anchor="middle" class="sans nbody">2. UID/投影授权</text>
+      <text x="242" y="20" class="mono nmeta">→</text>
+      <rect x="256" y="0" width="84" height="32" rx="7" fill="#1e1b4b" stroke="#6366f1"/>
+      <text x="298" y="20" text-anchor="middle" class="sans nbody">3. 建连转圈</text>
+
+      <rect x="0" y="48" width="118" height="34" rx="7" fill="#082f49" stroke="#22d3ee"/>
+      <text x="59" y="69" text-anchor="middle" class="sans nbody" fill="#e0f2fe">4. Barrier 同步</text>
+      <text x="126" y="69" class="mono nmeta">→</text>
+      <rect x="140" y="48" width="102" height="34" rx="7" fill="#062e23" stroke="#10b981"/>
+      <text x="191" y="69" text-anchor="middle" class="sans nbody" fill="#d1fae5">5. Streaming</text>
+      <text x="250" y="69" class="mono nmeta">⇄</text>
+      <rect x="264" y="48" width="76" height="34" rx="7" fill="#2d1d06" stroke="#f59e0b"/>
+      <text x="302" y="69" text-anchor="middle" class="sans nbody" fill="#fef3c7">重连/暂停</text>
+
+      <rect x="0" y="96" width="340" height="30" rx="7" fill="#1c1124" stroke="#7e22ce"/>
+      <text x="170" y="115" text-anchor="middle" class="mono nmeta" fill="#e9d5ff">6. 停止：drop(feed) → join → CLOSE(0x02) → 恢复音量</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANIMATED RUNTIME FLOWS ==================== -->
+  <g class="wbase">
+    <use href="#rp-cap-jni" stroke="#22d3ee"/>
+    <use href="#rp-jni-clk" stroke="#22d3ee"/>
+    <use href="#rp-clk-med" stroke="#22d3ee"/>
+    <use href="#rp-med-lan" stroke="#22d3ee"/>
+    <use href="#rp-ui-rec" stroke="#fbbf24"/>
+    <use href="#rp-rec-jni" stroke="#fbbf24"/>
+    <use href="#rp-ctl-lan" stroke="#fbbf24"/>
+    <use href="#rp-sup-rec" stroke="#fbbf24"/>
+    <use href="#rp-rtsp-lan" stroke="#34d399"/>
+    <use href="#rp-tmr-lan" stroke="#34d399"/>
+    <use href="#rp-stat-ui" stroke="#c084fc"/>
+  </g>
+  <g>
+    <use href="#rp-cap-jni" class="wcyan" marker-end="url(#rt-arr-cyan)"/>
+    <use href="#rp-jni-clk" class="wcyan" marker-end="url(#rt-arr-cyan)"/>
+    <use href="#rp-clk-med" class="wcyan" marker-end="url(#rt-arr-cyan)"/>
+    <use href="#rp-med-lan" class="wcyan" marker-end="url(#rt-arr-cyan)"/>
+    <use href="#rp-ui-rec" class="wamber" marker-end="url(#rt-arr-amber)"/>
+    <use href="#rp-rec-jni" class="wamber" marker-end="url(#rt-arr-amber)"/>
+    <use href="#rp-ctl-lan" class="wamber" marker-start="url(#rt-arr-amber)" marker-end="url(#rt-arr-amber)"/>
+    <use href="#rp-sup-rec" class="wamber" marker-end="url(#rt-arr-amber)"/>
+    <use href="#rp-rtsp-lan" class="wemerald" marker-start="url(#rt-arr-emerald)" marker-end="url(#rt-arr-emerald)"/>
+    <use href="#rp-tmr-lan" class="wemerald" marker-start="url(#rt-arr-emerald)" marker-end="url(#rt-arr-emerald)"/>
+    <use href="#rp-stat-ui" class="wviolet" marker-end="url(#rt-arr-violet)"/>
+  </g>
+
+  <!-- Moving Orbs -->
+  <g filter="url(#rt-orb)">
+    <circle r="3.8" fill="#67e8f9"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#rp-cap-jni"/></animateMotion></circle>
+    <circle r="3.8" fill="#67e8f9"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#rp-jni-clk"/></animateMotion></circle>
+    <circle r="3.5" fill="#67e8f9"><animateMotion dur="0.9s" repeatCount="indefinite"><mpath href="#rp-clk-med"/></animateMotion></circle>
+    <circle r="4.1" fill="#22d3ee"><animateMotion dur="1.1s" repeatCount="indefinite"><mpath href="#rp-med-lan"/></animateMotion></circle>
+    <circle r="3.5" fill="#fde68a"><animateMotion dur="2.1s" repeatCount="indefinite"><mpath href="#rp-ctl-lan"/></animateMotion></circle>
+    <circle r="3.5" fill="#6ee7b7"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#rp-rtsp-lan"/></animateMotion></circle>
+    <circle r="3.5" fill="#6ee7b7"><animateMotion dur="2.0s" repeatCount="indefinite"><mpath href="#rp-tmr-lan"/></animateMotion></circle>
+    <circle r="3.4" fill="#e9d5ff"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#rp-stat-ui"/></animateMotion></circle>
+  </g>
+</svg>

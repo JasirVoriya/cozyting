@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>架构与运行时交互视图 | MiPlay Sender</title>
+  <style>
+    @layer reset, base, components, utilities;
+
+    :root {
+      color-scheme: dark;
+      --bg-0: #060912;
+      --bg-1: #0b1120;
+      --bg-2: #111a2e;
+      --bg-card: #141f38;
+      --bg-card-hover: #1a2847;
+      --border-subtle: #243352;
+      --border-strong: #3b527e;
+      --text-1: #f8fafc;
+      --text-2: #cbd5e1;
+      --text-3: #94a3b8;
+      --cyan: #22d3ee;
+      --cyan-soft: rgba(34, 211, 238, 0.14);
+      --amber: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.14);
+      --emerald: #34d399;
+      --emerald-soft: rgba(52, 211, 153, 0.14);
+      --violet: #c084fc;
+      --violet-soft: rgba(192, 132, 252, 0.14);
+      --rust: #fb923c;
+      --accent: #38bdf8;
+      --radius-lg: 16px;
+      --radius-md: 11px;
+      --radius-sm: 7px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+      --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    }
+
+    @layer reset {
+      html, body, h1, h2, h3, p, ul, ol, figure, table {
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        box-sizing: border-box;
+      }
+      body, button, input, div, section, article, aside, header, main, footer, nav, figure {
+        box-sizing: inherit;
+      }
+    }
+
+    @layer base {
+      body {
+        min-block-size: 100dvh;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.10), transparent 36%),
+          radial-gradient(circle at 82% 18%, rgba(192, 132, 252, 0.09), transparent 34%),
+          radial-gradient(circle at 50% 82%, rgba(251, 146, 60, 0.07), transparent 40%),
+          linear-gradient(155deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-0) 100%);
+        color: var(--text-1);
+        font-family: var(--font-sans);
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--border-subtle);
+        border-radius: 5px;
+        padding: 0.1em 0.38em;
+        color: #7dd3fc;
+      }
+
+      :where(a:any-link, button, input, [tabindex="0"]):focus-visible {
+        outline: 2.5px solid var(--cyan);
+        outline-offset: 2px;
+      }
+    }
+
+    @layer components {
+      .skip-link {
+        position: absolute;
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        z-index: 100;
+        background: var(--cyan);
+        color: #020617;
+        font-weight: 700;
+        padding: 0.5rem 0.9rem;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+      }
+      .visually-hidden:where(:not(:focus-within, :active)) {
+        position: absolute !important;
+        clip-path: inset(50%) !important;
+        overflow: hidden !important;
+        width: 1px !important;
+        height: 1px !important;
+        margin: -1px !important;
+        padding: 0 !important;
+        border: 0 !important;
+        white-space: nowrap !important;
+      }
+
+      .page-shell {
+        max-inline-size: 1480px;
+        margin-inline: auto;
+        padding-block: 1.5rem 3rem;
+        padding-inline: clamp(1rem, 2.5vw, 2rem);
+      }
+
+      .site-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-block-end: 1.25rem;
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .brand-bar {
+        inline-size: 5px;
+        block-size: 2.4rem;
+        border-radius: 99px;
+        background: linear-gradient(180deg, var(--cyan), var(--violet), var(--amber));
+        flex: none;
+      }
+
+      .site-header h1 {
+        font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+        letter-spacing: 0.01em;
+      }
+
+      .site-subtitle {
+        color: var(--text-3);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        margin-block-start: 0.2rem;
+      }
+
+      .kpi-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+      }
+
+      .kpi-pill {
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: 99px;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+        color: var(--text-2);
+        font-family: var(--font-mono);
+      }
+
+      .kpi-pill strong {
+        color: var(--text-1);
+      }
+
+      /* Tabs bar (accessible, border-block-end active indicator) */
+      .tabs-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-block-start: 1.15rem;
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .tablist {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.25rem;
+        scrollbar-width: thin;
+      }
+
+      .tablist button[role="tab"] {
+        position: relative;
+        flex: none;
+        min-block-size: 42px;
+        background: transparent;
+        border: 0;
+        color: var(--text-3);
+        font-family: inherit;
+        font-size: 0.92rem;
+        font-weight: 600;
+        padding: 0.65rem 1.05rem;
+        cursor: pointer;
+        transition: color 0.15s ease;
+      }
+
+      .tablist button[role="tab"]:hover:not([aria-selected="true"]) {
+        color: var(--text-1);
+      }
+
+      .tablist button[role="tab"][aria-selected="true"] {
+        color: var(--text-1);
+      }
+
+      .tablist button[role="tab"][aria-selected="true"]::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        border-block-end: 3px solid var(--cyan);
+      }
+
+      .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-block-end: 0.4rem;
+      }
+
+      .btn {
+        min-block-size: 34px;
+        padding: 0.35rem 0.78rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-2);
+        color: var(--text-2);
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+
+      .btn:hover:not(:disabled) {
+        background: var(--bg-card-hover);
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+
+      .btn[aria-pressed="true"] {
+        background: rgba(56, 189, 248, 0.16);
+        border-color: var(--cyan);
+        color: var(--text-1);
+      }
+
+      /* Tab Panels: NO padding/margin/border on [role="tabpanel"] itself (hidden="until-found" compliance) */
+      .panel-stack {
+        display: grid;
+      }
+
+      .panel-stack > [role="tabpanel"] {
+        grid-area: 1 / 1;
+      }
+
+      .panel-body {
+        padding-block-start: 1.15rem;
+      }
+
+      /* Filter bar */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-block-end: 0.9rem;
+      }
+
+      .chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .chip {
+        min-block-size: 34px;
+        padding: 0.32rem 0.75rem;
+        border-radius: 99px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-2);
+        color: var(--text-2);
+        font-family: inherit;
+        font-size: 0.81rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+      }
+
+      .chip:hover:not([aria-pressed="true"]) {
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+
+      .chip[aria-pressed="true"] {
+        border-color: var(--chip-color, var(--cyan));
+        background: var(--chip-bg, var(--cyan-soft));
+        color: var(--text-1);
+      }
+
+      .chip-swatch {
+        inline-size: 9px;
+        block-size: 9px;
+        border-radius: 99px;
+        background: var(--chip-color, var(--cyan));
+        flex: none;
+      }
+
+      .chip-swatch.diamond {
+        border-radius: 2px;
+        transform: rotate(45deg);
+      }
+
+      .chip-swatch.ring {
+        background: transparent;
+        border: 2px solid var(--chip-color, var(--emerald));
+      }
+
+      .chip-swatch.dash {
+        inline-size: 13px;
+        block-size: 0;
+        border-radius: 0;
+        border-block-start: 2.5px dashed var(--chip-color, var(--violet));
+        background: transparent;
+      }
+
+      .hint-text {
+        font-size: 0.82rem;
+        color: var(--text-3);
+      }
+
+      /* Split Workspace: Interactive Canvas + Inspector Aside */
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 1rem;
+        align-items: start;
+      }
+
+      @media (max-width: 1120px) {
+        .workspace {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .canvas-card {
+        background: linear-gradient(180deg, rgba(13, 21, 38, 0.94), rgba(8, 13, 25, 0.96));
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 0.85rem;
+        overflow-x: auto;
+      }
+
+      .arch-svg {
+        display: block;
+        inline-size: 100%;
+        min-inline-size: 760px;
+        block-size: auto;
+      }
+
+      /* Interactive SVG Node & Edge States */
+      .svg-node {
+        cursor: pointer;
+        transition: opacity 0.22s ease;
+      }
+
+      .svg-node rect.node-box {
+        fill: #141f38;
+        stroke: #2c3e63;
+        stroke-width: 1.3;
+        transition: stroke 0.2s ease, fill 0.2s ease, stroke-width 0.2s ease;
+      }
+
+      .svg-node:hover rect.node-box,
+      .svg-node:focus-visible rect.node-box {
+        fill: #1b2a4a;
+        stroke: #7dd3fc;
+        stroke-width: 2;
+      }
+
+      .svg-node.is-selected rect.node-box {
+        fill: #1d3054;
+        stroke: #f8fafc;
+        stroke-width: 2.5;
+      }
+
+      .svg-node.is-upstream rect.node-box {
+        stroke: var(--cyan);
+        stroke-width: 2.2;
+      }
+
+      .svg-node.is-downstream rect.node-box {
+        stroke: var(--emerald);
+        stroke-width: 2.2;
+      }
+
+      .svg-node.is-active-step rect.node-box {
+        fill: #1c2d4f;
+        stroke: var(--cyan);
+        stroke-width: 2.3;
+      }
+
+      .svg-node.is-dimmed {
+        opacity: 0.2;
+      }
+
+      .svg-edge {
+        transition: opacity 0.22s ease;
+      }
+
+      .svg-edge.is-dimmed {
+        opacity: 0.08;
+      }
+
+      .svg-edge .edge-flow {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2.3;
+        animation: dash-move 1.5s linear infinite;
+      }
+
+      .svg-edge.flow-media .edge-flow { stroke: var(--cyan); stroke-dasharray: 10 14; animation-duration: 1.3s; }
+      .svg-edge.flow-ctrl .edge-flow { stroke: var(--amber); stroke-dasharray: 7 12; animation-duration: 1.85s; }
+      .svg-edge.flow-sync .edge-flow { stroke: var(--emerald); stroke-dasharray: 4 9; animation-duration: 2.0s; }
+      .svg-edge.flow-tel .edge-flow { stroke: var(--violet); stroke-dasharray: 5 9; animation-duration: 2.2s; }
+
+      .svg-edge .edge-base {
+        fill: none;
+        stroke-width: 2.2;
+        opacity: 0.24;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .svg-edge.flow-media .edge-base { stroke: var(--cyan); }
+      .svg-edge.flow-ctrl .edge-base { stroke: var(--amber); }
+      .svg-edge.flow-sync .edge-base { stroke: var(--emerald); }
+      .svg-edge.flow-tel .edge-base { stroke: var(--violet); }
+
+      .is-paused .edge-flow {
+        animation-play-state: paused !important;
+      }
+
+      @keyframes dash-move {
+        from { stroke-dashoffset: 48; }
+        to { stroke-dashoffset: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .svg-edge .edge-flow { animation: none !important; }
+      }
+
+      /* Inspector Panel */
+      .inspector {
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 1.1rem;
+        position: sticky;
+        inset-block-start: 1rem;
+      }
+
+      .inspector-badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+        background: rgba(56, 189, 248, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        color: #7dd3fc;
+        margin-block-end: 0.55rem;
+      }
+
+      .inspector h2 {
+        font-size: 1.08rem;
+        margin-block-end: 0.45rem;
+      }
+
+      .inspector p {
+        font-size: 0.86rem;
+        color: var(--text-2);
+        margin-block-end: 0.85rem;
+      }
+
+      .inspector-section {
+        border-block-start: 1px solid var(--border-subtle);
+        padding-block-start: 0.75rem;
+        margin-block-start: 0.75rem;
+      }
+
+      .inspector-section h3 {
+        font-size: 0.78rem;
+        font-family: var(--font-mono);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-block-end: 0.45rem;
+      }
+
+      .file-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .file-list li {
+        font-size: 0.8rem;
+        color: var(--text-2);
+        word-break: break-all;
+      }
+
+      .rel-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+
+      .rel-btn {
+        min-block-size: 28px;
+        padding: 0.22rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-1);
+        font-family: inherit;
+        font-size: 0.78rem;
+        cursor: pointer;
+      }
+
+      .rel-btn.up { border-color: rgba(34, 211, 238, 0.55); color: #67e8f9; }
+      .rel-btn.down { border-color: rgba(52, 211, 153, 0.55); color: #6ee7b7; }
+      .rel-btn:hover { background: var(--bg-card-hover); }
+
+      /* Runtime Lifecycle Stepper */
+      .stepper {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 0.55rem;
+        margin-block-end: 1rem;
+      }
+
+      .step-btn {
+        text-align: start;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 0.65rem 0.8rem;
+        color: var(--text-2);
+        font-family: inherit;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .step-btn:hover:not([aria-pressed="true"]) {
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+
+      .step-btn[aria-pressed="true"] {
+        border-color: var(--cyan);
+        background: rgba(34, 211, 238, 0.13);
+        color: var(--text-1);
+      }
+
+      .step-num {
+        font-family: var(--font-mono);
+        font-size: 0.73rem;
+        font-weight: 700;
+        color: var(--cyan);
+      }
+
+      .step-name {
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      /* Search & Responsive Table */
+      .search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin-block-end: 0.9rem;
+      }
+
+      .search-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1 1 280px;
+      }
+
+      .search-field label {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+
+      .search-field input {
+        inline-size: 100%;
+        min-block-size: 38px;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: 0.4rem 0.75rem;
+        color: var(--text-1);
+        font-family: inherit;
+        font-size: 0.88rem;
+      }
+
+      .table-wrapper {
+        overflow: auto;
+        max-inline-size: 100%;
+        max-block-size: min(680px, 74dvh);
+        container-type: inline-size;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        background: var(--bg-1);
+      }
+
+      .file-table {
+        inline-size: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.85rem;
+      }
+
+      .file-table caption {
+        text-align: start;
+        padding: 0.65rem 0.9rem;
+        font-size: 0.82rem;
+        color: var(--text-3);
+        background: var(--bg-2);
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .file-table thead {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 2;
+      }
+
+      .file-table thead th {
+        background: #132038;
+        color: var(--text-1);
+        text-align: start;
+        font-weight: 700;
+        padding: 0.65rem 0.85rem;
+        border-block-end: 1px solid var(--border-strong);
+      }
+
+      .file-table tbody th,
+      .file-table tbody td {
+        padding: 0.6rem 0.85rem;
+        border-block-end: 1px solid rgba(36, 51, 82, 0.7);
+        vertical-align: top;
+      }
+
+      .file-table tbody th {
+        text-align: start;
+        font-weight: 600;
+        color: var(--text-1);
+        background: var(--bg-1);
+        white-space: nowrap;
+      }
+
+      .file-table tbody tr:hover td,
+      .file-table tbody tr:hover th {
+        background: rgba(26, 40, 71, 0.75);
+      }
+
+      .layer-pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.16rem 0.5rem;
+        border-radius: 5px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-2);
+        color: var(--text-1);
+      }
+
+      @container (width < 680px) {
+        .file-table, .file-table caption, .file-table thead, .file-table tbody, .file-table tr, .file-table th, .file-table td {
+          display: block;
+        }
+        .file-table, .file-table caption {
+          inline-size: 100%;
+        }
+        .file-table thead {
+          display: none;
+        }
+        .file-table tbody tr {
+          inline-size: auto;
+          margin: 0.75rem;
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-sm);
+          background: var(--bg-2);
+          overflow-wrap: anywhere;
+        }
+        .file-table tbody th {
+          background: #132038;
+          border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        }
+        .file-table tbody td:nth-child(2)::before { content: "路径："; color: var(--text-3); font-weight: 600; }
+        .file-table tbody td:nth-child(3)::before { content: "职责："; color: var(--text-3); font-weight: 600; }
+      }
+
+      .site-footer {
+        margin-block-start: 2rem;
+        padding-block-start: 1rem;
+        border-block-start: 1px solid var(--border-subtle);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--text-3);
+      }
+
+      @media (forced-colors: active) {
+        .card, .inspector, .btn, .chip, .step-btn, .table-wrapper {
+          border: 1px solid CanvasText;
+        }
+        .tablist button[role="tab"][aria-selected="true"]::after {
+          border-block-end-color: Highlight;
+        }
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link visually-hidden">跳转到主内容</a>
+
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="brand-title">
+        <div class="brand-bar" aria-hidden="true"></div>
+        <div>
+          <h1>MiPlay Sender · 交互式架构与运行时浏览器</h1>
+          <p class="site-subtitle">Android (Kotlin · API 29–36) ⇄ JNI (.so) ⇄ Rust Core (miplay-sender-core) · Pure LAN Multi-Speaker</p>
+        </div>
+      </div>
+      <ul class="kpi-row" aria-label="架构核心指标">
+        <li class="kpi-pill"><strong>8</strong> 个架构分层</li>
+        <li class="kpi-pill"><strong>37</strong> 个 Android 主源码</li>
+        <li class="kpi-pill"><strong>22</strong> 个 Rust 核心模块</li>
+        <li class="kpi-pill"><strong>4</strong> 条数据流 · <strong>Max 63</strong> 并发音箱</li>
+      </ul>
+    </header>
+
+    <main id="main-content" tabindex="-1">
+      <div class="tabs-bar">
+        <div class="tablist" role="tablist" focusgroup="tablist nomemory" aria-label="架构视图切换">
+          <button type="button" role="tab" id="tab-overview" aria-selected="true" focusgroupstart>1. 整体架构与上下游流向</button>
+          <button type="button" role="tab" id="tab-runtime" aria-selected="false">2. 运行时线程与生命周期</button>
+          <button type="button" role="tab" id="tab-files" aria-selected="false">3. L1–L8 全分层文件职责</button>
+        </div>
+        <div class="toolbar-actions">
+          <button type="button" class="btn" id="btn-motion" aria-pressed="false">暂停动效</button>
+          <button type="button" class="btn" id="btn-reset">重置高亮</button>
+        </div>
+      </div>
+
+      <div class="visually-hidden" aria-live="polite" id="live-status"></div>
+
+      <div class="panel-stack">
+        <!-- ==================== TAB 1: OVERALL ARCHITECTURE & UPSTREAM/DOWNSTREAM ==================== -->
+        <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
+          <div class="panel-body">
+            <div class="filter-bar">
+              <div class="chip-group" role="group" aria-label="按数据流过滤">
+                <button type="button" class="chip" data-flow="all" aria-pressed="true" style="--chip-color:#38bdf8;--chip-bg:rgba(56,189,248,0.16)">全部数据流 (4)</button>
+                <button type="button" class="chip" data-flow="media" aria-pressed="false" style="--chip-color:#22d3ee;--chip-bg:rgba(34,211,238,0.16)"><span class="chip-swatch" aria-hidden="true"></span>音频媒体主链路</button>
+                <button type="button" class="chip" data-flow="ctrl" aria-pressed="false" style="--chip-color:#fbbf24;--chip-bg:rgba(251,191,36,0.16)"><span class="chip-swatch diamond" aria-hidden="true"></span>控制与认证 (8899)</button>
+                <button type="button" class="chip" data-flow="sync" aria-pressed="false" style="--chip-color:#34d399;--chip-bg:rgba(52,211,153,0.16)"><span class="chip-swatch ring" aria-hidden="true"></span>时钟与组同步</button>
+                <button type="button" class="chip" data-flow="tel" aria-pressed="false" style="--chip-color:#c084fc;--chip-bg:rgba(192,132,252,0.16)"><span class="chip-swatch dash" aria-hidden="true"></span>发现与遥测反馈</button>
+              </div>
+              <p class="hint-text">提示：点击任意模块，自动高亮其全部 <strong>↑ 上游来源</strong> 与 <strong>↓ 下游消费者</strong></p>
+            </div>
+
+            <div class="workspace">
+              <figure class="canvas-card" id="overview-canvas">
+                <svg class="arch-svg" id="svg-overview" viewBox="0 0 1060 760" role="img" aria-label="可交互系统整体架构图，点击节点可查看上下游关系">
+                  <defs>
+                    <pattern id="ov-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="0.9" fill="#334155" opacity="0.35"/>
+                    </pattern>
+                    <marker id="ov-arr-media" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#22d3ee"/></marker>
+                    <marker id="ov-arr-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#fbbf24"/></marker>
+                    <marker id="ov-arr-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#34d399"/></marker>
+                    <marker id="ov-arr-tel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#c084fc"/></marker>
+                  </defs>
+                  <rect width="1060" height="760" rx="12" fill="#080d19"/>
+                  <rect width="1060" height="760" rx="12" fill="url(#ov-dots)"/>
+
+                  <!-- Layer Bands -->
+                  <g fill="#0e1629" stroke="#1e293b" stroke-width="1">
+                    <rect x="16" y="18" width="1028" height="114" rx="12"/>
+                    <rect x="16" y="162" width="1028" height="122" rx="12"/>
+                    <rect x="16" y="316" width="1028" height="54" rx="10" fill="#131936" stroke="#3b527e"/>
+                    <rect x="16" y="402" width="1028" height="140" rx="12"/>
+                    <rect x="16" y="592" width="1028" height="148" rx="12"/>
+                  </g>
+                  <!-- Left Layer Labels -->
+                  <g font-family="var(--font-mono)" font-size="11" font-weight="700">
+                    <rect x="16" y="18" width="4" height="114" rx="2" fill="#38bdf8"/>
+                    <text x="30" y="52" fill="#7dd3fc">L1 · UI 层</text>
+                    <text x="30" y="72" fill="#94a3b8" font-size="10" font-weight="400">表现与交互</text>
+
+                    <rect x="16" y="162" width="4" height="122" rx="2" fill="#818cf8"/>
+                    <text x="30" y="200" fill="#a5b4fc">L2–L4</text>
+                    <text x="30" y="220" fill="#94a3b8" font-size="10" font-weight="400">服务/捕获/兼容</text>
+
+                    <rect x="16" y="316" width="4" height="54" rx="2" fill="#22d3ee"/>
+                    <text x="30" y="347" fill="#e0f2fe">L5 · JNI</text>
+
+                    <rect x="16" y="402" width="4" height="140" rx="2" fill="#fb923c"/>
+                    <text x="30" y="446" fill="#fdba74">L6 · RUST</text>
+                    <text x="30" y="466" fill="#94a3b8" font-size="10" font-weight="400">协议/同步核心</text>
+
+                    <rect x="16" y="592" width="4" height="148" rx="2" fill="#34d399"/>
+                    <text x="30" y="644" fill="#6ee7b7">LAN &amp; L7</text>
+                    <text x="30" y="664" fill="#94a3b8" font-size="10" font-weight="400">音箱集群/工具</text>
+                  </g>
+
+                  <!-- Edges Layer (populated by JS from canonical DAG) -->
+                  <g id="ov-edges"></g>
+                  <!-- Nodes Layer (populated by JS from canonical DAG) -->
+                  <g id="ov-nodes"></g>
+                </svg>
+                <figcaption class="visually-hidden">MiPlay Sender 五层架构与四条数据流交互视图</figcaption>
+              </figure>
+
+              <aside class="inspector" id="overview-inspector" aria-label="节点上下游详情">
+                <span class="inspector-badge" id="ins-layer">OVERVIEW</span>
+                <h2 id="ins-title">点击左侧任意模块查看上下游</h2>
+                <p id="ins-desc">支持按数据流过滤（音频主链路 / 控制认证 / 时钟同步 / 发现遥测），或直接点击任意模块，自动沿有向图追踪其全部上游来源与下游消费者。</p>
+                <div class="inspector-section">
+                  <h3>关键文件</h3>
+                  <ul class="file-list" id="ins-files">
+                    <li><code>MainActivity.kt</code> · <code>CastService.kt</code></li>
+                    <li><code>core/src/session.rs</code> · <code>core/src/control.rs</code></li>
+                  </ul>
+                </div>
+                <div class="inspector-section">
+                  <h3>↑ 上游来源 (Upstream)</h3>
+                  <div class="rel-chips" id="ins-up"><span class="hint-text">未选中节点</span></div>
+                </div>
+                <div class="inspector-section">
+                  <h3>↓ 下游消费者 (Downstream)</h3>
+                  <div class="rel-chips" id="ins-down"><span class="hint-text">未选中节点</span></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 2: RUNTIME ARCHITECTURE & LIFECYCLE ==================== -->
+        <section role="tabpanel" id="panel-runtime" aria-labelledby="tab-runtime" hidden="until-found">
+          <div class="panel-body">
+            <div class="stepper" role="group" aria-label="运行时生命周期阶段切换" id="lifecycle-stepper"></div>
+
+            <div class="workspace">
+              <figure class="canvas-card" id="runtime-canvas">
+                <svg class="arch-svg" id="svg-runtime" viewBox="0 0 1060 660" role="img" aria-label="软件运行时线程、队列与局域网连接交互拓扑图">
+                  <defs>
+                    <pattern id="rt-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="0.9" fill="#334155" opacity="0.35"/>
+                    </pattern>
+                    <marker id="rt-a-media" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#22d3ee"/></marker>
+                    <marker id="rt-a-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#fbbf24"/></marker>
+                    <marker id="rt-a-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#34d399"/></marker>
+                    <marker id="rt-a-tel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#c084fc"/></marker>
+                  </defs>
+                  <rect width="1060" height="660" rx="12" fill="#080d19"/>
+                  <rect width="1060" height="660" rx="12" fill="url(#rt-dots)"/>
+
+                  <!-- Process & Network Containers -->
+                  <rect x="16" y="16" width="690" height="628" rx="14" fill="#0d1527" stroke="#243554" stroke-width="1.2"/>
+                  <text x="32" y="40" fill="#93c5fd" font-family="var(--font-mono)" font-size="11" font-weight="700">ANDROID PROCESS · com.miplay.sender (ART + libmiplay_sender_core.so)</text>
+
+                  <rect x="30" y="54" width="662" height="170" rx="10" fill="#111c33" stroke="#1e293b"/>
+                  <text x="44" y="74" fill="#7dd3fc" font-family="var(--font-mono)" font-size="10.5" font-weight="700">KOTLIN / ART 线程组</text>
+
+                  <rect x="30" y="242" width="662" height="58" rx="9" fill="#151936" stroke="#3b527e"/>
+                  <text x="44" y="264" fill="#e0f2fe" font-family="var(--font-mono)" font-size="10.5" font-weight="700">JNI 边界 · ENGINES Registry + FEED_QUEUE_AUS (sync_channel 96 ≈ 2s)</text>
+                  <text x="44" y="284" fill="#94a3b8" font-family="var(--font-mono)" font-size="10">stop() 先释放 feed 发送端唤醒 media-clock，彻底避免停止死锁</text>
+
+                  <rect x="30" y="320" width="662" height="308" rx="10" fill="#111c33" stroke="#1e293b"/>
+                  <text x="294" y="340" fill="#fdba74" font-family="var(--font-mono)" font-size="10.5" font-weight="700">RUST NATIVE RUNTIME · 共享主线程 + 每音箱 5 线程 × N</text>
+
+                  <rect x="724" y="16" width="320" height="628" rx="14" fill="#0d1527" stroke="#059669" stroke-width="1.2"/>
+                  <text x="740" y="40" fill="#6ee7b7" font-family="var(--font-mono)" font-size="11" font-weight="700">LAN · 每台音箱 6 条网络通路</text>
+
+                  <g id="rt-edges"></g>
+                  <g id="rt-nodes"></g>
+                </svg>
+                <figcaption class="visually-hidden">MiPlay Sender 运行时进程线程与网络端口拓扑交互视图</figcaption>
+              </figure>
+
+              <aside class="inspector" id="runtime-inspector" aria-label="运行时阶段与线程详情">
+                <span class="inspector-badge" id="rt-badge">STEP 4</span>
+                <h2 id="rt-title">阶段说明</h2>
+                <p id="rt-desc"></p>
+                <div class="inspector-section">
+                  <h3>关键并发与安全不变量</h3>
+                  <ul class="file-list" id="rt-invariants"></ul>
+                </div>
+                <div class="inspector-section">
+                  <h3>涉及线程 / 端口</h3>
+                  <div class="rel-chips" id="rt-active-list"></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 3: ALL LAYERS & FILES EXPLORER ==================== -->
+        <section role="tabpanel" id="panel-files" aria-labelledby="tab-files" hidden="until-found">
+          <div class="panel-body">
+            <search class="search-bar">
+              <div class="search-field">
+                <label for="file-search">检索文件或职责：</label>
+                <input type="search" id="file-search" placeholder="输入文件名、协议、关键字，例如 safety / UID / RTSP / mDNS / 静音…">
+              </div>
+              <div class="chip-group" role="group" aria-label="按架构层筛选" id="layer-filters"></div>
+            </search>
+
+            <div tabindex="0" role="region" aria-labelledby="files-table-caption" class="table-wrapper">
+              <table class="file-table">
+                <caption id="files-table-caption">全仓 L1–L8 分层文件与核心职责清单（共 <span id="file-count">0</span> 项）</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">架构层</th>
+                    <th scope="col">文件路径</th>
+                    <th scope="col">职责与关键机制</th>
+                  </tr>
+                </thead>
+                <tbody id="files-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span>MiPlay Sender · AGPL-3.0-only · 独立局域网音频投送架构文档</span>
+      <span>关联静/动效矢量图：<a href="assets/architecture-overview.svg">architecture-overview.svg</a> · <a href="assets/runtime-architecture.svg">runtime-architecture.svg</a></span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const el = (tag, attrs = {}, parent = null) => {
+        const n = document.createElementNS(SVG_NS, tag);
+        for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+        if (parent) parent.appendChild(n);
+        return n;
+      };
+
+      const live = document.getElementById("live-status");
+      const announce = (msg) => { live.textContent = ""; requestAnimationFrame(() => { live.textContent = msg; }); };
+
+      /* ==================== 1. OVERVIEW DAG DATA ==================== */
+      const OV_NODES = [
+        // Band 1: L1
+        { id: "src_app", layer: "L1 · 上游音源", title: "目标音频 App", sub: "USAGE_MEDIA / GAME", x: 138, y: 32, w: 184, h: 84,
+          desc: "用户选定的单一第三方音频应用（如音乐/播客 App），向 Android AudioFlinger 输出 PCM 并发布 MediaSession 元数据。",
+          files: ["android/.../capture/LaunchableAppCatalog.kt"] },
+        { id: "main_ui", layer: "L1 · UI 面板", title: "MainActivity 主面板", sub: "本机/音箱互斥 · 1Hz ms", x: 344, y: 32, w: 222, h: 84,
+          desc: "展示正在播放信息、设备列表与行内整数 ms 延迟/加载转圈；管理音量条、认证模式与 MediaProjection 授权发起。",
+          files: ["android/.../MainActivity.kt", "android/.../LatencyDisplay.kt", "android/.../AuthModeResolve.kt"] },
+        { id: "app_picker", layer: "L1 · 音源选择", title: "AppPickerActivity", sub: "MAIN/LAUNCHER · 签摘要", x: 588, y: 32, w: 204, h: 84,
+          desc: "基于 <queries> 枚举同用户可启动应用（不申请 QUERY_ALL_PACKAGES），只持久化包名与签名摘要，绝不持久化 UID。",
+          files: ["android/.../AppPickerActivity.kt", "android/.../capture/AndroidLaunchableApps.kt", "android/.../capture/PrefsTargetAppStore.kt"] },
+        { id: "now_playing", layer: "L1 · 媒体元数据", title: "NowPlaying 监听栈", sub: "MediaSession 播控", x: 814, y: 32, w: 210, h: 84,
+          desc: "通过系统通知使用权读取当前播放曲目/艺人/封面/进度，并将播放/暂停/切歌/拖拽转发到源 App 的 TransportControls。",
+          files: ["android/.../NowPlayingNotificationListener.kt", "android/.../cast/NowPlayingTracker.kt", "android/.../cast/NowPlayingInfo.kt"] },
+
+        // Band 2: L2-L4
+        { id: "capture", layer: "L3 · 严格 UID 捕获", title: "UID 捕获与探针", sub: "fail-closed · AudioRecord", x: 138, y: 176, w: 206, h: 94,
+          desc: "启动前实时校验包存在性/同用户/非共享 UID/签名一致；构建严格单 UID AudioPlaybackCapture（4×4096B≈85ms 环缓）并由 PcmProbe 计算 RMS 与 Goertzel 频谱。",
+          files: ["android/.../capture/CaptureTargetResolver.kt", "android/.../capture/PlaybackCaptureFactory.kt", "android/.../capture/ProjectionSessionPolicy.kt", "android/.../capture/PcmProbe.kt"] },
+        { id: "encoder", layer: "L2 · 音频编码", title: "AacEncoder", sub: "MediaCodec 48k 256kbps", x: 366, y: 176, w: 174, h: 94,
+          desc: "封装 Android MediaCodec，将 48kHz 立体声 16-bit PCM 编码为 256kbps 裸 AAC-LC AU（每 1024 采样 21.333ms，不含 ADTS 头）。",
+          files: ["android/.../AacEncoder.kt"] },
+        { id: "cast_svc", layer: "L2 · 前台服务", title: "CastService 协调器", sub: "FGS · triggerReconcile", x: 562, y: 176, w: 232, h: 94,
+          desc: "持有 mediaProjection|mediaPlayback 前台服务与 Wake/WifiLock；通过串行协调队列处理建连期并发点选与延迟音量；1Hz 拉取统计并轮转写 cast_ops.log。",
+          files: ["android/.../CastService.kt"] },
+        { id: "cast_compat", layer: "L2/L4 · 状态与兼容", title: "路由 · 静音 · 兼容层", sub: "6 拍锁定 · API 29–36", x: 816, y: 176, w: 208, h: 94,
+          desc: "CastRouteSelection 负责互斥路由与非 MiPlay 节点过滤；LocalOutputMute 6 拍有声锁定防切歌双出声；compat/* 隔离 API 29–36 毛玻璃/Insets/权限差异。",
+          files: ["android/.../cast/CastRouteSelection.kt", "android/.../cast/LocalOutputMute.kt", "android/.../compat/BlurCompat.kt", "android/.../compat/NotificationPermissionCompat.kt"] },
+
+        // Band 3: L5 JNI
+        { id: "jni", layer: "L5 · 跨语言桥接", title: "JNI Bridge (NativeBridge ⇄ core/src/ffi.rs)", sub: "ENGINES 句柄表 · pushAac(cap=96) · connect / add / remove / discover / stats / stop", x: 138, y: 322, w: 886, h: 42,
+          desc: "通过 libmiplay_sender_core.so 连接 Kotlin 与 Rust；维护全局 Engine 句柄映射与 96 AU（≈2s）有界喂入队列，stop() 先释放 feed 防死锁。",
+          files: ["android/.../NativeBridge.kt", "core/src/ffi.rs"] },
+
+        // Band 4: L6 Rust Core
+        { id: "session", layer: "L6 · 组会话与时间线", title: "session · timeline · clock", sub: "OffsetBarrier · media-clock", x: 138, y: 418, w: 214, h: 108,
+          desc: "多音箱核心调度：在 OffsetBarrier 先冲刷连接期积压 AU 再预读 14 AU 定共享 TIME_OFFSET；单线程推进共享 90kHz PTS / 27MHz PCR；supervisor 负责 15s 看门狗与指数退避重连。",
+          files: ["core/src/session.rs", "core/src/timeline.rs", "core/src/clock.rs", "core/src/latency.rs", "core/src/group.rs"] },
+        { id: "media_pipe", layer: "L6 · 媒体封装", title: "media/* 打包管道", sub: "ADTS → PES → TS → RTP", x: 372, y: 418, w: 194, h: 108,
+          desc: "每台接收端持有独立 Packetizer（独立 RTP 序号与 TS 连续计数）：封装 7B ADTS、PES(0xC0)、188B MPEG-TS（定期插 PAT/PMT/PCR）、RTP(PT=33) 及 $+24bit TCP 线帧。",
+          files: ["core/src/media/mod.rs", "core/src/media/adts.rs", "core/src/media/mpegts.rs", "core/src/media/rtp.rs"] },
+        { id: "ctrl_auth", layer: "L6 · 控制与安全", title: "control · auth/*", sub: "TCP 8899 · Legacy / Safety", x: 586, y: 418, w: 204, h: 108,
+          desc: "管理每台音箱独立的 8899 控制连接：支持 Legacy(HMAC-SHA1) 与 Safety(双向 HMAC + 双向链式 AES-128-CBC) 认证、Open/音量/暂停/双 Resume/心跳及无 CLOSE 只读 inspect。",
+          files: ["core/src/control.rs", "core/src/auth/mod.rs", "core/src/auth/legacy.rs", "core/src/auth/safety.rs", "core/src/frame.rs", "core/src/commands.rs", "core/src/inspect.rs"] },
+        { id: "disc_rtsp", layer: "L6 · 发现/RTSP/时钟", title: "discovery · rtsp · timer", sub: "mDNS · WFD · UDP 时钟主", x: 810, y: 418, w: 214, h: 108,
+          desc: "mDNS 组播浏览 _mi-connect 与 _lyra-mdns；WFD SourceRtsp 反向服务端完成 M1–M5/SETUP/PLAY 与 TIME_OFFSET 下发；UDP TimerServer 为集群提供 40B 单调时钟对齐。",
+          files: ["core/src/discovery.rs", "core/src/rtsp.rs", "core/src/clock_sync.rs", "core/src/netinfo.rs"] },
+
+        // Band 5: LAN Receivers & Tools
+        { id: "lan_speakers", layer: "LAN · 接收端集群", title: "局域网音箱与可投 TV 集群 (1..63 台)", sub: "TCP 8899 控制 · 反向 RTSP/Aux/Audio · UDP 时钟从端 · 共享 TIME_OFFSET", x: 138, y: 612, w: 618, h: 108,
+          desc: "支持 L17A / LX06 等智能音箱与合法 MiPlay 电视并行多选；同组设备共享完全一致的 AAC 帧序列、PTS 与 TIME_OFFSET，支持播放中途动态加减设备与断线自动恢复。",
+          files: ["协议端口：UDP 5353 / TCP 8899 / 3×反向 TCP / UDP Timer"] },
+        { id: "aux_tools", layer: "L7–L8 · 调试与验收", title: "CLI / 探针 / testtones", sub: "miplay-cli · DevMain · A/B/deny", x: 778, y: 612, w: 246, h: 108,
+          desc: "独立命令行诊断工具 miplay-cli（含不发 CLOSE 的 inspect）、免安装 app_process 调试入口 DevMain、acceptance 本地过滤探针服务及三枚受控正弦测试音源 APK。",
+          files: ["cli/src/main.rs", "android/.../DevMain.kt", "android/.../LocalFilterProbeService.kt", "android/testtones/.../ToneService.kt"] }
+      ];
+
+      const OV_EDGES = [
+        // Media (cyan)
+        { id: "e_m1", from: "src_app", to: "capture", flow: "media", d: "M 230 116 L 230 176" },
+        { id: "e_m2", from: "capture", to: "encoder", flow: "media", d: "M 344 223 L 366 223" },
+        { id: "e_m3", from: "encoder", to: "jni", flow: "media", d: "M 453 270 L 453 322" },
+        { id: "e_m4", from: "jni", to: "session", flow: "media", d: "M 245 364 L 245 418" },
+        { id: "e_m5", from: "session", to: "media_pipe", flow: "media", d: "M 352 472 L 372 472" },
+        { id: "e_m6", from: "media_pipe", to: "lan_speakers", flow: "media", d: "M 469 526 L 469 560 L 290 560 L 290 612" },
+        // Control (amber)
+        { id: "e_c1", from: "main_ui", to: "cast_svc", flow: "ctrl", d: "M 442 116 L 442 142 L 664 142 L 664 176" },
+        { id: "e_c2", from: "cast_svc", to: "jni", flow: "ctrl", d: "M 678 270 L 678 322" },
+        { id: "e_c3", from: "jni", to: "ctrl_auth", flow: "ctrl", d: "M 678 364 L 678 418" },
+        { id: "e_c4", from: "ctrl_auth", to: "lan_speakers", flow: "ctrl", d: "M 688 526 L 688 572 L 450 572 L 450 612" },
+        { id: "e_c5", from: "aux_tools", to: "ctrl_auth", flow: "ctrl", d: "M 850 612 L 850 584 L 740 584 L 740 526" },
+        // Sync (emerald)
+        { id: "e_s1", from: "disc_rtsp", to: "session", flow: "sync", d: "M 880 418 L 880 390 L 300 390 L 300 418" },
+        { id: "e_s2", from: "disc_rtsp", to: "lan_speakers", flow: "sync", d: "M 918 526 L 918 564 L 620 564 L 620 612", visualBidir: true },
+        // Telemetry & Discovery (violet)
+        { id: "e_t1", from: "app_picker", to: "main_ui", flow: "tel", d: "M 588 74 L 566 74" },
+        { id: "e_t2", from: "now_playing", to: "main_ui", flow: "tel", d: "M 918 116 L 918 128 L 510 128 L 510 116" },
+        { id: "e_t3", from: "capture", to: "cast_compat", flow: "tel", d: "M 284 270 L 284 294 L 920 294 L 920 270" },
+        { id: "e_t4", from: "disc_rtsp", to: "jni", flow: "tel", d: "M 956 418 L 956 364" },
+        { id: "e_t5", from: "jni", to: "cast_svc", flow: "tel", d: "M 956 322 L 956 304 L 740 304 L 740 270" },
+        { id: "e_t6", from: "cast_svc", to: "main_ui", flow: "tel", d: "M 740 176 L 740 152 L 492 152 L 492 116" },
+        { id: "e_t7", from: "cast_compat", to: "main_ui", flow: "tel", d: "M 960 176 L 960 144 L 542 144 L 542 116" }
+      ];
+
+      /* ==================== 2. RUNTIME TOPOLOGY & LIFECYCLE DATA ==================== */
+      const RT_NODES = [
+        { id: "rt_ui", x: 46, y: 88, w: 196, h: 118, title: "Main Thread (UI)", sub: "1Hz refreshLoop · 路由状态", accent: "#38bdf8" },
+        { id: "rt_cap", x: 262, y: 88, w: 204, h: 118, title: "capture (MAX_PRIO)", sub: "AudioRecord · PcmProbe · AAC", accent: "#22d3ee" },
+        { id: "rt_rec", x: 486, y: 88, w: 192, h: 118, title: "cast-start / reconcile", sub: "routeLock 串行增删与音量", accent: "#fbbf24" },
+
+        { id: "rt_clk", x: 46, y: 356, w: 214, h: 116, title: "media-clock 线程", sub: "OffsetBarrier · 21.333ms 节拍", accent: "#22d3ee" },
+        { id: "rt_sup", x: 46, y: 492, w: 214, h: 118, title: "supervisor + EPOCH", sub: "15s 看门狗 · 2→30s 重连", accent: "#fbbf24" },
+
+        { id: "rt_med", x: 294, y: 356, w: 382, h: 74, title: "media-<ip> + rtsp-<ip> (×N)", sub: "sync_channel(256) → Packetizer → Audio TCP · RTSP 握手", accent: "#22d3ee" },
+        { id: "rt_ctl", x: 294, y: 446, w: 382, h: 74, title: "ctl-<ip> + hb-<ip> (×N)", sub: "TCP 8899 读循环(15s) · 每 5s HEARTBEAT · Legacy/Safety", accent: "#fbbf24" },
+        { id: "rt_tmr", x: 294, y: 536, w: 382, h: 74, title: "timer-<ip> + Aux + CancelToken", sub: "UDP 40B 时钟主 · Aux 保活 · 取消重勾原子隔离", accent: "#34d399" },
+
+        { id: "lan_mdns", x: 742, y: 60, w: 284, h: 74, title: "① UDP 224.0.0.251:5353", sub: "mDNS 发现 _mi-connect / _lyra-mdns", accent: "#c084fc" },
+        { id: "lan_8899", x: 742, y: 152, w: 284, h: 78, title: "② 正向 TCP 8899 (控制)", sub: "Legacy / Safety 认证 · Open · 音量/暂停", accent: "#fbbf24" },
+        { id: "lan_rtsp", x: 742, y: 248, w: 284, h: 78, title: "③ 反向 TCP #1 (WFD RTSP)", sub: "M1–M5 · SETUP/PLAY · 下发 TIME_OFFSET", accent: "#34d399" },
+        { id: "lan_aux", x: 742, y: 344, w: 284, h: 66, title: "④ 反向 TCP #2 (Aux 辅助)", sub: "同监听端口接受，运行期保持连接", accent: "#94a3b8" },
+        { id: "lan_aud", x: 742, y: 428, w: 284, h: 82, title: "⑤ 反向 TCP #3 (媒体流)", sub: "$+24bit → RTP(PT=33) / MPEG-TS / ADTS", accent: "#22d3ee" },
+        { id: "lan_tmr", x: 742, y: 528, w: 284, h: 82, title: "⑥ UDP Timer (随机端口)", sub: "40B 双向时间戳，音箱对齐手机时钟", accent: "#34d399" }
+      ];
+
+      const RT_EDGES = [
+        { id: "re_1", from: "rt_cap", to: "rt_clk", flow: "media", d: "M 364 206 L 364 242 M 153 300 L 153 356" },
+        { id: "re_2", from: "rt_clk", to: "rt_med", flow: "media", d: "M 260 393 L 294 393" },
+        { id: "re_3", from: "rt_med", to: "lan_aud", flow: "media", d: "M 676 393 L 712 393 L 712 469 L 742 469" },
+        { id: "re_4", from: "rt_ui", to: "rt_rec", flow: "ctrl", d: "M 242 114 L 252 114 L 252 68 L 582 68 L 582 88" },
+        { id: "re_5", from: "rt_rec", to: "rt_ctl", flow: "ctrl", d: "M 582 206 L 582 242 M 582 300 L 582 311 L 277 311 L 277 466 L 294 466" },
+        { id: "re_6", from: "rt_ctl", to: "lan_8899", flow: "ctrl", d: "M 676 483 L 700 483 L 700 191 L 742 191" },
+        { id: "re_7", from: "rt_med", to: "lan_rtsp", flow: "sync", d: "M 676 376 L 690 376 L 690 287 L 742 287" },
+        { id: "re_8", from: "rt_tmr", to: "lan_tmr", flow: "sync", d: "M 676 572 L 742 572" },
+        { id: "re_9", from: "rt_sup", to: "rt_ctl", flow: "ctrl", d: "M 260 546 L 278 546 L 278 483 L 294 483" },
+        { id: "re_10", from: "rt_ui", to: "lan_mdns", flow: "tel", d: "M 144 88 L 144 48 L 714 48 L 714 97 L 742 97" }
+      ];
+
+      const LIFECYCLE_STEPS = [
+        {
+          id: "step1", num: "STEP 1", name: "冷启动与 mDNS 发现",
+          desc: "API 29–32 冷启动零运行时权限弹窗（API 33+ 仅按需申请通知权限）；MainActivity 持有 WifiManager.MulticastLock 调用 NativeBridge.discover，并发广播 _mi-connect 与 _lyra-mdns PTR 查询，按 apps=[5] 优先合并并与本地缓存融合渲染。",
+          nodes: ["rt_ui", "lan_mdns"],
+          edges: ["re_10"],
+          invariants: [
+            "同 IP 多条 mDNS 记录优先保留 apps=[5] 与 _mi-connect",
+            "默认隐藏未声明 MiPlay 的非电视节点（保留“显示全部”兜底开关）",
+            "冷启动不申请 RECORD_AUDIO，静音测试模式零录音权限"
+          ]
+        },
+        {
+          id: "step2", num: "STEP 2", name: "选源与投影授权",
+          desc: "AppPicker 仅持久化包名与签名摘要；点选音箱后为当前会话发起全新的 MediaProjection 授权。CastService 先进入 mediaProjection FGS 再调用 getMediaProjection，并实时校验目标包 UID/同用户/非共享 UID/签名一致（fail-closed，绝不回退全系统捕获）。",
+          nodes: ["rt_ui", "rt_cap", "rt_rec"],
+          edges: ["re_4"],
+          invariants: [
+            "MediaProjection 每次会话重新授权，切换目标 App 立即停旧会话",
+            "App 选择器 UID 是唯一过滤权威，系统授权框选项不会改写 UID",
+            "CaptureTargetResolver 任一校验失败直接中止，禁止空白名单"
+          ]
+        },
+        {
+          id: "step3", num: "STEP 3", name: "8899 认证与同步建连",
+          desc: "cast-start 并发连接全部勾选音箱：先完成 TCP 8899 Legacy 或 Safety(双向 HMAC + 双向链式 AES-128-CBC) 引导，绑定 UDP TimerServer 与反向 TCP 监听端口并发送 Open；音箱回连 RTSP/Aux/Audio 三条连接，在 OffsetBarrier 汇合时先 flush 连接期积压 AU，再预读 14 AU 定共享 TIME_OFFSET。",
+          nodes: ["rt_rec", "rt_clk", "rt_med", "rt_ctl", "rt_tmr", "lan_8899", "lan_rtsp", "lan_aux", "lan_tmr"],
+          edges: ["re_5", "re_6", "re_7", "re_8"],
+          invariants: [
+            "TIME_OFFSET 屏障前强制 flush() 丢弃连接期积压，消除数秒启动延迟",
+            "TimerServer / TIME_OFFSET / PCR 严格共享同一 CLOCK_MONOTONIC 时钟源",
+            "首台建连窗口期继续勾选其它音箱会进入 desiredReceivers 排队，绝不丢点击"
+          ]
+        },
+        {
+          id: "step4", num: "STEP 4", name: "稳态多箱推流与静音锁定",
+          desc: "capture 线程以 MAX_PRIORITY 循环读取 48kHz 立体声 PCM 并硬件编码 AAC AU 喂入 sync_channel(96)；media-clock 单线程按 21.333ms 节拍统一打共享 PTS/PCR 广播 Arc<SharedAu> 给每台 media-<ip> 独立打包写入。捕获每 12 块送 PcmProbe，达到 6 拍有声后锁定本机静音，切歌静音不再误解除。",
+          nodes: ["rt_ui", "rt_cap", "rt_clk", "rt_med", "rt_ctl", "rt_tmr", "lan_8899", "lan_rtsp", "lan_aud", "lan_tmr"],
+          edges: ["re_1", "re_2", "re_3", "re_6", "re_7", "re_8"],
+          invariants: [
+            "每台接收端独立 media_rx(256) 与 Packetizer，慢消费满队只剔单端不堵全组",
+            "LocalOutputMute 锁定 probeLocked=true 后切歌不回退；外部按键取消静音不循环强行重静音",
+            "UI 1Hz 仅原位刷新每台设备行内整数 ms 延迟，不重建控件打断音量滑块"
+          ]
+        },
+        {
+          id: "step5", num: "STEP 5", name: "动态加箱 · 暂停 · 断线重连",
+          desc: "运行期追加音箱时 UI 立即显示 connecting 转圈，reconcile-receivers 串行调用 addReceiver（自动升级 ref_function=multi_room、复用当前 TIME_OFFSET，带取消令牌与首次重试）；暂停恢复或切歌时重锚时间线并全员广播新 TIME_OFFSET；15s 无控制帧则 supervisor 迁入 pending 按 2→30s 退避重连。",
+          nodes: ["rt_ui", "rt_rec", "rt_sup", "rt_ctl", "rt_med", "rt_tmr", "lan_8899", "lan_rtsp"],
+          edges: ["re_4", "re_5", "re_6", "re_7", "re_9"],
+          invariants: [
+            "单次加箱持有独立 Arc<AtomicBool> 取消令牌，彻底隔离“取消后立即重勾”竞态",
+            "pending 重连退避成员合并进 stats()（phase=reconnecting），UI 状态持续可见",
+            "恢复播放连发两次 Resume（间隔 29ms）并先全员同步下发新 TIME_OFFSET"
+          ]
+        },
+        {
+          id: "step6", num: "STEP 6", name: "无死锁停止与资源清理",
+          desc: "用户切回 This device 或撤销投影授权时：恢复本机 STREAM_MUSIC、停止 AudioRecord / MediaCodec / MediaProjection；Rust NativeBridge.stop 先 drop(feed) 立即唤醒阻塞中的 media-clock（配合 50ms poll_au），join 线程后向每台接收端发送协议 CLOSE(0x0002) 并关闭所有 socket 与 TimerServer。",
+          nodes: ["rt_ui", "rt_cap", "rt_clk", "rt_ctl", "rt_tmr", "lan_8899"],
+          edges: ["re_1", "re_6"],
+          invariants: [
+            "必须先释放 ChannelSource 的 SyncSender 再 join media-clock，杜绝残留旧会话",
+            "所有接收端退出时执行 shutdown(true) 下发 CLOSE(0x0002)，释放音箱侧 WFD 会话",
+            "同步释放 WakeLock、WifiLock、撤销前台通知并清空当前 grantSession"
+          ]
+        }
+      ];
+
+      /* ==================== 3. FULL L1-L8 FILE INVENTORY ==================== */
+      const FILES_DATA = [
+        // L1
+        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/MainActivity.kt", "主界面面板：设备路由多选互斥、NowPlaying 展示、1Hz 原位刷新设备行内延迟、音量与高级设置"],
+        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/AppPickerActivity.kt", "音源 App 选择器：最近使用与推荐音乐分组、搜索过滤、校验并保存目标包名与签名摘要"],
+        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/NowPlayingNotificationListener.kt", "声明 NotificationListenerService 以合法获取 MediaSessionManager 活跃会话（不读取上传通知正文）"],
+        ["L1 · UI", "android/app/src/main/AndroidManifest.xml", "主清单：权限最小化（无 QUERY_ALL_PACKAGES）、MAIN/LAUNCHER <queries> 与 FGS 类型声明"],
+        ["L1 · UI", "android/app/src/acceptance/AndroidManifest.xml", "acceptance 变体叠加清单：仅在验收包注册 LocalFilterProbeService"],
+        ["L1 · UI", "android/app/src/main/res/values/strings.xml", "正式包应用名称资源（acceptance 变体另有独立 strings.xml）"],
+        ["L1 · UI", "android/app/src/main/res/drawable/ic_protocol_*.xml", "4 枚协议矢量徽标资源（miplay / dlna / airplay / gcast）"],
+
+        // L2
+        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/CastService.kt", "核心前台服务：FGS 生命周期、UID 捕获与编码循环、routeLock 串行接收端协调器、1Hz 统计轮询与 cast_ops.log 持久化"],
+        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/AacEncoder.kt", "MediaCodec 硬件 AAC-LC 编码封装（48kHz 立体声 256kbps，产出裸 AU）"],
+        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/LatencyDisplay.kt", "延迟 JSON 解析与设备行指示器状态机（Value / Loading / Hidden），拒绝畸形值与假 0"],
+        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/AuthModeResolve.kt", "将 UI 下拉选项与自动化 Intent 解析为 JNI 认证模式（0=auto / 1=legacy / 2=safety）"],
+        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/CastRouteSelection.kt", "纯函数路由状态机：This device 与多音箱/电视互斥、6 列发现解析、非 MiPlay 节点默认过滤与缓存合并"],
+        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/CastProtocol.kt", "投送协议枚举与 castImplemented 门禁（防止未实现协议假装投送成功）"],
+        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/ProtocolBadge.kt", "协议枚举到矢量图标/配色/无障碍文案的绑定器"],
+        ["L2 · 静音", "android/app/src/main/java/com/miplay/sender/cast/LocalOutputMute.kt", "本机 STREAM_MUSIC 静音探针状态机：支持双策略、6 拍有声验证锁定（修复切歌双出声）与外部解除检测"],
+        ["L2 · 静音", "android/app/src/main/java/com/miplay/sender/cast/AndroidStreamMusicVolume.kt", "AudioManager 适配层（强制通过已附加 Context 构造，避免 Service 构造期 NPE）"],
+        ["L2 · 媒体", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingTracker.kt", "订阅源 App MediaController 回调，提取封面/标题/进度并代理播控指令"],
+        ["L2 · 媒体", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingInfo.kt", "正在播放不可变数据模型与诚实占位格式化（禁止伪造曲目）"],
+        ["L2 · 存储", "android/app/src/main/java/com/miplay/sender/cast/PrefsDiscoveredDeviceStore.kt", "SharedPreferences 缓存常驻可投设备（上限 16 台），防止单次 mDNS 丢包导致列表闪烁"],
+
+        // L3
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureModels.kt", "目标包身份快照、解析结果（Ok / Fail）与持久化选择接口定义"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureTargetResolver.kt", "严格单 App 解析器：校验卸载/不可见/共享 UID/跨用户/签名变更，一律 fail-closed"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidPackageIdentityLookup.kt", "基于 PackageManager 实时查询 UID、同用户判定、sharedUserId 与 SHA-256 签名摘要"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureConfigSpec.kt", "捕获规格校验器：强制非空合法 UID + USAGE_MEDIA/GAME/UNKNOWN 白名单"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PlaybackCaptureFactory.kt", "唯一合法 AudioPlaybackCaptureConfiguration 构建入口，杜绝退化为全系统捕获"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/ProjectionSessionPolicy.kt", "Android 14+ MediaProjection 单次授权与停止清理顺序策略（可单测锁定）"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/LaunchableAppCatalog.kt", "可启动应用排序、主流音乐应用推荐识别与主面板快捷切换候选计算"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidLaunchableApps.kt", "经 MAIN/LAUNCHER Intent 查询系统可启动应用列表与图标加载"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PrefsTargetAppStore.kt", "SharedPreferences 持久化选中包名、标签、签名摘要与最近使用列表（绝不存 UID）"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/InMemoryTargetAppStore.kt", "JVM 单元测试与内存态目标应用存储实现"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PcmProbe.kt", "s16le 立体声数字域探针：计算 RMS/峰值 + Goertzel 1kHz/2kHz 目标频点能量"],
+        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/LocalFilterAcceptanceGate.kt", "验收本地过滤门禁：保证无音箱可跑本地探针且绝不触发任何 MiPlay 网络调用"],
+
+        // L4
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurCompat.kt", "背景毛玻璃兼容调度：API 31+ 委派 RenderEffect，API 29–30 降级为压暗叠色"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurEffectApi31.kt", "隔离 API 31 RenderEffect 类引用，避免 Android 10 类校验异常"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/WindowInsetsApplyCompat.kt", "统一使用 AndroidX WindowInsetsCompat 适配状态栏/导航栏/刘海（替代 API 30+ 原生 API）"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/NotificationPermissionCompat.kt", "隔离 API 33+ POST_NOTIFICATIONS 运行时申请，确保 API 29–32 冷启动零弹窗"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/PackageSigningCompat.kt", "使用 API 28+ GET_SIGNING_CERTIFICATES 兼容读取 APK 签名证书"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/CaptureSelectionLayers.kt", "统一“App 选择器 UID vs 系统投影授权框”两层边界说明文案与日志"],
+        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/AcceptanceAudioDefaults.kt", "区分正式包与验收包默认初始音箱音量（30% vs 0%）与停止后本机音量恢复策略"],
+
+        // L5
+        ["L5 · JNI", "android/app/src/main/java/com/miplay/sender/NativeBridge.kt", "Kotlin 侧 external 声明与 .so 加载入口（支持 -Dmiplay.lib 供 app_process 调试）"],
+        ["L5 · JNI", "core/src/ffi.rs", "Rust JNI 导出实现：全局 Engine 注册表、sync_channel(96) 音频喂入、会话控制与无死锁停止"],
+
+        // L6
+        ["L6 · Rust", "core/src/lib.rs", "miplay-sender-core 模块总入口与统一 Error / Result 定义"],
+        ["L6 · Rust", "core/src/discovery.rs", "mDNS 组播（224.0.0.251:5353）PTR 构造与响应解析、同 IP 优先级合并及 6 列 TSV 输出"],
+        ["L6 · Rust", "core/src/netinfo.rs", "Wi-Fi 频段探测与播放缓冲延迟策略（≥4900MHz 5GHz→800ms，其它→1000ms）"],
+        ["L6 · Rust", "core/src/clock.rs", "进程内统一单调微秒时钟 EPOCH（CLOCK_MONOTONIC），供计时器/TIME_OFFSET/PCR 共用"],
+        ["L6 · Rust", "core/src/clock_sync.rs", "UDP TimerServer 时钟主：40B 小端时间戳应答，供接收端计算时钟偏移与频偏"],
+        ["L6 · Rust", "core/src/commands.rs", "TCP 8899 控制命令号全集（0x00xx 基础控制/媒体命令与 0x14xx Safety 命名空间）"],
+        ["L6 · Rust", "core/src/frame.rs", "$ 帧编解码（9B 帧头）、5B 标量、4B 音量、NOTIFY 与 GetDeviceInfo TLV 解析"],
+        ["L6 · Rust", "core/src/auth/mod.rs", "8899 认证链路枚举定义（LegacyClear vs Safety，两条链路不可混用）"],
+        ["L6 · Rust", "core/src/auth/legacy.rs", "旧式明文认证（0x0028 数字挑战 → 0x0029 MD5(\"0.0.0.0\") HMAC-SHA1 应答）"],
+        ["L6 · Rust", "core/src/auth/safety.rs", "现代 SafetyAuth / SafetyData：端点派钥、OPack 包装、双向 HMAC 互验与双向链式 AES-128-CBC 加密"],
+        ["L6 · Rust", "core/src/control.rs", "ControlSession 与 RuntimeWriter：8899 引导、Safety 握手、preparePlayback、Open、心跳、音量、暂停与双 Resume"],
+        ["L6 · Rust", "core/src/rtsp.rs", "WFD RTSP 服务端（SourceRtsp）：反向建连 M1–M5 能力协商、SETUP/PLAY、TIME_OFFSET 下发与运行期保活"],
+        ["L6 · Rust", "core/src/timeline.rs", "SharedTimeline（单调前向修正 90kHz PTS / 27MHz PCR 与暂停重锚）与 SharedTimeOffset"],
+        ["L6 · Rust", "core/src/latency.rs", "发送端端到端估计公式 capture_to_play_est_ms / schedule_ahead_ms 与缺失态规范"],
+        ["L6 · Rust", "core/src/media/mod.rs", "Per-Receiver Packetizer 封装总调度（维护各自 RTP 序号、TS 连续计数与周期表插入）"],
+        ["L6 · Rust", "core/src/media/adts.rs", "7 字节 MPEG-2/4 AAC-LC 48kHz 立体声 ADTS 头封装"],
+        ["L6 · Rust", "core/src/media/mpegts.rs", "ISO/IEC 13818-1 单节目 MPEG-TS 复用（PAT / PMT / PCR / PES 0xC0 / 188B 分片与 MPEG CRC32）"],
+        ["L6 · Rust", "core/src/media/rtp.rs", "RTP v2（PT=33 MP2T, SSRC 0xDEADBEEF）封装与 $+24bit 长度 TCP 线帧封装"],
+        ["L6 · Rust", "core/src/session.rs", "CastSession 完整运行引擎：并发建连、OffsetBarrier 冲刷/预热、media-clock、supervisor 自动重连、动态增删与状态合并"],
+        ["L6 · Rust", "core/src/group.rs", "支持立体声左右声道分路由（ChannelRoute）与 47 AU 历史补发的 Broadcaster / GroupSession 抽象"],
+        ["L6 · Rust", "core/src/inspect.rs", "显式只查询诊断会话：强制命令白名单、过滤敏感字段、仅 TCP shutdown 绝不发送 CLOSE(0x0002)"],
+
+        // L7
+        ["L7 · 工具", "cli/src/main.rs", "独立命令行工具 miplay-cli：支持 discover / inspect / probe / safety / mute / cast 与故障注入调试"],
+        ["L7 · 工具", "android/app/src/main/java/com/miplay/sender/DevMain.kt", "免安装 APK 的 adb shell app_process 真机直连调试入口（静音/编码/晚加入/断网重连验证）"],
+        ["L7 · 验收", "android/app/src/main/java/com/miplay/sender/LocalFilterProbeService.kt", "仅 acceptance 变体启用：纯本地 UID 捕获 + PcmProbe 量化验收服务，不触碰局域网音箱"],
+        ["L7 · 验收", "android/testtones/src/main/java/com/miplay/testtone/ToneActivity.kt", "受控测试音源 UI（编译为 A=1kHz、B=2kHz、deny=禁止捕获三枚独立 UID APK）"],
+        ["L7 · 验收", "android/testtones/src/main/java/com/miplay/testtone/ToneService.kt", "前台稳定输出固定频率立体声正弦波，用于 AudioPlaybackCapture 隔离量化测试"],
+        ["L7 · 测试", "android/app/src/test/java/com/miplay/sender/** (18 个测试文件)", "JVM 单元与契约测试：覆盖 UID fail-closed、投影策略、路由过滤、静音锁定、延迟展示、API29 兼容与构建口令防回退"],
+
+        // L8
+        ["L8 · 构建", "Cargo.toml / core/Cargo.toml / cli/Cargo.toml", "Rust Workspace 配置、release LTO 优化、jni 可选特性与 AGPL-3.0-only 许可声明"],
+        ["L8 · 构建", "android/build.gradle.kts / settings.gradle.kts / gradle.properties", "AGP 8.7.3 + Kotlin 2.0.21 根工程、模块注册（:app / :testtones）与 compileSdk 36 配置"],
+        ["L8 · 构建", "android/app/build.gradle.kts / proguard-rules.pro", "standard/acceptance 变体、环境变量/keystore.properties 签名、NewApi fatal Lint 与 JNI/DevMain R8 keep 规则"],
+        ["L8 · 脚本", "scripts/build-debug.sh / build-release.sh / verify-acceptance-apk.sh", "一键测试 + 16KB 页对齐 cargo-ndk(-p 29) 编译 + Gradle 打包 + zipalign/readelf/apksigner 校验流水线"]
+      ];
+
+      /* ==================== RENDER OVERVIEW SVG ==================== */
+      const ovEdgesG = document.getElementById("ov-edges");
+      const ovNodesG = document.getElementById("ov-nodes");
+      const nodeById = Object.fromEntries(OV_NODES.map(n => [n.id, n]));
+
+      for (const e of OV_EDGES) {
+        const g = el("g", { class: `svg-edge flow-${e.flow}`, "data-edge": e.id, "data-flow": e.flow, "data-from": e.from, "data-to": e.to }, ovEdgesG);
+        el("path", { d: e.d, class: "edge-base" }, g);
+        const pAttrs = { d: e.d, class: "edge-flow", "marker-end": `url(#ov-arr-${e.flow})` };
+        if (e.visualBidir) pAttrs["marker-start"] = `url(#ov-arr-${e.flow})`;
+        el("path", pAttrs, g);
+      }
+
+      for (const n of OV_NODES) {
+        const g = el("g", {
+          class: "svg-node",
+          "data-node": n.id,
+          tabindex: "0",
+          role: "button",
+          "aria-label": `${n.title}（${n.layer}）：点击查看上下游关系`
+        }, ovNodesG);
+        el("rect", { class: "node-box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 10 }, g);
+        if (n.h <= 50) {
+          const t1 = el("text", { x: n.x + 14, y: n.y + 18, fill: "#f8fafc", "font-size": 12.5, "font-weight": 700 }, g);
+          t1.textContent = n.title;
+          const t2 = el("text", { x: n.x + 14, y: n.y + 34, fill: "#7dd3fc", "font-family": "var(--font-mono)", "font-size": 10.2 }, g);
+          t2.textContent = n.sub;
+        } else {
+          const t0 = el("text", { x: n.x + 12, y: n.y + 20, fill: "#7dd3fc", "font-family": "var(--font-mono)", "font-size": 9.6, "font-weight": 700 }, g);
+          t0.textContent = n.layer;
+          const t1 = el("text", { x: n.x + 12, y: n.y + 42, fill: "#f8fafc", "font-size": 13, "font-weight": 700 }, g);
+          t1.textContent = n.title;
+          const t2 = el("text", { x: n.x + 12, y: n.y + 62, fill: "#cbd5e1", "font-family": "var(--font-mono)", "font-size": 10.2 }, g);
+          t2.textContent = n.sub;
+          if (n.h >= 92) {
+            const t3 = el("text", { x: n.x + 12, y: n.y + n.h - 12, fill: "#94a3b8", "font-size": 10 }, g);
+            t3.textContent = "点击追踪 ↑上游 / ↓下游";
+          }
+        }
+        g.addEventListener("click", () => selectOverviewNode(n.id));
+        g.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") selectOverviewNode(n.id);
+          if (ev.key === " ") ev.preventDefault();
+        });
+        g.addEventListener("keyup", (ev) => {
+          if (ev.key === " ") selectOverviewNode(n.id);
+        });
+      }
+
+      let activeFlow = "all";
+      let selectedNodeId = null;
+
+      function traceGraph(startId, flowFilter) {
+        const edges = flowFilter === "all" ? OV_EDGES : OV_EDGES.filter(e => e.flow === flowFilter);
+        const upNodes = new Set(), downNodes = new Set(), activeEdgeIds = new Set();
+
+        // Flow-preserving Forward BFS (Downstream): follows the same flow channel once leaving startId
+        const fq = [[startId, null]];
+        const fSeen = new Set([`${startId}:*`]);
+        while (fq.length) {
+          const [cur, flow] = fq.shift();
+          for (const e of edges) {
+            if (e.from !== cur) continue;
+            if (flow !== null && e.flow !== flow) continue;
+            if (e.to === startId) continue;
+            activeEdgeIds.add(e.id);
+            downNodes.add(e.to);
+            const key = `${e.to}:${e.flow}`;
+            if (!fSeen.has(key)) { fSeen.add(key); fq.push([e.to, e.flow]); }
+          }
+        }
+        // Flow-preserving Reverse BFS (Upstream): traces each incoming flow channel back to its producer
+        const rq = [[startId, null]];
+        const rSeen = new Set([`${startId}:*`]);
+        while (rq.length) {
+          const [cur, flow] = rq.shift();
+          for (const e of edges) {
+            if (e.to !== cur) continue;
+            if (flow !== null && e.flow !== flow) continue;
+            if (e.from === startId) continue;
+            activeEdgeIds.add(e.id);
+            upNodes.add(e.from);
+            const key = `${e.from}:${e.flow}`;
+            if (!rSeen.has(key)) { rSeen.add(key); rq.push([e.from, e.flow]); }
+          }
+        }
+        return { upNodes, downNodes, activeEdgeIds };
+      }
+
+      function applyOverviewHighlights() {
+        const nodeEls = ovNodesG.querySelectorAll(".svg-node");
+        const edgeEls = ovEdgesG.querySelectorAll(".svg-edge");
+
+        if (!selectedNodeId) {
+          const allowedEdges = new Set(OV_EDGES.filter(e => activeFlow === "all" || e.flow === activeFlow).map(e => e.id));
+          const touchedNodes = new Set();
+          for (const e of OV_EDGES) {
+            if (allowedEdges.has(e.id)) { touchedNodes.add(e.from); touchedNodes.add(e.to); }
+          }
+          edgeEls.forEach(g => g.classList.toggle("is-dimmed", !allowedEdges.has(g.dataset.edge)));
+          nodeEls.forEach(g => {
+            g.classList.remove("is-selected", "is-upstream", "is-downstream");
+            g.classList.toggle("is-dimmed", activeFlow !== "all" && !touchedNodes.has(g.dataset.node));
+          });
+          return;
+        }
+
+        const { upNodes, downNodes, activeEdgeIds } = traceGraph(selectedNodeId, activeFlow);
+        edgeEls.forEach(g => g.classList.toggle("is-dimmed", !activeEdgeIds.has(g.dataset.edge)));
+        nodeEls.forEach(g => {
+          const id = g.dataset.node;
+          g.classList.toggle("is-selected", id === selectedNodeId);
+          g.classList.toggle("is-upstream", id !== selectedNodeId && upNodes.has(id));
+          g.classList.toggle("is-downstream", id !== selectedNodeId && downNodes.has(id));
+          g.classList.toggle("is-dimmed", id !== selectedNodeId && !upNodes.has(id) && !downNodes.has(id));
+        });
+
+        const n = nodeById[selectedNodeId];
+        document.getElementById("ins-layer").textContent = n.layer;
+        document.getElementById("ins-title").textContent = n.title;
+        document.getElementById("ins-desc").textContent = n.desc;
+        const filesUl = document.getElementById("ins-files");
+        filesUl.innerHTML = "";
+        n.files.forEach(f => {
+          const li = document.createElement("li");
+          const code = document.createElement("code");
+          code.textContent = f;
+          li.appendChild(code);
+          filesUl.appendChild(li);
+        });
+
+        const fillRel = (containerId, ids, cls) => {
+          const box = document.getElementById(containerId);
+          box.innerHTML = "";
+          if (!ids.size) {
+            const s = document.createElement("span");
+            s.className = "hint-text";
+            s.textContent = "无（当前为边界节点）";
+            box.appendChild(s);
+            return;
+          }
+          ids.forEach(id => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = `rel-btn ${cls}`;
+            b.textContent = nodeById[id].title;
+            b.addEventListener("click", () => selectOverviewNode(id));
+            box.appendChild(b);
+          });
+        };
+        fillRel("ins-up", upNodes, "up");
+        fillRel("ins-down", downNodes, "down");
+        announce(`已选中 ${n.title}，上游 ${upNodes.size} 个模块，下游 ${downNodes.size} 个模块`);
+      }
+
+      function selectOverviewNode(id) {
+        selectedNodeId = selectedNodeId === id ? null : id;
+        applyOverviewHighlights();
+      }
+
+      document.querySelectorAll("[data-flow]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          activeFlow = btn.dataset.flow;
+          document.querySelectorAll("[data-flow]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+          applyOverviewHighlights();
+        });
+      });
+
+      /* ==================== RENDER RUNTIME SVG & LIFECYCLE STEPPER ==================== */
+      const rtEdgesG = document.getElementById("rt-edges");
+      const rtNodesG = document.getElementById("rt-nodes");
+      const rtNodeMap = Object.fromEntries(RT_NODES.map(n => [n.id, n]));
+
+      for (const e of RT_EDGES) {
+        const g = el("g", { class: `svg-edge flow-${e.flow}`, "data-redge": e.id }, rtEdgesG);
+        el("path", { d: e.d, class: "edge-base" }, g);
+        el("path", { d: e.d, class: "edge-flow", "marker-end": `url(#rt-a-${e.flow})` }, g);
+      }
+
+      for (const n of RT_NODES) {
+        const g = el("g", { class: "svg-node", "data-rnode": n.id }, rtNodesG);
+        el("rect", { class: "node-box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9 }, g);
+        el("circle", { cx: n.x + 14, cy: n.y + 20, r: 4, fill: n.accent }, g);
+        const t1 = el("text", { x: n.x + 25, y: n.y + 24, fill: "#f8fafc", "font-size": 12.2, "font-weight": 700 }, g);
+        t1.textContent = n.title;
+        const t2 = el("text", { x: n.x + 12, y: n.y + 46, fill: "#cbd5e1", "font-family": "var(--font-mono)", "font-size": 9.8 }, g);
+        t2.textContent = n.sub;
+      }
+
+      const stepperEl = document.getElementById("lifecycle-stepper");
+      function activateStep(stepId) {
+        const step = LIFECYCLE_STEPS.find(s => s.id === stepId) || LIFECYCLE_STEPS[3];
+        stepperEl.querySelectorAll(".step-btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.step === step.id)));
+        const nSet = new Set(step.nodes);
+        const eSet = new Set(step.edges);
+        rtNodesG.querySelectorAll(".svg-node").forEach(g => {
+          const on = nSet.has(g.dataset.rnode);
+          g.classList.toggle("is-active-step", on);
+          g.classList.toggle("is-dimmed", !on);
+        });
+        rtEdgesG.querySelectorAll(".svg-edge").forEach(g => {
+          g.classList.toggle("is-dimmed", !eSet.has(g.dataset.redge));
+        });
+        document.getElementById("rt-badge").textContent = step.num;
+        document.getElementById("rt-title").textContent = step.name;
+        document.getElementById("rt-desc").textContent = step.desc;
+        const inv = document.getElementById("rt-invariants");
+        inv.innerHTML = "";
+        step.invariants.forEach(text => {
+          const li = document.createElement("li");
+          li.textContent = "• " + text;
+          inv.appendChild(li);
+        });
+        const act = document.getElementById("rt-active-list");
+        act.innerHTML = "";
+        step.nodes.forEach(id => {
+          const span = document.createElement("span");
+          span.className = "rel-btn up";
+          span.textContent = rtNodeMap[id]?.title || id;
+          act.appendChild(span);
+        });
+      }
+
+      for (const s of LIFECYCLE_STEPS) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "step-btn";
+        b.dataset.step = s.id;
+        b.setAttribute("aria-pressed", "false");
+        b.innerHTML = `<span class="step-num">${s.num}</span><span class="step-name">${s.name}</span>`;
+        b.addEventListener("click", () => activateStep(s.id));
+        stepperEl.appendChild(b);
+      }
+      activateStep("step4");
+
+      /* ==================== RENDER FILES EXPLORER TABLE ==================== */
+      const layerSet = ["全部", ...new Set(FILES_DATA.map(r => r[0]))];
+      let activeLayer = "全部";
+      const layerFiltersEl = document.getElementById("layer-filters");
+      const searchInput = document.getElementById("file-search");
+      const tbody = document.getElementById("files-tbody");
+      const countEl = document.getElementById("file-count");
+
+      function renderFilesTable() {
+        const q = searchInput.value.trim().toLowerCase();
+        const rows = FILES_DATA.filter(([layer, path, desc]) => {
+          if (activeLayer !== "全部" && layer !== activeLayer) return false;
+          if (!q) return true;
+          return `${layer} ${path} ${desc}`.toLowerCase().includes(q);
+        });
+        countEl.textContent = String(rows.length);
+        tbody.innerHTML = "";
+        for (const [layer, path, desc] of rows) {
+          const tr = document.createElement("tr");
+          const th = document.createElement("th");
+          th.scope = "row";
+          const pill = document.createElement("span");
+          pill.className = "layer-pill";
+          pill.textContent = layer;
+          th.appendChild(pill);
+          const tdPath = document.createElement("td");
+          const code = document.createElement("code");
+          code.textContent = path;
+          tdPath.appendChild(code);
+          const tdDesc = document.createElement("td");
+          tdDesc.textContent = desc;
+          tr.append(th, tdPath, tdDesc);
+          tbody.appendChild(tr);
+        }
+      }
+
+      for (const l of layerSet) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = l;
+        b.setAttribute("aria-pressed", String(l === "全部"));
+        b.addEventListener("click", () => {
+          activeLayer = l;
+          layerFiltersEl.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+          renderFilesTable();
+        });
+        layerFiltersEl.appendChild(b);
+      }
+      searchInput.addEventListener("input", renderFilesTable);
+      renderFilesTable();
+
+      /* ==================== ACCESSIBLE TABS + BEFOREMATCH ==================== */
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+
+      function activateTab(tab, moveFocus = false) {
+        tabs.forEach((t, i) => {
+          const selected = t === tab;
+          t.setAttribute("aria-selected", String(selected));
+          t.toggleAttribute("focusgroupstart", selected);
+          t.tabIndex = selected ? 0 : -1;
+          const panel = panels[i];
+          if (selected) {
+            panel.removeAttribute("hidden");
+            panel.tabIndex = 0;
+          } else {
+            panel.setAttribute("hidden", "until-found");
+            panel.removeAttribute("tabindex");
+          }
+        });
+        tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+        if (moveFocus) tab.focus();
+      }
+
+      tabs.forEach((tab, idx) => {
+        tab.tabIndex = idx === 0 ? 0 : -1;
+        tab.addEventListener("click", () => activateTab(tab));
+        tab.addEventListener("keydown", (ev) => {
+          let next = null;
+          if (ev.key === "ArrowRight") next = tabs[(idx + 1) % tabs.length];
+          else if (ev.key === "ArrowLeft") next = tabs[(idx - 1 + tabs.length) % tabs.length];
+          else if (ev.key === "Home") next = tabs[0];
+          else if (ev.key === "End") next = tabs[tabs.length - 1];
+          if (next) { ev.preventDefault(); activateTab(next, true); }
+        });
+      });
+
+      panels.forEach((panel, idx) => {
+        panel.addEventListener("beforematch", () => activateTab(tabs[idx]));
+      });
+
+      /* ==================== GLOBAL MOTION & RESET CONTROLS ==================== */
+      const btnMotion = document.getElementById("btn-motion");
+      btnMotion.addEventListener("click", () => {
+        const paused = document.body.classList.toggle("is-paused");
+        btnMotion.setAttribute("aria-pressed", String(paused));
+        btnMotion.textContent = paused ? "恢复动效" : "暂停动效";
+      });
+
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        selectedNodeId = null;
+        activeFlow = "all";
+        document.querySelectorAll("[data-flow]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.flow === "all")));
+        applyOverviewHighlights();
+        activateStep("step4");
+        announce("已重置所有高亮与筛选状态");
+      });
+    })();
+  </script>
+</body>
+</html>
