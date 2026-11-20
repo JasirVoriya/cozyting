@@ -1,14 +1,68 @@
-<p>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-banner-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-banner-light.svg">
-    <img alt="MiPlay Sender" src="docs/assets/logo-banner-light.svg" width="560">
-  </picture>
-</p>
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo.svg">
+  <img alt="MiPlay Sender Logo" src="docs/assets/logo.svg" width="108" height="108">
+</picture>
 
 # MiPlay 发送端（纯局域网）
 
-Android 手机作为发送端，经局域网把音频投送到局域网智能音箱（支持 MiPlay 协议）。
+**Android 手机单 App 音频捕获 · 零云端纯局域网 · 多音箱毫秒级同频投送**
+
+<p>
+  <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
+  <img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square">
+  <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
+  <img alt="Multi-Room Up to 63" src="https://img.shields.io/badge/Multi--Room-Max%2063%20Speakers-10B981?style=flat-square">
+</p>
+
+<p>
+  <img alt="Kotlin 2.0.21" src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
+  <img alt="Rust 2021 (>=1.75)" src="https://img.shields.io/badge/Rust-2021%20(%E2%89%A51.75)-181B22?style=flat-square&logo=rust&logoColor=white">
+  <img alt="JNI + cargo-ndk" src="https://img.shields.io/badge/Bridge-JNI%20%C2%B7%20cargo--ndk-374151?style=flat-square&logo=rust&logoColor=white">
+  <img alt="Gradle 8.11 · AGP 8.7" src="https://img.shields.io/badge/Gradle-8.11%20%C2%B7%20AGP%208.7-02303A?style=flat-square&logo=gradle&logoColor=white">
+  <img alt="ABI arm64-v8a · 16KB Page" src="https://img.shields.io/badge/ABI-arm64--v8a%20%C2%B7%2016KB-2B313D?style=flat-square">
+</p>
+
+<p>
+  <img alt="Audio AAC-LC 48kHz 256kbps" src="https://img.shields.io/badge/Audio-AAC--LC%2048kHz%20256kbps-FF5C6C?style=flat-square">
+  <img alt="Control mDNS · TCP 8899 · WFD RTSP" src="https://img.shields.io/badge/Control-mDNS%20%C2%B7%208899%20%C2%B7%20WFD%20RTSP-475569?style=flat-square">
+  <img alt="Media MPEG-TS · RTP" src="https://img.shields.io/badge/Media-MPEG--TS%20%C2%B7%20RTP%20(PT%3D33)-475569?style=flat-square">
+</p>
+
+<p>
+  <a href="#核心亮点">核心亮点</a> ·
+  <a href="#技术栈">技术栈</a> ·
+  <a href="#许可与免责声明">许可与声明</a> ·
+  <a href="#功能">功能清单</a> ·
+  <a href="#架构总览">架构总览</a> ·
+  <a href="#构建">构建指南</a>
+</p>
+
+</div>
+
+## 核心亮点
+
+| 维度 | 核心能力 |
+| --- | --- |
+| **🎯 严格单 App 音频隔离** | 基于 `AudioPlaybackCapture` 强制单 UID + `USAGE_MEDIA/GAME/UNKNOWN` 白名单，启动前校验包可见性、同用户、非共享 UID 与签名摘要（任一不满足即 **fail-closed** 拒绝），绝不静默退化为全系统录屏或采集麦克风。 |
+| **🔊 多音箱毫秒级同频同步** | Rust 引擎内置单调时基 `EPOCH`、UDP 40B `TimerServer` 时钟主、建连期 `OffsetBarrier` 冲刷积压与预读 14 AU 对齐，单会话最多并发同步 **63 台**局域网音箱，支持运行期动态加减箱与 15s 看门狗指数退避重连。 |
+| **🔐 纯局域网与双认证隔离** | 全程本地直连、零云端 API、零账号登录；严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条控制认证链路。 |
+| **🧩 App + CLI 双形态交付** | 提供 Android 10–16 毛玻璃投送面板、按设备原位延迟监控与本机静音能量探针；同时内置独立终端工具 `miplay-cli`（支持只读 `inspect`，退出仅 TCP shutdown 不发 `CLOSE`）。 |
+
+## 技术栈
+
+| 分层 | 技术选型 / 协议 / 关键依赖 | 用途与工程约束 |
+| --- | --- | --- |
+| **Android 表现与控制层** | `Kotlin 2.0.21` · `Android SDK 29–36` · `AndroidX Core KTX` · `MediaSessionManager` | 纯代码构建轻量化 UI，API 31+ 使用 `RenderEffect` 毛玻璃、API 29–30 自动压暗降级；不申请 `QUERY_ALL_PACKAGES` |
+| **音频采集与硬件编码** | `AudioPlaybackCapture` · `AudioRecord` (48kHz s16le) · `MediaCodec` (AAC-LC 256kbps) · 自研 `PcmProbe` | `MAX_PRIORITY` 采集编码线程；RMS + Goertzel（1kHz/2kHz）数字域探针驱动静音锁定与隔离验收 |
+| **跨语言原生桥接** | `JNI` (`jni 0.21`) · `cargo-ndk` · `arm64-v8a` · **16KB ELF 页对齐** | 单进程零 IPC 拷贝；`FEED_QUEUE_AUS = 96`（≈2s）有界通道，`stop()` 先 `drop(feed)` 消除停播死锁 |
+| **Rust 协议与同步核心** | `Rust 2021 (≥1.75)` · `LTO` · **零异步运行时**（纯 `std::thread` + 有界 `sync_channel`） | 确定性实时调度：`media-clock`（21.333ms 节拍）+ `supervisor` + 每台音箱独立 5 线程，单端阻塞不拖垮整组 |
+| **网络发现与加密协议** | `mDNS` (`224.0.0.251:5353`) · `TCP 8899` · `WFD RTSP` · `UDP TimerServer` · RustCrypto (`aes`/`cbc`/`hmac`/`sha1`/`sha2`/`md-5`) | 优先融合 `_mi-connect` (`apps=[5]`) 与 `_lyra-mdns`；纯 Rust 实现无 OpenSSL 原生依赖 |
+| **流媒体封装** | `ADTS (7B)` → `PES (0xC0)` → `MPEG-TS (188B + CRC32)` → `RTP (PT=33)` → `$+24bit` TCP 线帧 | 每台接收端维护独立 `Packetizer`（独立 RTP 序号与 TS 连续计数），共享同源 90kHz PTS / 27MHz PCR |
+| **构建、测试与合规** | `Gradle 8.11.1` · `AGP 8.7.3` · `standard` / `acceptance` 双变体 · `NewApi` Fatal Lint | 18 组 JVM 契约单测 + `cargo test` + `:testtones` 三 UID 声道隔离验收包；全仓 `AGPL-3.0-only` |
 
 ## 许可与免责声明
 
