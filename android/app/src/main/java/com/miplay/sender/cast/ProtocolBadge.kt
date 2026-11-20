@@ -36,6 +36,10 @@ object ProtocolBadge {
         if (selected) Color.rgb(40, 60, 90) else Color.argb(220, 230, 235, 240)
 
     fun bind(image: ImageView, protocol: CastProtocol?, selected: Boolean) {
+        bindWithTint(image, protocol, tintForRow(selected))
+    }
+
+    fun bindWithTint(image: ImageView, protocol: CastProtocol?, tintColor: Int) {
         if (protocol == null) {
             image.visibility = View.GONE
             image.setImageDrawable(null)
@@ -44,7 +48,7 @@ object ProtocolBadge {
         }
         image.visibility = View.VISIBLE
         image.setImageResource(drawableRes(protocol))
-        image.imageTintList = ColorStateList.valueOf(tintForRow(selected))
+        image.imageTintList = ColorStateList.valueOf(tintColor)
         image.contentDescription = contentDescription(protocol)
     }
 
