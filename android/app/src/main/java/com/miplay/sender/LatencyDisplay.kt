@@ -33,6 +33,26 @@ object LatencyDisplay {
             .mapNotNull(receivers::optJSONObject)
             .firstOrNull { it.optString("ip") == deviceId }
             ?: return ReceiverIndicator.Hidden
+        // 优先消费第 1 层 Rust core 下沉的归一化字段 ui_state / display_latency_ms
+        val uiState = receiver.optString("ui_state", "").trim().lowercase()
+        if (uiState.isNotEmpty()) {
+            return when (uiState) {
+                "error" -> ReceiverIndicator.Hidden
+                "connecting", "reconnecting" -> ReceiverIndicator.Loading
+                "streaming" -> {
+                    val raw = receiver.opt("display_latency_ms") as? Number
+                        ?: return ReceiverIndicator.Loading
+                    val value = raw.toLong()
+                    if (value < 0 || raw.toDouble() != value.toDouble()) {
+                        ReceiverIndicator.Hidden
+                    } else {
+                        ReceiverIndicator.Value(value)
+                    }
+                }
+                else -> ReceiverIndicator.Hidden
+            }
+        }
+        // 向下兼容无 ui_state 字段的旧格式/本地占位 JSON
         if (!receiver.isNull("error") && receiver.optString("error").isNotBlank()) {
             return ReceiverIndicator.Hidden
         }

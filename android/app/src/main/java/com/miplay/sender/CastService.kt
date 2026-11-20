@@ -191,15 +191,6 @@ class CastService : Service() {
     private var captureUid: Int = -1
     private val sessionPolicy = ProjectionSessionPolicy()
     private var noAudioHintPosted = false
-    private val routeLock = Any()
-    private val desiredReceivers = LinkedHashSet<String>()
-    private val activeOrSubmittedReceivers = LinkedHashSet<String>()
-    private val pendingReconcileIps = LinkedHashSet<String>()
-    private val pendingSpeakerVolumes = LinkedHashMap<String, Int>()
-    private var pendingGroupVolume: Int? = null
-    private var connectFinishedForHandle: Long = 0L
-    private var inFlightAddIp: String? = null
-    private var reconcileRunning = false
     /**
      * 禁止在属性初始化器里 `AndroidStreamMusicVolume(this)`：Service 构造时 base context
      * 尚未 attach，getApplicationContext() 会 NPE（真机 0.9.1 已复现）。
@@ -243,21 +234,9 @@ class CastService : Service() {
             ACTION_VOLUME -> {
                 val v = intent.getIntExtra(EXTRA_VOLUME, 0).coerceIn(0, 100)
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
-                val readyHandle: Long
-                val deferVolume: Boolean
-                synchronized(routeLock) {
-                    readyHandle = connectFinishedForHandle
-                    deferVolume = readyHandle == 0L || (ip.isNotEmpty() && pendingReconcileIps.contains(ip))
-                    if (deferVolume) {
-                        if (ip.isEmpty()) pendingGroupVolume = v else pendingSpeakerVolumes[ip] = v
-                    }
-                }
-                if (deferVolume) {
-                    event("排队音量(${ip.ifEmpty { "全组" }}, $v)")
-                } else if (readyHandle != 0L) {
-                    bg("volume") {
-                        event("setVolume(${ip.ifEmpty { "全组" }}, $v): " + NativeBridge.setVolume(readyHandle, ip, v))
-                    }
+                if (h != 0L && running.get()) {
+                    val res = NativeBridge.queueSetVolume(h, ip, v)
+                    event("协调音量(${ip.ifEmpty { "全组" }}, $v): $res")
                 }
                 return START_NOT_STICKY
             }
@@ -265,47 +244,19 @@ class CastService : Service() {
             ACTION_RESUME -> { bg("resume") { event("恢复: " + NativeBridge.resume(h)); paused = false; updateNotification() }; return START_NOT_STICKY }
             ACTION_ADD -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
-                if (ip.isNotEmpty() && running.get()) {
-                    val readyHandle: Long
-                    synchronized(routeLock) {
-                        desiredReceivers.add(ip)
-                        pendingReconcileIps.add(ip)
-                        lastStats = mergeConnectingReceivers(lastStats, pendingReconcileIps.toSet())
-                        readyHandle = connectFinishedForHandle
-                    }
-                    if (readyHandle == 0L) {
-                        event("排队加入 $ip（等待首台音箱连接完成）")
-                    } else {
-                        event("准备加入 $ip")
-                        triggerReconcile(readyHandle)
-                    }
+                if (ip.isNotEmpty() && running.get() && h != 0L) {
+                    val res = NativeBridge.queueAddReceiver(h, ip)
+                    lastStats = NativeBridge.stats(h)
+                    event("协调加入 $ip: $res")
                 }
                 return START_NOT_STICKY
             }
             ACTION_REMOVE -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
-                if (ip.isNotEmpty()) {
-                    val hNow = handle
-                    val cancelInFlight: Boolean
-                    val readyHandle: Long
-                    synchronized(routeLock) {
-                        desiredReceivers.remove(ip)
-                        pendingReconcileIps.remove(ip)
-                        pendingSpeakerVolumes.remove(ip)
-                        lastStats = removeReceiverFromStatsJson(lastStats, ip)
-                        cancelInFlight = (inFlightAddIp == ip)
-                        readyHandle = connectFinishedForHandle
-                    }
-                    if (cancelInFlight && hNow != 0L) {
-                        bg("cancel-add") {
-                            val stillRemoved = synchronized(routeLock) { !desiredReceivers.contains(ip) }
-                            if (stillRemoved) NativeBridge.removeReceiver(hNow, ip)
-                        }
-                    }
-                    if (readyHandle != 0L) {
-                        triggerReconcile(readyHandle)
-                    }
-                    event("移除 $ip")
+                if (ip.isNotEmpty() && h != 0L) {
+                    NativeBridge.queueRemoveReceiver(h, ip)
+                    lastStats = NativeBridge.stats(h)
+                    event("协调移除 $ip")
                 }
                 return START_NOT_STICKY
             }
@@ -320,21 +271,10 @@ class CastService : Service() {
         startForegroundCompat()
 
         if (running.getAndSet(true)) {
-            if (initialIps.isNotEmpty()) {
-                val readyHandle: Long
-                synchronized(routeLock) {
-                    initialIps.forEach { ip ->
-                        if (desiredReceivers.add(ip)) {
-                            pendingReconcileIps.add(ip)
-                        }
-                    }
-                    lastStats = mergeConnectingReceivers(lastStats, pendingReconcileIps.toSet())
-                    readyHandle = connectFinishedForHandle
-                }
+            if (initialIps.isNotEmpty() && h != 0L) {
+                initialIps.forEach { ip -> NativeBridge.queueAddReceiver(h, ip) }
+                lastStats = NativeBridge.stats(h)
                 event("已在投送中，合并目标音箱: ${initialIps.joinToString(",")}")
-                if (readyHandle != 0L) {
-                    triggerReconcile(readyHandle)
-                }
             } else {
                 event("已在投送中，忽略重复开始")
             }
@@ -343,20 +283,7 @@ class CastService : Service() {
         paused = false
         lastFailMessage = ""
         noAudioHintPosted = false
-        synchronized(routeLock) {
-            desiredReceivers.clear()
-            desiredReceivers.addAll(initialIps)
-            activeOrSubmittedReceivers.clear()
-            activeOrSubmittedReceivers.addAll(initialIps)
-            pendingReconcileIps.clear()
-            pendingReconcileIps.addAll(initialIps)
-            pendingSpeakerVolumes.clear()
-            pendingGroupVolume = null
-            connectFinishedForHandle = 0L
-            inFlightAddIp = null
-            reconcileRunning = false
-            lastStats = mergeConnectingReceivers("", pendingReconcileIps.toSet())
-        }
+        lastStats = mergeConnectingReceivers("", initialIps.toSet())
         acquireLocks()
 
         if (source == "app") {
@@ -442,11 +369,7 @@ class CastService : Service() {
             if (st.contains("\"error\"") && !st.contains("\"receivers\"")) {
                 stopCast(); stopSelf(); return@bg
             }
-            synchronized(routeLock) {
-                initialIps.forEach { pendingReconcileIps.remove(it) }
-                connectFinishedForHandle = sessionHandle
-                lastStats = mergeConnectingReceivers(st, pendingReconcileIps.toSet())
-            }
+            lastStats = st
             if (source == "app") {
                 val policyArg = intent?.getStringExtra(EXTRA_LOCAL_MUTE_POLICY).orEmpty()
                 val policy = if (policyArg == "keep_local") {
@@ -460,122 +383,9 @@ class CastService : Service() {
                 publishMute(localMute.skip("silent source"))
             }
             statsLoop()
-            triggerReconcile(sessionHandle)
             if (secs > 0) main.postDelayed({ event("定时 ${secs}s 到，停止"); stopCast(); stopSelf() }, secs * 1000L)
         }
         return START_NOT_STICKY
-    }
-
-    private fun triggerReconcile(h: Long) {
-        synchronized(routeLock) {
-            if (reconcileRunning || connectFinishedForHandle != h || !running.get() || handle != h) return
-            reconcileRunning = true
-        }
-        bg("reconcile-receivers") {
-            try {
-                while (running.get() && handle == h) {
-                    var toRemove: String? = null
-                    var toAdd: String? = null
-                    var groupVol: Int? = null
-                    var speakerVol: Pair<String, Int>? = null
-                    synchronized(routeLock) {
-                        if (!running.get() || handle != h || connectFinishedForHandle != h) {
-                            reconcileRunning = false
-                            return@bg
-                        }
-                        toRemove = activeOrSubmittedReceivers.firstOrNull { !desiredReceivers.contains(it) }
-                        if (toRemove != null) {
-                            activeOrSubmittedReceivers.remove(toRemove)
-                            pendingReconcileIps.remove(toRemove)
-                        } else {
-                            toAdd = desiredReceivers.firstOrNull { !activeOrSubmittedReceivers.contains(it) }
-                            if (toAdd != null) {
-                                activeOrSubmittedReceivers.add(toAdd!!)
-                                pendingReconcileIps.add(toAdd!!)
-                                inFlightAddIp = toAdd
-                                lastStats = mergeConnectingReceivers(lastStats, pendingReconcileIps.toSet())
-                            } else if (pendingGroupVolume != null) {
-                                groupVol = pendingGroupVolume
-                                pendingGroupVolume = null
-                            } else {
-                                val readyVolKey = pendingSpeakerVolumes.keys.firstOrNull { !pendingReconcileIps.contains(it) }
-                                if (readyVolKey != null) {
-                                    speakerVol = readyVolKey to pendingSpeakerVolumes.remove(readyVolKey)!!
-                                } else {
-                                    reconcileRunning = false
-                                    return@bg
-                                }
-                            }
-                        }
-                    }
-                    when {
-                        toRemove != null -> {
-                            val ip = toRemove!!
-                            NativeBridge.removeReceiver(h, ip)
-                            synchronized(routeLock) {
-                                lastStats = removeReceiverFromStatsJson(lastStats, ip)
-                            }
-                            event("已从会话移除 $ip")
-                        }
-                        toAdd != null -> {
-                            val ip = toAdd!!
-                            event("开始加入音箱 $ip")
-                            val res = NativeBridge.addReceiver(h, ip)
-                            var removedDuringAdd = false
-                            var retryImmediately = false
-                            synchronized(routeLock) {
-                                if (inFlightAddIp == ip) {
-                                    inFlightAddIp = null
-                                }
-                                if (!desiredReceivers.contains(ip)) {
-                                    activeOrSubmittedReceivers.remove(ip)
-                                    pendingReconcileIps.remove(ip)
-                                    removedDuringAdd = true
-                                } else if (res.contains("receiver removed during connect")) {
-                                    activeOrSubmittedReceivers.remove(ip)
-                                    pendingReconcileIps.add(ip)
-                                    retryImmediately = true
-                                } else {
-                                    pendingReconcileIps.remove(ip)
-                                }
-                            }
-                            if (removedDuringAdd) {
-                                NativeBridge.removeReceiver(h, ip)
-                                synchronized(routeLock) {
-                                    lastStats = removeReceiverFromStatsJson(lastStats, ip)
-                                }
-                                event("加入期间已取消勾选，移除 $ip")
-                            } else if (retryImmediately) {
-                                event("重新勾选 $ip，立即重试连接")
-                            } else if (res.contains("\"error\"")) {
-                                event("加入 $ip 暂未就绪，后台自动重连中: $res")
-                            } else {
-                                event("加入 $ip: $res")
-                            }
-                            if (running.get() && handle == h) {
-                                val raw = NativeBridge.stats(h)
-                                val connectingNow = synchronized(routeLock) { pendingReconcileIps.toSet() }
-                                if (running.get() && handle == h) {
-                                    lastStats = mergeConnectingReceivers(raw, connectingNow)
-                                }
-                            }
-                        }
-                        groupVol != null -> {
-                            event("setVolume(全组, $groupVol): " + NativeBridge.setVolume(h, "", groupVol!!))
-                        }
-                        speakerVol != null -> {
-                            val (ip, v) = speakerVol!!
-                            event("setVolume($ip, $v): " + NativeBridge.setVolume(h, ip, v))
-                        }
-                    }
-                }
-            } finally {
-                synchronized(routeLock) {
-                    inFlightAddIp = null
-                    reconcileRunning = false
-                }
-            }
-        }
     }
 
     private fun resolveTargetOrFail(pkgExtra: String, certExtra: String): CaptureTargetResult.Ok? {
@@ -622,8 +432,7 @@ class CastService : Service() {
                     if (!running.get() || handle != h) return@bg
                     val rawStats = NativeBridge.stats(h)
                     if (!running.get() || handle != h) return@bg
-                    val connectingNow = synchronized(routeLock) { pendingReconcileIps.toSet() }
-                    lastStats = mergeConnectingReceivers(rawStats, connectingNow)
+                    lastStats = rawStats
                     Log.i(TAG, "STATS pushed=$pushed dropped=$dropped " + lastStats)
                     runCatching {
                         val lat = JSONObject(lastStats).optJSONObject("latency")
@@ -818,16 +627,6 @@ class CastService : Service() {
         runCatching { record?.stop() }
         record?.release(); record = null
         encoder?.release(); encoder = null
-        synchronized(routeLock) {
-            desiredReceivers.clear()
-            activeOrSubmittedReceivers.clear()
-            pendingReconcileIps.clear()
-            pendingSpeakerVolumes.clear()
-            pendingGroupVolume = null
-            connectFinishedForHandle = 0L
-            inFlightAddIp = null
-            reconcileRunning = false
-        }
         val h = handle
         handle = 0L
         lastStats = ""

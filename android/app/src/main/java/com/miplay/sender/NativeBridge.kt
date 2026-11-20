@@ -10,8 +10,12 @@ object NativeBridge {
     }
 
     @JvmStatic external fun init()
-    /** 每行 "ip\tname\tmodel"；出错时 "ERROR\t原因"。 */
+    /** 每行 "ip\tname\tmodel\tadvertises_miplay\tservice\tapps"；出错时 "ERROR\t原因"。 */
     @JvmStatic external fun discover(localIp: String, timeoutMs: Int): String
+    /** 跨端结构化发现 JSON（由 Rust core 统一分类、过滤并合并历史缓存）。 */
+    @JvmStatic external fun discoverJson(localIp: String, timeoutMs: Int, cachedJson: String): String
+    /** 跨端共享路由状态机 JSON 入口：action = select_this | check | uncheck | merge_discovered。 */
+    @JvmStatic external fun routeApplyJson(devicesJson: String, action: String, target: String): String
     @JvmStatic external fun probe(ip: String): String
     /** 立即返回句柄。silent=true 用内置 AAC 静音帧，否则用 pushAac 喂数据。 */
     @JvmStatic external fun create(silent: Boolean): Long
@@ -22,6 +26,10 @@ object NativeBridge {
      */
     @JvmStatic external fun connect(handle: Long, ips: String, delayMs: Int, premute: Int, volumeAfterPlay: Int, refFunction: String, sourceName: String): String
     @JvmStatic external fun pushAac(handle: Long, au: ByteArray): Int
+    /** 协调式非阻塞增删接收端与调音量（排队/reconcile 全部下沉至 Rust core Engine）。 */
+    @JvmStatic external fun queueAddReceiver(handle: Long, ip: String): String
+    @JvmStatic external fun queueRemoveReceiver(handle: Long, ip: String): Boolean
+    @JvmStatic external fun queueSetVolume(handle: Long, ip: String, volume: Int): String
     /** ip 为空 = 全组。返回每台的结果。 */
     @JvmStatic external fun setVolume(handle: Long, ip: String, volume: Int): String
     @JvmStatic external fun addReceiver(handle: Long, ip: String): String

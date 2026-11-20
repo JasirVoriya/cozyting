@@ -20,9 +20,12 @@ pub mod timeline;
 pub mod group;
 pub mod netinfo;
 pub mod latency;
+pub mod device_catalog;
 pub mod session;
+pub mod engine;
 pub mod inspect;
 pub mod ffi;
+pub mod ffi_c;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

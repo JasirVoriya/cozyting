@@ -181,4 +181,36 @@ class LatencyDisplayTest {
         assertTrue(snap[1].contains("排队加入 192.0.2.234"))
         CastService.clearRecentEventsForTest()
     }
+
+    @Test
+    fun receiverIndicatorConsumesCoreNormalizedUiStateAndDisplayLatency() {
+        val streaming = JSONObject(
+            """{"receivers":[{"ip":"192.0.2.10","ui_state":"streaming","display_latency_ms":912}]}""",
+        )
+        assertEquals(
+            LatencyDisplay.ReceiverIndicator.Value(912),
+            LatencyDisplay.receiverIndicator(streaming, "192.0.2.10", selected = true, casting = true),
+        )
+        val connecting = JSONObject(
+            """{"receivers":[{"ip":"192.0.2.10","ui_state":"connecting","display_latency_ms":null}]}""",
+        )
+        assertEquals(
+            LatencyDisplay.ReceiverIndicator.Loading,
+            LatencyDisplay.receiverIndicator(connecting, "192.0.2.10", selected = true, casting = true),
+        )
+        val reconnecting = JSONObject(
+            """{"receivers":[{"ip":"192.0.2.10","ui_state":"reconnecting","display_latency_ms":null,"error":"timeout"}]}""",
+        )
+        assertEquals(
+            LatencyDisplay.ReceiverIndicator.Loading,
+            LatencyDisplay.receiverIndicator(reconnecting, "192.0.2.10", selected = true, casting = true),
+        )
+        val failed = JSONObject(
+            """{"receivers":[{"ip":"192.0.2.10","ui_state":"error","display_latency_ms":null,"error":"auth failed"}]}""",
+        )
+        assertEquals(
+            LatencyDisplay.ReceiverIndicator.Hidden,
+            LatencyDisplay.receiverIndicator(failed, "192.0.2.10", selected = true, casting = true),
+        )
+    }
 }
