@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 24dp 状态栏 / 前台服务通知单色小图标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.01"
+        android:pathData="M9.84,12.00 m-6.83,0 a6.83,6.83 0 1,0 13.66,0 a6.83,6.83 0 1,0 -13.66,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8.47,9.99 L8.47,14.01 Q8.47,14.88 9.30,14.41 L12.61,12.47 Q13.44,12.00 12.61,11.53 L9.30,9.59 Q8.47,9.12 8.47,9.99 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.88"
+        android:strokeLineCap="round"
+        android:pathData="M17.15,4.16 A10.72,10.72 0 0,1 17.15,19.84" />
+</vector>
