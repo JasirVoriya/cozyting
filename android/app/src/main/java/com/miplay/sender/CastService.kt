@@ -689,7 +689,7 @@ class CastService : Service() {
         return Notification.Builder(this, CHANNEL)
             .setContentTitle(title)
             .setContentText(summary())
-            .setSmallIcon(if (paused) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
+            .setSmallIcon(if (paused) android.R.drawable.ic_media_pause else R.drawable.ic_stat_miplay)
             .setContentIntent(open)
             .addAction(
                 Notification.Action.Builder(

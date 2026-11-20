@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-dark-title logo-dark-desc">
+  <title id="logo-dark-title">MiPlay Sender Logo (Dark)</title>
+  <desc id="logo-dark-desc">Flat layered concentric acoustic speaker driver with soft coral play core and matching right-hand sound wave arc on a matte obsidian tile.</desc>
+  <rect x="1" y="1" width="510" height="510" rx="115" fill="#15171E" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="2"/>
+  <circle cx="226" cy="256" r="110" fill="#363C49"/>
+  <circle cx="226" cy="256" r="93" fill="#101218"/>
+  <circle cx="226" cy="256" r="72" fill="#242934"/>
+  <circle cx="226" cy="256" r="42" fill="#FF6B79"/>
+  <path d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z" fill="#FFFFFF"/>
+  <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF6B79" stroke-width="38" stroke-linecap="round"/>
+</svg>

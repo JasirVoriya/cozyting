@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MiPlay Sender 原创矢量图标前景（浅色版：扁平同心扬声器 + 浅珊瑚红核心与声弧） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 外圈框体 -->
+    <path
+        android:fillColor="#272B35"
+        android:pathData="M49.55,54.00 m-16.33,0 a16.33,16.33 0 1,0 32.66,0 a16.33,16.33 0 1,0 -32.66,0" />
+    <!-- 悬边凹槽 -->
+    <path
+        android:fillColor="#151820"
+        android:pathData="M49.55,54.00 m-13.80,0 a13.80,13.80 0 1,0 27.60,0 a13.80,13.80 0 1,0 -27.60,0" />
+    <!-- 锥盆面 -->
+    <path
+        android:fillColor="#2C313D"
+        android:pathData="M49.55,54.00 m-10.69,0 a10.69,10.69 0 1,0 21.38,0 a10.69,10.69 0 1,0 -21.38,0" />
+    <!-- 浅珊瑚红中心球顶 -->
+    <path
+        android:fillColor="#FF5C6C"
+        android:pathData="M49.55,54.00 m-6.23,0 a6.23,6.23 0 1,0 12.46,0 a6.23,6.23 0 1,0 -12.46,0" />
+    <!-- 中心纯白圆角播放三角 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47.84,51.70 L47.84,56.30 Q47.84,57.49 48.95,56.85 L52.66,54.64 Q53.78,54.00 52.66,53.36 L48.95,51.15 Q47.84,50.51 47.84,51.70 Z" />
+    <!-- 右侧同心浅珊瑚红声弧 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF5C6C"
+        android:strokeWidth="5.64"
+        android:strokeLineCap="round"
+        android:pathData="M64.63,37.82 A22.12,22.12 0 0,1 64.63,70.18" />
+</vector>

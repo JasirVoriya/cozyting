@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 120" width="680" height="120" role="img" aria-labelledby="banner-light-title banner-light-desc">
+  <title id="banner-light-title">MiPlay Sender — Pure LAN Multi-Room Audio</title>
+  <desc id="banner-light-desc">Horizontal brand lockup for MiPlay Android Sender (light theme).</desc>
+  <!-- Icon mark (96x96 at x=6, y=12) -->
+  <g transform="translate(6 12) scale(0.1875)">
+    <rect x="2" y="2" width="508" height="508" rx="115" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.12" stroke-width="5"/>
+    <circle cx="226" cy="256" r="110" fill="#272B35"/>
+    <circle cx="226" cy="256" r="93" fill="#151820"/>
+    <circle cx="226" cy="256" r="72" fill="#2C313D"/>
+    <circle cx="226" cy="256" r="42" fill="#FF5C6C"/>
+    <path d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z" fill="#FFFFFF"/>
+    <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF5C6C" stroke-width="38" stroke-linecap="round"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="124" y="57" fill="#14171F" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="34" font-weight="750" letter-spacing="-0.6">MiPlay Sender</text>
+  <!-- Pure LAN Pill Badge -->
+  <rect x="366" y="33" width="164" height="26" rx="13" fill="#FFF0F2" stroke="#FF5C6C" stroke-opacity="0.45" stroke-width="1.2"/>
+  <text x="448" y="50" text-anchor="middle" fill="#D93848" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="600" letter-spacing="0.4">PURE LAN · SYNC</text>
+  <!-- Subtitle -->
+  <text x="125" y="88" fill="#475569" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="14.5" font-weight="500">Android 单 App 音频捕获 · 局域网多音箱同步投送（Kotlin + Rust）</text>
+</svg>

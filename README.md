@@ -1,3 +1,11 @@
+<p>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-banner-light.svg">
+    <img alt="MiPlay Sender" src="docs/assets/logo-banner-light.svg" width="560">
+  </picture>
+</p>
+
 # MiPlay 发送端（纯局域网）
 
 Android 手机作为发送端，经局域网把音频投送到局域网智能音箱（支持 MiPlay 协议）。
@@ -55,6 +63,7 @@ Android 手机作为发送端，经局域网把音频投送到局域网智能音
 | `android/app/src/acceptance/AndroidManifest.xml` | `acceptance` 变体叠加清单：仅在独立验收包中注册 `LocalFilterProbeService` |
 | `android/app/src/main/res/values/strings.xml` | 正式包应用名称资源（`acceptance` 变体另有独立 `android/app/src/acceptance/res/values/strings.xml`） |
 | `android/app/src/main/res/drawable/ic_protocol_*.xml` | 4 枚投送协议矢量徽标（`miplay` / `dlna` / `airplay` / `gcast`） |
+| `android/app/src/main/res/mipmap-anydpi-v{26,33}/ic_launcher*.xml` | 原创扁平同心音箱 Adaptive Icon（含浅/深色 `drawable(-night)` 资源、Android 13+ 单色主题图标与 `ic_stat_miplay.xml` 通知小图标） |
 
 #### L2 · 前台服务、路由、静音与媒体状态层（`CastService` 与 `cast/`）
 
