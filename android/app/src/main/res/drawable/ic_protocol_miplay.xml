@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 原创线性徽标：双环 + 中点，表示局域网多端同步（非小米官方商标） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:pathData="M8,8m-5.5,0a5.5,5.5 0,1 1,11 0a5.5,5.5 0,1 1,-11 0"
+        android:strokeWidth="1.4"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF" />
+    <path
+        android:pathData="M8,8m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0"
+        android:strokeWidth="1.2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF" />
+    <path
+        android:pathData="M8,8m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0"
+        android:fillColor="#FFFFFF" />
+</vector>
