@@ -265,9 +265,14 @@ fn opt<T: std::fmt::Display>(v: &Option<T>) -> String {
 impl ReceiverStats {
     pub fn to_json(&self) -> String {
         let n: Vec<String> = self.notifies.iter().rev().take(20).rev().map(|s| json_str(s)).collect();
+        let (ui_state, display_latency_ms) = latency::resolve_receiver_ui_state(
+            &self.phase,
+            self.latency_e2e_est_ms,
+            self.error.as_deref(),
+        );
         format!(
-            "{{\"ip\":{},\"auth\":{:?},\"device_channel\":{},\"phase\":{},\"volume_original\":{},\"volume_premute_ack\":{},\"volume_now\":{},\"mirror_mode\":{},\"state\":{},\"setup_transport\":{},\"time_offset_us\":{},\"timer_requests\":{},\"video_latency_msgs\":{},\"rtsp_runtime_requests\":{},\"heartbeat_acks\":{},\"aus_written\":{},\"bytes_written\":{},\"runtime_time_offsets_sent\":{},\"runtime_time_offsets_acked\":{},\"pauses_acked\":{},\"resumes_acked\":{},\"volume_after_play_ack\":{},\"reconnects\":{},\"joined_late\":{},\"aus_blackholed\":{},\"channel_ack\":{},\"latency_e2e_est_ms\":{},\"latency_schedule_ahead_ms\":{},\"notifies\":[{}],\"error\":{}}}",
-            json_str(&self.ip), self.auth, self.device_channel.as_ref().map(|c| json_str(c)).unwrap_or("null".into()), json_str(&self.phase), opt(&self.volume_original), opt(&self.volume_premute_ack), opt(&self.volume_now),
+            "{{\"ip\":{},\"auth\":{:?},\"device_channel\":{},\"phase\":{},\"ui_state\":{},\"display_latency_ms\":{},\"volume_original\":{},\"volume_premute_ack\":{},\"volume_now\":{},\"mirror_mode\":{},\"state\":{},\"setup_transport\":{},\"time_offset_us\":{},\"timer_requests\":{},\"video_latency_msgs\":{},\"rtsp_runtime_requests\":{},\"heartbeat_acks\":{},\"aus_written\":{},\"bytes_written\":{},\"runtime_time_offsets_sent\":{},\"runtime_time_offsets_acked\":{},\"pauses_acked\":{},\"resumes_acked\":{},\"volume_after_play_ack\":{},\"reconnects\":{},\"joined_late\":{},\"aus_blackholed\":{},\"channel_ack\":{},\"latency_e2e_est_ms\":{},\"latency_schedule_ahead_ms\":{},\"notifies\":[{}],\"error\":{}}}",
+            json_str(&self.ip), self.auth, self.device_channel.as_ref().map(|c| json_str(c)).unwrap_or("null".into()), json_str(&self.phase), json_str(ui_state.as_str()), opt(&display_latency_ms), opt(&self.volume_original), opt(&self.volume_premute_ack), opt(&self.volume_now),
             opt(&self.mirror_mode), opt(&self.state), json_str(&self.setup_transport), opt(&self.time_offset_us), self.timer_requests,
             self.video_latency_msgs, self.rtsp_runtime_requests, self.heartbeat_acks, self.aus_written, self.bytes_written,
             self.runtime_time_offsets_sent, self.runtime_time_offsets_acked, self.pauses_acked, self.resumes_acked,
@@ -1253,7 +1258,35 @@ impl CastSession {
     }
 
     pub fn stats_json(&self) -> String {
-        let rs = self.stats();
+        self.stats_json_with_overlay(&[], &[])
+    }
+
+    /// 输出统计 JSON，并在跨端协调层叠加尚未进入会话的 `extra_connecting` 及需剔除的 `exclude` IP。
+    pub fn stats_json_with_overlay(&self, extra_connecting: &[Ipv4Addr], exclude: &[Ipv4Addr]) -> String {
+        let mut rs = self.stats();
+        if !exclude.is_empty() {
+            rs.retain(|s| {
+                s.ip.parse::<Ipv4Addr>()
+                    .map(|ip| !exclude.contains(&ip))
+                    .unwrap_or(true)
+            });
+        }
+        if !extra_connecting.is_empty() {
+            let mut seen: std::collections::HashSet<String> = rs.iter().map(|s| s.ip.clone()).collect();
+            for ip in extra_connecting {
+                if exclude.contains(ip) {
+                    continue;
+                }
+                let ip_str = ip.to_string();
+                if seen.insert(ip_str.clone()) {
+                    rs.push(ReceiverStats {
+                        ip: ip_str,
+                        phase: "connecting".into(),
+                        ..Default::default()
+                    });
+                }
+            }
+        }
         let rs_json: Vec<String> = rs.iter().map(|s| s.to_json()).collect();
         let off = self.inner.offset.load(Ordering::SeqCst);
         let delay_us = self.inner.cfg.playback_delay_us;

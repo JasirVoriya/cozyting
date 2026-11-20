@@ -1,0 +1,4 @@
+module MiPlayCore {
+    header "miplay_core.h"
+    export *
+}

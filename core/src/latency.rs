@@ -54,6 +54,50 @@ pub fn format_ms_or_dash(v: Option<i64>) -> String {
     }
 }
 
+/// 面向跨端 UI（Android / iOS）的单设备归一化展示状态。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UiReceiverState {
+    Connecting,
+    Streaming,
+    Reconnecting,
+    Error,
+}
+
+impl UiReceiverState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Connecting => "connecting",
+            Self::Streaming => "streaming",
+            Self::Reconnecting => "reconnecting",
+            Self::Error => "error",
+        }
+    }
+}
+
+/// 统一把单台接收端的底层 `phase` / `latency_e2e_est_ms` / `error` 归一化为跨端 UI 状态与可显示延迟值。
+///
+/// 规则（与客户端展示契约对齐）：
+/// - `phase == "reconnecting"` → `Reconnecting` + `None`（重连等待不展示旧延迟）
+/// - 其他非空 `error` → `Error` + `None`
+/// - `latency_e2e_est_ms` 为非负整数 → `Streaming` + `Some(ms)`
+/// - 其余情况（连接中/预热尚未出值/负值异常）→ `Connecting` + `None`（UI 显示加载转圈）
+pub fn resolve_receiver_ui_state(
+    phase: &str,
+    latency_e2e_est_ms: Option<i64>,
+    error: Option<&str>,
+) -> (UiReceiverState, Option<i64>) {
+    if phase.eq_ignore_ascii_case("reconnecting") {
+        return (UiReceiverState::Reconnecting, None);
+    }
+    if error.map(|e| !e.trim().is_empty()).unwrap_or(false) {
+        return (UiReceiverState::Error, None);
+    }
+    match latency_e2e_est_ms {
+        Some(ms) if ms >= 0 => (UiReceiverState::Streaming, Some(ms)),
+        _ => (UiReceiverState::Connecting, None),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +141,34 @@ mod tests {
         assert!(LATENCY_DEFINITION.contains("estimate"));
         assert!(LATENCY_DEFINITION.contains("Not protocol RTT"));
         assert!(LATENCY_DEFINITION.contains("playback_delay"));
+    }
+
+    #[test]
+    fn ui_receiver_state_normalizes_streaming_connecting_reconnecting_and_error() {
+        assert_eq!(
+            resolve_receiver_ui_state("streaming", Some(925), None),
+            (UiReceiverState::Streaming, Some(925))
+        );
+        assert_eq!(
+            resolve_receiver_ui_state("streaming", Some(0), None),
+            (UiReceiverState::Streaming, Some(0))
+        );
+        assert_eq!(
+            resolve_receiver_ui_state("connecting", None, None),
+            (UiReceiverState::Connecting, None)
+        );
+        // 负值异常不展示假数字，回退为加载态
+        assert_eq!(
+            resolve_receiver_ui_state("streaming", Some(-5), None),
+            (UiReceiverState::Connecting, None)
+        );
+        assert_eq!(
+            resolve_receiver_ui_state("reconnecting", Some(880), Some("timeout")),
+            (UiReceiverState::Reconnecting, None)
+        );
+        assert_eq!(
+            resolve_receiver_ui_state("failed", Some(880), Some("handshake failed")),
+            (UiReceiverState::Error, None)
+        );
     }
 }
