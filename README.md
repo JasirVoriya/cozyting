@@ -35,6 +35,7 @@
 <p>
   <a href="#核心亮点">核心亮点</a> ·
   <a href="#技术栈">技术栈</a> ·
+  <a href="#目录结构">目录结构</a> ·
   <a href="#许可与免责声明">许可与声明</a> ·
   <a href="#功能">功能清单</a> ·
   <a href="#架构总览">架构总览</a> ·
@@ -64,6 +65,46 @@
 | **流媒体封装** | `ADTS (7B)` → `PES (0xC0)` → `MPEG-TS (188B + CRC32)` → `RTP (PT=33)` → `$+24bit` TCP 线帧 | 每台接收端维护独立 `Packetizer`（独立 RTP 序号与 TS 连续计数），共享同源 90kHz PTS / 27MHz PCR |
 | **构建、测试与合规** | `Gradle 8.11.1` · `AGP 8.7.3` · `standard` / `acceptance` 双变体 · `NewApi` Fatal Lint | 18 组 JVM 契约单测 + `cargo test` + `:testtones` 三 UID 声道隔离验收包；全仓 `AGPL-3.0-only` |
 
+## 目录结构
+
+```text
+miplay-android-sender/
+├── core/                         # [L1 公共核心] 纯 Rust 协议与多箱同步引擎（全平台共享）
+│   ├── Cargo.toml                #   支持 rlib / cdylib(.so) / staticlib(.xcframework)
+│   └── src/                      #   核心源码（以下展开最关键模块）
+│       ├── ffi.rs                #     跨语言 FFI 桥接（当前 Android JNI，后续扩展 iOS）
+│       ├── discovery.rs          #     mDNS 局域网设备发现与能力解析
+│       ├── control.rs            #     TCP 8899 控制通道、心跳与音量/暂停恢复
+│       ├── auth/                 #     双认证隔离（legacy 明文 / safety 加密）
+│       ├── rtsp.rs               #     WFD 反向 RTSP 协商与 TIME_OFFSET 下发
+│       ├── clock_sync.rs         #     UDP TimerServer 时钟主（与 timeline 同源）
+│       ├── session.rs            #     多音箱并发会话、建连对齐与断线重连（最多 63 台）
+│       └── media/                #     流媒体封装（ADTS -> MPEG-TS -> RTP）
+├── cli/                          # 独立终端工具 miplay-cli（发现 / 只读 inspect / 投送调试）
+│   └── src/                      #   CLI 命令入口（main.rs）
+├── android/                      # [L2+L3 Android 端] Kotlin 原生客户端与测试工程
+│   ├── app/                      #   主应用模块（standard 正式包 / acceptance 验收包）
+│   │   ├── build.gradle.kts      #     变体、签名注入、NewApi Fatal Lint 与依赖配置
+│   │   └── src/
+│   │       ├── main/             #     正式源码（UI · CastService · capture/ · cast/ · compat/）
+│   │       ├── acceptance/       #     验收变体叠加清单与本地音频过滤探针入口
+│   │       └── test/             #     18 组 JVM 单元与契约回归测试
+│   └── testtones/                #   三 UID 声道隔离验收音源 App（1kHz / 2kHz / deny）
+├── scripts/                      # 构建、签名与校验脚本
+│   ├── build-debug.sh            #   Rust 测试 + 16KB 对齐 cargo-ndk + Gradle Debug
+│   ├── build-release.sh          #   正式签名 Release APK 与校验和流水线
+│   └── verify-acceptance-apk.sh  #   验收包 16KB 对齐、签名与清单隔离校验
+├── docs/                         # 架构可视化、专项文档、修复日志与需求排期
+│   ├── architecture.html         #   零依赖本地交互式架构浏览器
+│   ├── assets/                   #   Logo 与架构动效 SVG 图集
+│   ├── superpowers/              #   专题设计规格（specs）与实施计划（plans）
+│   ├── 待修复需求.md             #   当前需求排期与验收条件（含 #6 UI / #7 下沉）
+│   └── 修复日志.md               #   已合入修复的证据与测试记录
+├── Cargo.toml                    # Rust Workspace 总配置（core + cli）
+├── LICENSE                       # AGPL-3.0-only 开源许可证
+└── README.md                     # 项目总览、架构说明与构建指南
+```
+
 ## 许可与免责声明
 
 - **开源许可证**：本项目采用 **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** 开源发布。
@@ -87,11 +128,22 @@
 
 ## 架构总览
 
-本项目采用 **Android（Kotlin，API 29–36）⇄ JNI（`libmiplay_sender_core.so`）⇄ Rust 核心协议与同步引擎（`miplay-sender-core`）** 的双层单进程架构。Android 侧专注权限最小化、严格单 UID 音频捕获、硬件 AAC 编码、本机静音探针与路由编排；Rust 侧专注局域网 mDNS 发现、TCP 8899 控制/认证（Legacy 与 Safety）、WFD RTSP 协商、UDP 单调时钟对齐、MPEG-TS/RTP 媒体封装与最多 63 台接收端的多箱同步调度。
+本项目在演进上采用 **跨端三层架构**：**L1 公共核心层（Rust `core/`）** 全平台共享协议、认证、多箱时钟同步与流媒体打包；**L2 系统接口层**（音频捕获、硬件 AAC 编码、保活）与 **L3 原生 UI 层** 由 Android（已实现）与 iOS（规划中）各自原生实现，通过薄 FFI 插头对接同一份 Rust 引擎，并通过共享设计规范 `design/` 保持双端视觉一致。当前已落地的 Android 端运行在 **Android（Kotlin，API 29–36）⇄ JNI（`libmiplay_sender_core.so`）⇄ Rust（`miplay-sender-core`）** 单进程内。
 
 > **交互式架构浏览器**：如需在浏览器中点击任意模块追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按 6 个阶段演练运行时线程切换，或按关键词检索全仓文件职责，可直接打开零依赖本地页面 [`docs/architecture.html`](docs/architecture.html)。
 
-### 1. 整体架构与数据流向
+### 1. 跨端三层架构（L2/L3 双端各自实现 · L1 Rust 公共共享）
+
+![MiPlay Sender 跨端三层架构](docs/assets/cross-platform-architecture.svg)
+
+| 分层 | 归属 | Android（已实现） | iOS（后续规划） | 说明 |
+| --- | --- | --- | --- | --- |
+| **L3 · UI 表现层** | 各自原生实现 | Kotlin 原生 UI（`MainActivity` / `AppPicker` / `Settings`） | SwiftUI 原生 UI（`CastMainView` / `SourceSlot` / `SettingsView`） | 共用仓库 `design/`（`tokens.json` 明暗主题、`icons/*.svg`、`UI_SPEC.md`）保证视觉统一 |
+| **L2 · 系统接口层** | 各自原生实现 | `AudioPlaybackCapture`（单 UID）+ `MediaCodec` AAC + `CastService` FGS | `ReplayKit` 广播扩展 + `AudioToolbox` AAC + `AVAudioSession` | 强依赖 OS 媒体与后台能力；对外统一产出 48kHz 裸 AAC 帧 |
+| **FFI 跨语言插头** | 薄类型转换 | `NativeBridge.kt` ⇄ `core/src/ffi.rs`（JNI，`.so`） | `MiPlayCore.swift` ⇄ `ffi_c` / UniFFI（`.xcframework`） | 仅做参数与句柄转发，统一暴露 `discover` / `connect` / `pushAac` / `setVolume` / `stats` 等接口 |
+| **L1 · 公共核心层** | **全平台 100% 共享** | 共用 `core/`（编译为 `cdylib`） | 共用 `core/`（编译为 `staticlib`） | 纯 Rust 零平台依赖：mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步与流媒体打包（规划持续将并发协调/路由/延迟状态机下沉至此层） |
+
+### 2. 整体架构与数据流向
 
 ![MiPlay Sender 整体架构与数据流向](docs/assets/architecture-overview.svg)
 
@@ -104,7 +156,7 @@
 | **时钟与组同步流** | 翡翠点虚线 | `EPOCH` (`CLOCK_MONOTONIC`) + `TimerServer` (UDP 40B) + `SourceRtsp` (反向 WFD TCP) ⇄ 局域网音箱集群 → 汇合 `OffsetBarrier` | 建连期先 `flush()` 积压再预读 14 AU 定共享 `TIME_OFFSET`；Timer / `TIME_OFFSET` / PCR 严格同源 |
 | **发现与遥测反馈流** | 紫色短虚线 | mDNS (`224.0.0.251:5353`) + 8899 `NOTIFY` + `PcmProbe` + `NowPlayingTracker` → `CastService` (1Hz 轮询) → `MainActivity` 原位刷新 | 合并 `_mi-connect` (`apps=[5]` 优先) 与 `_lyra-mdns`；按设备原位更新延迟 ms、静音锁定态与播放信息 |
 
-### 2. 项目分层架构与文件职责（L1–L8）
+### 3. 项目分层架构与文件职责（L1–L8）
 
 #### L1 · 表现与系统交互层（UI、清单与资源）
 
@@ -245,7 +297,7 @@
 | `scripts/build-release.sh` | 正式 release 签名构建流水线（校验签名注入、编译 release `.so` 与 APK、输出 SHA-256 校验和） |
 | `scripts/verify-acceptance-apk.sh` | 校验验收 APK 的 `zipalign` 4KB/16KB 页对齐、`readelf` 符号/对齐、`apksigner` 签名与清单隔离边界 |
 
-### 3. 软件运行时整体架构
+### 4. 软件运行时整体架构
 
 ![MiPlay Sender 软件运行时整体架构](docs/assets/runtime-architecture.svg)
 
