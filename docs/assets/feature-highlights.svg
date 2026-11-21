@@ -1,0 +1,250 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 560" width="1360" height="560" role="img" aria-labelledby="fh-title fh-desc">
+  <title id="fh-title">MiPlay Sender 核心亮点与技术底座</title>
+  <desc id="fh-desc">四宫格架构卡片展示严格单 App 音频隔离、63 台音箱毫秒级同频同步、纯局域网双认证与流媒体链路、以及 Android/iOS/CLI 跨端共享 Rust L1 核心。</desc>
+
+  <defs>
+    <linearGradient id="fh-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070b14"/>
+      <stop offset="50%" stop-color="#0b1120"/>
+      <stop offset="100%" stop-color="#070a12"/>
+    </linearGradient>
+    <linearGradient id="fh-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#131d33"/>
+      <stop offset="100%" stop-color="#0c1324"/>
+    </linearGradient>
+    <linearGradient id="fh-sub" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#18243f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <pattern id="fh-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#334155" opacity="0.32"/>
+    </pattern>
+    <filter id="fh-shadow" x="-4%" y="-8%" width="108%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+    <marker id="fh-arr-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#22d3ee"/>
+    </marker>
+    <marker id="fh-arr-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#34d399"/>
+    </marker>
+    <marker id="fh-arr-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#fbbf24"/>
+    </marker>
+    <marker id="fh-arr-coral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 z" fill="#ff5c6c"/>
+    </marker>
+
+    <style>
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif; }
+      .mono { font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; }
+      .card { fill: url(#fh-card); stroke-width: 1.25; filter: url(#fh-shadow); }
+      .sub-box { fill: url(#fh-sub); stroke: #29395a; stroke-width: 1; }
+      .badge { font-size: 10.5px; font-weight: 700; letter-spacing: 0.6px; }
+      .hd { font-size: 17px; font-weight: 750; fill: #f8fafc; }
+      .desc { font-size: 12px; fill: #cbd5e1; }
+      .node-title { font-size: 11.5px; font-weight: 700; fill: #f1f5f9; }
+      .node-sub { font-size: 10px; fill: #94a3b8; }
+      .chip-bg { fill: #0a101f; stroke: #263554; stroke-width: 1; }
+      .chip-txt { font-size: 10.5px; font-weight: 600; fill: #cbd5e1; }
+    </style>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1360" height="560" rx="18" fill="url(#fh-bg)"/>
+  <rect width="1360" height="560" rx="18" fill="url(#fh-grid)"/>
+  <rect x="1" y="1" width="1358" height="558" rx="17" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- ==================== CARD 1 (TOP-LEFT): SINGLE-APP AUDIO ISOLATION ==================== -->
+  <g transform="translate(28, 26)">
+    <rect x="0" y="0" width="638" height="242" rx="14" class="card" stroke="#0891b2"/>
+    <rect x="0" y="24" width="4" height="194" rx="2" fill="#22d3ee"/>
+
+    <!-- Header -->
+    <rect x="22" y="18" width="96" height="22" rx="11" fill="#083344" stroke="#22d3ee" stroke-opacity="0.55"/>
+    <text x="70" y="33" text-anchor="middle" class="mono badge" fill="#67e8f9">ISOLATION</text>
+    <text x="130" y="35" class="sans hd">严格单 App 声音隔离（音乐上音箱 · 微信/短视频留手机）</text>
+    <text x="22" y="60" class="sans desc">启动前实时核验目标包可见性、同用户、非共享 UID 与 SHA-256 签名摘要，任一不满足即 Fail-Closed 拒绝</text>
+
+    <!-- Visual Flow Box -->
+    <rect x="22" y="76" width="594" height="106" rx="10" fill="#09101f" stroke="#1e293b"/>
+
+    <!-- Allowed row -->
+    <rect x="38" y="90" width="174" height="36" rx="7" class="sub-box" stroke="#0891b2"/>
+    <circle cx="54" cy="108" r="4" fill="#22d3ee"/>
+    <text x="66" y="105" class="sans node-title">选定音乐 App (单 UID)</text>
+    <text x="66" y="119" class="mono node-sub">addMatchingUid(target)</text>
+
+    <line x1="216" y1="108" x2="278" y2="108" stroke="#22d3ee" stroke-width="2" marker-end="url(#fh-arr-cyan)"/>
+    <text x="247" y="100" text-anchor="middle" class="mono node-sub" fill="#67e8f9">48kHz PCM</text>
+
+    <rect x="284" y="90" width="154" height="36" rx="7" class="sub-box" stroke="#0891b2"/>
+    <text x="361" y="105" text-anchor="middle" class="mono node-title" fill="#67e8f9">MediaCodec AAC</text>
+    <text x="361" y="119" text-anchor="middle" class="mono node-sub">256kbps · PcmProbe</text>
+
+    <line x1="442" y1="108" x2="478" y2="108" stroke="#22d3ee" stroke-width="2" marker-end="url(#fh-arr-cyan)"/>
+
+    <rect x="484" y="90" width="116" height="36" rx="7" fill="#062e23" stroke="#10b981"/>
+    <text x="542" y="105" text-anchor="middle" class="sans node-title" fill="#a7f3d0">局域网音箱</text>
+    <text x="542" y="119" text-anchor="middle" class="mono node-sub" fill="#6ee7b7">纯净音乐流</text>
+
+    <!-- Blocked row -->
+    <rect x="38" y="136" width="174" height="34" rx="7" fill="#171324" stroke="#475569" stroke-dasharray="4 3"/>
+    <text x="52" y="151" class="sans node-title" fill="#94a3b8">其他 App / 微信 / 麦克风</text>
+    <text x="52" y="164" class="mono node-sub">非目标 UID / 语音输入</text>
+
+    <line x1="216" y1="153" x2="278" y2="153" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="4 3"/>
+    <rect x="284" y="138" width="316" height="30" rx="7" fill="#23121b" stroke="#f43f5e" stroke-opacity="0.5"/>
+    <text x="442" y="157" text-anchor="middle" class="sans node-title" fill="#fda4af">✕ 内核混音层直接剔除 · 绝不静默退化为全系统录屏</text>
+
+    <!-- Bottom Spec Chips -->
+    <rect x="22" y="196" width="184" height="28" rx="7" class="chip-bg"/>
+    <text x="114" y="214" text-anchor="middle" class="mono chip-txt">AudioPlaybackCapture</text>
+
+    <rect x="216" y="196" width="194" height="28" rx="7" class="chip-bg"/>
+    <text x="313" y="214" text-anchor="middle" class="mono chip-txt">6 拍有声锁定 · 切歌保静音</text>
+
+    <rect x="420" y="196" width="196" height="28" rx="7" class="chip-bg"/>
+    <text x="518" y="214" text-anchor="middle" class="mono chip-txt">Goertzel 1k/2kHz 隔离探针</text>
+  </g>
+
+  <!-- ==================== CARD 2 (TOP-RIGHT): 63-SPEAKER MULTI-ROOM SYNC ==================== -->
+  <g transform="translate(694, 26)">
+    <rect x="0" y="0" width="638" height="242" rx="14" class="card" stroke="#059669"/>
+    <rect x="0" y="24" width="4" height="194" rx="2" fill="#34d399"/>
+
+    <!-- Header -->
+    <rect x="22" y="18" width="108" height="22" rx="11" fill="#062e23" stroke="#34d399" stroke-opacity="0.55"/>
+    <text x="76" y="33" text-anchor="middle" class="mono badge" fill="#6ee7b7">MULTI-ROOM</text>
+    <text x="142" y="35" class="sans hd">最多 63 台音箱毫秒级同频同步（纯 Rust 零异步运行时）</text>
+    <text x="22" y="60" class="sans desc">单调时钟 EPOCH + UDP 40B 时钟主 + OffsetBarrier 冲刷积压与 14 AU 预读，播放中途随时动态加减音箱</text>
+
+    <!-- Visual Flow Box -->
+    <rect x="22" y="76" width="594" height="106" rx="10" fill="#09101f" stroke="#1e293b"/>
+
+    <rect x="38" y="92" width="154" height="74" rx="8" class="sub-box" stroke="#059669"/>
+    <text x="115" y="113" text-anchor="middle" class="mono node-title" fill="#6ee7b7">EPOCH + TimerServer</text>
+    <text x="115" y="131" text-anchor="middle" class="mono node-sub">CLOCK_MONOTONIC</text>
+    <text x="115" y="147" text-anchor="middle" class="sans node-sub">UDP 40B 时钟偏移锁定</text>
+
+    <line x1="196" y1="129" x2="226" y2="129" stroke="#34d399" stroke-width="2" marker-end="url(#fh-arr-emerald)"/>
+
+    <rect x="232" y="92" width="168" height="74" rx="8" class="sub-box" stroke="#059669"/>
+    <text x="316" y="113" text-anchor="middle" class="mono node-title" fill="#a7f3d0">OffsetBarrier &amp; Clock</text>
+    <text x="316" y="131" text-anchor="middle" class="sans node-sub">先 flush 积压再预读 14 AU</text>
+    <text x="316" y="147" text-anchor="middle" class="mono node-sub">共享 90kHz PTS / 27MHz PCR</text>
+
+    <line x1="404" y1="108" x2="438" y2="108" stroke="#34d399" stroke-width="2" marker-end="url(#fh-arr-emerald)"/>
+    <line x1="404" y1="150" x2="438" y2="150" stroke="#34d399" stroke-width="2" marker-end="url(#fh-arr-emerald)"/>
+
+    <rect x="444" y="90" width="156" height="36" rx="7" fill="#062e23" stroke="#10b981"/>
+    <text x="522" y="106" text-anchor="middle" class="sans node-title" fill="#d1fae5">音箱 #1 .. #N (同频)</text>
+    <text x="522" y="120" text-anchor="middle" class="mono node-sub" fill="#6ee7b7">独立 5 线程 · 行内 925 ms</text>
+
+    <rect x="444" y="132" width="156" height="36" rx="7" fill="#172036" stroke="#38bdf8"/>
+    <text x="522" y="148" text-anchor="middle" class="sans node-title" fill="#bae6fd">中途晚加入 / 断线重连</text>
+    <text x="522" y="162" text-anchor="middle" class="mono node-sub">multi_room · 2→30s 退避</text>
+
+    <!-- Bottom Spec Chips -->
+    <rect x="22" y="196" width="184" height="28" rx="7" class="chip-bg"/>
+    <text x="114" y="214" text-anchor="middle" class="mono chip-txt">std::thread · 零 Tokio</text>
+
+    <rect x="216" y="196" width="194" height="28" rx="7" class="chip-bg"/>
+    <text x="313" y="214" text-anchor="middle" class="mono chip-txt">21.333ms 媒体节拍 · 慢端隔离</text>
+
+    <rect x="420" y="196" width="196" height="28" rx="7" class="chip-bg"/>
+    <text x="518" y="214" text-anchor="middle" class="mono chip-txt">core::engine 串行并发协调</text>
+  </g>
+
+  <!-- ==================== CARD 3 (BOTTOM-LEFT): PURE LAN & DUAL AUTH ==================== -->
+  <g transform="translate(28, 292)">
+    <rect x="0" y="0" width="638" height="242" rx="14" class="card" stroke="#d97706"/>
+    <rect x="0" y="24" width="4" height="194" rx="2" fill="#fbbf24"/>
+
+    <!-- Header -->
+    <rect x="22" y="18" width="96" height="22" rx="11" fill="#3b1d06" stroke="#fbbf24" stroke-opacity="0.55"/>
+    <text x="70" y="33" text-anchor="middle" class="mono badge" fill="#fde68a">PURE LAN</text>
+    <text x="130" y="35" class="sans hd">零云端纯局域网 · 双认证隔离与标准流媒体封装</text>
+    <text x="22" y="60" class="sans desc">全程本地局域网直连，不连任何云端 API 或账号；严格隔离 Legacy 明文挑战与 Safety 链式加密通道</text>
+
+    <!-- Visual Flow Box -->
+    <rect x="22" y="76" width="594" height="106" rx="10" fill="#09101f" stroke="#1e293b"/>
+
+    <rect x="36" y="92" width="122" height="74" rx="8" class="sub-box" stroke="#7e22ce"/>
+    <text x="97" y="113" text-anchor="middle" class="mono node-title" fill="#e9d5ff">1. mDNS 发现</text>
+    <text x="97" y="131" text-anchor="middle" class="mono node-sub">_mi-connect 优先</text>
+    <text x="97" y="147" text-anchor="middle" class="sans node-sub">自动过滤无名节点</text>
+
+    <line x1="162" y1="129" x2="184" y2="129" stroke="#fbbf24" stroke-width="2" marker-end="url(#fh-arr-amber)"/>
+
+    <rect x="190" y="92" width="188" height="74" rx="8" class="sub-box" stroke="#b45309"/>
+    <text x="284" y="113" text-anchor="middle" class="mono node-title" fill="#fde68a">2. TCP 8899 双认证</text>
+    <text x="284" y="131" text-anchor="middle" class="mono node-sub">Legacy: MD5 + HMAC-SHA1</text>
+    <text x="284" y="147" text-anchor="middle" class="mono node-sub">Safety: OPack + AES-128-CBC</text>
+
+    <line x1="382" y1="129" x2="404" y2="129" stroke="#fbbf24" stroke-width="2" marker-end="url(#fh-arr-amber)"/>
+
+    <rect x="410" y="92" width="190" height="74" rx="8" class="sub-box" stroke="#0891b2"/>
+    <text x="505" y="113" text-anchor="middle" class="mono node-title" fill="#67e8f9">3. WFD RTSP &amp; RTP</text>
+    <text x="505" y="131" text-anchor="middle" class="mono node-sub">ADTS(7B) → PES → TS(188B)</text>
+    <text x="505" y="147" text-anchor="middle" class="mono node-sub">RTP(PT=33) → $+24bit TCP</text>
+
+    <!-- Bottom Spec Chips -->
+    <rect x="22" y="196" width="184" height="28" rx="7" class="chip-bg"/>
+    <text x="114" y="214" text-anchor="middle" class="mono chip-txt">纯 RustCrypto · 无 OpenSSL</text>
+
+    <rect x="216" y="196" width="194" height="28" rx="7" class="chip-bg"/>
+    <text x="313" y="214" text-anchor="middle" class="mono chip-txt">5GHz→800ms / 2.4G→1000ms</text>
+
+    <rect x="420" y="196" width="196" height="28" rx="7" class="chip-bg"/>
+    <text x="518" y="214" text-anchor="middle" class="mono chip-txt">暂停重锚 · 29ms 双 Resume</text>
+  </g>
+
+  <!-- ==================== CARD 4 (BOTTOM-RIGHT): CROSS-PLATFORM & CLI ==================== -->
+  <g transform="translate(694, 292)">
+    <rect x="0" y="0" width="638" height="242" rx="14" class="card" stroke="#ff5c6c"/>
+    <rect x="0" y="24" width="4" height="194" rx="2" fill="#ff5c6c"/>
+
+    <!-- Header -->
+    <rect x="22" y="18" width="118" height="22" rx="11" fill="#3a1219" stroke="#ff5c6c" stroke-opacity="0.55"/>
+    <text x="81" y="33" text-anchor="middle" class="mono badge" fill="#fda4af">CROSS-PLATFORM</text>
+    <text x="152" y="35" class="sans hd">跨端三层架构（Android · iOS · 桌面只读诊断 CLI）</text>
+    <text x="22" y="60" class="sans desc">双端共用 L1 Rust 引擎与 design/ 明暗双主题规范；内置独立终端工具 miplay-cli 支持无副作用设备调查</text>
+
+    <!-- Visual Flow Box -->
+    <rect x="22" y="76" width="594" height="106" rx="10" fill="#09101f" stroke="#1e293b"/>
+
+    <rect x="36" y="90" width="176" height="36" rx="7" class="sub-box" stroke="#34d399"/>
+    <text x="124" y="105" text-anchor="middle" class="sans node-title" fill="#a7f3d0">Android 10–16 客户端</text>
+    <text x="124" y="119" text-anchor="middle" class="mono node-sub">Kotlin · JNI .so (16KB 页对齐)</text>
+
+    <rect x="36" y="134" width="176" height="36" rx="7" class="sub-box" stroke="#38bdf8"/>
+    <text x="124" y="149" text-anchor="middle" class="sans node-title" fill="#bae6fd">iOS 跨端桥接 &amp; 设计层</text>
+    <text x="124" y="163" text-anchor="middle" class="mono node-sub">C11 miplay_core.h · XCFramework</text>
+
+    <line x1="216" y1="108" x2="248" y2="122" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
+    <line x1="216" y1="152" x2="248" y2="136" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
+
+    <rect x="254" y="92" width="166" height="76" rx="8" fill="#261520" stroke="#ff5c6c"/>
+    <text x="337" y="114" text-anchor="middle" class="mono node-title" fill="#fecdd3">L1 · Rust Core</text>
+    <text x="337" y="132" text-anchor="middle" class="mono node-sub">engine · device_catalog</text>
+    <text x="337" y="148" text-anchor="middle" class="sans node-sub">100% 共享协议/路由/同步</text>
+
+    <line x1="424" y1="129" x2="446" y2="129" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
+
+    <rect x="452" y="92" width="148" height="76" rx="8" class="sub-box" stroke="#94a3b8"/>
+    <text x="526" y="114" text-anchor="middle" class="mono node-title">miplay-cli 终端</text>
+    <text x="526" y="132" text-anchor="middle" class="mono node-sub" fill="#6ee7b7">inspect --auth legacy</text>
+    <text x="526" y="148" text-anchor="middle" class="sans node-sub">只读不发 CLOSE 断流</text>
+
+    <!-- Bottom Spec Chips -->
+    <rect x="22" y="196" width="184" height="28" rx="7" class="chip-bg"/>
+    <text x="114" y="214" text-anchor="middle" class="mono chip-txt">design/ 明暗双主题规范</text>
+
+    <rect x="216" y="196" width="194" height="28" rx="7" class="chip-bg"/>
+    <text x="313" y="214" text-anchor="middle" class="mono chip-txt">63 项 Rust + 19 组 JVM 单测</text>
+
+    <rect x="420" y="196" width="196" height="28" rx="7" class="chip-bg"/>
+    <text x="518" y="214" text-anchor="middle" class="mono chip-txt">NewApi Fatal Lint · AGPL-3.0</text>
+  </g>
+</svg>

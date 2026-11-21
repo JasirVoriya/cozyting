@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-labelledby="hb-light-title hb-light-desc">
+  <title id="hb-light-title">MiPlay Sender — Android &amp; iPhone Pure-LAN Casting to Xiaomi Speakers</title>
+  <desc id="hb-light-desc">Clean flat industrial diagram showing both Android and iPhone casting audio over pure LAN via MiPlay Sender to multiple synchronized Xiaomi / MiPlay speakers.</desc>
+
+  <defs>
+    <pattern id="hb-grid-l" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#0F172A" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <marker id="hb-arr-l" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 Z" fill="#FF5C6C"/>
+    </marker>
+    <style>
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif; }
+      .mono { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <!-- Ceramic Background -->
+  <rect x="1" y="1" width="1278" height="358" rx="24" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.09" stroke-width="2"/>
+  <rect x="1" y="1" width="1278" height="358" rx="24" fill="url(#hb-grid-l)"/>
+
+  <!-- ==================== LEFT: ANDROID & IPHONE SENDERS ==================== -->
+  <!-- Container card -->
+  <rect x="44" y="42" width="356" height="276" rx="20" fill="#FFFFFF" stroke="#0F172A" stroke-opacity="0.08" stroke-width="1.5"/>
+  <text x="222" y="68" text-anchor="middle" class="mono" font-size="11.5" font-weight="700" fill="#64748B" letter-spacing="1.2">SENDERS · 双端发送</text>
+
+  <!-- Android Phone -->
+  <g transform="translate(82, 92)">
+    <rect x="0" y="0" width="120" height="174" rx="20" fill="#1E2430"/>
+    <rect x="6" y="6" width="108" height="162" rx="15" fill="#F8FAFC"/>
+    <!-- Punch-hole camera -->
+    <circle cx="60" cy="17" r="3.2" fill="#1E2430"/>
+    <!-- Mini NowPlaying Card -->
+    <rect x="16" y="34" width="88" height="62" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+    <rect x="24" y="43" width="22" height="22" rx="6" fill="#3DDC84" fill-opacity="0.18"/>
+    <!-- Simple Android robot head mark -->
+    <path d="M 29 57 A 6 6 0 0 1 41 57 Z" fill="#16A34A"/>
+    <line x1="31.5" y1="51.5" x2="29.5" y2="48.5" stroke="#16A34A" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="38.5" y1="51.5" x2="40.5" y2="48.5" stroke="#16A34A" stroke-width="1.4" stroke-linecap="round"/>
+    <rect x="52" y="46" width="42" height="6" rx="3" fill="#1E2430"/>
+    <rect x="52" y="56" width="28" height="4.5" rx="2.2" fill="#94A3B8"/>
+    <!-- Equalizer bars -->
+    <rect x="24" y="77" width="4" height="10" rx="2" fill="#FF5C6C"/>
+    <rect x="31" y="73" width="4" height="14" rx="2" fill="#FF5C6C"/>
+    <rect x="38" y="79" width="4" height="8" rx="2" fill="#FF5C6C"/>
+    <rect x="52" y="79" width="42" height="5" rx="2.5" fill="#E2E8F0"/>
+    <rect x="52" y="79" width="26" height="5" rx="2.5" fill="#FF5C6C"/>
+    <!-- Platform Pill inside phone -->
+    <rect x="18" y="114" width="84" height="24" rx="12" fill="#ECFDF5" stroke="#3DDC84" stroke-opacity="0.6" stroke-width="1"/>
+    <text x="60" y="130" text-anchor="middle" class="sans" font-size="11.5" font-weight="700" fill="#15803D">Android</text>
+    <text x="60" y="155" text-anchor="middle" class="mono" font-size="9.5" fill="#64748B">API 29–36</text>
+  </g>
+
+  <!-- iPhone -->
+  <g transform="translate(242, 92)">
+    <rect x="0" y="0" width="120" height="174" rx="22" fill="#151820"/>
+    <rect x="6" y="6" width="108" height="162" rx="17" fill="#F8FAFC"/>
+    <!-- Dynamic Island -->
+    <rect x="44" y="13" width="32" height="8" rx="4" fill="#151820"/>
+    <!-- Mini NowPlaying Card -->
+    <rect x="16" y="34" width="88" height="62" rx="10" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.2"/>
+    <rect x="24" y="43" width="22" height="22" rx="6" fill="#0F172A" fill-opacity="0.08"/>
+    <!-- Minimal Apple silhouette -->
+    <path d="M 37.8 54.4 C 37.8 52.7 39.2 51.8 39.3 51.7 C 38.5 50.5 37.2 50.4 36.8 50.3 C 35.7 50.2 34.7 50.9 34.2 50.9 C 33.7 50.9 32.8 50.3 32.0 50.3 C 30.8 50.3 29.8 51.0 29.2 52.0 C 28.0 54.1 28.9 57.2 30.1 58.9 C 30.7 59.7 31.4 60.6 32.3 60.6 C 33.2 60.6 33.5 60.0 34.6 60.0 C 35.7 60.0 36.0 60.6 36.9 60.6 C 37.9 60.6 38.5 59.7 39.0 58.9 C 39.7 57.9 40.0 57.0 40.0 56.9 C 39.9 56.9 37.8 56.1 37.8 54.4 Z" fill="#1E2430"/>
+    <path d="M 36.1 49.0 C 36.6 48.4 36.9 47.6 36.8 46.8 C 36.1 46.8 35.2 47.3 34.7 47.9 C 34.3 48.4 33.9 49.2 34.0 50.0 C 34.8 50.1 35.6 49.6 36.1 49.0 Z" fill="#1E2430"/>
+    <rect x="52" y="46" width="42" height="6" rx="3" fill="#1E2430"/>
+    <rect x="52" y="56" width="28" height="4.5" rx="2.2" fill="#94A3B8"/>
+    <!-- Equalizer bars -->
+    <rect x="24" y="79" width="4" height="8" rx="2" fill="#FF5C6C"/>
+    <rect x="31" y="73" width="4" height="14" rx="2" fill="#FF5C6C"/>
+    <rect x="38" y="76" width="4" height="11" rx="2" fill="#FF5C6C"/>
+    <rect x="52" y="79" width="42" height="5" rx="2.5" fill="#E2E8F0"/>
+    <rect x="52" y="79" width="26" height="5" rx="2.5" fill="#FF5C6C"/>
+    <!-- Platform Pill inside phone -->
+    <rect x="18" y="114" width="84" height="24" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+    <text x="60" y="130" text-anchor="middle" class="sans" font-size="11.5" font-weight="700" fill="#1E2430">iPhone</text>
+    <text x="60" y="155" text-anchor="middle" class="mono" font-size="9.5" fill="#64748B">iOS · FFI Ready</text>
+  </g>
+
+  <text x="222" y="298" text-anchor="middle" class="sans" font-size="13" font-weight="600" fill="#334155">安卓 &amp; 苹果手机均可投送</text>
+
+  <!-- ==================== FLOW LINES: LEFT -> CENTER -> RIGHT ==================== -->
+  <!-- Converging from Android & iPhone to Center -->
+  <path d="M 400 180 L 534 180" fill="none" stroke="#FF5C6C" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round" marker-end="url(#hb-arr-l)"/>
+  <rect x="424" y="142" width="90" height="24" rx="12" fill="#FFF0F2" stroke="#FF5C6C" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="469" y="158" text-anchor="middle" class="mono" font-size="10.5" font-weight="700" fill="#D93848">AAC 48kHz</text>
+
+  <!-- Radiating from Center to Speakers -->
+  <path d="M 744 180 L 876 180" fill="none" stroke="#FF5C6C" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round" marker-end="url(#hb-arr-l)"/>
+  <rect x="762" y="142" width="96" height="24" rx="12" fill="#FFF0F2" stroke="#FF5C6C" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="810" y="158" text-anchor="middle" class="mono" font-size="10.5" font-weight="700" fill="#D93848">纯局域网同频</text>
+
+  <!-- ==================== CENTER: MIPLAY SENDER HUB ==================== -->
+  <g transform="translate(544, 62)">
+    <rect x="0" y="0" width="192" height="236" rx="22" fill="#FFFFFF" stroke="#FF5C6C" stroke-opacity="0.35" stroke-width="2"/>
+    <!-- Brand Logo Mark (92x92 centered at x=50, y=24) -->
+    <g transform="translate(50, 22) scale(0.1796875)">
+      <rect x="2" y="2" width="508" height="508" rx="115" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.10" stroke-width="5"/>
+      <circle cx="226" cy="256" r="110" fill="#272B35"/>
+      <circle cx="226" cy="256" r="93" fill="#151820"/>
+      <circle cx="226" cy="256" r="72" fill="#2C313D"/>
+      <circle cx="226" cy="256" r="42" fill="#FF5C6C"/>
+      <path d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z" fill="#FFFFFF"/>
+      <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF5C6C" stroke-width="38" stroke-linecap="round"/>
+    </g>
+
+    <text x="96" y="142" text-anchor="middle" class="sans" font-size="18.5" font-weight="800" fill="#14171F" letter-spacing="-0.3">MiPlay Sender</text>
+    <text x="96" y="164" text-anchor="middle" class="mono" font-size="10.5" font-weight="600" fill="#64748B">Rust L1 Core · 零云端</text>
+
+    <!-- Pure LAN badge -->
+    <rect x="24" y="182" width="144" height="28" rx="14" fill="#151820"/>
+    <text x="96" y="200" text-anchor="middle" class="mono" font-size="10.5" font-weight="700" fill="#FFFFFF">PURE LAN · SYNC</text>
+  </g>
+
+  <!-- ==================== RIGHT: XIAOMI / MIPLAY SPEAKERS ==================== -->
+  <rect x="886" y="42" width="350" height="276" rx="20" fill="#FFFFFF" stroke="#0F172A" stroke-opacity="0.08" stroke-width="1.5"/>
+  <text x="1061" y="68" text-anchor="middle" class="mono" font-size="11.5" font-weight="700" fill="#64748B" letter-spacing="1.2">RECEIVERS · 小米音箱集群</text>
+
+  <!-- Left Compact Speaker (Xiaomi Sound / Art style) -->
+  <g transform="translate(920, 128)">
+    <rect x="0" y="0" width="76" height="126" rx="18" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1.5"/>
+    <!-- Top ring -->
+    <ellipse cx="38" cy="14" rx="26" ry="5" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+    <circle cx="38" cy="14" r="3" fill="#FF5C6C"/>
+    <!-- Acoustic grille lines -->
+    <line x1="16" y1="42" x2="60" y2="42" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="54" x2="60" y2="54" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="66" x2="60" y2="66" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="78" x2="60" y2="78" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="90" x2="60" y2="90" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="102" x2="60" y2="102" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <text x="38" y="146" text-anchor="middle" class="mono" font-size="10" font-weight="600" fill="#64748B">音箱 #1</text>
+  </g>
+
+  <!-- Center Hero Speaker (XiaoAi Pro / Sound Pro tall dark monolith) -->
+  <g transform="translate(1013, 108)">
+    <rect x="0" y="0" width="96" height="146" rx="20" fill="#1E2430"/>
+    <!-- Top acoustic cap & coral ring -->
+    <ellipse cx="48" cy="16" rx="34" ry="6.5" fill="#2C3342"/>
+    <ellipse cx="48" cy="16" rx="20" ry="3.5" fill="none" stroke="#FF5C6C" stroke-width="2"/>
+    <!-- Subtle Braun-style concentric grille dots -->
+    <circle cx="48" cy="72" r="24" fill="#151820" stroke="#363D4D" stroke-width="1.5"/>
+    <circle cx="48" cy="72" r="14" fill="#272D3B"/>
+    <circle cx="48" cy="72" r="5" fill="#FF5C6C"/>
+    <!-- Bottom base accent -->
+    <rect x="26" y="114" width="44" height="4" rx="2" fill="#363D4D"/>
+    <rect x="34" y="124" width="28" height="4" rx="2" fill="#363D4D"/>
+    <text x="48" y="166" text-anchor="middle" class="mono" font-size="10.5" font-weight="700" fill="#1E2430">小爱 / Xiaomi Sound</text>
+  </g>
+
+  <!-- Right Compact Speaker -->
+  <g transform="translate(1126, 128)">
+    <rect x="0" y="0" width="76" height="126" rx="18" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1.5"/>
+    <ellipse cx="38" cy="14" rx="26" ry="5" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+    <circle cx="38" cy="14" r="3" fill="#FF5C6C"/>
+    <line x1="16" y1="42" x2="60" y2="42" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="54" x2="60" y2="54" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="66" x2="60" y2="66" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="78" x2="60" y2="78" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="90" x2="60" y2="90" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <line x1="16" y1="102" x2="60" y2="102" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+    <text x="38" y="146" text-anchor="middle" class="mono" font-size="10" font-weight="600" fill="#64748B">音箱 #N</text>
+  </g>
+
+  <!-- Sound waves above center speaker (generous clearance below header) -->
+  <path d="M 1040 99 A 24 24 0 0 1 1082 99" fill="none" stroke="#FF5C6C" stroke-width="2.4" stroke-linecap="round" opacity="0.88"/>
+  <path d="M 1031 91 A 36 36 0 0 1 1091 91" fill="none" stroke="#FF5C6C" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+
+  <text x="1061" y="298" text-anchor="middle" class="sans" font-size="13" font-weight="600" fill="#334155">单台 / 多台同频投送（上限 63 台）</text>
+</svg>
