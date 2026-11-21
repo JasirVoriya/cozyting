@@ -1,0 +1,82 @@
+name: 🔊 音箱 / 机型兼容实测上报
+description: 上报某款音箱或手机的实际测试情况（无论可用或不可用，都欢迎提交以完善设备兼容清单）
+title: "[设备兼容]: "
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不同型号与固件的小米 / MiPlay 接收端在认证协议（Legacy / Safety）、反向 RTSP 与多箱扩组上存在差异。
+        欢迎提交你的真机实测结果，无论 **实测可用** 还是 **适配失败**，都能帮助完善社区设备兼容表！
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: 总体实测结果
+      options:
+        - ✅ 单箱与多箱同频均正常可用
+        - ✅ 仅测试单箱，正常可用
+        - ⚠️ 基本可用，但存在部分异常（静音 / 音量 / 延迟 / 晚加入扩组等）
+        - ❌ 能搜到设备，但连接或认证失败 / 连接后无声
+        - ❌ 局域网完全搜不到该设备
+    validations:
+      required: true
+
+  - type: input
+    id: speaker_model
+    attributes:
+      label: 音箱 / 接收端型号与固件版本
+      description: 请尽量写明完整型号（如底标代号 LX06、L09G 等）和米家内看到的固件版本
+      placeholder: 例如：小爱音箱 Pro (LX06)，固件 1.82.x；或 Xiaomi Sound Pro
+    validations:
+      required: true
+
+  - type: input
+    id: phone_model
+    attributes:
+      label: 手机型号与 Android / ROM 版本
+      placeholder: 例如：一加 12 · ColorOS 15 · Android 15（API 35）
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: 测试使用的 MiPlay 发送端版本
+      placeholder: 例如：v0.9.4-release
+    validations:
+      required: true
+
+  - type: dropdown
+    id: auth_mode
+    attributes:
+      label: 实际使用的认证模式
+      options:
+        - auto（自动）
+        - legacy（旧式明文认证）
+        - safety（加密认证）
+        - 不确定
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: verified_items
+    attributes:
+      label: 已实测通过的功能（请仅勾选实际验证通过的项目）
+      options:
+        - label: 局域网 mDNS 自动发现
+        - label: 单箱音频投送正常出声
+        - label: 多箱并发同步播放（无明显回声或漂移）
+        - label: 播放中动态加箱 / 移箱
+        - label: 音量调节与暂停 / 恢复
+        - label: 本机静音正常生效
+        - label: 切后台 / 锁屏持续稳定播放（请在下方补充时长）
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 详细表现与诊断信息（可选）
+      description: 可补充界面显示的估计延迟（ms）、多箱组合型号、后台保活时长，或附上只读命令 `miplay-cli inspect <音箱IP> --auth legacy` 的脱敏输出。
+      placeholder: 例如：单箱 5GHz 下估计延迟约 820ms，连续播放 30 分钟稳定；和另一台音箱组队时晚加入无声...
+    validations:
+      required: false

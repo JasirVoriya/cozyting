@@ -1,0 +1,23 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: 🚀 新功能与架构演进
+      labels:
+        - enhancement
+        - feature
+    - title: 🐛 Bug 修复
+      labels:
+        - bug
+    - title: 🔊 音箱与机型兼容适配
+      labels:
+        - compatibility
+    - title: 📚 文档与工程化
+      labels:
+        - documentation
+    - title: 🔧 其他变更
+      labels:
+        - "*"

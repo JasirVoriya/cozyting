@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rust-core:
+    name: Rust Core & CLI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Rust workspace unit tests
+        run: cargo test --workspace
+
+      - name: Build miplay-cli (release)
+        run: cargo build --release -p miplay-cli
+
+      - name: Check iOS C ABI header syntax (C11)
+        if: hashFiles('core/include/miplay_core.h') != ''
+        run: clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
+
+  android-build-and-test:
+    name: Android JNI, Lint & Unit Tests
+    runs-on: ubuntu-latest
+    env:
+      NDK_VERSION: "27.2.12479018"
+      RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Rust toolchain (aarch64-linux-android)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-ndk
+        uses: taiki-e/install-action@cargo-ndk
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36 platform, build-tools and NDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+
+      - name: Build 16KB-aligned Rust JNI library (arm64-v8a)
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
+        run: |
+          cargo ndk -t arm64-v8a -p 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
+          READELF="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          "${READELF}" -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -E 'Type|LOAD|Align'
+          "${READELF}" -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -q '0x4000'
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Android JVM tests, Lint (NewApi fatal) and Debug build
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon test lintStandardDebug assembleStandardDebug
+
+      - name: Upload standard debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: miplay-sender-standard-debug-apk
+          path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
+          retention-days: 14
+          if-no-files-found: error

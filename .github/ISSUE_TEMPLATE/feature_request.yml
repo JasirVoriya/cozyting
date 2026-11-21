@@ -1,0 +1,60 @@
+name: ✨ 功能建议 / 新需求
+description: 提出新功能想法、交互体验优化、新协议/新平台适配或 CLI 工具改进建议
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        欢迎提出任何改进建议！请尽量先说明你的真实使用场景和痛点，再描述期望的交互或功能方案。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 建议归属方向
+      options:
+        - Android UI 与交互体验
+        - 音频捕获 / 静音策略 / 音质与延迟
+        - 多音箱同步与断线重连
+        - 新协议 / 新设备支持（DLNA / AirPlay / Google Cast 等）
+        - iOS / 跨平台支持
+        - miplay-cli 命令行工具
+        - 文档 / 构建 / 工程体验
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与痛点
+      description: 你在什么使用场景下遇到了不便？当前版本缺少什么能力？
+      placeholder: 例如：睡前听播客时希望能设置定时停止投送；或在通知栏直接切换音箱分组...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的功能或交互方案
+      description: 你理想中这个功能应该如何操作或表现？
+      placeholder: 描述你期望的界面交互、设置项或命令行参数...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 参考案例或替代方案（可选）
+      description: 是否参考过小米原生「音乐投送」或其他同类开源软件的设计？
+      placeholder: 可贴出参考思路或截图
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: 参与意愿（可选）
+      options:
+        - label: 如果开始开发该功能，我愿意帮忙真机测试并反馈结果
+        - label: 我有兴趣为此功能提交 Pull Request
