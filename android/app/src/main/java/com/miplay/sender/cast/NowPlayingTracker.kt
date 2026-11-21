@@ -59,6 +59,14 @@ class NowPlayingTracker(
         controller = null
     }
 
+    /** 回到前台或常用音源配置更新时主动拉取一次活跃会话，避免错过状态切换。 */
+    fun refresh() {
+        val cn = ComponentName(context, NowPlayingNotificationListener::class.java)
+        runCatching {
+            refreshControllers(msm?.getActiveSessions(cn))
+        }
+    }
+
     fun playPause() {
         val c = controller ?: return
         val st = c.playbackState?.state
@@ -80,13 +88,19 @@ class NowPlayingTracker(
 
     private fun refreshControllers(list: List<MediaController>?) {
         val preferredPkg = com.miplay.sender.CastService.targetPackage
-        val next = list
-            ?.firstOrNull { preferredPkg.isNotBlank() && it.packageName == preferredPkg }
-            ?: list?.firstOrNull {
-                val st = it.playbackState?.state
-                st == PlaybackState.STATE_PLAYING || st == PlaybackState.STATE_BUFFERING
-            }
-            ?: list?.firstOrNull()
+        val isCasting = com.miplay.sender.CastService.running.get()
+        val activelyPlaying = list?.firstOrNull {
+            val st = it.playbackState?.state
+            st == PlaybackState.STATE_PLAYING || st == PlaybackState.STATE_BUFFERING
+        }
+        val preferredSession = list?.firstOrNull {
+            preferredPkg.isNotBlank() && it.packageName == preferredPkg
+        }
+        val next = if (isCasting) {
+            preferredSession ?: activelyPlaying ?: list?.firstOrNull()
+        } else {
+            activelyPlaying ?: preferredSession ?: list?.firstOrNull()
+        }
         if (next?.sessionToken != controller?.sessionToken) {
             controller?.unregisterCallback(callback)
             controller = next

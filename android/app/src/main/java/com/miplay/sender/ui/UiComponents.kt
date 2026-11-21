@@ -459,6 +459,50 @@ object UiComponents {
             addView(track)
         }
     }
+
+    /** 紧凑型开关控件（用于列表行内单项开关，如常用音源的独立自动识别控制）。 */
+    fun compactSwitch(
+        context: Context,
+        palette: UiPalette,
+        initialChecked: Boolean,
+        trackOffColor: Int = palette.trackIdle,
+        onCheckedChange: (Boolean) -> Unit,
+    ): FrameLayout {
+        var checked = initialChecked
+        val trackW = dp(context, 36)
+        val trackH = dp(context, 21)
+        val knobSize = dp(context, 15)
+        val knobMargin = dp(context, 3)
+
+        val knob = View(context).apply {
+            background = roundedDrawable(Color.WHITE, knobSize / 2f)
+            layoutParams = FrameLayout.LayoutParams(knobSize, knobSize, Gravity.CENTER_VERTICAL).apply {
+                marginStart = if (checked) trackW - knobSize - knobMargin else knobMargin
+            }
+        }
+        val track = FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(trackW, trackH)
+            isClickable = true
+            isFocusable = true
+            addView(knob)
+        }
+        fun sync() {
+            track.background = roundedDrawable(
+                fillColor = if (checked) palette.accent else trackOffColor,
+                radiusPx = trackH / 2f,
+            )
+            (knob.layoutParams as FrameLayout.LayoutParams).marginStart =
+                if (checked) trackW - knobSize - knobMargin else knobMargin
+            knob.requestLayout()
+        }
+        sync()
+        track.setOnClickListener {
+            checked = !checked
+            sync()
+            onCheckedChange(checked)
+        }
+        return track
+    }
 }
 
 /**

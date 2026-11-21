@@ -55,3 +55,12 @@ data class LaunchableApp(
     val label: String,
     val hasMainLauncher: Boolean,
 )
+
+/**
+ * 用户可自由增删的常用音源项：
+ * 仅列表内且 [autoDetectEnabled] 为 true 的应用才允许参与「待机自动识别正在播放的音源」。
+ */
+data class FavoriteAudioSource(
+    val packageName: String,
+    val autoDetectEnabled: Boolean = true,
+)

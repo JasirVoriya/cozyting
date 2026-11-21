@@ -48,6 +48,10 @@ class PrefsCastSettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_KEEP_LOCAL, false)
         set(value) = prefs.edit().putBoolean(KEY_KEEP_LOCAL, value).apply()
 
+    var autoDetectAudioSource: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_DETECT_SOURCE, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_DETECT_SOURCE, value).apply()
+
     var showAllDiscovered: Boolean
         get() = prefs.getBoolean(KEY_SHOW_ALL, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_ALL, value).apply()
@@ -79,6 +83,7 @@ class PrefsCastSettingsStore(context: Context) {
         private const val PREFS = "miplay_ui_settings"
         private const val KEY_THEME = "theme_mode"
         private const val KEY_KEEP_LOCAL = "keep_local_output"
+        private const val KEY_AUTO_DETECT_SOURCE = "auto_detect_audio_source"
         private const val KEY_SHOW_ALL = "show_all_discovered"
         private const val KEY_SOURCE_MODE = "source_mode"
         private const val KEY_DELAY_MS = "delay_ms"

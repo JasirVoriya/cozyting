@@ -12,9 +12,11 @@ import android.graphics.Shader
 import android.graphics.drawable.BitmapDrawable
 import android.os.Looper
 import android.view.View
+import com.miplay.sender.AppPickerActivity
 import com.miplay.sender.CastService
 import com.miplay.sender.MainActivity
 import com.miplay.sender.SettingsActivity
+import com.miplay.sender.capture.FavoriteAudioSource
 import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
@@ -95,7 +97,16 @@ class UiPreviewRenderTest {
         val lightSettings = renderSettings(isDark = false)
         savePng(lightSettings, "05_settings_light.png")
 
-        println("[UiPreviewRenderTest] Saved 6 preview PNGs to: ${outDir.absolutePath}")
+        val darkPicker = renderAppPicker(isDark = true)
+        savePng(darkPicker, "06_app_picker_dark.png")
+
+        val lightPicker = renderAppPicker(isDark = false)
+        savePng(lightPicker, "07_app_picker_light.png")
+
+        val pickerOverview = composeSideBySide(darkPicker, lightPicker)
+        savePng(pickerOverview, "08_app_picker_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 9 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -177,14 +188,22 @@ class UiPreviewRenderTest {
             placeholderReasonZh = "",
         )
 
+        val mockFavorites = listOf(
+            FavoriteAudioSource("com.example.music", autoDetectEnabled = true),
+            FavoriteAudioSource("com.example.podcast", autoDetectEnabled = false),
+            FavoriteAudioSource("com.example.hifi", autoDetectEnabled = true),
+        )
+
         activity.applyUiPreviewStateForTest(
             isDark = isDark,
             previewNowPlaying = nowPlaying,
             previewDevices = devices,
             previewSelectedSpeakerIds = setOf("192.0.2.10", "192.0.2.11"),
             previewLaunchableApps = mockApps,
+            previewFavoriteSources = mockFavorites,
             previewSelectedPackage = "com.example.music",
             previewSelectedLabel = "云音乐",
+            previewAutoDetected = true,
             previewMasterVolume = 58,
             previewSpeakerVolumes = mapOf(
                 "192.0.2.10" to 62,
@@ -260,6 +279,37 @@ class UiPreviewRenderTest {
         return bitmap
     }
 
+    private fun renderAppPicker(isDark: Boolean): Bitmap {
+        val controller = Robolectric.buildActivity(
+            AppPickerActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+        val apps = listOf(
+            LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
+            LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
+            LaunchableApp("com.example.hifi", "无损播放器", hasMainLauncher = true),
+            LaunchableApp("com.example.video", "视频客户端", hasMainLauncher = true),
+            LaunchableApp("com.example.reader", "听书阅读", hasMainLauncher = true),
+        )
+        val favorites = listOf(
+            FavoriteAudioSource("com.example.music", autoDetectEnabled = true),
+            FavoriteAudioSource("com.example.podcast", autoDetectEnabled = false),
+            FavoriteAudioSource("com.example.hifi", autoDetectEnabled = true),
+        )
+        activity.applyUiPreviewStateForTest(
+            isDark = isDark,
+            previewApps = apps,
+            previewFavorites = favorites,
+            previewSelectedPackage = "com.example.music",
+            previewExpandOthers = true,
+        )
+        val bitmap = captureActivityBitmap(activity)
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
     private fun captureActivityBitmap(activity: Activity): Bitmap {
         val root = activity.findViewById<View>(android.R.id.content)
         val dm = activity.resources.displayMetrics
@@ -289,6 +339,14 @@ class UiPreviewRenderTest {
         UiIconCache.putForTest(
             "com.example.hifi",
             BitmapDrawable(res, createMockAppIcon(Color.parseColor("#0284C7"), Color.parseColor("#38BDF8"))),
+        )
+        UiIconCache.putForTest(
+            "com.example.video",
+            BitmapDrawable(res, createMockAppIcon(Color.parseColor("#EA580C"), Color.parseColor("#FB923C"))),
+        )
+        UiIconCache.putForTest(
+            "com.example.reader",
+            BitmapDrawable(res, createMockAppIcon(Color.parseColor("#059669"), Color.parseColor("#34D399"))),
         )
     }
 

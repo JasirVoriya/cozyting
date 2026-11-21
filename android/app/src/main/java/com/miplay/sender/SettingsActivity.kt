@@ -204,9 +204,22 @@ class SettingsActivity : Activity() {
 
         val notifGranted = isNotificationListenerEnabled()
         castCard.addView(
+            UiComponents.switchRow(
+                context = this,
+                palette = palette,
+                title = "自动识别正在播放的音源",
+                subtitle = "待机时仅从「常用音源」中开启自动识别的 App 自动跟随（需通知使用权）；投送中不打断",
+                initialChecked = settingsStore.autoDetectAudioSource,
+            ) { checked ->
+                settingsStore.autoDetectAudioSource = checked
+            },
+        )
+        castCard.addView(spacer(8))
+
+        castCard.addView(
             permissionRow(
-                title = "通知使用权（正在播放与播控）",
-                subtitle = "仅用于读取源 App 正在播放曲目与切歌，不上传通知内容",
+                title = "通知使用权（正在播放与自动识别）",
+                subtitle = "用于读取正在播放曲目、播控及自动识别常用音源，不上传通知内容",
                 granted = notifGranted,
                 grantedLabel = "已开启",
                 missingLabel = "未开启",

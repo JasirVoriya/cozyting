@@ -32,8 +32,10 @@ import android.widget.SeekBar
 import android.widget.TextView
 import com.miplay.sender.capture.AndroidLaunchableApps
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
+import com.miplay.sender.capture.AutoSourceSelectionPolicy
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
+import com.miplay.sender.capture.FavoriteAudioSource
 import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.LaunchableAppCatalog
 import com.miplay.sender.capture.PrefsTargetAppStore
@@ -97,6 +99,7 @@ class MainActivity : Activity() {
     private lateinit var volumePctView: TextView
     private lateinit var mainTargetIcon: ImageView
     private lateinit var mainTargetTitle: TextView
+    private lateinit var mainTargetAutoBadge: TextView
     private lateinit var mainTargetSubtitle: TextView
     private lateinit var quickSwitchRow: LinearLayout
     private lateinit var deviceCountView: TextView
@@ -104,6 +107,10 @@ class MainActivity : Activity() {
     private lateinit var statusLine: TextView
 
     private var cachedLaunchableApps: List<LaunchableApp> = emptyList()
+    private var favoriteSources: List<FavoriteAudioSource> = emptyList()
+    private var currentSelectionAutoDetected: Boolean = false
+    private var manualOverrideBlockedPkg: String? = null
+    private var pendingAutoResolvePkg: String? = null
     private var pendingStart: Intent? = null
     private var selectedPackage: String = ""
     private var selectedLabel: String = ""
@@ -172,7 +179,12 @@ class MainActivity : Activity() {
             main.post {
                 nowPlaying = info
                 nowPlayingUpdatedAtMs = System.currentTimeMillis()
+                manualOverrideBlockedPkg = AutoSourceSelectionPolicy.nextManualOverrideBlockedPackage(
+                    currentBlockedPackage = manualOverrideBlockedPkg,
+                    nowPlayingPackage = info.sourcePackage,
+                )
                 bindNowPlaying()
+                maybeAutoSelectFromNowPlaying()
             }
         }.also { it.start() }
         main.postDelayed(refreshRunnable, 1000)
@@ -195,12 +207,17 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (!::settingsStore.isInitialized) return
+        if (store.hasInitializedFavoriteSources()) {
+            favoriteSources = store.loadFavoriteSources()
+        }
         val wantDark = settingsStore.isDark(this)
         if (wantDark != lastRenderedDark) {
             buildUi()
         }
         refreshTargetFromStore()
         renderDevices()
+        nowPlayingTracker?.refresh()
+        maybeAutoSelectFromNowPlaying()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -563,7 +580,7 @@ class MainActivity : Activity() {
             )
             addView(
                 TextView(this@MainActivity).apply {
-                    text = "开启通知使用权以显示曲目与切歌"
+                    text = "开启通知使用权以显示曲目与自动识别音源"
                     textSize = 12.5f
                     setTextColor(palette.textSecondary)
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -672,6 +689,10 @@ class MainActivity : Activity() {
                 marginEnd = dp(8)
             }
         }
+        val sourceTitleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
         mainTargetTitle = TextView(this).apply {
             text = "投送音源：未选择"
             setTextColor(palette.textPrimary)
@@ -679,7 +700,26 @@ class MainActivity : Activity() {
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
         }
+        mainTargetAutoBadge = TextView(this).apply {
+            text = "自动识别"
+            textSize = 10f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+            background = UiComponents.roundedDrawable(palette.accentSoftBg, dpf(999f))
+            setPadding(dp(7), dp(2), dp(7), dp(2))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = dp(6) }
+            visibility = View.GONE
+        }
+        sourceTitleRow.addView(mainTargetTitle)
+        sourceTitleRow.addView(mainTargetAutoBadge)
         mainTargetSubtitle = TextView(this).apply {
             text = "点击选择需要投送的音乐或音频 App"
             setTextColor(palette.textSecondary)
@@ -687,14 +727,14 @@ class MainActivity : Activity() {
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         }
-        sourceMeta.addView(mainTargetTitle)
+        sourceMeta.addView(sourceTitleRow)
         sourceMeta.addView(mainTargetSubtitle)
 
         val moreAppPill = UiComponents.pillBadge(
             context = this,
             bgColor = palette.accentSoftBg,
             textColor = palette.accentBright,
-            label = "更多",
+            label = "管理",
         ).apply {
             setOnClickListener { openAppPicker() }
         }
@@ -1189,13 +1229,17 @@ class MainActivity : Activity() {
         if (::mainTargetTitle.isInitialized) {
             if (selectedPackage.isBlank()) {
                 mainTargetTitle.text = "投送音源：未选择"
-                mainTargetSubtitle.text = "点击选择需要投送的音乐或音频 App"
+                mainTargetSubtitle.text = "点击管理常用音源或自动识别正在播放的 App"
                 mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)
                 mainTargetIcon.setColorFilter(palette.accentBright)
+                if (::mainTargetAutoBadge.isInitialized) mainTargetAutoBadge.visibility = View.GONE
             } else {
                 mainTargetTitle.text = "音源 · $selectedLabel"
                 mainTargetSubtitle.text = selectedPackage
                 UiIconCache.bindAppIcon(this, mainTargetIcon, selectedPackage)
+                if (::mainTargetAutoBadge.isInitialized) {
+                    mainTargetAutoBadge.visibility = if (currentSelectionAutoDetected) View.VISIBLE else View.GONE
+                }
             }
         }
         renderQuickSwitchRow()
@@ -1204,9 +1248,68 @@ class MainActivity : Activity() {
     private fun loadLaunchableAppsAsync() {
         Thread {
             val apps = AndroidLaunchableApps.list(this)
+            val favs = store.ensureFavoriteSourcesInitialized(apps, selfPackage = packageName)
             main.post {
                 cachedLaunchableApps = apps
+                favoriteSources = favs
                 renderQuickSwitchRow()
+                maybeAutoSelectFromNowPlaying()
+            }
+        }.start()
+    }
+
+    private fun maybeAutoSelectFromNowPlaying() {
+        if (!::settingsStore.isInitialized || !::store.isInitialized) return
+        val favs = if (favoriteSources.isNotEmpty() || store.hasInitializedFavoriteSources()) {
+            favoriteSources
+        } else {
+            return
+        }
+        val decision = AutoSourceSelectionPolicy.decide(
+            AutoSourceSelectionPolicy.Input(
+                globalAutoDetectEnabled = settingsStore.autoDetectAudioSource,
+                isCasting = CastService.running.get() || castRequested,
+                sourceMode = settingsStore.sourceMode,
+                currentSelectedPackage = selectedPackage,
+                selfPackage = packageName,
+                nowPlayingPackage = nowPlaying.sourcePackage,
+                nowPlayingIsPlaying = nowPlaying.isPlaying,
+                favoriteSources = favs,
+                manualOverrideBlockedPackage = manualOverrideBlockedPkg,
+            ),
+        )
+        val targetPkg = (decision as? AutoSourceSelectionPolicy.Decision.AutoSelect)?.packageName ?: return
+        if (pendingAutoResolvePkg == targetPkg) return
+        pendingAutoResolvePkg = targetPkg
+
+        val labelHint = cachedLaunchableApps.firstOrNull { it.packageName == targetPkg }?.label
+            ?: runCatching {
+                packageManager.getApplicationLabel(packageManager.getApplicationInfo(targetPkg, 0)).toString()
+            }.getOrDefault(targetPkg)
+
+        Thread {
+            val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
+            val result = resolver.resolveForCapture(targetPkg)
+            main.post {
+                if (pendingAutoResolvePkg == targetPkg) pendingAutoResolvePkg = null
+                if (CastService.running.get() || castRequested) return@post
+                if (nowPlaying.sourcePackage != targetPkg) return@post
+                if (result is CaptureTargetResult.Ok) {
+                    store.saveSelection(
+                        TargetAppSelection(
+                            packageName = result.packageName,
+                            label = labelHint,
+                            signingCertSha256 = result.signingCertSha256,
+                        ),
+                    )
+                    selectedPackage = result.packageName
+                    selectedLabel = labelHint
+                    selectedCert = result.signingCertSha256
+                    currentSelectionAutoDetected = true
+                    lastGrantSession = null
+                    refreshTargetFromStore()
+                    setStatusText("已自动识别音源：$labelHint")
+                }
             }
         }.start()
     }
@@ -1214,14 +1317,23 @@ class MainActivity : Activity() {
     private fun renderQuickSwitchRow() {
         if (!::quickSwitchRow.isInitialized) return
         quickSwitchRow.removeAllViews()
-        val recentPkgs = store.loadRecentSelections().map { it.packageName }
-        val candidates = LaunchableAppCatalog.quickSwitchCandidates(
-            apps = cachedLaunchableApps,
-            recentPackages = recentPkgs,
-            currentPackage = selectedPackage.takeIf { it.isNotBlank() },
-            limit = 4,
-            selfPackage = packageName,
-        )
+        val candidates = if (store.hasInitializedFavoriteSources()) {
+            LaunchableAppCatalog.quickSwitchCandidatesFromFavorites(
+                apps = cachedLaunchableApps,
+                favoriteSources = favoriteSources,
+                currentPackage = selectedPackage.takeIf { it.isNotBlank() },
+                limit = 4,
+                selfPackage = packageName,
+            )
+        } else {
+            LaunchableAppCatalog.quickSwitchCandidates(
+                apps = cachedLaunchableApps,
+                recentPackages = store.loadRecentSelections().map { it.packageName },
+                currentPackage = selectedPackage.takeIf { it.isNotBlank() },
+                limit = 4,
+                selfPackage = packageName,
+            )
+        }
         if (candidates.isEmpty()) {
             quickSwitchRow.visibility = View.GONE
             return
@@ -1289,6 +1401,10 @@ class MainActivity : Activity() {
                         selectedPackage = r.packageName
                         selectedLabel = app.label
                         selectedCert = r.signingCertSha256
+                        currentSelectionAutoDetected = false
+                        manualOverrideBlockedPkg = nowPlaying.sourcePackage?.takeIf {
+                            it.isNotBlank() && it != r.packageName
+                        }
                         lastGrantSession = null
                         settingsStore.sourceMode = "app"
                         refreshTargetFromStore()
@@ -1480,10 +1596,21 @@ class MainActivity : Activity() {
                 setStatusText("正在连接并投送到音箱…")
             }
             REQ_APP_PICKER -> {
-                if (resultCode != RESULT_OK || data == null) return
+                if (store.hasInitializedFavoriteSources()) {
+                    favoriteSources = store.loadFavoriteSources()
+                }
+                if (resultCode != RESULT_OK || data == null) {
+                    renderQuickSwitchRow()
+                    maybeAutoSelectFromNowPlaying()
+                    return
+                }
                 selectedPackage = data.getStringExtra(AppPickerActivity.EXTRA_PACKAGE).orEmpty()
                 selectedLabel = data.getStringExtra(AppPickerActivity.EXTRA_LABEL).orEmpty()
                 selectedCert = data.getStringExtra(AppPickerActivity.EXTRA_CERT).orEmpty()
+                currentSelectionAutoDetected = false
+                manualOverrideBlockedPkg = nowPlaying.sourcePackage?.takeIf {
+                    it.isNotBlank() && it != selectedPackage
+                }
                 store.saveSelection(
                     TargetAppSelection(
                         packageName = selectedPackage,
@@ -1579,8 +1706,10 @@ class MainActivity : Activity() {
         previewDevices: List<CastRouteSelection.Device>,
         previewSelectedSpeakerIds: Set<String> = emptySet(),
         previewLaunchableApps: List<com.miplay.sender.capture.LaunchableApp> = emptyList(),
+        previewFavoriteSources: List<FavoriteAudioSource>? = null,
         previewSelectedPackage: String = "",
         previewSelectedLabel: String = "",
+        previewAutoDetected: Boolean = false,
         previewMasterVolume: Int = 46,
         previewSpeakerVolumes: Map<String, Int> = emptyMap(),
         previewCasting: Boolean = false,
@@ -1591,6 +1720,12 @@ class MainActivity : Activity() {
         stopRefreshSpinner()
         nowPlayingTracker?.stop()
         settingsStore.themeMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
+        if (previewFavoriteSources != null) {
+            store.saveFavoriteSources(previewFavoriteSources)
+            favoriteSources = previewFavoriteSources
+        } else {
+            favoriteSources = emptyList()
+        }
         if (previewSelectedPackage.isNotBlank()) {
             store.saveSelection(
                 com.miplay.sender.capture.TargetAppSelection(
@@ -1604,6 +1739,7 @@ class MainActivity : Activity() {
         }
         selectedPackage = previewSelectedPackage
         selectedLabel = previewSelectedLabel
+        currentSelectionAutoDetected = previewAutoDetected
         cachedLaunchableApps = previewLaunchableApps
         masterVolume = previewMasterVolume.coerceIn(0, 100)
         speakerVolume.clear()

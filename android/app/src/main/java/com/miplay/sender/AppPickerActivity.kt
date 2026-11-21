@@ -25,6 +25,7 @@ import com.miplay.sender.capture.AndroidLaunchableApps
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
+import com.miplay.sender.capture.FavoriteAudioSource
 import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.LaunchableAppCatalog
 import com.miplay.sender.capture.PrefsTargetAppStore
@@ -32,13 +33,16 @@ import com.miplay.sender.capture.TargetAppSelection
 import com.miplay.sender.compat.CaptureSelectionLayers
 import com.miplay.sender.compat.WindowInsetsApplyCompat
 import com.miplay.sender.ui.PrefsCastSettingsStore
+import com.miplay.sender.ui.ThemeMode
 import com.miplay.sender.ui.UiComponents
 import com.miplay.sender.ui.UiIconCache
 import com.miplay.sender.ui.UiPalette
 
 /**
- * 选择投送音源 App：与主界面共享同一套明暗主题与样式 B 组件规范，
- * 使用 [UiIconCache] 异步缓存图标避免展开全部应用时卡顿。
+ * 常用音源管理与选择页：
+ * - 用户可自由增删「常用音源」名单；
+ * - 每个常用音源均提供独立的「自动识别」开关，仅允许已加入常用名单且开启该开关的 App 参与待机自动识别；
+ * - 点击任意应用主行可立即将其设为当前投送音源（仍走单 UID + 签名 fail-closed 校验）。
  */
 class AppPickerActivity : Activity() {
     companion object {
@@ -57,13 +61,34 @@ class AppPickerActivity : Activity() {
     private lateinit var clearBtn: ImageView
     private lateinit var loadingSpinner: ProgressBar
     private var all = emptyList<LaunchableApp>()
+    private var favorites = emptyList<FavoriteAudioSource>()
     private var expandOthers = false
+    private var previewMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
         store = PrefsTargetAppStore(this)
         settingsStore = PrefsCastSettingsStore(this)
+        previewMode = intent?.getBooleanExtra("ui_preview", false) == true
+        buildUi()
+
+        if (!previewMode) {
+            Thread {
+                val apps = AndroidLaunchableApps.list(this)
+                val favs = store.ensureFavoriteSourcesInitialized(apps, selfPackage = packageName)
+                main.post {
+                    all = apps
+                    favorites = favs
+                    loadingSpinner.visibility = View.GONE
+                    updateStatusSummary()
+                    render()
+                }
+            }.start()
+        }
+    }
+
+    private fun buildUi() {
         val isDark = settingsStore.isDark(this)
         palette = UiPalette.forMode(isDark)
         WindowInsetsApplyCompat.applyEdgeToEdge(this, isDark)
@@ -87,7 +112,7 @@ class AppPickerActivity : Activity() {
         )
         headerRow.addView(
             TextView(this).apply {
-                text = "选择投送音源"
+                text = "常用音源与选择"
                 textSize = 19f
                 setTextColor(palette.textPrimary)
                 setTypeface(null, Typeface.BOLD)
@@ -96,11 +121,13 @@ class AppPickerActivity : Activity() {
             },
         )
         headerRow.addView(
-            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_info, "捕获说明") {
+            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_info, "音源与自动识别说明") {
                 AlertDialog.Builder(this)
-                    .setTitle("音源捕获说明")
+                    .setTitle("常用音源与自动识别说明")
                     .setMessage(
-                        "仅列出本机可启动的同用户应用；选中后仅保存包名与签名摘要，开始投送时再实时解析 UID。\n\n" +
+                        "1. 「常用音源」支持自由添加和移除，并会同步展示在主界面快捷切换栏。\n" +
+                            "2. 待机自动识别策略仅会从「常用音源」且已开启「自动识别」开关的 App 中选择，名单外或关闭开关的应用不会被自动切入。\n" +
+                            "3. 无论自动识别还是手动点选，开始投送前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。\n\n" +
                             CaptureSelectionLayers.settingsHintZh(),
                     )
                     .setPositiveButton("知道了", null)
@@ -188,30 +215,26 @@ class AppPickerActivity : Activity() {
         }
         WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
         setContentView(scroll)
+    }
 
-        Thread {
-            val apps = AndroidLaunchableApps.list(this)
-            main.post {
-                all = apps
-                loadingSpinner.visibility = View.GONE
-                val cat = LaunchableAppCatalog.categorize(
-                    apps = apps,
-                    recentPackages = store.loadRecentSelections().map { it.packageName },
-                    selfPackage = packageName,
-                )
-                val musicCount = cat.recent.size + cat.recommendedMusic.size
-                status.text = "已识别 $musicCount 个常用音频/最近应用（共 ${apps.size} 个可启动应用）"
-                render()
-            }
-        }.start()
+    private fun updateStatusSummary() {
+        val cat = LaunchableAppCatalog.categorizeWithFavorites(
+            apps = all,
+            favoriteSources = favorites,
+            selfPackage = packageName,
+        )
+        val autoCount = cat.favorites.count { it.second.autoDetectEnabled }
+        status.text = "常用音源 ${cat.favorites.size} 个（允许自动识别 $autoCount 个）· 点击行设为当前音源"
     }
 
     private fun render() {
         list.removeAllViews()
         val currentPkg = store.loadSelection()?.packageName.orEmpty()
+        val favByPkg = favorites.associateBy { it.packageName }
         val q = filter.text?.toString()?.trim().orEmpty().lowercase()
+
         if (q.isNotEmpty()) {
-            val shown = all.filter {
+            val shown = LaunchableAppCatalog.filterLaunchable(all, selfPackage = packageName).filter {
                 it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q)
             }
             if (shown.isEmpty()) {
@@ -226,28 +249,54 @@ class AppPickerActivity : Activity() {
                 return
             }
             list.addView(UiComponents.sectionTitle(this, palette, "搜索结果 (${shown.size})"))
-            shown.forEach { app -> list.addView(appRow(app, app.packageName == currentPkg)) }
+            shown.forEach { app ->
+                val fav = favByPkg[app.packageName]
+                if (fav != null) {
+                    list.addView(favoriteAppCard(app, fav, app.packageName == currentPkg))
+                } else {
+                    list.addView(otherAppRow(app, app.packageName == currentPkg))
+                }
+            }
             return
         }
 
-        val cat = LaunchableAppCatalog.categorize(
+        val cat = LaunchableAppCatalog.categorizeWithFavorites(
             apps = all,
-            recentPackages = store.loadRecentSelections().map { it.packageName },
+            favoriteSources = favorites,
             selfPackage = packageName,
         )
-        if (cat.recent.isNotEmpty()) {
-            list.addView(UiComponents.sectionTitle(this, palette, "最近使用"))
-            cat.recent.forEach { app -> list.addView(appRow(app, app.packageName == currentPkg)) }
+
+        list.addView(UiComponents.sectionTitle(this, palette, "常用音源 (${cat.favorites.size})"))
+        if (cat.favorites.isEmpty()) {
+            list.addView(
+                TextView(this).apply {
+                    text = "暂无常用音源 · 在下方点击「+ 常用」添加，只有名单内且开启开关的 App 会参与自动识别"
+                    setTextColor(palette.textSecondary)
+                    textSize = 12.5f
+                    background = UiComponents.roundedDrawable(
+                        fillColor = palette.panelBg,
+                        radiusPx = UiComponents.dpf(this@AppPickerActivity, UiPalette.RADIUS_CARD_DP.toFloat()),
+                        strokeColor = palette.panelBorder,
+                        strokeWidthPx = dp(1).coerceAtLeast(1),
+                    )
+                    setPadding(dp(14), dp(14), dp(14), dp(14))
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { bottomMargin = dp(8) }
+                },
+            )
+        } else {
+            cat.favorites.forEach { (app, fav) ->
+                list.addView(favoriteAppCard(app, fav, app.packageName == currentPkg))
+            }
         }
-        if (cat.recommendedMusic.isNotEmpty()) {
-            list.addView(UiComponents.sectionTitle(this, palette, "常用音乐与音频应用"))
-            cat.recommendedMusic.forEach { app -> list.addView(appRow(app, app.packageName == currentPkg)) }
-        }
+
         if (cat.others.isNotEmpty()) {
-            val showDirectly = cat.recent.isEmpty() && cat.recommendedMusic.isEmpty()
+            val showDirectly = cat.favorites.isEmpty()
             if (showDirectly) {
                 list.addView(UiComponents.sectionTitle(this, palette, "全部可启动应用 (${cat.others.size})"))
-                cat.others.forEach { app -> list.addView(appRow(app, app.packageName == currentPkg)) }
+                cat.others.forEach { app -> list.addView(otherAppRow(app, app.packageName == currentPkg)) }
             } else {
                 val toggle = LinearLayout(this).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -264,7 +313,7 @@ class AppPickerActivity : Activity() {
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT,
                     ).apply {
-                        topMargin = dp(10)
+                        topMargin = dp(8)
                         bottomMargin = dp(8)
                     }
                     isClickable = true
@@ -279,7 +328,7 @@ class AppPickerActivity : Activity() {
                         text = if (expandOthers) {
                             "收起其他应用 (${cat.others.size})"
                         } else {
-                            "展开其他全部应用 (${cat.others.size})"
+                            "添加更多应用到常用音源 (${cat.others.size})"
                         }
                         setTextColor(palette.textPrimary)
                         textSize = 13f
@@ -298,26 +347,35 @@ class AppPickerActivity : Activity() {
                 )
                 list.addView(toggle)
                 if (expandOthers) {
-                    cat.others.forEach { app -> list.addView(appRow(app, app.packageName == currentPkg)) }
+                    cat.others.forEach { app -> list.addView(otherAppRow(app, app.packageName == currentPkg)) }
                 }
             }
         }
     }
 
-    private fun appRow(app: LaunchableApp, isSelected: Boolean): View {
+    /** 常用音源卡片：上半部分点击设为当前音源，下半部分提供独立「自动识别」开关与「移出常用」按钮。 */
+    private fun favoriteAppCard(
+        app: LaunchableApp,
+        fav: FavoriteAudioSource,
+        isSelected: Boolean,
+    ): View {
         val bgColor = if (isSelected) palette.rowSelectedBg else palette.panelBg
         val borderColor = if (isSelected) palette.rowSelectedBorder else palette.panelBorder
         val borderW = if (isSelected && !palette.isDark) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
         val titleColor = if (isSelected) palette.onSelectedPrimary else palette.textPrimary
         val subColor = if (isSelected) palette.onSelectedSecondary else palette.textSecondary
+        val dividerColor = if (isSelected) {
+            if (palette.isDark) Color.argb(26, 18, 22, 30) else Color.argb(28, 37, 99, 235)
+        } else {
+            palette.panelBorder
+        }
+        val switchOffTrack = if (isSelected) palette.trackOnSelected else palette.trackIdle
 
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = UiComponents.rippleSurface(
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = UiComponents.roundedDrawable(
                 fillColor = bgColor,
                 radiusPx = UiComponents.dpf(this@AppPickerActivity, UiPalette.RADIUS_CARD_DP.toFloat()),
-                rippleColor = if (isSelected) palette.rippleOnSelected else palette.ripple,
                 strokeColor = borderColor,
                 strokeWidthPx = borderW,
             )
@@ -326,12 +384,23 @@ class AppPickerActivity : Activity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { bottomMargin = dp(8) }
+        }
+
+        val mainRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = Color.TRANSPARENT,
+                radiusPx = UiComponents.dpf(this@AppPickerActivity, UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                rippleColor = if (isSelected) palette.rippleOnSelected else palette.ripple,
+            )
             isClickable = true
             isFocusable = true
             setOnClickListener { select(app) }
         }
-        val iconView = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(12) }
+        val iconSize = dp(36)
+        val iconView = UiComponents.roundedImageView(this, dp(9).toFloat()).apply {
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { marginEnd = dp(11) }
             setColorFilter(palette.textSecondary)
         }
         UiIconCache.bindAppIcon(this, iconView, app.packageName)
@@ -361,9 +430,181 @@ class AppPickerActivity : Activity() {
                 ellipsize = TextUtils.TruncateAt.END
             },
         )
+        mainRow.addView(iconView)
+        mainRow.addView(meta)
+        mainRow.addView(UiComponents.checkCircle(this, palette, selected = isSelected))
+        card.addView(mainRow)
+
+        val divider = View(this).apply {
+            setBackgroundColor(dividerColor)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(1).coerceAtLeast(1),
+            ).apply {
+                topMargin = dp(9)
+                bottomMargin = dp(8)
+            }
+        }
+        card.addView(divider)
+
+        val actionBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val autoLabel = TextView(this).apply {
+            text = if (fav.autoDetectEnabled) "自动识别：允许" else "自动识别：关闭"
+            textSize = 12f
+            setTypeface(null, if (fav.autoDetectEnabled) Typeface.BOLD else Typeface.NORMAL)
+            setTextColor(
+                when {
+                    fav.autoDetectEnabled && isSelected -> palette.selectedPillText
+                    fav.autoDetectEnabled -> palette.accentBright
+                    else -> subColor
+                },
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = dp(8) }
+        }
+        val autoSwitch = UiComponents.compactSwitch(
+            context = this,
+            palette = palette,
+            initialChecked = fav.autoDetectEnabled,
+            trackOffColor = switchOffTrack,
+        ) { checked ->
+            favorites = store.setFavoriteAutoDetect(app.packageName, checked)
+            updateStatusSummary()
+            render()
+        }
+        val autoWrap = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            addView(autoSwitch)
+            addView(
+                View(this@AppPickerActivity).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(8), 1)
+                },
+            )
+            addView(autoLabel)
+        }
+        val removeBtn = TextView(this).apply {
+            text = "移出常用"
+            textSize = 11.5f
+            setTextColor(subColor)
+            background = UiComponents.rippleSurface(
+                fillColor = if (isSelected) {
+                    if (palette.isDark) Color.argb(24, 18, 22, 30) else Color.argb(18, 37, 99, 235)
+                } else {
+                    palette.controlSurface
+                },
+                radiusPx = UiComponents.dpf(this@AppPickerActivity, 999f),
+                rippleColor = if (isSelected) palette.rippleOnSelected else palette.ripple,
+            )
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                favorites = store.removeFavoriteSource(app.packageName)
+                updateStatusSummary()
+                render()
+            }
+        }
+        actionBar.addView(autoWrap)
+        actionBar.addView(removeBtn)
+        card.addView(actionBar)
+        return card
+    }
+
+    /** 非常用应用行：点击主行直接选为当前音源，点击右侧「+ 常用」将其加入常用音源名单。 */
+    private fun otherAppRow(app: LaunchableApp, isSelected: Boolean): View {
+        val bgColor = if (isSelected) palette.rowSelectedBg else palette.panelBg
+        val borderColor = if (isSelected) palette.rowSelectedBorder else palette.panelBorder
+        val borderW = if (isSelected && !palette.isDark) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
+        val titleColor = if (isSelected) palette.onSelectedPrimary else palette.textPrimary
+        val subColor = if (isSelected) palette.onSelectedSecondary else palette.textSecondary
+
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = bgColor,
+                radiusPx = UiComponents.dpf(this@AppPickerActivity, UiPalette.RADIUS_CARD_DP.toFloat()),
+                rippleColor = if (isSelected) palette.rippleOnSelected else palette.ripple,
+                strokeColor = borderColor,
+                strokeWidthPx = borderW,
+            )
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(8) }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { select(app) }
+        }
+        val iconSize = dp(36)
+        val iconView = UiComponents.roundedImageView(this, dp(9).toFloat()).apply {
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { marginEnd = dp(11) }
+            setColorFilter(palette.textSecondary)
+        }
+        UiIconCache.bindAppIcon(this, iconView, app.packageName)
+
+        val meta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
+        }
+        meta.addView(
+            TextView(this).apply {
+                text = app.label
+                textSize = 14.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(titleColor)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            },
+        )
+        meta.addView(
+            TextView(this).apply {
+                text = app.packageName
+                textSize = 11f
+                setTextColor(subColor)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            },
+        )
+        val addFavBtn = TextView(this).apply {
+            text = "+ 常用"
+            textSize = 11.5f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+            background = UiComponents.rippleSurface(
+                fillColor = palette.accentSoftBg,
+                radiusPx = UiComponents.dpf(this@AppPickerActivity, 999f),
+                rippleColor = palette.ripple,
+            )
+            setPadding(dp(10), dp(5), dp(10), dp(5))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { if (isSelected) marginEnd = dp(8) }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                favorites = store.addFavoriteSource(app.packageName, autoDetectEnabled = true)
+                updateStatusSummary()
+                render()
+            }
+        }
         row.addView(iconView)
         row.addView(meta)
-        row.addView(UiComponents.checkCircle(this, palette, selected = isSelected))
+        row.addView(addFavBtn)
+        if (isSelected) {
+            row.addView(UiComponents.checkCircle(this, palette, selected = true))
+        }
         return row
     }
 
@@ -396,6 +637,37 @@ class AppPickerActivity : Activity() {
                 }
             }
         }.start()
+    }
+
+    /** 仅用于 JVM 截图预览单测注入确定性 UI 状态。 */
+    internal fun applyUiPreviewStateForTest(
+        isDark: Boolean,
+        previewApps: List<LaunchableApp>,
+        previewFavorites: List<FavoriteAudioSource>,
+        previewSelectedPackage: String = "",
+        previewExpandOthers: Boolean = true,
+    ) {
+        settingsStore.themeMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
+        store.saveFavoriteSources(previewFavorites)
+        val selectedApp = previewApps.firstOrNull { it.packageName == previewSelectedPackage }
+        if (selectedApp != null) {
+            store.saveSelection(
+                TargetAppSelection(
+                    packageName = selectedApp.packageName,
+                    label = selectedApp.label,
+                    signingCertSha256 = "preview-cert",
+                ),
+            )
+        } else {
+            store.clearSelection()
+        }
+        all = previewApps
+        favorites = previewFavorites
+        expandOthers = previewExpandOthers
+        buildUi()
+        loadingSpinner.visibility = View.GONE
+        updateStatusSummary()
+        render()
     }
 
     private fun dp(v: Int) = UiComponents.dp(this, v)

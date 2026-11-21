@@ -49,6 +49,63 @@ object LaunchableAppCatalog {
         val others: List<LaunchableApp>,
     )
 
+    data class FavoriteCategorizedApps(
+        val favorites: List<Pair<LaunchableApp, FavoriteAudioSource>>,
+        val others: List<LaunchableApp>,
+    )
+
+    fun defaultFavoriteSources(
+        apps: List<LaunchableApp>,
+        selfPackage: String? = null,
+    ): List<FavoriteAudioSource> =
+        filterLaunchable(apps, selfPackage = selfPackage)
+            .filter { isRecommendedMusicApp(it) }
+            .map { FavoriteAudioSource(packageName = it.packageName, autoDetectEnabled = true) }
+
+    fun categorizeWithFavorites(
+        apps: List<LaunchableApp>,
+        favoriteSources: List<FavoriteAudioSource>,
+        selfPackage: String? = null,
+    ): FavoriteCategorizedApps {
+        val valid = filterLaunchable(apps, selfPackage = selfPackage)
+        val byPkg = valid.associateBy { it.packageName }
+        val favorites = mutableListOf<Pair<LaunchableApp, FavoriteAudioSource>>()
+        val favSet = mutableSetOf<String>()
+        favoriteSources.forEach { fav ->
+            val app = byPkg[fav.packageName]
+            if (app != null && favSet.add(fav.packageName)) {
+                favorites += app to fav
+            }
+        }
+        val others = valid.filter { it.packageName !in favSet }
+        return FavoriteCategorizedApps(favorites = favorites, others = others)
+    }
+
+    fun quickSwitchCandidatesFromFavorites(
+        apps: List<LaunchableApp>,
+        favoriteSources: List<FavoriteAudioSource>,
+        currentPackage: String? = null,
+        limit: Int = 4,
+        selfPackage: String? = null,
+    ): List<LaunchableApp> {
+        val cap = limit.coerceAtLeast(0)
+        if (cap == 0) return emptyList()
+        val valid = filterLaunchable(apps, selfPackage = selfPackage)
+        val byPkg = valid.associateBy { it.packageName }
+        val result = mutableListOf<LaunchableApp>()
+        if (!currentPackage.isNullOrBlank()) {
+            byPkg[currentPackage]?.let { result += it }
+        }
+        for (fav in favoriteSources) {
+            if (result.size >= cap) break
+            val app = byPkg[fav.packageName] ?: continue
+            if (result.none { it.packageName == app.packageName }) {
+                result += app
+            }
+        }
+        return result.take(cap)
+    }
+
     fun filterLaunchable(
         apps: List<LaunchableApp>,
         selfPackage: String? = null,
