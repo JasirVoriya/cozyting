@@ -161,6 +161,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 📚 **延伸文档索引**：
 - [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)（[本地 HTML](docs/architecture.html)）
 - [音箱与发送端设备兼容矩阵](docs/COMPATIBILITY.md) · [未测限制与已知缺口](docs/LIMITATIONS.md)
+- [iOS 客户端设计方案（待实现）](docs/IOS_CLIENT_DESIGN.md) · [局域网 AirPlay 2 网关设计方案（保留）](docs/AIRPLAY_BRIDGE_DESIGN.md)
 - [更新日志 (CHANGELOG)](CHANGELOG.md) · [本机静音边界](docs/LOCAL_MUTE.md) · [延迟预算模型](docs/LATENCY_BUDGET.md)
 
 ---
