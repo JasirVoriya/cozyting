@@ -1,0 +1,103 @@
+name: 🐛 Bug 反馈 / 故障排查
+description: 报告闪退、搜不到音箱、连接/认证失败、无声、多箱不同步、静音异常或 CLI 工具问题
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！这是一个纯局域网运行的硬件互操作开源项目，设备型号、系统版本与局域网拓扑差异对定位问题非常关键，请尽量填写完整信息。
+        > **隐私提示**：上传日志、抓包或截图前，请自行剔除不愿公开的个人信息或凭证。
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 问题归类
+      description: 选择最符合当前故障的现象
+      options:
+        - 局域网搜不到音箱（mDNS 发现异常）
+        - 无法连接 / 认证失败 / 频繁断连重连
+        - 无声音 / 采集失败 / 目标 App 无法捕获
+        - 多音箱不同步 / 卡顿 / 延迟异常
+        - 本机静音异常（未静音 / 切歌短暂双出声 / 停止后未恢复）
+        - 音量控制 / 暂停恢复 / 正在播放信息异常
+        - App 闪退 / 后台被杀 / UI 显示异常
+        - miplay-cli 命令行工具问题
+        - 其他问题
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: 软件版本与构建渠道
+      description: 请注明使用的版本号以及包类型（release / debug / acceptance / 自编译）
+      placeholder: 例如：v0.9.4-release（GitHub Releases） / 自编译 commit 2292c74
+    validations:
+      required: true
+
+  - type: input
+    id: phone_env
+    attributes:
+      label: 手机型号与系统版本
+      description: Android 10–16 各厂商 ROM 在 AudioPlaybackCapture 与后台保活上行为差异较大
+      placeholder: 例如：Xiaomi 14 · HyperOS 2.0 · Android 15（API 35）
+    validations:
+      required: true
+
+  - type: input
+    id: speakers
+    attributes:
+      label: 目标音箱型号、数量与固件版本
+      description: 如涉及多箱并发投送，请写明每台音箱型号与总台数
+      placeholder: 例如：小爱音箱 Pro (LX06) × 1 + Xiaomi Sound × 1（固件版本如有请补充）
+    validations:
+      required: true
+
+  - type: input
+    id: source_and_network
+    attributes:
+      label: 音源 App、认证模式与局域网环境
+      description: 请填写音源（选定 App 名称+版本 或 测试静音）、认证模式（auto / legacy / safety），以及 Wi-Fi 频段与路由器拓扑
+      placeholder: 例如：QQ 音乐 13.x · auth=auto · 手机与音箱同连主路由 5GHz Wi-Fi（未开启 AP 隔离）
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro_steps
+    attributes:
+      label: 复现步骤与现象对比
+      description: 请按顺序描述如何触发问题、实际现象以及预期行为
+      placeholder: |
+        1. 打开 MiPlay 发送端，选择音源为「...」
+        2. 勾选音箱「...」并点击开始投送
+        3. 实际现象：...
+        4. 预期现象：...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志、诊断输出或截图（可选，强烈建议提供）
+      description: |
+        可提供以下任意一项帮助快速定位：
+        - 应用内操作日志片段（`files/cast_ops.log`）或 `adb logcat` 崩溃栈
+        - 使用桌面端只读命令 `miplay-cli inspect <音箱IP> --auth legacy` 的输出（注：只读安全，不发送 CLOSE；请勿用旧 `probe`）
+        - 也可以直接把截图或录屏拖入本输入框
+      placeholder: 粘贴关键日志片段...
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过已有 Issues，确认没有重复反馈
+          required: true
+        - label: 我已确认手机与音箱在同一局域网，且未处于访客网络 / AP 隔离环境
+          required: true
+        - label: 我已了解 README 中的「明确不承诺」边界（如禁止音频捕获的第三方 App 无法绕过、部分厂商后台冻结需真机验证）
+          required: true

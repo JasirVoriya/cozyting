@@ -11,8 +11,18 @@
 **Android 手机单 App 音频捕获 · 零云端纯局域网 · 多音箱毫秒级同频投送**
 
 <p>
+  <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
+  <a href="https://jasirvoriya.github.io/miplay-android-sender/">在线交互式架构图</a> ·
+  <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
+  <a href="CHANGELOG.md">更新日志</a> ·
+  <a href="CONTRIBUTING.md">参与贡献</a>
+</p>
+
+<p>
+  <a href="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/JasirVoriya/miplay-android-sender?include_prereleases&style=flat-square&color=1F2430"></a>
+  <a href="https://github.com/JasirVoriya/miplay-android-sender/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/JasirVoriya/miplay-android-sender?style=flat-square&color=FF5C6C"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
-  <img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square">
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
   <img alt="Multi-Room Up to 63" src="https://img.shields.io/badge/Multi--Room-Max%2063%20Speakers-10B981?style=flat-square">
@@ -130,7 +140,7 @@ miplay-android-sender/
 
 本项目在演进上采用 **跨端三层架构**：**L1 公共核心层（Rust `core/`）** 全平台共享协议、认证、多箱时钟同步与流媒体打包；**L2 系统接口层**（音频捕获、硬件 AAC 编码、保活）与 **L3 原生 UI 层** 由 Android（已实现）与 iOS（规划中）各自原生实现，通过薄 FFI 插头对接同一份 Rust 引擎，并通过共享设计规范 `design/` 保持双端视觉一致。当前已落地的 Android 端运行在 **Android（Kotlin，API 29–36）⇄ JNI（`libmiplay_sender_core.so`）⇄ Rust（`miplay-sender-core`）** 单进程内。
 
-> **交互式架构浏览器**：如需在浏览器中点击任意模块追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按 6 个阶段演练运行时线程切换，或按关键词检索全仓文件职责，可直接打开零依赖本地页面 [`docs/architecture.html`](docs/architecture.html)。
+> **交互式架构浏览器**：如需在浏览器中点击任意模块追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按 6 个阶段演练运行时线程切换，或按关键词检索全仓文件职责，可直接访问 **[在线交互式架构浏览器（GitHub Pages）](https://jasirvoriya.github.io/miplay-android-sender/)**，或打开零依赖本地页面 [`docs/architecture.html`](docs/architecture.html)。
 
 ### 1. 跨端三层架构（L2/L3 双端各自实现 · L1 Rust 公共共享）
 
