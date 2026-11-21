@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
@@ -13,24 +14,32 @@ import android.util.Log
 import com.miplay.sender.NowPlayingNotificationListener
 
 /**
- * 读取源 App MediaSession。无通知使用权时 getActiveSessions 通常为空 → 诚实占位。
- * 控制键通过 [MediaController.TransportControls] 转发；无会话时 no-op。
+ * 读取全部活跃源 App 的 MediaSession。无通知使用权时 getActiveSessions 通常为空 → 诚实占位。
+ * 为所有活跃会话注册独立回调并追踪每次「开始播放」上升沿，避免旧软件未关闭时新软件起播被漏检。
+ * 控制键通过当前选中 [MediaController.TransportControls] 转发；无会话时 no-op。
  */
 class NowPlayingTracker(
     private val context: Context,
     private val onUpdate: (NowPlayingInfo) -> Unit,
+    private val onSessionsChanged: (List<ActiveMediaSessionSelector.SessionSnapshot>) -> Unit = {},
 ) {
+    private class ObservedController(
+        val token: MediaSession.Token,
+        val tokenKey: String,
+        val controller: MediaController,
+        val callback: MediaController.Callback,
+        var wasPlaying: Boolean,
+        var lastBecamePlayingSeq: Long,
+        var listOrderIndex: Int,
+    )
+
     private val main = Handler(Looper.getMainLooper())
     private val msm = context.getSystemService(MediaSessionManager::class.java)
+    private val observed = linkedMapOf<MediaSession.Token, ObservedController>()
     private var controller: MediaController? = null
-    private val callback = object : MediaController.Callback() {
-        override fun onMetadataChanged(metadata: MediaMetadata?) = publish()
-        override fun onPlaybackStateChanged(state: PlaybackState?) = publish()
-        override fun onSessionDestroyed() {
-            controller = null
-            publish()
-        }
-    }
+    private var initialized = false
+    private var seqCounter = 0L
+
     private val sessionsListener =
         MediaSessionManager.OnActiveSessionsChangedListener { refreshControllers(it) }
 
@@ -44,9 +53,10 @@ class NowPlayingTracker(
             onUpdate(
                 NowPlayingInfo.unavailable("无法读取 MediaSession（需通知使用权或系统限制）"),
             )
+            onSessionsChanged(emptyList())
         }
         // 无监听器权限时 getActiveSessions 可能抛 SecurityException 或返回空
-        if (controller == null) {
+        if (controller == null && observed.isEmpty()) {
             onUpdate(
                 NowPlayingInfo.unavailable("未取得正在播放（请在系统设置中开启通知使用权）"),
             )
@@ -55,17 +65,23 @@ class NowPlayingTracker(
 
     fun stop() {
         runCatching { msm?.removeOnActiveSessionsChangedListener(sessionsListener) }
-        controller?.unregisterCallback(callback)
+        observed.values.forEach { entry ->
+            runCatching { entry.controller.unregisterCallback(entry.callback) }
+        }
+        observed.clear()
         controller = null
+        initialized = false
     }
 
-    /** 回到前台或常用音源配置更新时主动拉取一次活跃会话，避免错过状态切换。 */
+    /** 回到前台、配置更新或后台保底轮询时主动拉取一次活跃会话，避免错过状态切换。 */
     fun refresh() {
         val cn = ComponentName(context, NowPlayingNotificationListener::class.java)
         runCatching {
             refreshControllers(msm?.getActiveSessions(cn))
         }
     }
+
+    fun currentSessionsSnapshot(): List<ActiveMediaSessionSelector.SessionSnapshot> = buildSnapshots()
 
     fun playPause() {
         val c = controller ?: return
@@ -86,27 +102,114 @@ class NowPlayingTracker(
         controller?.transportControls?.seekTo(posMs)
     }
 
+    private fun isPlayingState(state: Int?): Boolean =
+        state == PlaybackState.STATE_PLAYING || state == PlaybackState.STATE_BUFFERING
+
     private fun refreshControllers(list: List<MediaController>?) {
+        val incoming = list.orEmpty()
+        val incomingTokens = incoming.mapTo(linkedSetOf()) { it.sessionToken }
+
+        // 清理已消失的会话回调
+        val iter = observed.entries.iterator()
+        while (iter.hasNext()) {
+            val (token, entry) = iter.next()
+            if (token !in incomingTokens) {
+                runCatching { entry.controller.unregisterCallback(entry.callback) }
+                iter.remove()
+            }
+        }
+
+        val isInitialSnapshot = !initialized
+        if (isInitialSnapshot) {
+            seqCounter = incoming.size.toLong()
+        }
+
+        incoming.forEachIndexed { index, mc ->
+            val token = mc.sessionToken
+            val playingNow = isPlayingState(mc.playbackState?.state)
+            val existing = observed[token]
+            if (existing == null) {
+                val initSeq = when {
+                    !playingNow -> 0L
+                    isInitialSnapshot -> (incoming.size - index).toLong()
+                    else -> ++seqCounter
+                }
+                val tokenKey = "${mc.packageName}@${System.identityHashCode(token)}"
+                lateinit var entry: ObservedController
+                val cb = object : MediaController.Callback() {
+                    override fun onMetadataChanged(metadata: MediaMetadata?) {
+                        if (controller?.sessionToken == token) {
+                            publish()
+                        }
+                    }
+
+                    override fun onPlaybackStateChanged(state: PlaybackState?) {
+                        val nowPlaying = isPlayingState(state?.state)
+                        if (!entry.wasPlaying && nowPlaying) {
+                            entry.lastBecamePlayingSeq = ++seqCounter
+                        }
+                        entry.wasPlaying = nowPlaying
+                        reselectAndEmit()
+                    }
+
+                    override fun onSessionDestroyed() {
+                        observed.remove(token)?.let { removed ->
+                            runCatching { removed.controller.unregisterCallback(removed.callback) }
+                        }
+                        reselectAndEmit()
+                    }
+                }
+                entry = ObservedController(
+                    token = token,
+                    tokenKey = tokenKey,
+                    controller = mc,
+                    callback = cb,
+                    wasPlaying = playingNow,
+                    lastBecamePlayingSeq = initSeq,
+                    listOrderIndex = index,
+                )
+                observed[token] = entry
+                runCatching { mc.registerCallback(cb, main) }
+            } else {
+                existing.listOrderIndex = index
+                if (!existing.wasPlaying && playingNow) {
+                    existing.lastBecamePlayingSeq = ++seqCounter
+                }
+                existing.wasPlaying = playingNow
+            }
+        }
+        initialized = true
+        reselectAndEmit()
+    }
+
+    private fun buildSnapshots(): List<ActiveMediaSessionSelector.SessionSnapshot> =
+        observed.values
+            .sortedBy { it.listOrderIndex }
+            .map { entry ->
+                ActiveMediaSessionSelector.SessionSnapshot(
+                    tokenKey = entry.tokenKey,
+                    packageName = entry.controller.packageName.orEmpty(),
+                    isPlaying = entry.wasPlaying,
+                    lastBecamePlayingSeq = entry.lastBecamePlayingSeq,
+                    listOrderIndex = entry.listOrderIndex,
+                )
+            }
+
+    private fun reselectAndEmit() {
+        val snapshots = buildSnapshots()
         val preferredPkg = com.miplay.sender.CastService.targetPackage
         val isCasting = com.miplay.sender.CastService.running.get()
-        val activelyPlaying = list?.firstOrNull {
-            val st = it.playbackState?.state
-            st == PlaybackState.STATE_PLAYING || st == PlaybackState.STATE_BUFFERING
-        }
-        val preferredSession = list?.firstOrNull {
-            preferredPkg.isNotBlank() && it.packageName == preferredPkg
-        }
-        val next = if (isCasting) {
-            preferredSession ?: activelyPlaying ?: list?.firstOrNull()
-        } else {
-            activelyPlaying ?: preferredSession ?: list?.firstOrNull()
-        }
-        if (next?.sessionToken != controller?.sessionToken) {
-            controller?.unregisterCallback(callback)
-            controller = next
-            next?.registerCallback(callback, main)
+        val chosen = ActiveMediaSessionSelector.selectDisplaySession(
+            sessions = snapshots,
+            preferredPackage = preferredPkg,
+            isCasting = isCasting,
+            selfPackage = context.packageName,
+        )
+        controller = chosen?.let { sel ->
+            observed.values.firstOrNull { it.tokenKey == sel.tokenKey }?.controller
         }
         publish()
+        onSessionsChanged(snapshots)
     }
 
     private fun publish() {

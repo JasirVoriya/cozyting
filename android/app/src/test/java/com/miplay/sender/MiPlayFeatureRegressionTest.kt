@@ -18,6 +18,7 @@ class MiPlayFeatureRegressionTest {
         assertEquals("com.miplay.sender.ADD", CastService.ACTION_ADD)
         assertEquals("com.miplay.sender.REMOVE", CastService.ACTION_REMOVE)
         assertEquals("com.miplay.sender.VOLUME", CastService.ACTION_VOLUME)
+        assertEquals("com.miplay.sender.SWITCH_SOURCE", CastService.ACTION_SWITCH_SOURCE)
     }
 
     @Test

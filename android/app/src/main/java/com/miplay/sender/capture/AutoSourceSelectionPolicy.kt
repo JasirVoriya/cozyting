@@ -3,7 +3,7 @@ package com.miplay.sender.capture
 /**
  * 自动识别当前正在播放音源的纯逻辑策略：
  * 1. 严格限制在用户「常用音源名单」内，且该 App 的独立 `autoDetectEnabled` 开关必须为 true；
- * 2. 仅在待机未投送时自动跟随，投送途中绝不打断正在投送的音源；
+ * 2. 待机与投送中均可自动跟随：投送中仅在新音源主动进入播放态时触发热切换，绝不因暂停会话误切；
  * 3. 避免用户手动切换音源后立刻被后台仍在播放的旧 App 抢回；
  * 4. 命中后仍须经 [CaptureTargetResolver] 完成单 UID + 签名 fail-closed 校验，绝不退化全系统捕获。
  */
@@ -28,7 +28,6 @@ object AutoSourceSelectionPolicy {
 
     fun decide(input: Input): Decision {
         if (!input.globalAutoDetectEnabled) return Decision.Skip("global_disabled")
-        if (input.isCasting) return Decision.Skip("casting_in_progress")
         if (input.sourceMode != "app") return Decision.Skip("non_app_source_mode")
 
         val pkg = input.nowPlayingPackage?.trim().orEmpty()
@@ -43,7 +42,8 @@ object AutoSourceSelectionPolicy {
             return Decision.Skip("manual_override_active")
         }
 
-        val shouldFollow = input.nowPlayingIsPlaying == true || input.currentSelectedPackage.isBlank()
+        val shouldFollow = input.nowPlayingIsPlaying == true ||
+            (!input.isCasting && input.currentSelectedPackage.isBlank())
         if (!shouldFollow) return Decision.Skip("not_actively_playing")
 
         return Decision.AutoSelect(pkg)

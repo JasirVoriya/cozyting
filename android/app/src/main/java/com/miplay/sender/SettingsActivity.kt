@@ -208,7 +208,7 @@ class SettingsActivity : Activity() {
                 context = this,
                 palette = palette,
                 title = "自动识别正在播放的音源",
-                subtitle = "待机时仅从「常用音源」中开启自动识别的 App 自动跟随（需通知使用权）；投送中不打断",
+                subtitle = "自动跟随「常用音源」中开启自动识别且正在播放的 App（需通知使用权，投送中切歌自动热切换）",
                 initialChecked = settingsStore.autoDetectAudioSource,
             ) { checked ->
                 settingsStore.autoDetectAudioSource = checked
