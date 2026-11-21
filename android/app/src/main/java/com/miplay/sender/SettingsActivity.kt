@@ -314,7 +314,7 @@ class SettingsActivity : Activity() {
             setPadding(dp(2), dp(4), 0, dp(8))
             visibility = View.GONE
         }
-        val manualIps = UiComponents.styledEditText(this, palette, "例如 192.0.2.34").apply {
+        val manualIps = UiComponents.styledEditText(this, palette, "例如 192.168.1.100").apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginEnd = dp(8)
             }
@@ -326,7 +326,7 @@ class SettingsActivity : Activity() {
                     .map { it.trim() }
                     .filter { it.matches(Regex("""\d+\.\d+\.\d+\.\d+""")) }
                 if (ips.isEmpty()) {
-                    manualFeedback.text = "请输入合法 IPv4 地址（如 192.0.2.34）"
+                    manualFeedback.text = "请输入合法 IPv4 地址（如 192.168.1.100）"
                     manualFeedback.setTextColor(palette.statusWarning)
                     manualFeedback.visibility = View.VISIBLE
                     return@tonalButton

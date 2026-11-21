@@ -25,7 +25,10 @@ object DevMain {
     fun main(args: Array<String>) {
         val mode = args.getOrElse(0) { "discover" }
         if (mode == "discover") { println("DISCOVER\n" + NativeBridge.discover("0.0.0.0", 3000)); return }
-        val ips = args.getOrElse(1) { "192.0.2.234,192.0.2.34" }
+        val ips = args.getOrNull(1)?.takeIf { it.isNotBlank() } ?: run {
+            println("USAGE: DevMain <mode> <ip1[,ip2,...]> [secs] [ref]")
+            return
+        }
         val secs = args.getOrElse(2) { "20" }.toInt()
         val ref = args.getOrElse(3) { "" }
         val list = ips.split(',')

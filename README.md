@@ -94,7 +94,7 @@ miplay-sender/
 ├── android/            # [L2+L3 Android 端] Kotlin 原生客户端 (:app standard/acceptance) 与三 UID 隔离测试音源 (:testtones)
 ├── cli/                # [工程支撑] 独立终端工具 miplay-cli（discover / 只读 inspect / 投送与故障注入调试）
 ├── scripts/            # [构建流水线] Android debug/release 构建、iOS XCFramework 打包与 16KB 页对齐/签名验收脚本
-└── docs/               # [文档与可视化] 交互式架构浏览器 (architecture.html)、深度手册 (ARCHITECTURE.md)、兼容矩阵与修复日志
+└── docs/               # [文档与可视化] 交互式架构浏览器 (architecture.html)、深度手册 (ARCHITECTURE.md)、兼容矩阵与协议文档
 ```
 
 > 完整的 65+ 源码文件与 19 个 JVM 单测文件职责字典见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#三全仓分层模块与文件职责字典按-l3--l2--ffi--l1--工程支撑展开)**。
@@ -161,7 +161,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 📚 **延伸文档索引**：
 - [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)（[本地 HTML](docs/architecture.html)）
 - [音箱与发送端设备兼容矩阵](docs/COMPATIBILITY.md) · [未测限制与已知缺口](docs/LIMITATIONS.md)
-- [已合入修复日志](docs/修复日志.md) · [当前需求排期与验收条件](docs/待修复需求.md)
+- [更新日志 (CHANGELOG)](CHANGELOG.md) · [本机静音边界](docs/LOCAL_MUTE.md) · [延迟预算模型](docs/LATENCY_BUDGET.md)
 
 ---
 

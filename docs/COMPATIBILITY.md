@@ -38,7 +38,7 @@
 
 | 设备型号 / 平台 | 系统 / ROM | 版本 / API | 冷启动与发现 | 投送实测 | 后台保活 / 备注 |
 | --- | --- | :---: | :---: | :---: | --- |
-| **华为 MAR-AL00 (Android)** | EMUI / HarmonyOS（Android 10） | API 29 | ✅ | ✅ | API 29 冷启动零权限弹窗、模糊降级与 `L17A` 静音投送已核验；`0.9.3` 用户确认可投送；长时后台/多箱真实音乐待进一步验证 |
+| **华为 MAR-AL00 (Android)** | EMUI / HarmonyOS（Android 10） | API 29 | ✅ | ✅ | API 29 冷启动零权限弹窗、模糊降级与 `L17A` 静音投送已核验；`0.9.3`/`0.9.4` 已实测可投送；长时后台/多箱真实音乐待进一步验证 |
 | **Xiaomi / Redmi (Android)** | HyperOS / MIUI | API 31–36 | ⏳ | ⏳ | 需注意 HyperOS Greeze 后台冻结机制，电池优化入口不等于全机型永不杀后台 |
 | **OnePlus / OPPO / realme (Android)** | ColorOS | API 29–36 | ⏳ | ⏳ | 等待社区实测上报 |
 | **vivo / iQOO (Android)** | OriginOS | API 29–36 | ⏳ | ⏳ | 等待社区实测上报 |

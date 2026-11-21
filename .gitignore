@@ -12,3 +12,5 @@ android/app/acceptance.keystore
 android/testtones/build/
 ._*
 .DS_Store
+.local/
+

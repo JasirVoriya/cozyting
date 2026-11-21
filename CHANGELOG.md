@@ -1,6 +1,6 @@
 # 更新日志（Changelog）
 
-本文件面向用户与开发者记录主要版本变更，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。更细粒度的工程验证与提交证据索引见 [docs/修复日志.md](docs/修复日志.md)。
+本文件面向用户与开发者记录主要版本变更，遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 约定。
 
 ---
 

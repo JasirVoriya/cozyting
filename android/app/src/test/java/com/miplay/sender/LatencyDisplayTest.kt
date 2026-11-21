@@ -144,41 +144,41 @@ class LatencyDisplayTest {
 
     @Test
     fun mergeConnectingReceiversAddsLoadingPlaceholderWithoutOverwritingActiveSpeaker() {
-        val initial = """{"receivers":[{"ip":"192.0.2.34","phase":"streaming","latency_e2e_est_ms":925}]}"""
+        val initial = """{"receivers":[{"ip":"192.168.1.10","phase":"streaming","latency_e2e_est_ms":925}]}"""
         val mergedStr = CastService.mergeConnectingReceivers(
             initial,
-            setOf("192.0.2.34", "192.0.2.234"),
+            setOf("192.168.1.10", "192.168.1.11"),
         )
         val merged = JSONObject(mergedStr)
         assertEquals(
             LatencyDisplay.ReceiverIndicator.Value(925),
-            LatencyDisplay.receiverIndicator(merged, "192.0.2.34", selected = true, casting = true),
+            LatencyDisplay.receiverIndicator(merged, "192.168.1.10", selected = true, casting = true),
         )
         assertEquals(
             LatencyDisplay.ReceiverIndicator.Loading,
-            LatencyDisplay.receiverIndicator(merged, "192.0.2.234", selected = true, casting = true),
+            LatencyDisplay.receiverIndicator(merged, "192.168.1.11", selected = true, casting = true),
         )
 
-        val afterRemove = JSONObject(CastService.removeReceiverFromStatsJson(mergedStr, "192.0.2.234"))
+        val afterRemove = JSONObject(CastService.removeReceiverFromStatsJson(mergedStr, "192.168.1.11"))
         assertEquals(
             LatencyDisplay.ReceiverIndicator.Value(925),
-            LatencyDisplay.receiverIndicator(afterRemove, "192.0.2.34", selected = true, casting = true),
+            LatencyDisplay.receiverIndicator(afterRemove, "192.168.1.10", selected = true, casting = true),
         )
         assertEquals(
             LatencyDisplay.ReceiverIndicator.Hidden,
-            LatencyDisplay.receiverIndicator(afterRemove, "192.0.2.234", selected = true, casting = true),
+            LatencyDisplay.receiverIndicator(afterRemove, "192.168.1.11", selected = true, casting = true),
         )
     }
 
     @Test
     fun recordOperationEventRetainsBoundedRecentHistory() {
         CastService.clearRecentEventsForTest()
-        CastService.recordOperationEvent("连接音箱 192.0.2.34")
-        CastService.recordOperationEvent("排队加入 192.0.2.234（等待首台音箱连接完成）")
+        CastService.recordOperationEvent("连接音箱 192.168.1.10")
+        CastService.recordOperationEvent("排队加入 192.168.1.11（等待首台音箱连接完成）")
         val snap = CastService.recentEventsSnapshot()
         assertEquals(2, snap.size)
-        assertTrue(snap[0].contains("连接音箱 192.0.2.34"))
-        assertTrue(snap[1].contains("排队加入 192.0.2.234"))
+        assertTrue(snap[0].contains("连接音箱 192.168.1.10"))
+        assertTrue(snap[1].contains("排队加入 192.168.1.11"))
         CastService.clearRecentEventsForTest()
     }
 
