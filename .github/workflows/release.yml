@@ -19,7 +19,6 @@ jobs:
     name: Build Android APK (arm64-v8a)
     runs-on: ubuntu-latest
     env:
-      NDK_VERSION: "27.2.12479018"
       RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
     steps:
       - name: Checkout repository
@@ -50,11 +49,11 @@ jobs:
         with:
           tool: cargo-ndk
 
-      - name: Install Android API 36 platform, build-tools and NDK
+      - name: Install Android API 36 platform and build-tools
         run: |
           SDKMANAGER="$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
           yes | "${SDKMANAGER}" --licenses >/dev/null || true
-          "${SDKMANAGER}" "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+          "${SDKMANAGER}" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
@@ -76,12 +75,13 @@ jobs:
 
       - name: Build and verify Android APK
         env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
           MIPLAY_RELEASE_STORE_FILE: ${{ steps.signing.outputs.keystore_path }}
           MIPLAY_RELEASE_STORE_PASSWORD: ${{ secrets.MIPLAY_RELEASE_STORE_PASSWORD }}
           MIPLAY_RELEASE_KEY_ALIAS: ${{ secrets.MIPLAY_RELEASE_KEY_ALIAS }}
           MIPLAY_RELEASE_KEY_PASSWORD: ${{ secrets.MIPLAY_RELEASE_KEY_PASSWORD }}
         run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_ROOT:-$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)}"
+          echo "Using ANDROID_NDK_HOME=${ANDROID_NDK_HOME}"
           chmod +x android/gradlew scripts/build-release.sh scripts/verify-acceptance-apk.sh
           ./scripts/build-release.sh
           mkdir -p dist
