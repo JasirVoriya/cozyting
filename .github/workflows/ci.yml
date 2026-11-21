@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -45,10 +45,10 @@ jobs:
       RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -82,7 +82,7 @@ jobs:
           "${READELF}" -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -q '0x4000'
 
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run Android JVM tests, Lint (NewApi fatal) and Debug build
         working-directory: android
@@ -91,7 +91,7 @@ jobs:
           ./gradlew --no-daemon test lintStandardDebug assembleStandardDebug
 
       - name: Upload standard debug APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: miplay-sender-standard-debug-apk
           path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
