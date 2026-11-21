@@ -18,4 +18,4 @@ cargo test --workspace
 cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
 cd android
 ./gradlew --no-daemon test assembleDebug
-echo "APK: $ROOT/android/app/build/outputs/apk/debug/app-debug.apk"
+echo "APK: $ROOT/android/app/build/outputs/apk/standard/debug/app-standard-debug.apk"

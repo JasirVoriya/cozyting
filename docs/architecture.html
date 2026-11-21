@@ -766,9 +766,9 @@
         </div>
       </div>
       <ul class="kpi-row" aria-label="架构核心指标">
-        <li class="kpi-pill"><strong>8</strong> 个架构分层</li>
-        <li class="kpi-pill"><strong>37</strong> 个 Android 主源码</li>
-        <li class="kpi-pill"><strong>22</strong> 个 Rust 核心模块</li>
+        <li class="kpi-pill"><strong>L1–L3</strong> 跨端三层架构</li>
+        <li class="kpi-pill"><strong>41</strong> 个 Android 主源码</li>
+        <li class="kpi-pill"><strong>24</strong> 个 Rust 核心模块</li>
         <li class="kpi-pill"><strong>4</strong> 条数据流 · <strong>Max 63</strong> 并发音箱</li>
       </ul>
     </header>
@@ -778,7 +778,7 @@
         <div class="tablist" role="tablist" focusgroup="tablist nomemory" aria-label="架构视图切换">
           <button type="button" role="tab" id="tab-overview" aria-selected="true" focusgroupstart>1. 整体架构与上下游流向</button>
           <button type="button" role="tab" id="tab-runtime" aria-selected="false">2. 运行时线程与生命周期</button>
-          <button type="button" role="tab" id="tab-files" aria-selected="false">3. L1–L8 全分层文件职责</button>
+          <button type="button" role="tab" id="tab-files" aria-selected="false">3. L1–L3 全分层文件职责</button>
         </div>
         <div class="toolbar-actions">
           <button type="button" class="btn" id="btn-motion" aria-pressed="false">暂停动效</button>
@@ -829,23 +829,23 @@
                   <!-- Left Layer Labels -->
                   <g font-family="var(--font-mono)" font-size="11" font-weight="700">
                     <rect x="16" y="18" width="4" height="114" rx="2" fill="#38bdf8"/>
-                    <text x="30" y="52" fill="#7dd3fc">L1 · UI 层</text>
-                    <text x="30" y="72" fill="#94a3b8" font-size="10" font-weight="400">表现与交互</text>
+                    <text x="30" y="52" fill="#7dd3fc">L3 · 表现层</text>
+                    <text x="30" y="72" fill="#94a3b8" font-size="10" font-weight="400">原生 UI/共享设计</text>
 
                     <rect x="16" y="162" width="4" height="122" rx="2" fill="#818cf8"/>
-                    <text x="30" y="200" fill="#a5b4fc">L2–L4</text>
+                    <text x="30" y="200" fill="#a5b4fc">L2 · 系统层</text>
                     <text x="30" y="220" fill="#94a3b8" font-size="10" font-weight="400">服务/捕获/兼容</text>
 
                     <rect x="16" y="316" width="4" height="54" rx="2" fill="#22d3ee"/>
-                    <text x="30" y="347" fill="#e0f2fe">L5 · JNI</text>
+                    <text x="30" y="347" fill="#e0f2fe">FFI · 桥接层</text>
 
                     <rect x="16" y="402" width="4" height="140" rx="2" fill="#fb923c"/>
-                    <text x="30" y="446" fill="#fdba74">L6 · RUST</text>
-                    <text x="30" y="466" fill="#94a3b8" font-size="10" font-weight="400">协议/同步核心</text>
+                    <text x="30" y="446" fill="#fdba74">L1 · 核心层</text>
+                    <text x="30" y="466" fill="#94a3b8" font-size="10" font-weight="400">Rust 协议/同步</text>
 
                     <rect x="16" y="592" width="4" height="148" rx="2" fill="#34d399"/>
-                    <text x="30" y="644" fill="#6ee7b7">LAN &amp; L7</text>
-                    <text x="30" y="664" fill="#94a3b8" font-size="10" font-weight="400">音箱集群/工具</text>
+                    <text x="30" y="644" fill="#6ee7b7">LAN &amp; 工具</text>
+                    <text x="30" y="664" fill="#94a3b8" font-size="10" font-weight="400">音箱集群/验收</text>
                   </g>
 
                   <!-- Edges Layer (populated by JS from canonical DAG) -->
@@ -953,7 +953,7 @@
 
             <div tabindex="0" role="region" aria-labelledby="files-table-caption" class="table-wrapper">
               <table class="file-table">
-                <caption id="files-table-caption">全仓 L1–L8 分层文件与核心职责清单（共 <span id="file-count">0</span> 项）</caption>
+                <caption id="files-table-caption">全仓 L1–L3 分层文件与核心职责清单（共 <span id="file-count">0</span> 项）</caption>
                 <thead>
                   <tr>
                     <th scope="col">架构层</th>
@@ -990,58 +990,58 @@
 
       /* ==================== 1. OVERVIEW DAG DATA ==================== */
       const OV_NODES = [
-        // Band 1: L1
-        { id: "src_app", layer: "L1 · 上游音源", title: "目标音频 App", sub: "USAGE_MEDIA / GAME", x: 138, y: 32, w: 184, h: 84,
-          desc: "用户选定的单一第三方音频应用（如音乐/播客 App），向 Android AudioFlinger 输出 PCM 并发布 MediaSession 元数据。",
+        // Band 1: L3 Presentation & Design
+        { id: "src_app", layer: "L3 · 上游音源", title: "目标音频 App", sub: "USAGE_MEDIA / GAME", x: 138, y: 32, w: 184, h: 84,
+          desc: "用户选定的单一第三方音频应用（如音乐/播客 App），向系统音频层输出 PCM 并发布 MediaSession 元数据。",
           files: ["android/.../capture/LaunchableAppCatalog.kt"] },
-        { id: "main_ui", layer: "L1 · UI 面板", title: "MainActivity 主面板", sub: "本机/音箱互斥 · 1Hz ms", x: 344, y: 32, w: 222, h: 84,
-          desc: "展示正在播放信息、设备列表与行内整数 ms 延迟/加载转圈；管理音量条、认证模式与 MediaProjection 授权发起。",
-          files: ["android/.../MainActivity.kt", "android/.../LatencyDisplay.kt", "android/.../AuthModeResolve.kt"] },
-        { id: "app_picker", layer: "L1 · 音源选择", title: "AppPickerActivity", sub: "MAIN/LAUNCHER · 签摘要", x: 588, y: 32, w: 204, h: 84,
-          desc: "基于 <queries> 枚举同用户可启动应用（不申请 QUERY_ALL_PACKAGES），只持久化包名与签名摘要，绝不持久化 UID。",
+        { id: "main_ui", layer: "L3 · 原生 UI 与设计", title: "MainActivity / Settings", sub: "design/ · 明暗主题 · 1Hz ms", x: 344, y: 32, w: 222, h: 84,
+          desc: "基于跨端 design/ 规范构建明暗双主题界面；展示正在播放信息、设备列表与行内整数 ms 延迟/加载转圈；管理音量百分比与设置。",
+          files: ["design/tokens.json", "android/.../MainActivity.kt", "android/.../SettingsActivity.kt", "android/.../ui/ThemeMode.kt", "android/.../LatencyDisplay.kt"] },
+        { id: "app_picker", layer: "L3 · 音源选择", title: "AppPickerActivity", sub: "MAIN/LAUNCHER · 签摘要", x: 588, y: 32, w: 204, h: 84,
+          desc: "基于 <queries> 枚举同用户可启动应用（不申请 QUERY_ALL_PACKAGES），LruCache 异步加载图标，只持久化包名与签名摘要，绝不持久化 UID。",
           files: ["android/.../AppPickerActivity.kt", "android/.../capture/AndroidLaunchableApps.kt", "android/.../capture/PrefsTargetAppStore.kt"] },
-        { id: "now_playing", layer: "L1 · 媒体元数据", title: "NowPlaying 监听栈", sub: "MediaSession 播控", x: 814, y: 32, w: 210, h: 84,
+        { id: "now_playing", layer: "L3/L2 · 媒体元数据", title: "NowPlaying 监听栈", sub: "MediaSession 播控", x: 814, y: 32, w: 210, h: 84,
           desc: "通过系统通知使用权读取当前播放曲目/艺人/封面/进度，并将播放/暂停/切歌/拖拽转发到源 App 的 TransportControls。",
           files: ["android/.../NowPlayingNotificationListener.kt", "android/.../cast/NowPlayingTracker.kt", "android/.../cast/NowPlayingInfo.kt"] },
 
-        // Band 2: L2-L4
-        { id: "capture", layer: "L3 · 严格 UID 捕获", title: "UID 捕获与探针", sub: "fail-closed · AudioRecord", x: 138, y: 176, w: 206, h: 94,
+        // Band 2: L2 Platform System Layer
+        { id: "capture", layer: "L2 · 严格 UID 捕获", title: "UID 捕获与探针", sub: "fail-closed · AudioRecord", x: 138, y: 176, w: 206, h: 94,
           desc: "启动前实时校验包存在性/同用户/非共享 UID/签名一致；构建严格单 UID AudioPlaybackCapture（4×4096B≈85ms 环缓）并由 PcmProbe 计算 RMS 与 Goertzel 频谱。",
           files: ["android/.../capture/CaptureTargetResolver.kt", "android/.../capture/PlaybackCaptureFactory.kt", "android/.../capture/ProjectionSessionPolicy.kt", "android/.../capture/PcmProbe.kt"] },
         { id: "encoder", layer: "L2 · 音频编码", title: "AacEncoder", sub: "MediaCodec 48k 256kbps", x: 366, y: 176, w: 174, h: 94,
           desc: "封装 Android MediaCodec，将 48kHz 立体声 16-bit PCM 编码为 256kbps 裸 AAC-LC AU（每 1024 采样 21.333ms，不含 ADTS 头）。",
           files: ["android/.../AacEncoder.kt"] },
-        { id: "cast_svc", layer: "L2 · 前台服务", title: "CastService 协调器", sub: "FGS · triggerReconcile", x: 562, y: 176, w: 232, h: 94,
-          desc: "持有 mediaProjection|mediaPlayback 前台服务与 Wake/WifiLock；通过串行协调队列处理建连期并发点选与延迟音量；1Hz 拉取统计并轮转写 cast_ops.log。",
+        { id: "cast_svc", layer: "L2 · 前台服务", title: "CastService 服务层", sub: "FGS · 委托 Rust Engine", x: 562, y: 176, w: 232, h: 94,
+          desc: "持有 mediaProjection|mediaPlayback 前台服务与 Wake/WifiLock；将目标接收端集合与音量委托给 L1 Rust Engine 串行协调；1Hz 拉取统计并轮转写 cast_ops.log。",
           files: ["android/.../CastService.kt"] },
-        { id: "cast_compat", layer: "L2/L4 · 状态与兼容", title: "路由 · 静音 · 兼容层", sub: "6 拍锁定 · API 29–36", x: 816, y: 176, w: 208, h: 94,
-          desc: "CastRouteSelection 负责互斥路由与非 MiPlay 节点过滤；LocalOutputMute 6 拍有声锁定防切歌双出声；compat/* 隔离 API 29–36 毛玻璃/Insets/权限差异。",
+        { id: "cast_compat", layer: "L2 · 静音与兼容", title: "路由 · 静音 · 兼容层", sub: "6 拍锁定 · API 29–36", x: 816, y: 176, w: 208, h: 94,
+          desc: "CastRouteSelection 对接 L1 设备目录；LocalOutputMute 6 拍有声锁定防切歌双出声；compat/* 隔离 API 29–36 毛玻璃/Insets/权限差异。",
           files: ["android/.../cast/CastRouteSelection.kt", "android/.../cast/LocalOutputMute.kt", "android/.../compat/BlurCompat.kt", "android/.../compat/NotificationPermissionCompat.kt"] },
 
-        // Band 3: L5 JNI
-        { id: "jni", layer: "L5 · 跨语言桥接", title: "JNI Bridge (NativeBridge ⇄ core/src/ffi.rs)", sub: "ENGINES 句柄表 · pushAac(cap=96) · connect / add / remove / discover / stats / stop", x: 138, y: 322, w: 886, h: 42,
-          desc: "通过 libmiplay_sender_core.so 连接 Kotlin 与 Rust；维护全局 Engine 句柄映射与 96 AU（≈2s）有界喂入队列，stop() 先释放 feed 防死锁。",
-          files: ["android/.../NativeBridge.kt", "core/src/ffi.rs"] },
+        // Band 3: FFI Bridge
+        { id: "jni", layer: "FFI · 跨语言桥接", title: "FFI Bridge (Android JNI ffi.rs · iOS C ABI ffi_c.rs / miplay_core.h)", sub: "薄参数转发 → core::engine & device_catalog · 16KB ELF .so / .xcframework", x: 138, y: 322, w: 886, h: 42,
+          desc: "薄跨语言插头：Android 通过 JNI (.so) 连接 Kotlin，iOS 通过 C ABI (miplay_core.h / .xcframework) 连接 Swift，统一委托给 L1 core::engine 与 device_catalog。",
+          files: ["android/.../NativeBridge.kt", "core/src/ffi.rs", "core/src/ffi_c.rs", "core/include/miplay_core.h"] },
 
-        // Band 4: L6 Rust Core
-        { id: "session", layer: "L6 · 组会话与时间线", title: "session · timeline · clock", sub: "OffsetBarrier · media-clock", x: 138, y: 418, w: 214, h: 108,
-          desc: "多音箱核心调度：在 OffsetBarrier 先冲刷连接期积压 AU 再预读 14 AU 定共享 TIME_OFFSET；单线程推进共享 90kHz PTS / 27MHz PCR；supervisor 负责 15s 看门狗与指数退避重连。",
-          files: ["core/src/session.rs", "core/src/timeline.rs", "core/src/clock.rs", "core/src/latency.rs", "core/src/group.rs"] },
-        { id: "media_pipe", layer: "L6 · 媒体封装", title: "media/* 打包管道", sub: "ADTS → PES → TS → RTP", x: 372, y: 418, w: 194, h: 108,
+        // Band 4: L1 Rust Core
+        { id: "session", layer: "L1 · 协调引擎与会话", title: "engine · session · timeline", sub: "Coordinator · OffsetBarrier", x: 138, y: 418, w: 214, h: 108,
+          desc: "L1 核心调度：engine 串行协调多箱并发加减与延迟音量；session 在 OffsetBarrier 冲刷积压并预读 14 AU 定共享 TIME_OFFSET；单线程推进共享 PTS/PCR 与 15s 看门狗重连。",
+          files: ["core/src/engine.rs", "core/src/session.rs", "core/src/timeline.rs", "core/src/clock.rs", "core/src/latency.rs", "core/src/group.rs"] },
+        { id: "media_pipe", layer: "L1 · 媒体封装", title: "media/* 打包管道", sub: "ADTS → PES → TS → RTP", x: 372, y: 418, w: 194, h: 108,
           desc: "每台接收端持有独立 Packetizer（独立 RTP 序号与 TS 连续计数）：封装 7B ADTS、PES(0xC0)、188B MPEG-TS（定期插 PAT/PMT/PCR）、RTP(PT=33) 及 $+24bit TCP 线帧。",
           files: ["core/src/media/mod.rs", "core/src/media/adts.rs", "core/src/media/mpegts.rs", "core/src/media/rtp.rs"] },
-        { id: "ctrl_auth", layer: "L6 · 控制与安全", title: "control · auth/*", sub: "TCP 8899 · Legacy / Safety", x: 586, y: 418, w: 204, h: 108,
+        { id: "ctrl_auth", layer: "L1 · 控制与安全", title: "control · auth/*", sub: "TCP 8899 · Legacy / Safety", x: 586, y: 418, w: 204, h: 108,
           desc: "管理每台音箱独立的 8899 控制连接：支持 Legacy(HMAC-SHA1) 与 Safety(双向 HMAC + 双向链式 AES-128-CBC) 认证、Open/音量/暂停/双 Resume/心跳及无 CLOSE 只读 inspect。",
           files: ["core/src/control.rs", "core/src/auth/mod.rs", "core/src/auth/legacy.rs", "core/src/auth/safety.rs", "core/src/frame.rs", "core/src/commands.rs", "core/src/inspect.rs"] },
-        { id: "disc_rtsp", layer: "L6 · 发现/RTSP/时钟", title: "discovery · rtsp · timer", sub: "mDNS · WFD · UDP 时钟主", x: 810, y: 418, w: 214, h: 108,
-          desc: "mDNS 组播浏览 _mi-connect 与 _lyra-mdns；WFD SourceRtsp 反向服务端完成 M1–M5/SETUP/PLAY 与 TIME_OFFSET 下发；UDP TimerServer 为集群提供 40B 单调时钟对齐。",
-          files: ["core/src/discovery.rs", "core/src/rtsp.rs", "core/src/clock_sync.rs", "core/src/netinfo.rs"] },
+        { id: "disc_rtsp", layer: "L1 · 发现/目录/时钟", title: "discovery · catalog · rtsp", sub: "mDNS · 路由目录 · WFD · 时钟", x: 810, y: 418, w: 214, h: 108,
+          desc: "mDNS 组播浏览与 device_catalog 设备过滤/缓存合并/互斥路由；WFD SourceRtsp 反向服务端完成 M1–M5/SETUP/PLAY 与 TIME_OFFSET 下发；UDP TimerServer 提供 40B 单调时钟对齐。",
+          files: ["core/src/device_catalog.rs", "core/src/discovery.rs", "core/src/rtsp.rs", "core/src/clock_sync.rs", "core/src/netinfo.rs"] },
 
         // Band 5: LAN Receivers & Tools
         { id: "lan_speakers", layer: "LAN · 接收端集群", title: "局域网音箱与可投 TV 集群 (1..63 台)", sub: "TCP 8899 控制 · 反向 RTSP/Aux/Audio · UDP 时钟从端 · 共享 TIME_OFFSET", x: 138, y: 612, w: 618, h: 108,
           desc: "支持 L17A / LX06 等智能音箱与合法 MiPlay 电视并行多选；同组设备共享完全一致的 AAC 帧序列、PTS 与 TIME_OFFSET，支持播放中途动态加减设备与断线自动恢复。",
           files: ["协议端口：UDP 5353 / TCP 8899 / 3×反向 TCP / UDP Timer"] },
-        { id: "aux_tools", layer: "L7–L8 · 调试与验收", title: "CLI / 探针 / testtones", sub: "miplay-cli · DevMain · A/B/deny", x: 778, y: 612, w: 246, h: 108,
+        { id: "aux_tools", layer: "工程支撑 · 调试与验收", title: "CLI / 探针 / testtones", sub: "miplay-cli · DevMain · A/B/deny", x: 778, y: 612, w: 246, h: 108,
           desc: "独立命令行诊断工具 miplay-cli（含不发 CLOSE 的 inspect）、免安装 app_process 调试入口 DevMain、acceptance 本地过滤探针服务及三枚受控正弦测试音源 APK。",
           files: ["cli/src/main.rs", "android/.../DevMain.kt", "android/.../LocalFilterProbeService.kt", "android/testtones/.../ToneService.kt"] }
       ];
@@ -1077,7 +1077,7 @@
       const RT_NODES = [
         { id: "rt_ui", x: 46, y: 88, w: 196, h: 118, title: "Main Thread (UI)", sub: "1Hz refreshLoop · 路由状态", accent: "#38bdf8" },
         { id: "rt_cap", x: 262, y: 88, w: 204, h: 118, title: "capture (MAX_PRIO)", sub: "AudioRecord · PcmProbe · AAC", accent: "#22d3ee" },
-        { id: "rt_rec", x: 486, y: 88, w: 192, h: 118, title: "cast-start / reconcile", sub: "routeLock 串行增删与音量", accent: "#fbbf24" },
+        { id: "rt_rec", x: 486, y: 88, w: 192, h: 118, title: "cast-start / reconcile", sub: "委托 Rust Engine 串行协调", accent: "#fbbf24" },
 
         { id: "rt_clk", x: 46, y: 356, w: 214, h: 116, title: "media-clock 线程", sub: "OffsetBarrier · 21.333ms 节拍", accent: "#22d3ee" },
         { id: "rt_sup", x: 46, y: 492, w: 214, h: 118, title: "supervisor + EPOCH", sub: "15s 看门狗 · 2→30s 重连", accent: "#fbbf24" },
@@ -1176,94 +1176,106 @@
         }
       ];
 
-      /* ==================== 3. FULL L1-L8 FILE INVENTORY ==================== */
+      /* ==================== 3. FULL L1-L3 FILE INVENTORY ==================== */
       const FILES_DATA = [
-        // L1
-        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/MainActivity.kt", "主界面面板：设备路由多选互斥、NowPlaying 展示、1Hz 原位刷新设备行内延迟、音量与高级设置"],
-        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/AppPickerActivity.kt", "音源 App 选择器：最近使用与推荐音乐分组、搜索过滤、校验并保存目标包名与签名摘要"],
-        ["L1 · UI", "android/app/src/main/java/com/miplay/sender/NowPlayingNotificationListener.kt", "声明 NotificationListenerService 以合法获取 MediaSessionManager 活跃会话（不读取上传通知正文）"],
-        ["L1 · UI", "android/app/src/main/AndroidManifest.xml", "主清单：权限最小化（无 QUERY_ALL_PACKAGES）、MAIN/LAUNCHER <queries> 与 FGS 类型声明"],
-        ["L1 · UI", "android/app/src/acceptance/AndroidManifest.xml", "acceptance 变体叠加清单：仅在验收包注册 LocalFilterProbeService"],
-        ["L1 · UI", "android/app/src/main/res/values/strings.xml", "正式包应用名称资源（acceptance 变体另有独立 strings.xml）"],
-        ["L1 · UI", "android/app/src/main/res/drawable/ic_protocol_*.xml", "4 枚协议矢量徽标资源（miplay / dlna / airplay / gcast）"],
+        // L3 Shared Design & Native UI
+        ["L3 · 共享设计", "design/tokens.json", "跨端共享设计令牌（明暗双主题语义色板、圆角 24/16/12/999、字号层级与间距规范），供 Android 与 iOS 共用"],
+        ["L3 · 共享设计", "design/UI_SPEC.md", "跨端 UI 结构与交互规范（顶栏、正在播放、平台音源槽位、输出设备列表 4 段式布局）"],
+        ["L3 · 共享设计", "design/icons/*.svg", "20 枚 24×24 统一线宽跨端矢量图标源文件（播控、音箱/手机/电视、明暗主题、搜索、导航等）"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/MainActivity.kt", "Android 主界面面板：顶栏状态胶囊与明暗快切、NowPlaying 展示、1Hz 原位增量刷新设备行内延迟与转圈、音量百分比与投影授权"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/AppPickerActivity.kt", "音源 App 选择器：最近使用与推荐音乐分组、搜索过滤、LruCache 异步图标加载，校验并保存目标包名与签名摘要"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/SettingsActivity.kt", "独立设置页：外观主题三段切换（跟随系统/浅色/深色）、权限实时状态与本机静音策略开关、折叠式连接与调试参数"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/ui/ThemeMode.kt", "主题模式枚举（SYSTEM / LIGHT / DARK）、持久化读写与当前夜间模式判定"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/ui/UiPalette.kt", "对齐 design/tokens.json 的 Android 明暗双主题语义调色板"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/ui/UiComponents.kt", "纯代码通用 UI 组件库：圆角卡片、按压 Ripple、细轨道定制滑块、分段选择器与自适应输入框"],
+        ["L3 · 原生 UI", "android/app/src/main/java/com/miplay/sender/NowPlayingNotificationListener.kt", "声明 NotificationListenerService 以合法获取 MediaSessionManager 活跃会话（不读取上传通知正文）"],
+        ["L3 · 原生 UI", "android/app/src/main/AndroidManifest.xml", "主清单：权限最小化（无 QUERY_ALL_PACKAGES）、MAIN/LAUNCHER <queries> 与 FGS 类型声明"],
+        ["L3 · 原生 UI", "android/app/src/acceptance/AndroidManifest.xml", "acceptance 变体叠加清单：仅在验收包注册 LocalFilterProbeService"],
+        ["L3 · 原生 UI", "android/app/src/main/res/values(-night)/themes.xml", "DayNight 无 ActionBar 基础主题与状态栏/导航栏底色配置"],
+        ["L3 · 原生 UI", "android/app/src/main/res/drawable/ic_ui_*.xml", "由 design/icons/*.svg 转译的 20 枚 Android 页面内 VectorDrawable 图标"],
+        ["L3 · 原生 UI", "android/app/src/main/res/drawable/ic_protocol_*.xml", "4 枚协议矢量徽标资源（miplay / dlna / airplay / gcast）"],
 
-        // L2
-        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/CastService.kt", "核心前台服务：FGS 生命周期、UID 捕获与编码循环、routeLock 串行接收端协调器、1Hz 统计轮询与 cast_ops.log 持久化"],
-        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/AacEncoder.kt", "MediaCodec 硬件 AAC-LC 编码封装（48kHz 立体声 256kbps，产出裸 AU）"],
-        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/LatencyDisplay.kt", "延迟 JSON 解析与设备行指示器状态机（Value / Loading / Hidden），拒绝畸形值与假 0"],
-        ["L2 · 服务", "android/app/src/main/java/com/miplay/sender/AuthModeResolve.kt", "将 UI 下拉选项与自动化 Intent 解析为 JNI 认证模式（0=auto / 1=legacy / 2=safety）"],
-        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/CastRouteSelection.kt", "纯函数路由状态机：This device 与多音箱/电视互斥、6 列发现解析、非 MiPlay 节点默认过滤与缓存合并"],
-        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/CastProtocol.kt", "投送协议枚举与 castImplemented 门禁（防止未实现协议假装投送成功）"],
-        ["L2 · 路由", "android/app/src/main/java/com/miplay/sender/cast/ProtocolBadge.kt", "协议枚举到矢量图标/配色/无障碍文案的绑定器"],
-        ["L2 · 静音", "android/app/src/main/java/com/miplay/sender/cast/LocalOutputMute.kt", "本机 STREAM_MUSIC 静音探针状态机：支持双策略、6 拍有声验证锁定（修复切歌双出声）与外部解除检测"],
-        ["L2 · 静音", "android/app/src/main/java/com/miplay/sender/cast/AndroidStreamMusicVolume.kt", "AudioManager 适配层（强制通过已附加 Context 构造，避免 Service 构造期 NPE）"],
-        ["L2 · 媒体", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingTracker.kt", "订阅源 App MediaController 回调，提取封面/标题/进度并代理播控指令"],
-        ["L2 · 媒体", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingInfo.kt", "正在播放不可变数据模型与诚实占位格式化（禁止伪造曲目）"],
-        ["L2 · 存储", "android/app/src/main/java/com/miplay/sender/cast/PrefsDiscoveredDeviceStore.kt", "SharedPreferences 缓存常驻可投设备（上限 16 台），防止单次 mDNS 丢包导致列表闪烁"],
+        // L2 Service, Route, Mute & Media
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/CastService.kt", "核心前台服务：FGS 生命周期、UID 捕获与编码循环、委托 L1 Rust Engine 串行协调接收端、1Hz 统计轮询与 cast_ops.log 持久化"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/AacEncoder.kt", "MediaCodec 硬件 AAC-LC 编码封装（48kHz 立体声 256kbps，产出裸 AU）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/LatencyDisplay.kt", "优先消费 L1 Rust 归一化的 ui_state / display_latency_ms，驱动设备行指示器状态机（Value / Loading / Hidden）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/AuthModeResolve.kt", "将 UI 选项与自动化 Intent 解析为认证模式（0=auto / 1=legacy / 2=safety）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/CastRouteSelection.kt", "路由与设备发现 Kotlin 模型封装（与 L1 device_catalog.rs 对齐）：This device 与多音箱/电视互斥、6 列发现解析与缓存合并"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/CastProtocol.kt", "投送协议枚举与 castImplemented 门禁（防止未实现协议假装投送成功）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/ProtocolBadge.kt", "协议枚举到矢量图标/配色/无障碍文案的绑定器"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/LocalOutputMute.kt", "本机 STREAM_MUSIC 静音探针状态机：支持双策略、6 拍有声验证锁定（修复切歌双出声）与外部解除检测"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/AndroidStreamMusicVolume.kt", "AudioManager 适配层（强制通过已附加 Context 构造，避免 Service 构造期 NPE）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingTracker.kt", "订阅源 App MediaController 回调，提取封面/标题/进度并代理播控指令"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/NowPlayingInfo.kt", "正在播放不可变数据模型与诚实占位格式化（禁止伪造曲目）"],
+        ["L2 · 服务与路由", "android/app/src/main/java/com/miplay/sender/cast/PrefsDiscoveredDeviceStore.kt", "SharedPreferences 缓存常驻可投设备（上限 16 台），防止单次 mDNS 丢包导致列表闪烁"],
 
-        // L3
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureModels.kt", "目标包身份快照、解析结果（Ok / Fail）与持久化选择接口定义"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureTargetResolver.kt", "严格单 App 解析器：校验卸载/不可见/共享 UID/跨用户/签名变更，一律 fail-closed"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidPackageIdentityLookup.kt", "基于 PackageManager 实时查询 UID、同用户判定、sharedUserId 与 SHA-256 签名摘要"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureConfigSpec.kt", "捕获规格校验器：强制非空合法 UID + USAGE_MEDIA/GAME/UNKNOWN 白名单"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PlaybackCaptureFactory.kt", "唯一合法 AudioPlaybackCaptureConfiguration 构建入口，杜绝退化为全系统捕获"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/ProjectionSessionPolicy.kt", "Android 14+ MediaProjection 单次授权与停止清理顺序策略（可单测锁定）"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/LaunchableAppCatalog.kt", "可启动应用排序、主流音乐应用推荐识别与主面板快捷切换候选计算"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidLaunchableApps.kt", "经 MAIN/LAUNCHER Intent 查询系统可启动应用列表与图标加载"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PrefsTargetAppStore.kt", "SharedPreferences 持久化选中包名、标签、签名摘要与最近使用列表（绝不存 UID）"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/InMemoryTargetAppStore.kt", "JVM 单元测试与内存态目标应用存储实现"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/PcmProbe.kt", "s16le 立体声数字域探针：计算 RMS/峰值 + Goertzel 1kHz/2kHz 目标频点能量"],
-        ["L3 · 捕获", "android/app/src/main/java/com/miplay/sender/capture/LocalFilterAcceptanceGate.kt", "验收本地过滤门禁：保证无音箱可跑本地探针且绝不触发任何 MiPlay 网络调用"],
+        // L2 Single-App Capture
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureModels.kt", "目标包身份快照、解析结果（Ok / Fail）与持久化选择接口定义"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureTargetResolver.kt", "严格单 App 解析器：校验卸载/不可见/共享 UID/跨用户/签名变更，一律 fail-closed"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidPackageIdentityLookup.kt", "基于 PackageManager 实时查询 UID、同用户判定、sharedUserId 与 SHA-256 签名摘要"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/CaptureConfigSpec.kt", "捕获规格校验器：强制非空合法 UID + USAGE_MEDIA/GAME/UNKNOWN 白名单"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/PlaybackCaptureFactory.kt", "唯一合法 AudioPlaybackCaptureConfiguration 构建入口，杜绝退化为全系统捕获"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/ProjectionSessionPolicy.kt", "Android 14+ MediaProjection 单次授权与停止清理顺序策略（可单测锁定）"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/LaunchableAppCatalog.kt", "可启动应用排序、主流音乐应用推荐识别与主面板快捷切换候选计算"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/AndroidLaunchableApps.kt", "经 MAIN/LAUNCHER Intent 查询系统可启动应用列表与图标加载"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/PrefsTargetAppStore.kt", "SharedPreferences 持久化选中包名、标签、签名摘要与最近使用列表（绝不存 UID）"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/InMemoryTargetAppStore.kt", "JVM 单元测试与内存态目标应用存储实现"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/PcmProbe.kt", "s16le 立体声数字域探针：计算 RMS/峰值 + Goertzel 1kHz/2kHz 目标频点能量"],
+        ["L2 · 单 App 捕获", "android/app/src/main/java/com/miplay/sender/capture/LocalFilterAcceptanceGate.kt", "验收本地过滤门禁：保证无音箱可跑本地探针且绝不触发任何 MiPlay 网络调用"],
 
-        // L4
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurCompat.kt", "背景毛玻璃兼容调度：API 31+ 委派 RenderEffect，API 29–30 降级为压暗叠色"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurEffectApi31.kt", "隔离 API 31 RenderEffect 类引用，避免 Android 10 类校验异常"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/WindowInsetsApplyCompat.kt", "统一使用 AndroidX WindowInsetsCompat 适配状态栏/导航栏/刘海（替代 API 30+ 原生 API）"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/NotificationPermissionCompat.kt", "隔离 API 33+ POST_NOTIFICATIONS 运行时申请，确保 API 29–32 冷启动零弹窗"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/PackageSigningCompat.kt", "使用 API 28+ GET_SIGNING_CERTIFICATES 兼容读取 APK 签名证书"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/CaptureSelectionLayers.kt", "统一“App 选择器 UID vs 系统投影授权框”两层边界说明文案与日志"],
-        ["L4 · 兼容", "android/app/src/main/java/com/miplay/sender/compat/AcceptanceAudioDefaults.kt", "区分正式包与验收包默认初始音箱音量（30% vs 0%）与停止后本机音量恢复策略"],
+        // L2 API 29-36 Compat
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurCompat.kt", "背景毛玻璃兼容调度：API 31+ 委派 RenderEffect，API 29–30 降级为明暗主题自适应叠色"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/BlurEffectApi31.kt", "隔离 API 31 RenderEffect 类引用，避免 Android 10 类校验异常"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/WindowInsetsApplyCompat.kt", "统一使用 AndroidX WindowInsetsCompat 与 WindowInsetsControllerCompat 适配状态栏/导航栏与明暗反色"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/NotificationPermissionCompat.kt", "隔离 API 33+ POST_NOTIFICATIONS 运行时申请，确保 API 29–32 冷启动零弹窗"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/PackageSigningCompat.kt", "使用 API 28+ GET_SIGNING_CERTIFICATES 兼容读取 APK 签名证书"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/CaptureSelectionLayers.kt", "统一“App 选择器 UID vs 系统投影授权框”两层边界说明文案与日志"],
+        ["L2 · 系统兼容", "android/app/src/main/java/com/miplay/sender/compat/AcceptanceAudioDefaults.kt", "区分正式包与验收包默认初始音箱音量（30% vs 0%）与停止后本机音量恢复策略"],
 
-        // L5
-        ["L5 · JNI", "android/app/src/main/java/com/miplay/sender/NativeBridge.kt", "Kotlin 侧 external 声明与 .so 加载入口（支持 -Dmiplay.lib 供 app_process 调试）"],
-        ["L5 · JNI", "core/src/ffi.rs", "Rust JNI 导出实现：全局 Engine 注册表、sync_channel(96) 音频喂入、会话控制与无死锁停止"],
+        // FFI Bridge
+        ["FFI · 跨语言桥接", "android/app/src/main/java/com/miplay/sender/NativeBridge.kt", "Kotlin 侧 external 声明与 .so 加载入口（支持 -Dmiplay.lib 供 app_process 调试）"],
+        ["FFI · 跨语言桥接", "core/src/ffi.rs", "Android JNI 薄导出层：仅做 JVM 类型转换，全部会话、协调与设备目录逻辑委托给 core::engine 与 device_catalog"],
+        ["FFI · 跨语言桥接", "core/src/ffi_c.rs", "iOS / 跨平台 C ABI 薄导出层：导出 18 个 miplay_* C 函数与 miplay_string_free 内存释放入口"],
+        ["FFI · 跨语言桥接", "core/include/miplay_core.h / module.modulemap", "标准 C11 头文件与 Clang Module 映射定义（打包进 MiPlayCore.xcframework 供 Swift 直接 import）"],
 
-        // L6
-        ["L6 · Rust", "core/src/lib.rs", "miplay-sender-core 模块总入口与统一 Error / Result 定义"],
-        ["L6 · Rust", "core/src/discovery.rs", "mDNS 组播（224.0.0.251:5353）PTR 构造与响应解析、同 IP 优先级合并及 6 列 TSV 输出"],
-        ["L6 · Rust", "core/src/netinfo.rs", "Wi-Fi 频段探测与播放缓冲延迟策略（≥4900MHz 5GHz→800ms，其它→1000ms）"],
-        ["L6 · Rust", "core/src/clock.rs", "进程内统一单调微秒时钟 EPOCH（CLOCK_MONOTONIC），供计时器/TIME_OFFSET/PCR 共用"],
-        ["L6 · Rust", "core/src/clock_sync.rs", "UDP TimerServer 时钟主：40B 小端时间戳应答，供接收端计算时钟偏移与频偏"],
-        ["L6 · Rust", "core/src/commands.rs", "TCP 8899 控制命令号全集（0x00xx 基础控制/媒体命令与 0x14xx Safety 命名空间）"],
-        ["L6 · Rust", "core/src/frame.rs", "$ 帧编解码（9B 帧头）、5B 标量、4B 音量、NOTIFY 与 GetDeviceInfo TLV 解析"],
-        ["L6 · Rust", "core/src/auth/mod.rs", "8899 认证链路枚举定义（LegacyClear vs Safety，两条链路不可混用）"],
-        ["L6 · Rust", "core/src/auth/legacy.rs", "旧式明文认证（0x0028 数字挑战 → 0x0029 MD5(\"0.0.0.0\") HMAC-SHA1 应答）"],
-        ["L6 · Rust", "core/src/auth/safety.rs", "现代 SafetyAuth / SafetyData：端点派钥、OPack 包装、双向 HMAC 互验与双向链式 AES-128-CBC 加密"],
-        ["L6 · Rust", "core/src/control.rs", "ControlSession 与 RuntimeWriter：8899 引导、Safety 握手、preparePlayback、Open、心跳、音量、暂停与双 Resume"],
-        ["L6 · Rust", "core/src/rtsp.rs", "WFD RTSP 服务端（SourceRtsp）：反向建连 M1–M5 能力协商、SETUP/PLAY、TIME_OFFSET 下发与运行期保活"],
-        ["L6 · Rust", "core/src/timeline.rs", "SharedTimeline（单调前向修正 90kHz PTS / 27MHz PCR 与暂停重锚）与 SharedTimeOffset"],
-        ["L6 · Rust", "core/src/latency.rs", "发送端端到端估计公式 capture_to_play_est_ms / schedule_ahead_ms 与缺失态规范"],
-        ["L6 · Rust", "core/src/media/mod.rs", "Per-Receiver Packetizer 封装总调度（维护各自 RTP 序号、TS 连续计数与周期表插入）"],
-        ["L6 · Rust", "core/src/media/adts.rs", "7 字节 MPEG-2/4 AAC-LC 48kHz 立体声 ADTS 头封装"],
-        ["L6 · Rust", "core/src/media/mpegts.rs", "ISO/IEC 13818-1 单节目 MPEG-TS 复用（PAT / PMT / PCR / PES 0xC0 / 188B 分片与 MPEG CRC32）"],
-        ["L6 · Rust", "core/src/media/rtp.rs", "RTP v2（PT=33 MP2T, SSRC 0xDEADBEEF）封装与 $+24bit 长度 TCP 线帧封装"],
-        ["L6 · Rust", "core/src/session.rs", "CastSession 完整运行引擎：并发建连、OffsetBarrier 冲刷/预热、media-clock、supervisor 自动重连、动态增删与状态合并"],
-        ["L6 · Rust", "core/src/group.rs", "支持立体声左右声道分路由（ChannelRoute）与 47 AU 历史补发的 Broadcaster / GroupSession 抽象"],
-        ["L6 · Rust", "core/src/inspect.rs", "显式只查询诊断会话：强制命令白名单、过滤敏感字段、仅 TCP shutdown 绝不发送 CLOSE(0x0002)"],
+        // L1 Rust Core
+        ["L1 · Rust 核心", "core/src/lib.rs", "miplay-sender-core 模块总入口与统一 Error / Result 定义"],
+        ["L1 · Rust 核心", "core/src/engine.rs", "平台无关核心门面：全局句柄表、96 AU 有界喂入队列、多箱并发协调器（吸收首台建连期加减箱与音量、串行 reconcile、connecting 叠加）及无死锁停止"],
+        ["L1 · Rust 核心", "core/src/device_catalog.rs", "跨端共享设备目录与路由状态机：6 列发现解析、TV 启发式、默认非 MiPlay 节点过滤、历史缓存合并、本机↔多箱互斥切换与零依赖 JSON 编解码"],
+        ["L1 · Rust 核心", "core/src/discovery.rs", "mDNS 组播（224.0.0.251:5353）PTR 构造与响应解析、同 IP 优先级合并及 6 列 TSV 输出"],
+        ["L1 · Rust 核心", "core/src/netinfo.rs", "Wi-Fi 频段探测与播放缓冲延迟策略（≥4900MHz 5GHz→800ms，其它→1000ms）"],
+        ["L1 · Rust 核心", "core/src/clock.rs", "进程内统一单调微秒时钟 EPOCH（CLOCK_MONOTONIC），供计时器/TIME_OFFSET/PCR 共用"],
+        ["L1 · Rust 核心", "core/src/clock_sync.rs", "UDP TimerServer 时钟主：40B 小端时间戳应答，供接收端计算时钟偏移与频偏"],
+        ["L1 · Rust 核心", "core/src/commands.rs", "TCP 8899 控制命令号全集（0x00xx 基础控制/媒体命令与 0x14xx Safety 命名空间）"],
+        ["L1 · Rust 核心", "core/src/frame.rs", "$ 帧编解码（9B 帧头）、5B 标量、4B 音量、NOTIFY 与 GetDeviceInfo TLV 解析"],
+        ["L1 · Rust 核心", "core/src/auth/mod.rs", "8899 认证链路枚举定义（LegacyClear vs Safety，两条链路不可混用）"],
+        ["L1 · Rust 核心", "core/src/auth/legacy.rs", "旧式明文认证（0x0028 数字挑战 → 0x0029 MD5(\"0.0.0.0\") HMAC-SHA1 应答）"],
+        ["L1 · Rust 核心", "core/src/auth/safety.rs", "现代 SafetyAuth / SafetyData：端点派钥、OPack 包装、双向 HMAC 互验与双向链式 AES-128-CBC 加密"],
+        ["L1 · Rust 核心", "core/src/control.rs", "ControlSession 与 RuntimeWriter：8899 引导、Safety 握手、preparePlayback、Open、心跳、音量、暂停与双 Resume"],
+        ["L1 · Rust 核心", "core/src/rtsp.rs", "WFD RTSP 服务端（SourceRtsp）：反向建连 M1–M5 能力协商、SETUP/PLAY、TIME_OFFSET 下发与运行期保活"],
+        ["L1 · Rust 核心", "core/src/timeline.rs", "SharedTimeline（单调前向修正 90kHz PTS / 27MHz PCR 与暂停重锚）与 SharedTimeOffset"],
+        ["L1 · Rust 核心", "core/src/latency.rs", "发送端端到端估计公式 capture_to_play_est_ms、UI 归一化状态 ReceiverUiState 与 display_latency_ms 有效域定义"],
+        ["L1 · Rust 核心", "core/src/media/mod.rs", "Per-Receiver Packetizer 封装总调度（维护各自 RTP 序号、TS 连续计数与周期表插入）"],
+        ["L1 · Rust 核心", "core/src/media/adts.rs", "7 字节 MPEG-2/4 AAC-LC 48kHz 立体声 ADTS 头封装"],
+        ["L1 · Rust 核心", "core/src/media/mpegts.rs", "ISO/IEC 13818-1 单节目 MPEG-TS 复用（PAT / PMT / PCR / PES 0xC0 / 188B 分片与 MPEG CRC32）"],
+        ["L1 · Rust 核心", "core/src/media/rtp.rs", "RTP v2（PT=33 MP2T, SSRC 0xDEADBEEF）封装与 $+24bit 长度 TCP 线帧封装"],
+        ["L1 · Rust 核心", "core/src/session.rs", "CastSession 完整运行引擎：并发建连、OffsetBarrier 冲刷/预热、media-clock、supervisor 自动重连、动态增删与 stats_json_with_overlay 状态合并"],
+        ["L1 · Rust 核心", "core/src/group.rs", "支持立体声左右声道分路由（ChannelRoute）与 47 AU 历史补发的 Broadcaster / GroupSession 抽象"],
+        ["L1 · Rust 核心", "core/src/inspect.rs", "显式只查询诊断会话：强制命令白名单、过滤敏感字段、仅 TCP shutdown 绝不发送 CLOSE(0x0002)"],
 
-        // L7
-        ["L7 · 工具", "cli/src/main.rs", "独立命令行工具 miplay-cli：支持 discover / inspect / probe / safety / mute / cast 与故障注入调试"],
-        ["L7 · 工具", "android/app/src/main/java/com/miplay/sender/DevMain.kt", "免安装 APK 的 adb shell app_process 真机直连调试入口（静音/编码/晚加入/断网重连验证）"],
-        ["L7 · 验收", "android/app/src/main/java/com/miplay/sender/LocalFilterProbeService.kt", "仅 acceptance 变体启用：纯本地 UID 捕获 + PcmProbe 量化验收服务，不触碰局域网音箱"],
-        ["L7 · 验收", "android/testtones/src/main/java/com/miplay/testtone/ToneActivity.kt", "受控测试音源 UI（编译为 A=1kHz、B=2kHz、deny=禁止捕获三枚独立 UID APK）"],
-        ["L7 · 验收", "android/testtones/src/main/java/com/miplay/testtone/ToneService.kt", "前台稳定输出固定频率立体声正弦波，用于 AudioPlaybackCapture 隔离量化测试"],
-        ["L7 · 测试", "android/app/src/test/java/com/miplay/sender/** (18 个测试文件)", "JVM 单元与契约测试：覆盖 UID fail-closed、投影策略、路由过滤、静音锁定、延迟展示、API29 兼容与构建口令防回退"],
+        // Tooling, Verification & Tests
+        ["工具与验收", "cli/src/main.rs", "独立命令行工具 miplay-cli：支持 discover / inspect / probe / safety / mute / cast 与故障注入调试"],
+        ["工具与验收", "android/app/src/main/java/com/miplay/sender/DevMain.kt", "免安装 APK 的 adb shell app_process 真机直连调试入口（静音/编码/晚加入/断网重连验证）"],
+        ["工具与验收", "android/app/src/main/java/com/miplay/sender/LocalFilterProbeService.kt", "仅 acceptance 变体启用：纯本地 UID 捕获 + PcmProbe 量化验收服务，不触碰局域网音箱"],
+        ["工具与验收", "android/testtones/src/main/java/com/miplay/testtone/ToneActivity.kt", "受控测试音源 UI（编译为 A=1kHz、B=2kHz、deny=禁止捕获三枚独立 UID APK）"],
+        ["工具与验收", "android/testtones/src/main/java/com/miplay/testtone/ToneService.kt", "前台稳定输出固定频率立体声正弦波，用于 AudioPlaybackCapture 隔离量化测试"],
+        ["工具与验收", "android/app/src/test/java/com/miplay/sender/** (19 个测试文件)", "JVM 单元与契约测试：覆盖 UID fail-closed、投影策略、路由过滤、静音锁定、延迟展示、明暗主题切换、API29 兼容与构建口令防回退"],
 
-        // L8
-        ["L8 · 构建", "Cargo.toml / core/Cargo.toml / cli/Cargo.toml", "Rust Workspace 配置、release LTO 优化、jni 可选特性与 AGPL-3.0-only 许可声明"],
-        ["L8 · 构建", "android/build.gradle.kts / settings.gradle.kts / gradle.properties", "AGP 8.7.3 + Kotlin 2.0.21 根工程、模块注册（:app / :testtones）与 compileSdk 36 配置"],
-        ["L8 · 构建", "android/app/build.gradle.kts / proguard-rules.pro", "standard/acceptance 变体、环境变量/keystore.properties 签名、NewApi fatal Lint 与 JNI/DevMain R8 keep 规则"],
-        ["L8 · 脚本", "scripts/build-debug.sh / build-release.sh / verify-acceptance-apk.sh", "一键测试 + 16KB 页对齐 cargo-ndk(-p 29) 编译 + Gradle 打包 + zipalign/readelf/apksigner 校验流水线"]
+        // Build & Scripts
+        ["构建与脚本", "Cargo.toml / core/Cargo.toml / cli/Cargo.toml", "Rust Workspace 配置、release LTO 优化、jni 可选特性与 AGPL-3.0-only 许可声明"],
+        ["构建与脚本", "android/build.gradle.kts / settings.gradle.kts / gradle.properties", "AGP 8.7.3 + Kotlin 2.0.21 根工程、模块注册（:app / :testtones）与 compileSdk 36 配置"],
+        ["构建与脚本", "android/app/build.gradle.kts / proguard-rules.pro", "standard/acceptance 变体、环境变量/keystore.properties 签名、NewApi fatal Lint 与 JNI/DevMain R8 keep 规则"],
+        ["构建与脚本", "scripts/build-debug.sh / build-release.sh / build-ios-xcframework.sh / verify-acceptance-apk.sh", "一键测试 + 16KB 页对齐 cargo-ndk(--platform 29) 编译 + Gradle 打包 + iOS XCFramework 构建 + zipalign/readelf/apksigner 校验流水线"]
       ];
 
       /* ==================== RENDER OVERVIEW SVG ==================== */
