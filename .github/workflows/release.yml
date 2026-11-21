@@ -102,7 +102,7 @@ jobs:
         run: rm -f "${RUNNER_TEMP}/release.keystore"
 
       - name: Upload Android release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-android
           path: dist/*
@@ -155,7 +155,7 @@ jobs:
           rm -rf "dist/${OUT}"
 
       - name: Upload CLI release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-cli-${{ matrix.label }}
           path: dist/*
