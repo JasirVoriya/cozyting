@@ -1561,4 +1561,58 @@ class MainActivity : Activity() {
             }
         }
     }
+
+    /** 仅用于 JVM 截图预览单测注入确定性 UI 状态，不触发网络扫描或原生音频捕获。 */
+    internal fun applyUiPreviewStateForTest(
+        isDark: Boolean,
+        previewNowPlaying: NowPlayingInfo,
+        previewDevices: List<CastRouteSelection.Device>,
+        previewSelectedSpeakerIds: Set<String> = emptySet(),
+        previewLaunchableApps: List<com.miplay.sender.capture.LaunchableApp> = emptyList(),
+        previewSelectedPackage: String = "",
+        previewSelectedLabel: String = "",
+        previewMasterVolume: Int = 46,
+        previewSpeakerVolumes: Map<String, Int> = emptyMap(),
+        previewCasting: Boolean = false,
+        previewStats: JSONObject? = null,
+        previewStatusText: String = "",
+    ) {
+        main.removeCallbacks(refreshRunnable)
+        stopRefreshSpinner()
+        nowPlayingTracker?.stop()
+        settingsStore.themeMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
+        if (previewSelectedPackage.isNotBlank()) {
+            store.saveSelection(
+                com.miplay.sender.capture.TargetAppSelection(
+                    packageName = previewSelectedPackage,
+                    label = previewSelectedLabel.ifBlank { previewSelectedPackage },
+                    signingCertSha256 = "preview-cert",
+                ),
+            )
+        } else {
+            store.clearSelection()
+        }
+        selectedPackage = previewSelectedPackage
+        selectedLabel = previewSelectedLabel
+        cachedLaunchableApps = previewLaunchableApps
+        masterVolume = previewMasterVolume.coerceIn(0, 100)
+        speakerVolume.clear()
+        speakerVolume.putAll(previewSpeakerVolumes)
+        castRequested = previewCasting
+        CastService.running.set(previewCasting)
+        CastService.lastFailMessage = ""
+        CastService.lastStats = previewStats?.toString().orEmpty()
+        nowPlaying = previewNowPlaying
+        nowPlayingUpdatedAtMs = System.currentTimeMillis()
+        var nextRoute = CastRouteSelection.initial(previewDevices)
+        previewSelectedSpeakerIds.forEach { speakerId ->
+            nextRoute = CastRouteSelection.setSpeakerChecked(nextRoute, speakerId, true).state
+        }
+        routeState = nextRoute
+        lastStatusMessage = previewStatusText
+        buildUi()
+        updateLatencyAndSubtitleIndicators(previewStats)
+        updateHeaderStatusPill()
+        if (previewStatusText.isNotBlank()) setStatusText(previewStatusText)
+    }
 }

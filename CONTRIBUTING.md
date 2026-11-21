@@ -44,6 +44,11 @@ clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
 
 # 或分步运行 Android 单测与 Lint（NewApi 为 fatal 硬门槛）
 cd android && ./gradlew --no-daemon test lintStandardDebug
+
+# 4. Android UI 快速本地预览（JVM Robolectric Native Graphics 渲染深/浅色多态 PNG，无需 APK 或真机）
+./scripts/ui-preview.sh
+# macOS 生成后自动打开深/浅并排总览图
+./scripts/ui-preview.sh --open
 ```
 
 ---

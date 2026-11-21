@@ -97,7 +97,12 @@ class CastService : Service() {
         fun autoDelayMs(ctx: Context): Int {
             val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             @Suppress("DEPRECATION") val f = runCatching { wm.connectionInfo.frequency }.getOrDefault(0)
-            return NativeBridge.delayForFrequency(f)
+            return try {
+                NativeBridge.delayForFrequency(f)
+            } catch (_: LinkageError) {
+                // 仅在桌面 JVM 预览单测（无 arm64 JNI .so）时回退，与 L1 delay_for_frequency 一致
+                if (f >= 4900) 800 else 1000
+            }
         }
 
         fun parseIps(raw: String): List<String> =

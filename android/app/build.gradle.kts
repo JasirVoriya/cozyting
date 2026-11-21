@@ -98,7 +98,16 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     testOptions {
-        unitTests.isIncludeAndroidResources = false
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all {
+            it.systemProperty(
+                "miplay.uiPreviewDir",
+                System.getProperty("miplay.uiPreviewDir")
+                    ?: layout.buildDirectory.dir("ui-previews").get().asFile.absolutePath,
+            )
+            // Robolectric Native Graphics 在 JDK 17+ 需要开放部分模块访问
+            it.jvmArgs("-Xmx2g")
+        }
     }
     packaging {
         jniLibs {
@@ -132,4 +141,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // 单元测试使用真实 org.json（平台 stub 会抛 Method not mocked）
     testImplementation("org.json:json:20240303")
+    // JVM 本地 UI 截图预览与界面冒烟渲染（仅测试依赖，不打入正式 APK）
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }

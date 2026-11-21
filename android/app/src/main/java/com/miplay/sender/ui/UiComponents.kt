@@ -435,6 +435,14 @@ object UiIconCache {
     private val executor = Executors.newFixedThreadPool(2)
     private val main = Handler(Looper.getMainLooper())
 
+    internal fun putForTest(packageName: String, drawable: Drawable) {
+        if (packageName.isNotBlank()) cache.put(packageName, drawable)
+    }
+
+    internal fun clearForTest() {
+        cache.evictAll()
+    }
+
     fun bindAppIcon(context: Context, imageView: ImageView, packageName: String) {
         imageView.tag = packageName
         if (packageName.isBlank()) {
