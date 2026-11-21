@@ -56,6 +56,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **16KB ELF 页对齐**：所有 `arm64-v8a` `.so` 编译需保留 `-C link-arg=-Wl,-z,max-page-size=16384`，确保 Android 15+ 16KB 页设备兼容。
 - **诚实测试边界**：PR 中如实写明「已验证项」与「未测项」；编译通过 ≠ 全机型兼容，协议估算延迟 ≠ 声学实测。
 - **敏感信息零入库**：严禁提交 `.keystore` / `.jks` / `keystore.properties` / `local.properties` / 签名口令 / 私有设备序列号 / 原始 `.pcapng` 抓包文件。
+- **Android & iOS 双端同步**：任何协议/状态机/UI 改动必须同时兼顾 Android 与 iOS 两套工程——平台无关逻辑优先下沉 L1 `core/` 并同步维护 JNI 与 C ABI（`ffi_c.rs`/`miplay_core.h`），UI/交互改动同步更新 `design/` 规范并写明 iOS 对应实现与平台边界（详见 [AGENTS.md](AGENTS.md)）。
 - **个人开发环境隔离（`.local/`）**：个人机器路径、NAS/ADB 调试偏好、家庭局域网真实 IP、真实人名、设备尾号及临时调试/AI 会话计划**严禁提交入库**，统一放在已被 `.gitignore` 忽略的 `.local/` 目录内；每次开发前先查本地 `.local/`，每次提交前检查 diff 确保单测与文档仅使用 RFC 5737（`192.0.2.x`）或通用示例 IP（`192.168.1.x`）及匿名设备名（详见项目级规范 [AGENTS.md](AGENTS.md)）。
 
 ---

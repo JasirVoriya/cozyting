@@ -20,7 +20,19 @@
      - 签名密钥、口令、`keystore.properties`、`local.properties`、`.pcapng` 原始抓包文件
    - 单测、示例代码与文档中的占位数据统一使用 **RFC 5737 文档网段**（`192.0.2.x` / `198.51.100.x` / `203.0.113.x`）或通用示例地址（`192.168.1.10` / `192.168.1.100`）与匿名占位设备名（如 `小爱音箱-0001`、`A1B2C3D4`）。
 
-## 2. 工程红线
+## 2. Android & iOS 双端同步约束（强制红线）
+
+本项目采用「**L1 共享 Rust 核心 + L2/L3 Android 与 iOS 双端原生**」架构。**后续所有功能、架构、协议、状态机与 UI/交互改动，必须同时兼顾 Android 与 iOS 两套工程**，严禁只考虑单端导致双端分裂：
+
+1. **业务逻辑、协议与状态机（L1 优先下沉）**：
+   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/miplay_core.h`），保证 C11 头文件与 Rust 单测双通过。
+2. **UI 布局、视觉与交互（`design/` 同步更新）**：
+   - 任何界面排版、组件尺寸、滑块/按钮样式、色板 Token、图标或交互流改动，**必须同步更新跨端单一事实来源 `design/`**（`design/UI_SPEC.md`、`design/tokens.json`、`design/icons/*.svg`）。
+   - 若某项能力存在平台差异（例如 Android 可按包名读取任意第三方 App 图标并 `getLaunchIntentForPackage` 跳转，而 iOS 受沙箱限制需按已知音源/URL Scheme 降级），必须在 `design/UI_SPEC.md` 中**明确写清 iOS 端对应的 SwiftUI 实现与降级边界**。
+3. **双端工程同步演进**：
+   - 每次改动提交前，除验证 Android 端外，须核对 iOS C ABI / `design/` 规范是否同步；待 iOS 原生工程目录落地后，核心功能与 UI 改动须双端同步实现与验证。
+
+## 3. 工程红线
 
 - **纯局域网 · 零云端**：不引入任何云端 API、账号登录或统计上报。
 - **严格单 App 捕获（Fail-Closed）**：不得破坏单 UID 音频捕获校验，绝不静默退化为全系统录屏或麦克风采集。
