@@ -21,6 +21,8 @@ concurrency:
 jobs:
   deploy:
     name: Build & Deploy Docs Pages
+    # Free 计划下私有仓库不支持 GitHub Pages；仓库公开（Public）后会自动启用部署
+    if: github.event.repository.private == false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
