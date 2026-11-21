@@ -30,7 +30,7 @@ cargo install cargo-ndk --locked
 
 ## 三、本地构建与自检命令
 
-提交 PR 前，请至少在本地运行以下验证：
+提交 PR 前，请至少在本地运行以下验证（GitHub Actions CI 默认在代码或构建文件变更时触发，纯文档/设计稿改动会自动跳过云端编译）：
 
 ```bash
 # 1. Rust 核心与 CLI 单元测试
