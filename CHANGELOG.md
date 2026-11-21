@@ -8,6 +8,17 @@
 
 ---
 
+## [0.9.6] - 2026-11-21
+
+### Added
+- **局域网只读 `miName` 解析与三级缓存兜底（L1 Rust + Android + iOS C ABI 同步）**：新增极简只读 TCP 8899 `GET_DEVICE_INFO`（`0x001e` → `0x001f`）`miName` 查询（先明文 legacy、失败回退 SafetyAuth，全程不发 `OPEN`/`CLOSE`/`SET_*`，结束仅 `tcp_shutdown_only`）；`core/src/engine.rs` 新增 `discover_json_with_options` 并同步暴露 JNI `discoverJsonEx` 与 C ABI `miplay_discover_json_ex`，按需并发查名（单台超时 `800ms`），音箱与电视/显示器一视同仁、投送中设备自动跳过。
+- **Android 免投屏感音频采集设计方案**：新增 `docs/ANDROID_SHIZUKU_CAPTURE_DESIGN.md`（Shizuku 方案设计，待实现）并更新 README 文档索引。
+
+### Changed
+- **输出设备纯名展示与防回退缓存合并**：设备列表标题改为单行纯设备名（移除 ` · {model}` 冗余拼接与房间名后缀，修复电视/显示器等设备名称重复拼接截断问题）；本地设备缓存新增 `name_from_device_info` 来源标记，冷启动直接沿用已缓存 `miName`（仅首次发现/旧缓存或手动刷新时触发查名），单次查询超时自动保留缓存 `miName` 或兜底 mDNS 老名字，升级后首次扫描自动洗净老格式缓存。
+
+---
+
 ## [0.9.5] - 2026-11-21
 
 ### Added
