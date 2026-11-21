@@ -15,6 +15,14 @@ void miplay_string_free(char *ptr);
 /* 发现局域网设备并融合本地缓存，返回结构化 JSON（rows / merged / cacheable）。 */
 char *miplay_discover_json(const char *local_ip, int32_t timeout_ms, const char *cached_json);
 
+/* 发现局域网设备并按需并发只读查 8899 miName；force_refresh_names=true 用于手动刷新重查。 */
+char *miplay_discover_json_ex(
+    const char *local_ip,
+    int32_t timeout_ms,
+    const char *cached_json,
+    bool force_refresh_names
+);
+
 /* 发现局域网设备，返回 6 列 TSV。 */
 char *miplay_discover_tsv(const char *local_ip, int32_t timeout_ms);
 

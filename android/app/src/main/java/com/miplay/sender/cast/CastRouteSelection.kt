@@ -1,5 +1,8 @@
 package com.miplay.sender.cast
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 /**
  * 「This device」与 MiPlay 接收端（音箱/电视）多选互斥逻辑。
  * 电视与音箱同为可投目标；仅 [castable]=false（离线/协议未实现）时拒绝。
@@ -23,6 +26,8 @@ object CastRouteSelection {
         val detail: String = "",
         /** 本机为 null；真实发现设备填所属协议。 */
         val protocol: CastProtocol? = null,
+        /** true 表示 name 来自 8899 GET_DEVICE_INFO 的 miName；false 表示 mDNS 老名或旧缓存。 */
+        val nameFromDeviceInfo: Boolean = false,
     ) {
         val isCastSink: Boolean get() = kind == Kind.SPEAKER || kind == Kind.TV
     }
@@ -54,6 +59,15 @@ object CastRouteSelection {
         val apps: String,
         val visibleByDefault: Boolean,
         val logLine: String,
+    )
+
+    data class DiscoverJsonResult(
+        val rows: List<DiscoveredRow>,
+        val merged: List<Device>,
+        val cacheable: List<Device>,
+        val castableCount: Int,
+        val hiddenCount: Int,
+        val error: String? = null,
     )
 
     fun initial(devices: List<Device>): State {
@@ -193,7 +207,8 @@ object CastRouteSelection {
         val kind = if (looksLikeTv(name, model)) Kind.TV else Kind.SPEAKER
         val isMiConnect = service.isBlank() || service.contains("_mi-connect", ignoreCase = true)
         val castable = advertisesMiPlay || (kind == Kind.TV && isMiConnect)
-        val label = listOf(name, model).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { ip }
+        // 只展示纯设备名（不再拼接 ` · $model`），缺失时回退 ip。
+        val label = name.ifBlank { ip }
         val detail = if (castable) {
             ""
         } else {
@@ -206,6 +221,7 @@ object CastRouteSelection {
             castable = castable,
             detail = detail,
             protocol = if (castable) CastProtocol.MIPLAY else null,
+            nameFromDeviceInfo = false,
         )
         val logLine =
             "discover_row ip=$ip name=$name model=$model advertises_miplay=$advertisesMiPlay " +
@@ -233,16 +249,119 @@ object CastRouteSelection {
 
     /**
      * 合并本轮实时扫描结果与本地缓存的常驻设备：
-     * - 实时扫描到的设备优先，覆盖同 id 的旧缓存信息；
+     * - 实时扫描到的设备优先；若本次未拿到 `miName`（`nameFromDeviceInfo=false`），则保留同 id 缓存里已确认的 `miName`，避免被 mDNS 老名字反向覆盖；
      * - 本轮未响应但此前缓存过的可投设备保留在末尾，避免刚打开 App 或单次 mDNS 丢包时音箱消失。
      */
     fun mergeCachedAndDiscovered(
         cached: List<Device>,
         discovered: List<Device>,
     ): List<Device> {
-        val fresh = discovered.filter { it.kind != Kind.THIS_DEVICE }
+        val cachedById = cached.filter { it.kind != Kind.THIS_DEVICE }.associateBy { it.id }
+        val fresh = discovered.filter { it.kind != Kind.THIS_DEVICE }.map { d ->
+            if (!d.nameFromDeviceInfo) {
+                val prev = cachedById[d.id]
+                if (prev != null && prev.nameFromDeviceInfo && prev.name.isNotBlank()) {
+                    d.copy(name = prev.name, nameFromDeviceInfo = true)
+                } else {
+                    d
+                }
+            } else {
+                d
+            }
+        }
         val freshIds = fresh.map { it.id }.toSet()
         val retainedCache = extractCacheableDevices(cached).filter { it.id !in freshIds }
         return fresh + retainedCache
     }
+
+    private fun parseDeviceObject(obj: JSONObject?): Device? {
+        obj ?: return null
+        val id = obj.optString("id").trim()
+        if (id.isBlank()) return null
+        val name = obj.optString("name", id).trim().ifBlank { id }
+        val kind = when (obj.optString("kind").uppercase()) {
+            "THIS_DEVICE" -> Kind.THIS_DEVICE
+            "TV" -> Kind.TV
+            else -> Kind.SPEAKER
+        }
+        val castable = obj.optBoolean("castable", true)
+        val selected = obj.optBoolean("selected", false)
+        val detail = obj.optString("detail", "")
+        val nameFromDeviceInfo = obj.optBoolean("name_from_device_info", false)
+        val protocol = if (kind == Kind.THIS_DEVICE || obj.isNull("protocol")) {
+            null
+        } else {
+            when (obj.optString("protocol").uppercase()) {
+                "MIPLAY" -> CastProtocol.MIPLAY
+                "DLNA" -> CastProtocol.DLNA
+                "AIRPLAY" -> CastProtocol.AIRPLAY
+                "GCAST", "GOOGLE_CAST", "GOOGLECAST" -> CastProtocol.GOOGLE_CAST
+                "" -> if (castable) CastProtocol.MIPLAY else null
+                else -> null
+            }
+        }
+        return Device(
+            id = id,
+            name = name,
+            kind = kind,
+            castable = castable,
+            selected = selected,
+            detail = detail,
+            protocol = protocol,
+            nameFromDeviceInfo = nameFromDeviceInfo,
+        )
+    }
+
+    private fun parseDeviceArray(arr: JSONArray?): List<Device> {
+        arr ?: return emptyList()
+        val out = mutableListOf<Device>()
+        for (i in 0 until arr.length()) {
+            parseDeviceObject(arr.optJSONObject(i))?.let { out += it }
+        }
+        return out
+    }
+
+    /** 解析 Rust L1 `NativeBridge.discoverJson` / `discoverJsonEx` 返回的结构化 JSON。 */
+    fun parseDiscoverJsonResult(raw: String): DiscoverJsonResult? = runCatching {
+        val obj = JSONObject(raw)
+        val err = obj.optString("error", "").trim()
+        if (err.isNotEmpty()) {
+            return@runCatching DiscoverJsonResult(
+                rows = emptyList(),
+                merged = emptyList(),
+                cacheable = emptyList(),
+                castableCount = 0,
+                hiddenCount = 0,
+                error = err,
+            )
+        }
+        val rowsArr = obj.optJSONArray("rows")
+        val rows = mutableListOf<DiscoveredRow>()
+        if (rowsArr != null) {
+            for (i in 0 until rowsArr.length()) {
+                val r = rowsArr.optJSONObject(i) ?: continue
+                val dev = parseDeviceObject(r.optJSONObject("device")) ?: continue
+                rows += DiscoveredRow(
+                    device = dev,
+                    advertisesMiPlay = r.optBoolean("advertises_miplay", false),
+                    service = r.optString("service", ""),
+                    apps = r.optString("apps", ""),
+                    visibleByDefault = r.optBoolean("visible_by_default", dev.castable),
+                    logLine = r.optString("log_line", ""),
+                )
+            }
+        }
+        val merged = parseDeviceArray(obj.optJSONArray("merged"))
+        val cacheable = parseDeviceArray(obj.optJSONArray("cacheable"))
+        val castableCount = obj.optInt("castable_count", rows.count { it.device.castable })
+        val hiddenCount = obj.optInt("hidden_count", (rows.size - castableCount).coerceAtLeast(0))
+        DiscoverJsonResult(
+            rows = rows,
+            merged = merged,
+            cacheable = cacheable,
+            castableCount = castableCount,
+            hiddenCount = hiddenCount,
+            error = null,
+        )
+    }.getOrNull()
 }

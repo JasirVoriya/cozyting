@@ -14,6 +14,13 @@ object NativeBridge {
     @JvmStatic external fun discover(localIp: String, timeoutMs: Int): String
     /** 跨端结构化发现 JSON（由 Rust core 统一分类、过滤并合并历史缓存）。 */
     @JvmStatic external fun discoverJson(localIp: String, timeoutMs: Int, cachedJson: String): String
+    /** 跨端结构化发现 JSON（支持按需并发只读 8899 `miName` 查询；forceRefreshNames=true 用于手动刷新）。 */
+    @JvmStatic external fun discoverJsonEx(
+        localIp: String,
+        timeoutMs: Int,
+        cachedJson: String,
+        forceRefreshNames: Boolean,
+    ): String
     /** 跨端共享路由状态机 JSON 入口：action = select_this | check | uncheck | merge_discovered。 */
     @JvmStatic external fun routeApplyJson(devicesJson: String, action: String, target: String): String
     @JvmStatic external fun probe(ip: String): String

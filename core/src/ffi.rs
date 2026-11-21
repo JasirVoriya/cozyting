@@ -54,6 +54,23 @@ mod android {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_com_miplay_sender_NativeBridge_discoverJsonEx(
+        mut env: JNIEnv,
+        _c: JClass,
+        local_ip: JString,
+        timeout_ms: jint,
+        cached_json: JString,
+        force_refresh_names: jboolean,
+    ) -> jstring {
+        let ip = jstr(&mut env, &local_ip);
+        let cached = jstr(&mut env, &cached_json);
+        out(
+            &mut env,
+            engine::discover_json_with_options(&ip, timeout_ms, &cached, force_refresh_names != 0),
+        )
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_com_miplay_sender_NativeBridge_routeApplyJson(
         mut env: JNIEnv,
         _c: JClass,

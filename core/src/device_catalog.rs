@@ -4,7 +4,7 @@
 //! 与后续 iOS C ABI / SwiftUI 共用同一份业务口径，避免双端重复实现。
 
 use crate::discovery::Speaker;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::net::Ipv4Addr;
 
 pub const DEFAULT_CACHE_LIMIT: usize = 16;
@@ -123,6 +123,9 @@ pub struct Device {
     pub selected: bool,
     pub detail: String,
     pub protocol: Option<CastProtocol>,
+    /// `true` 表示 `name` 来自 TCP 8899 `GET_DEVICE_INFO` 的 `miName`；
+    /// `false` 表示来自 mDNS 广播老名字或未区分来源的旧版缓存。
+    pub name_from_device_info: bool,
 }
 
 impl Device {
@@ -135,6 +138,7 @@ impl Device {
             selected,
             detail: String::new(),
             protocol: None,
+            name_from_device_info: false,
         }
     }
 
@@ -192,11 +196,11 @@ pub fn classify_discovered(
     };
     let is_mi_connect = service.is_empty() || service.to_ascii_lowercase().contains("_mi-connect");
     let castable = advertises_miplay || (kind == DeviceKind::Tv && is_mi_connect);
-    let label = match (name.is_empty(), model.is_empty()) {
-        (false, false) => format!("{name} · {model}"),
-        (false, true) => name.to_string(),
-        (true, false) => model.to_string(),
-        (true, true) => ip.to_string(),
+    // 只展示纯设备名（不再拼接 ` · {model}`），优先用 mDNS name，空时回退 ip。
+    let label = if !name.is_empty() {
+        name.to_string()
+    } else {
+        ip.to_string()
     };
     let svc_log = if service.is_empty() { "unknown" } else { service };
     let apps_log = if apps.is_empty() { "none" } else { apps };
@@ -213,6 +217,7 @@ pub fn classify_discovered(
         selected: false,
         detail,
         protocol: if castable { Some(CastProtocol::MiPlay) } else { None },
+        name_from_device_info: false,
     };
     let log_line = format!(
         "discover_row ip={ip} name={name} model={model} advertises_miplay={advertises_miplay} \
@@ -227,6 +232,45 @@ pub fn classify_discovered(
         visible_by_default: castable,
         log_line,
     })
+}
+
+/// 将只读 `GET_DEVICE_INFO` 查到的 `miName` 应用到发现行；缺失或空白时保留原 mDNS 兜底名。
+pub fn apply_resolved_mi_name(row: &mut DiscoveredRow, mi_name: Option<&str>) {
+    let Some(clean) = mi_name.map(str::trim).filter(|s| !s.is_empty()) else {
+        return;
+    };
+    row.device.name = clean.to_string();
+    row.device.name_from_device_info = true;
+    row.log_line.push_str(&format!(" mi_name={clean}"));
+}
+
+/// 判断该发现设备在本次扫描中是否需要主动只读查询 8899 `miName`。
+///
+/// 规则：
+/// - 不可投设备不查；
+/// - 当前正在投送中的设备跳过（避免干扰活跃会话）；
+/// - 音箱与电视/显示器一视同仁，不做形态跳过；
+/// - `force_refresh_names=true`（用户手动刷新）时必查；
+/// - 否则仅对「未缓存」或「缓存尚未拿到 `miName`」的设备查一次。
+pub fn should_query_mi_name(
+    device: &Device,
+    cached_by_id: &HashMap<&str, &Device>,
+    force_refresh_names: bool,
+    active_cast_ids: &HashSet<&str>,
+) -> bool {
+    if !device.is_cast_sink() || !device.castable {
+        return false;
+    }
+    if active_cast_ids.contains(device.id.as_str()) {
+        return false;
+    }
+    if force_refresh_names {
+        return true;
+    }
+    match cached_by_id.get(device.id.as_str()) {
+        Some(prev) => !prev.name_from_device_info || prev.name.trim().is_empty(),
+        None => true,
+    }
 }
 
 pub fn from_speaker(ip: Ipv4Addr, speaker: &Speaker) -> DiscoveredRow {
@@ -294,10 +338,28 @@ pub fn extract_cacheable_devices(devices: &[Device], limit: usize) -> Vec<Device
 }
 
 pub fn merge_cached_and_discovered(cached: &[Device], discovered: &[Device]) -> Vec<Device> {
+    let cached_by_id: HashMap<&str, &Device> = cached
+        .iter()
+        .filter(|d| d.kind != DeviceKind::ThisDevice)
+        .map(|d| (d.id.as_str(), d))
+        .collect();
     let mut merged: Vec<Device> = discovered
         .iter()
         .filter(|d| d.kind != DeviceKind::ThisDevice)
-        .cloned()
+        .map(|d| {
+            let mut copy = d.clone();
+            // 若本次未拿到 `miName`（如超时/跳过），保留缓存中已确认的 `miName`，
+            // 不被 mDNS 老名字反向覆盖；若缓存是旧格式（name_from_device_info=false）则使用本次新名。
+            if !copy.name_from_device_info {
+                if let Some(prev) = cached_by_id.get(copy.id.as_str()) {
+                    if prev.name_from_device_info && !prev.name.trim().is_empty() {
+                        copy.name = prev.name.clone();
+                        copy.name_from_device_info = true;
+                    }
+                }
+            }
+            copy
+        })
         .collect();
     let fresh_ids: HashSet<String> = merged.iter().map(|d| d.id.clone()).collect();
     for d in extract_cacheable_devices(cached, DEFAULT_CACHE_LIMIT) {
@@ -536,7 +598,7 @@ pub fn device_to_json(d: &Device) -> String {
         .map(|p| json_escape(p.wire_name()))
         .unwrap_or_else(|| "null".into());
     format!(
-        "{{\"id\":{},\"name\":{},\"kind\":{},\"castable\":{},\"selected\":{},\"detail\":{},\"protocol\":{}}}",
+        "{{\"id\":{},\"name\":{},\"kind\":{},\"castable\":{},\"selected\":{},\"detail\":{},\"protocol\":{},\"name_from_device_info\":{}}}",
         json_escape(&d.id),
         json_escape(&d.name),
         json_escape(d.kind.as_str()),
@@ -544,6 +606,7 @@ pub fn device_to_json(d: &Device) -> String {
         d.selected,
         json_escape(&d.detail),
         proto,
+        d.name_from_device_info,
     )
 }
 
@@ -645,6 +708,7 @@ pub fn parse_devices_json(raw: &str) -> Vec<Device> {
         let castable = json_field_bool(&obj, "castable").unwrap_or(true);
         let selected = json_field_bool(&obj, "selected").unwrap_or(false);
         let detail = json_field_str(&obj, "detail").unwrap_or_default();
+        let name_from_device_info = json_field_bool(&obj, "name_from_device_info").unwrap_or(false);
         let protocol = if kind == DeviceKind::ThisDevice {
             None
         } else {
@@ -671,6 +735,7 @@ pub fn parse_devices_json(raw: &str) -> Vec<Device> {
             selected,
             detail,
             protocol,
+            name_from_device_info,
         });
     }
     out
@@ -839,6 +904,7 @@ mod tests {
                 selected: false,
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: true,
             },
             Device {
                 id: "s2".into(),
@@ -848,6 +914,7 @@ mod tests {
                 selected: false,
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: false,
             },
             Device {
                 id: "tv".into(),
@@ -857,6 +924,7 @@ mod tests {
                 selected: false,
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: false,
             },
         ])
     }
@@ -915,29 +983,37 @@ mod tests {
 
     #[test]
     fn legitimate_tv_and_hex_miplay_speaker_visible_and_castable() {
-        let tv = parse_discovered_line("192.0.2.50\tLiving Room TV\tMiTV\t0\t_mi-connect._udp.local\t")
+        let tv = parse_discovered_line("192.0.2.50\tLiving Room TV\tLiving Room TV\t0\t_mi-connect._udp.local\t")
             .expect("tv");
         assert_eq!(tv.device.kind, DeviceKind::Tv);
         assert!(tv.device.castable);
         assert_eq!(tv.device.protocol, Some(CastProtocol::MiPlay));
+        assert_eq!(tv.device.name, "Living Room TV");
 
-        let spk = parse_discovered_line("192.0.2.34\tA1B2C3D4\tL17A\t1\t_mi-connect._udp.local\t[5]")
+        let mut spk = parse_discovered_line("192.0.2.34\tA1B2C3D4\tL17A\t1\t_mi-connect._udp.local\t[5]")
             .expect("spk");
         assert!(spk.device.castable);
-        assert_eq!(spk.device.name, "A1B2C3D4 · L17A");
+        // 仅展示纯名字，不再拼接 ` · L17A`
+        assert_eq!(spk.device.name, "A1B2C3D4");
+        assert!(!spk.device.name_from_device_info);
+
+        apply_resolved_mi_name(&mut spk, Some("Sound Pro-0001"));
+        assert_eq!(spk.device.name, "Sound Pro-0001");
+        assert!(spk.device.name_from_device_info);
     }
 
     #[test]
-    fn cache_merge_and_json_roundtrip() {
+    fn cache_merge_preserves_mi_name_on_fallback_and_cleans_legacy_cache() {
         let cached = vec![
             Device {
                 id: "192.0.2.34".into(),
-                name: "Speaker A · L17A".into(),
+                name: "Sound Pro-0001".into(),
                 kind: DeviceKind::Speaker,
                 castable: true,
                 selected: false,
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: true,
             },
             Device {
                 id: "192.0.2.35".into(),
@@ -947,17 +1023,103 @@ mod tests {
                 selected: false,
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: false,
+            },
+            Device {
+                id: "192.0.2.36".into(),
+                name: "Offline Speaker".into(),
+                kind: DeviceKind::Speaker,
+                castable: true,
+                selected: false,
+                detail: String::new(),
+                protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: true,
             },
         ];
         let json = devices_to_json(&cached);
         let parsed = parse_devices_json(&json);
         assert_eq!(parsed, cached);
 
-        let fresh = vec![cached[0].clone()];
+        // 本次扫描：.34 查 miName 超时退回 mDNS 老名字；.35 也只拿到纯 mDNS 名
+        let fresh = vec![
+            Device {
+                id: "192.0.2.34".into(),
+                name: "小爱音箱-0001".into(),
+                kind: DeviceKind::Speaker,
+                castable: true,
+                selected: false,
+                detail: String::new(),
+                protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: false,
+            },
+            Device {
+                id: "192.0.2.35".into(),
+                name: "小爱音箱-0002".into(),
+                kind: DeviceKind::Speaker,
+                castable: true,
+                selected: false,
+                detail: String::new(),
+                protocol: Some(CastProtocol::MiPlay),
+                name_from_device_info: false,
+            },
+        ];
         let merged = merge_cached_and_discovered(&parsed, &fresh);
-        assert_eq!(merged.len(), 2);
+        assert_eq!(merged.len(), 3);
+        // .34 保留已确认的 miName，不被 mDNS 老名字反向覆写
         assert_eq!(merged[0].id, "192.0.2.34");
+        assert_eq!(merged[0].name, "Sound Pro-0001");
+        assert!(merged[0].name_from_device_info);
+        // .35 旧缓存非 miName（带 ` · LX06`）会被洗成新的纯名字
         assert_eq!(merged[1].id, "192.0.2.35");
+        assert_eq!(merged[1].name, "小爱音箱-0002");
+        assert!(!merged[1].name_from_device_info);
+        // .36 未在线，保留历史缓存
+        assert_eq!(merged[2].id, "192.0.2.36");
+        assert_eq!(merged[2].name, "Offline Speaker");
+    }
+
+    #[test]
+    fn should_query_mi_name_treats_tv_and_speaker_equally_and_skips_active() {
+        let spk = Device {
+            id: "192.0.2.34".into(),
+            name: "小爱音箱-0001".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: false,
+        };
+        let tv = Device {
+            id: "192.0.2.50".into(),
+            name: "客厅显示器".into(),
+            kind: DeviceKind::Tv,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: false,
+        };
+        let cached_mi = Device {
+            name: "Sound Pro-0001".into(),
+            name_from_device_info: true,
+            ..spk.clone()
+        };
+        let mut cached_by_id = HashMap::new();
+        cached_by_id.insert(cached_mi.id.as_str(), &cached_mi);
+        let active: HashSet<&str> = HashSet::new();
+
+        // 冷启动：已有 miName 缓存的音箱不重复查；无缓存的电视同样需要查（不做区分）
+        assert!(!should_query_mi_name(&spk, &cached_by_id, false, &active));
+        assert!(should_query_mi_name(&tv, &cached_by_id, false, &active));
+
+        // 手动刷新：已缓存的音箱也重新查
+        assert!(should_query_mi_name(&spk, &cached_by_id, true, &active));
+
+        // 正在投送中的设备即使手动刷新也跳过，避免干扰活跃会话
+        let mut active_with_spk = HashSet::new();
+        active_with_spk.insert("192.0.2.34");
+        assert!(!should_query_mi_name(&spk, &cached_by_id, true, &active_with_spk));
     }
 
     #[test]

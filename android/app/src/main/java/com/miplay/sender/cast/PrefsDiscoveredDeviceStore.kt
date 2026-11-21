@@ -10,8 +10,10 @@ import org.json.JSONObject
 class PrefsDiscoveredDeviceStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    fun loadRawJson(): String = prefs.getString(KEY_DEVICES, null).orEmpty()
+
     fun loadDevices(): List<CastRouteSelection.Device> {
-        val raw = prefs.getString(KEY_DEVICES, null).orEmpty()
+        val raw = loadRawJson()
         if (raw.isBlank()) return emptyList()
         val list = mutableListOf<CastRouteSelection.Device>()
         runCatching {
@@ -21,14 +23,15 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                 val id = obj.optString("id").trim()
                 val name = obj.optString("name", id).trim()
                 if (id.isBlank()) continue
-                val kind = when (obj.optString("kind")) {
+                val kind = when (obj.optString("kind").uppercase()) {
                     "TV" -> CastRouteSelection.Kind.TV
                     else -> CastRouteSelection.Kind.SPEAKER
                 }
-                val proto = when (obj.optString("protocol")) {
+                val proto = when (obj.optString("protocol").uppercase()) {
                     "MIPLAY", "" -> CastProtocol.MIPLAY
                     else -> CastProtocol.MIPLAY
                 }
+                val nameFromDeviceInfo = obj.optBoolean("name_from_device_info", false)
                 if (list.none { it.id == id }) {
                     list += CastRouteSelection.Device(
                         id = id,
@@ -37,6 +40,7 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                         castable = true,
                         selected = false,
                         protocol = proto,
+                        nameFromDeviceInfo = nameFromDeviceInfo,
                     )
                 }
             }
@@ -53,7 +57,8 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                     .put("id", d.id)
                     .put("name", d.name)
                     .put("kind", d.kind.name)
-                    .put("protocol", (d.protocol ?: CastProtocol.MIPLAY).name),
+                    .put("protocol", (d.protocol ?: CastProtocol.MIPLAY).name)
+                    .put("name_from_device_info", d.nameFromDeviceInfo),
             )
         }
         prefs.edit().putString(KEY_DEVICES, arr.toString()).apply()

@@ -7,10 +7,11 @@
 //! - 向上分别支撑极薄的 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs`)，消除双端重复造轮子。
 
 use crate::clock::now_us;
-use crate::control::SourceIdentity;
+use crate::control::{fetch_device_mi_name, SourceIdentity};
 use crate::device_catalog::{
-    self, coerce_auth_mode, discovered_result_to_json, extract_cacheable_devices,
-    merge_cached_and_discovered, parse_devices_json, DEFAULT_CACHE_LIMIT,
+    self, apply_resolved_mi_name, coerce_auth_mode, discovered_result_to_json,
+    extract_cacheable_devices, merge_cached_and_discovered, parse_devices_json,
+    should_query_mi_name, DEFAULT_CACHE_LIMIT,
 };
 use crate::session::{
     AuSource, AuthMode, CapturedAu, CastConfig, CastSession, ChannelSource, ReceiverStats,
@@ -154,21 +155,96 @@ pub fn discover_tsv(local_ip: &str, timeout_ms: i32) -> String {
     }
 }
 
-/// 跨端结构化发现 JSON：一次完成 mDNS 扫描、可投性分类、历史缓存合并与可缓存列表提取。
+/// 单台设备只读 8899 `miName` 查询超时（多台并发执行，总额外等待上限等于此值）。
+const MI_NAME_QUERY_TIMEOUT: Duration = Duration::from_millis(800);
+
+fn active_cast_ips() -> HashSet<String> {
+    let mut out = HashSet::new();
+    let list: Vec<Arc<Engine>> = engines().lock().unwrap().values().cloned().collect();
+    for eng in list {
+        if eng.stopped.load(Ordering::Relaxed) {
+            continue;
+        }
+        let coord = eng.coord.lock().unwrap();
+        for ip in coord
+            .desired
+            .iter()
+            .chain(coord.submitted.iter())
+            .chain(coord.pending_connecting.iter())
+            .chain(coord.in_flight_add.iter())
+        {
+            out.insert(ip.to_string());
+        }
+    }
+    out
+}
+
+/// 跨端结构化发现 JSON：一次完成 mDNS 扫描、按需并发只读 8899 `miName` 查询、可投性分类、历史缓存合并与可缓存列表提取。
 pub fn discover_json(local_ip: &str, timeout_ms: i32, cached_json: &str) -> String {
+    discover_json_with_options(local_ip, timeout_ms, cached_json, false)
+}
+
+/// 带刷新选项的跨端结构化发现 JSON：
+/// - `force_refresh_names=false`（冷启动自动扫描）：已有缓存 `miName` 的设备直接沿用，仅新设备或旧缓存查 8899；
+/// - `force_refresh_names=true`（用户手动刷新）：对所有非投送中的可投设备重新并发查 8899 `miName`（音箱/电视一视同仁）。
+pub fn discover_json_with_options(
+    local_ip: &str,
+    timeout_ms: i32,
+    cached_json: &str,
+    force_refresh_names: bool,
+) -> String {
     let local: Ipv4Addr = local_ip.parse().unwrap_or(Ipv4Addr::UNSPECIFIED);
     match crate::discovery::browse(local, Duration::from_millis(timeout_ms.max(500) as u64)) {
         Ok(mut list) => {
             list.sort_by_key(|s| !s.advertises_miplay());
             let mut seen = HashSet::new();
-            let fresh_rows: Vec<_> = list
+            let mut fresh_rows: Vec<_> = list
                 .iter()
                 .filter_map(|s| s.ipv4.map(|ip| (ip, s)))
                 .filter(|(ip, _)| seen.insert(*ip))
                 .map(|(ip, s)| device_catalog::from_speaker(ip, s))
                 .collect();
-            let fresh_devices: Vec<_> = fresh_rows.iter().map(|r| r.device.clone()).collect();
             let cached = parse_devices_json(cached_json);
+            let cached_by_id: HashMap<&str, &device_catalog::Device> = cached
+                .iter()
+                .map(|d| (d.id.as_str(), d))
+                .collect();
+            let active_owned = active_cast_ips();
+            let active_refs: HashSet<&str> = active_owned.iter().map(String::as_str).collect();
+
+            let targets: Vec<(usize, Ipv4Addr)> = fresh_rows
+                .iter()
+                .enumerate()
+                .filter(|(_, row)| {
+                    should_query_mi_name(
+                        &row.device,
+                        &cached_by_id,
+                        force_refresh_names,
+                        &active_refs,
+                    )
+                })
+                .filter_map(|(idx, row)| row.device.id.parse::<Ipv4Addr>().ok().map(|ip| (idx, ip)))
+                .collect();
+
+            if !targets.is_empty() {
+                let resolved: Vec<(usize, Option<String>)> = std::thread::scope(|scope| {
+                    let handles: Vec<_> = targets
+                        .into_iter()
+                        .map(|(idx, ip)| {
+                            scope.spawn(move || (idx, fetch_device_mi_name(ip, MI_NAME_QUERY_TIMEOUT)))
+                        })
+                        .collect();
+                    handles
+                        .into_iter()
+                        .filter_map(|h| h.join().ok())
+                        .collect()
+                });
+                for (idx, mi_name) in resolved {
+                    apply_resolved_mi_name(&mut fresh_rows[idx], mi_name.as_deref());
+                }
+            }
+
+            let fresh_devices: Vec<_> = fresh_rows.iter().map(|r| r.device.clone()).collect();
             let merged = merge_cached_and_discovered(&cached, &fresh_devices);
             let cacheable = extract_cacheable_devices(&merged, DEFAULT_CACHE_LIMIT);
             discovered_result_to_json(&fresh_rows, &merged, &cacheable)

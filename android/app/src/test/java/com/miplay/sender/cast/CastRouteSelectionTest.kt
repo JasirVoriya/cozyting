@@ -140,29 +140,135 @@ class CastRouteSelectionTest {
     @Test
     fun parseDiscoveredRow_legitimateMiPlayTvAndHexNamedMiPlaySpeaker_stayCastableAndVisible() {
         val tvRow = CastRouteSelection.parseDiscoveredLine(
-            "192.0.2.50\t客厅的REDMI G Pro 27U\tMiTV\t0\t_mi-connect._udp.local\t",
+            "192.0.2.50\t客厅的REDMI G Pro 27U\t客厅的REDMI G Pro 27U\t0\t_mi-connect._udp.local\t",
         )!!
         assertEquals(Kind.TV, tvRow.device.kind)
         assertTrue(tvRow.device.castable)
         assertEquals(CastProtocol.MIPLAY, tvRow.device.protocol)
+        assertEquals("客厅的REDMI G Pro 27U", tvRow.device.name)
 
         val hexSpeakerRow = CastRouteSelection.parseDiscoveredLine(
             "192.0.2.34\tA1B2C3D4\tL17A\t1\t_mi-connect._udp.local\t[5]",
         )!!
         assertTrue(hexSpeakerRow.device.castable)
-        assertEquals("A1B2C3D4 · L17A", hexSpeakerRow.device.name)
+        assertEquals("A1B2C3D4", hexSpeakerRow.device.name)
     }
 
     @Test
-    fun mergeCachedAndDiscovered_retainsCachedSpeakersWhenMissingFromSingleScan() {
+    fun mergeCachedAndDiscovered_retainsCachedSpeakersAndProtectsMiName() {
         val cached = listOf(
-            CastRouteSelection.Device("192.0.2.34", "小爱音箱-0001 · L17A", Kind.SPEAKER, castable = true, protocol = CastProtocol.MIPLAY),
-            CastRouteSelection.Device("192.0.2.234", "小爱音箱-0002 · LX06", Kind.SPEAKER, castable = true, protocol = CastProtocol.MIPLAY),
+            CastRouteSelection.Device(
+                id = "192.0.2.34",
+                name = "Sound Pro-0001",
+                kind = Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+                nameFromDeviceInfo = true,
+            ),
+            CastRouteSelection.Device(
+                id = "192.0.2.35",
+                name = "小爱音箱-0002 · LX06",
+                kind = Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+                nameFromDeviceInfo = false,
+            ),
+            CastRouteSelection.Device(
+                id = "192.0.2.234",
+                name = "小爱音箱Pro",
+                kind = Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+                nameFromDeviceInfo = true,
+            ),
         )
         val fresh = listOf(
-            CastRouteSelection.Device("192.0.2.34", "小爱音箱-0001 · L17A", Kind.SPEAKER, castable = true, protocol = CastProtocol.MIPLAY),
+            CastRouteSelection.Device(
+                id = "192.0.2.34",
+                name = "小爱音箱-0001",
+                kind = Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+                nameFromDeviceInfo = false,
+            ),
+            CastRouteSelection.Device(
+                id = "192.0.2.35",
+                name = "小爱音箱-0002",
+                kind = Kind.SPEAKER,
+                castable = true,
+                protocol = CastProtocol.MIPLAY,
+                nameFromDeviceInfo = false,
+            ),
         )
         val merged = CastRouteSelection.mergeCachedAndDiscovered(cached, fresh)
-        assertEquals(listOf("192.0.2.34", "192.0.2.234"), merged.map { it.id })
+        assertEquals(listOf("192.0.2.34", "192.0.2.35", "192.0.2.234"), merged.map { it.id })
+        // 已有 miName 缓存不被本次 mDNS 兜底老名反向覆盖
+        assertEquals("Sound Pro-0001", merged[0].name)
+        assertTrue(merged[0].nameFromDeviceInfo)
+        // 老格式带型号缓存被洗成新的纯名字
+        assertEquals("小爱音箱-0002", merged[1].name)
+        assertFalse(merged[1].nameFromDeviceInfo)
+    }
+
+    @Test
+    fun parseDiscoverJsonResult_parsesRustPayloadAndErrors() {
+        val okJson = """
+            {
+              "fresh_count": 1,
+              "castable_count": 1,
+              "hidden_count": 0,
+              "rows": [
+                {
+                  "device": {
+                    "id": "192.0.2.34",
+                    "name": "Sound Pro-0001",
+                    "kind": "SPEAKER",
+                    "castable": true,
+                    "selected": false,
+                    "detail": "",
+                    "protocol": "MIPLAY",
+                    "name_from_device_info": true
+                  },
+                  "advertises_miplay": true,
+                  "service": "_mi-connect._udp.local",
+                  "apps": "[5]",
+                  "visible_by_default": true,
+                  "log_line": "discover_row ip=192.0.2.34"
+                }
+              ],
+              "merged": [
+                {
+                  "id": "192.0.2.34",
+                  "name": "Sound Pro-0001",
+                  "kind": "SPEAKER",
+                  "castable": true,
+                  "selected": false,
+                  "detail": "",
+                  "protocol": "MIPLAY",
+                  "name_from_device_info": true
+                }
+              ],
+              "cacheable": [
+                {
+                  "id": "192.0.2.34",
+                  "name": "Sound Pro-0001",
+                  "kind": "SPEAKER",
+                  "castable": true,
+                  "selected": false,
+                  "detail": "",
+                  "protocol": "MIPLAY",
+                  "name_from_device_info": true
+                }
+              ]
+            }
+        """.trimIndent()
+        val parsed = CastRouteSelection.parseDiscoverJsonResult(okJson)!!
+        assertEquals(null, parsed.error)
+        assertEquals(1, parsed.castableCount)
+        assertEquals("Sound Pro-0001", parsed.merged.single().name)
+        assertTrue(parsed.merged.single().nameFromDeviceInfo)
+
+        val err = CastRouteSelection.parseDiscoverJsonResult("""{"error":"socket failed"}""")!!
+        assertEquals("socket failed", err.error)
     }
 }

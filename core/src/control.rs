@@ -20,13 +20,13 @@
 //! 注：序号是**每条连接**独立的；引导+准备阶段使用 0..15，运行期序号从 16 开始递增。
 
 use crate::commands as c;
-use crate::frame::{decode_notify, decode_scalar5, encode_volume, Frame};
+use crate::frame::{decode_notify, decode_scalar5, device_info_mi_name, encode_volume, Frame};
 use crate::auth::legacy;
 use crate::{proto, Result};
 use std::io::{BufReader, BufWriter, Write};
 use std::net::{Ipv4Addr, Shutdown, SocketAddr, SocketAddrV4, TcpStream};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub const NATIVE_VERSION_STRING: &str = "1.0.1123012\0";
 
@@ -129,10 +129,30 @@ pub struct ControlSession {
 
 impl ControlSession {
     pub fn connect(ip: Ipv4Addr) -> Result<Self> {
-        let peer = SocketAddrV4::new(ip, crate::discovery::CONTROL_PORT);
-        let s = TcpStream::connect_timeout(&SocketAddr::V4(peer), Duration::from_secs(5))?;
+        Self::connect_with_timeout(ip, Duration::from_secs(5), Duration::from_secs(10))
+    }
+
+    pub fn connect_with_timeout(
+        ip: Ipv4Addr,
+        connect_timeout: Duration,
+        io_timeout: Duration,
+    ) -> Result<Self> {
+        Self::connect_peer_with_timeout(
+            SocketAddrV4::new(ip, crate::discovery::CONTROL_PORT),
+            connect_timeout,
+            io_timeout,
+        )
+    }
+
+    fn connect_peer_with_timeout(
+        peer: SocketAddrV4,
+        connect_timeout: Duration,
+        io_timeout: Duration,
+    ) -> Result<Self> {
+        let s = TcpStream::connect_timeout(&SocketAddr::V4(peer), connect_timeout)?;
         s.set_nodelay(true)?;
-        s.set_read_timeout(Some(Duration::from_secs(10)))?;
+        s.set_read_timeout(Some(io_timeout))?;
+        s.set_write_timeout(Some(io_timeout))?;
         Ok(Self {
             peer,
             reader: BufReader::new(s.try_clone()?),
@@ -574,6 +594,89 @@ impl ControlSession {
     }
 }
 
+/// 极简只读查询设备在 TCP 8899 `GET_DEVICE_INFO(0x001e)` 中返回的 `miName`（用户自定义名）。
+///
+/// 约束：
+/// - 优先明文 legacy 挑战应答后仅发 `GET_DEVICE_INFO(0x001e)`；若未收到合法 `0x001f` 且时间预算有余，回退 Safety 互验后再查 `GET_DEVICE_INFO`。
+/// - 全程绝不发送 `OPEN` / `CLOSE` / `SET_*`，结束后仅 `tcp_shutdown_only()`。
+/// - 超时、拒连、缺失或空白 `miName` 时返回 `None`，由调用方回退缓存名或 mDNS 老名字。
+pub fn fetch_device_mi_name(ip: Ipv4Addr, timeout: Duration) -> Option<String> {
+    fetch_device_mi_name_at(SocketAddrV4::new(ip, crate::discovery::CONTROL_PORT), timeout)
+}
+
+fn fetch_device_mi_name_at(peer: SocketAddrV4, timeout: Duration) -> Option<String> {
+    let deadline = Instant::now() + timeout;
+    let rem = deadline.saturating_duration_since(Instant::now());
+    if rem.is_zero() {
+        return None;
+    }
+    match fetch_mi_name_legacy(peer, rem) {
+        Ok(mi_name) => return mi_name,
+        Err(e) => {
+            log::debug!("fetch_mi_name legacy {peer} failed: {e}");
+        }
+    }
+    let rem = deadline.saturating_duration_since(Instant::now());
+    if rem < Duration::from_millis(120) {
+        return None;
+    }
+    match fetch_mi_name_safety(peer, rem) {
+        Ok(mi_name) => mi_name,
+        Err(e) => {
+            log::debug!("fetch_mi_name safety {peer} failed: {e}");
+            None
+        }
+    }
+}
+
+fn fetch_mi_name_legacy(peer: SocketAddrV4, timeout: Duration) -> Result<Option<String>> {
+    let mut ctl = ControlSession::connect_peer_with_timeout(peer, timeout, timeout)?;
+    let res = (|| -> Result<Option<String>> {
+        let ch = ctl.read_skipping_notify()?;
+        if ch.command != c::LEGACY_CHALLENGE || !legacy::is_valid_challenge(&ch.payload) {
+            return proto(format!("expected 0x0028 challenge, got {:#06x}", ch.command));
+        }
+        ctl.send(&[
+            ControlSession::text(c::NATIVE_VERSION, 0, NATIVE_VERSION_STRING),
+            Frame::new(c::LEGACY_CHALLENGE_ACK, ch.sequence, legacy::challenge_response(&ch.payload)),
+            Frame::empty(c::GET_DEVICE_INFO, 1),
+        ])?;
+        for _ in 0..8 {
+            let f = ctl.read_skipping_notify()?;
+            match (f.command, f.sequence) {
+                (c::GET_DEVICE_INFO_ACK, 1) => return Ok(device_info_mi_name(&f.payload)),
+                (c::NATIVE_VERSION_ACK, _) | (c::HEARTBEAT, _) => continue,
+                (cmd, seq) => return proto(format!("unexpected {cmd:#06x}/{seq} waiting for GET_DEVICE_INFO_ACK")),
+            }
+        }
+        proto("too many frames before GET_DEVICE_INFO_ACK")
+    })();
+    ctl.tcp_shutdown_only();
+    res
+}
+
+fn fetch_mi_name_safety(peer: SocketAddrV4, timeout: Duration) -> Result<Option<String>> {
+    let mut ctl = ControlSession::connect_peer_with_timeout(peer, timeout, timeout)?;
+    let res = (|| -> Result<Option<String>> {
+        let rep = ctl.safety_handshake(SAFETY_NATIVE_VERSION, &[])?;
+        if !rep.mutual_auth {
+            return proto("safety mutual_auth failed");
+        }
+        ctl.send(&[Frame::empty(c::GET_DEVICE_INFO, 4)])?;
+        for _ in 0..8 {
+            let f = ctl.read_skipping_notify()?;
+            match (f.command, f.sequence) {
+                (c::GET_DEVICE_INFO_ACK, 4) => return Ok(device_info_mi_name(&f.payload)),
+                (c::NATIVE_VERSION_ACK, _) | (c::HEARTBEAT, _) => continue,
+                (cmd, seq) => return proto(format!("unexpected {cmd:#06x}/{seq} waiting for encrypted GET_DEVICE_INFO_ACK")),
+            }
+        }
+        proto("too many frames before encrypted GET_DEVICE_INFO_ACK")
+    })();
+    ctl.tcp_shutdown_only();
+    res
+}
+
 #[derive(Clone)]
 pub struct RuntimeWriter {
     writer: Arc<Mutex<SecureWriter>>,
@@ -637,5 +740,50 @@ mod tests {
         assert_eq!(decode_scalar5(&[0, 0, 0, 0, 2]), Some(2));
         assert_eq!(decode_scalar5(&[0, 0, 0, 0, 1]), Some(1));
         assert_eq!(decode_scalar5(&[0, 0, 0, 0, 0]), Some(0));
+    }
+
+    #[test]
+    fn fetch_device_mi_name_reads_tlv_without_sending_close() {
+        use std::net::TcpListener;
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = match listener.local_addr().unwrap() {
+            SocketAddr::V4(v4) => v4,
+            _ => unreachable!(),
+        };
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+            Frame::new(c::LEGACY_CHALLENGE, 7, b"1234567890123".to_vec())
+                .write_to(&mut stream)
+                .unwrap();
+            let mut seen_cmds = Vec::new();
+            for _ in 0..3 {
+                let f = Frame::read_from(&mut stream).unwrap();
+                seen_cmds.push(f.command);
+            }
+            Frame::new(c::NATIVE_VERSION_ACK, 0, vec![]).write_to(&mut stream).unwrap();
+            let name = "客厅音箱Pro";
+            let nb = name.as_bytes();
+            let mut tlv = vec![0u8, 0, 0];
+            tlv.push(6);
+            tlv.extend_from_slice(b"miName");
+            tlv.push(0x0c);
+            tlv.extend_from_slice(&(nb.len() as u16).to_be_bytes());
+            tlv.extend_from_slice(nb);
+            let total = (tlv.len() - 3) as u16;
+            tlv[1..3].copy_from_slice(&total.to_be_bytes());
+            Frame::new(c::GET_DEVICE_INFO_ACK, 1, tlv).write_to(&mut stream).unwrap();
+            // 确认客户端仅做 TCP shutdown，不发送 CLOSE(0x0002) 等任何后续帧
+            let trailing = Frame::read_from(&mut stream);
+            assert!(trailing.is_err(), "expected EOF after tcp_shutdown_only, got {trailing:?}");
+            seen_cmds
+        });
+
+        let got = fetch_device_mi_name_at(addr, Duration::from_secs(2));
+        let seen_cmds = server.join().unwrap();
+        assert_eq!(got.as_deref(), Some("客厅音箱Pro"));
+        assert_eq!(seen_cmds, vec![c::NATIVE_VERSION, c::LEGACY_CHALLENGE_ACK, c::GET_DEVICE_INFO]);
+        assert!(!seen_cmds.contains(&c::CLOSE));
+        assert!(!seen_cmds.contains(&c::OPEN));
     }
 }

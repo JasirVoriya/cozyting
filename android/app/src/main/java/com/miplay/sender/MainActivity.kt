@@ -785,7 +785,7 @@ class MainActivity : Activity() {
             isClickable = true
             isFocusable = true
             contentDescription = "重新发现输出设备"
-            setOnClickListener { discover() }
+            setOnClickListener { discover(forceRefreshNames = true) }
             addView(
                 ImageView(this@MainActivity).apply {
                     setImageResource(R.drawable.ic_ui_refresh)
@@ -1007,7 +1007,7 @@ class MainActivity : Activity() {
             setTextColor(titleColor)
             textSize = 14.5f
             setTypeface(null, Typeface.BOLD)
-            maxLines = 2
+            maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         }
         val sub = TextView(this).apply {
@@ -1456,33 +1456,34 @@ class MainActivity : Activity() {
         return if (ip == 0) "0.0.0.0" else "${ip and 0xff}.${ip shr 8 and 0xff}.${ip shr 16 and 0xff}.${ip shr 24 and 0xff}"
     }
 
-    private fun discover() {
+    private fun discover(forceRefreshNames: Boolean = false) {
         if (discovering) return
         discovering = true
         startRefreshSpinner()
         setStatusText("正在扫描局域网音箱…")
+        val cachedJson = deviceStore.loadRawJson()
         Thread {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val lock = wm.createMulticastLock("miplay-mdns").apply { setReferenceCounted(false); acquire() }
             val r = try {
-                NativeBridge.discover(localIp(), 3000)
+                NativeBridge.discoverJsonEx(localIp(), 3000, cachedJson, forceRefreshNames)
             } finally {
                 lock.release()
             }
-            Log.i(CastService.TAG, "discover: ${r.replace('\n', ';')}")
+            Log.i(CastService.TAG, "discoverJsonEx(force=$forceRefreshNames): $r")
             main.post {
                 discovering = false
                 stopRefreshSpinner()
-                val found = mutableListOf<CastRouteSelection.Device>()
-                r.lines().mapNotNull(CastRouteSelection::parseDiscoveredLine).forEach { row ->
-                    Log.i(CastService.TAG, row.logLine)
-                    found += row.device
+                val parsed = CastRouteSelection.parseDiscoverJsonResult(r)
+                if (parsed == null || parsed.error != null) {
+                    setStatusText("扫描失败，请点击刷新重试")
+                    return@post
                 }
-                val mergedDevices = CastRouteSelection.mergeCachedAndDiscovered(
-                    cached = deviceStore.loadDevices(),
-                    discovered = found,
-                )
-                deviceStore.saveDevices(mergedDevices)
+                parsed.rows.forEach { row ->
+                    if (row.logLine.isNotBlank()) Log.i(CastService.TAG, row.logLine)
+                }
+                val mergedDevices = parsed.merged
+                deviceStore.saveDevices(parsed.cacheable)
                 var next = CastRouteSelection.mergeDiscovered(routeState, mergedDevices)
                 pendingIps?.forEach { ip ->
                     if (next.devices.any { it.id == ip && it.castable }) {
@@ -1492,14 +1493,15 @@ class MainActivity : Activity() {
                 pendingIps = null
                 routeState = next
                 renderDevices()
-                val castableCount = found.count { it.castable }
-                val hiddenCount = found.size - castableCount
+                val foundCount = parsed.rows.size
+                val castableCount = parsed.castableCount
+                val hiddenCount = parsed.hiddenCount
                 setStatusText(
                     when {
-                        found.isEmpty() -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
+                        foundCount == 0 -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
                         hiddenCount > 0 && !settingsStore.showAllDiscovered ->
                             "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
-                        else -> "发现 ${found.size} 台设备 · 点击音箱即可投送"
+                        else -> "发现 $foundCount 台设备 · 点击音箱即可投送"
                     },
                 )
             }
@@ -1649,7 +1651,7 @@ class MainActivity : Activity() {
                     renderDevices()
                 }
                 if (data?.getBooleanExtra(SettingsActivity.EXTRA_TRIGGER_DISCOVER, false) == true) {
-                    discover()
+                    discover(forceRefreshNames = true)
                 }
             }
         }

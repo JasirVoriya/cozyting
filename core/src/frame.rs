@@ -127,6 +127,15 @@ pub fn device_info_channel(p: &[u8]) -> Option<String> {
     decode_kv(p).into_iter().find(|(k, _)| k == "channel").map(|(_, v)| v)
 }
 
+/// 从 GetDeviceInfo 应答里取用户自定义设备名（`miName`）；缺失或空白返回 `None`。
+pub fn device_info_mi_name(p: &[u8]) -> Option<String> {
+    decode_kv(p)
+        .into_iter()
+        .find(|(k, _)| k == "miName")
+        .map(|(_, v)| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,6 +147,28 @@ mod tests {
         p[1..3].copy_from_slice(&n.to_be_bytes());
         assert_eq!(device_info_channel(&p).as_deref(), Some("center"));
         assert_eq!(decode_kv(&p)[1], ("deviceType".to_string(), "4".to_string()));
+        assert_eq!(device_info_mi_name(&p), None);
+    }
+
+    #[test]
+    fn device_info_mi_name_extracts_utf8_and_ignores_blank() {
+        let name = "客厅音箱-0001";
+        let nb = name.as_bytes();
+        let mut p = vec![0u8, 0, 0];
+        p.push(6);
+        p.extend_from_slice(b"miName");
+        p.push(0x0c);
+        p.extend_from_slice(&(nb.len() as u16).to_be_bytes());
+        p.extend_from_slice(nb);
+        let total = (p.len() - 3) as u16;
+        p[1..3].copy_from_slice(&total.to_be_bytes());
+        assert_eq!(device_info_mi_name(&p).as_deref(), Some(name));
+
+        let mut blank = vec![0u8, 0, 0];
+        blank.extend_from_slice(b"\x06miName\x0c\x00\x03   ");
+        let total_b = (blank.len() - 3) as u16;
+        blank[1..3].copy_from_slice(&total_b.to_be_bytes());
+        assert_eq!(device_info_mi_name(&blank), None);
     }
 
     #[test]

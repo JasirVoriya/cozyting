@@ -48,6 +48,24 @@ pub unsafe extern "C" fn miplay_discover_json(
     into_c_string(engine::discover_json(ip, timeout_ms, cached))
 }
 
+/// 扫描局域网设备并融合本地缓存，按需并发只读查询 8899 `miName`，返回结构化 JSON。
+#[no_mangle]
+pub unsafe extern "C" fn miplay_discover_json_ex(
+    local_ip: *const c_char,
+    timeout_ms: i32,
+    cached_json: *const c_char,
+    force_refresh_names: bool,
+) -> *mut c_char {
+    let ip = cstr_to_str(local_ip);
+    let cached = cstr_to_str(cached_json);
+    into_c_string(engine::discover_json_with_options(
+        ip,
+        timeout_ms,
+        cached,
+        force_refresh_names,
+    ))
+}
+
 /// 扫描局域网设备，返回 6 列 TSV（兼容调试与轻量调用）。
 #[no_mangle]
 pub unsafe extern "C" fn miplay_discover_tsv(
