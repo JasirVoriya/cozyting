@@ -20,8 +20,7 @@
 
 <p>
   <a href="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/JasirVoriya/miplay-android-sender?include_prereleases&style=flat-square&color=1F2430"></a>
-  <a href="https://github.com/JasirVoriya/miplay-android-sender/stargazers"><img alt="GitHub Stars" src="https://img.shields.io/github/stars/JasirVoriya/miplay-android-sender?style=flat-square&color=FF5C6C"></a>
+  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
@@ -30,7 +29,7 @@
 
 <p>
   <img alt="Kotlin 2.0.21" src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Rust 2021 (>=1.75)" src="https://img.shields.io/badge/Rust-2021%20(%E2%89%A51.75)-181B22?style=flat-square&logo=rust&logoColor=white">
+  <img alt="Rust 2021 (1.75+)" src="https://img.shields.io/badge/Rust-2021%20(%E2%89%A51.75)-181B22?style=flat-square&logo=rust&logoColor=white">
   <img alt="JNI + cargo-ndk" src="https://img.shields.io/badge/Bridge-JNI%20%C2%B7%20cargo--ndk-374151?style=flat-square&logo=rust&logoColor=white">
   <img alt="Gradle 8.11 · AGP 8.7" src="https://img.shields.io/badge/Gradle-8.11%20%C2%B7%20AGP%208.7-02303A?style=flat-square&logo=gradle&logoColor=white">
   <img alt="ABI arm64-v8a · 16KB Page" src="https://img.shields.io/badge/ABI-arm64--v8a%20%C2%B7%2016KB-2B313D?style=flat-square">

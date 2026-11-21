@@ -16,7 +16,7 @@
 
 <p>
   <a href="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/JasirVoriya/miplay-android-sender?include_prereleases&style=flat-square&color=1F2430"></a>
+  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
