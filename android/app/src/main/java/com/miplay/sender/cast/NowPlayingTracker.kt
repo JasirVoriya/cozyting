@@ -16,12 +16,16 @@ import com.miplay.sender.NowPlayingNotificationListener
 /**
  * 读取全部活跃源 App 的 MediaSession。无通知使用权时 getActiveSessions 通常为空 → 诚实占位。
  * 为所有活跃会话注册独立回调并追踪每次「开始播放」上升沿，避免旧软件未关闭时新软件起播被漏检。
- * 控制键通过当前选中 [MediaController.TransportControls] 转发；无会话时 no-op。
+ *
+ * - 前台 UI 模式（[publishMetadata] = true）：同步发布封面/歌名/进度与播控句柄。
+ * - 后台热切换模式（[publishMetadata] = false）：跳过 MediaMetadata/封面读取，忽略同态进度刷屏，
+ *   且仅在会话快照发生实际变化时回调 [onSessionsChanged]，将后台开销压到最低。
  */
 class NowPlayingTracker(
     private val context: Context,
     private val onUpdate: (NowPlayingInfo) -> Unit,
     private val onSessionsChanged: (List<ActiveMediaSessionSelector.SessionSnapshot>) -> Unit = {},
+    private val publishMetadata: Boolean = true,
 ) {
     private class ObservedController(
         val token: MediaSession.Token,
@@ -39,6 +43,7 @@ class NowPlayingTracker(
     private var controller: MediaController? = null
     private var initialized = false
     private var seqCounter = 0L
+    private var lastEmittedSnapshots: List<ActiveMediaSessionSelector.SessionSnapshot>? = null
 
     private val sessionsListener =
         MediaSessionManager.OnActiveSessionsChangedListener { refreshControllers(it) }
@@ -50,13 +55,15 @@ class NowPlayingTracker(
             refreshControllers(msm?.getActiveSessions(cn))
         }.onFailure {
             Log.i(TAG, "MediaSession 不可用: ${it.message}")
-            onUpdate(
-                NowPlayingInfo.unavailable("无法读取 MediaSession（需通知使用权或系统限制）"),
-            )
-            onSessionsChanged(emptyList())
+            if (publishMetadata) {
+                onUpdate(
+                    NowPlayingInfo.unavailable("无法读取 MediaSession（需通知使用权或系统限制）"),
+                )
+            }
+            emitSessionsIfChanged(emptyList())
         }
         // 无监听器权限时 getActiveSessions 可能抛 SecurityException 或返回空
-        if (controller == null && observed.isEmpty()) {
+        if (publishMetadata && controller == null && observed.isEmpty()) {
             onUpdate(
                 NowPlayingInfo.unavailable("未取得正在播放（请在系统设置中开启通知使用权）"),
             )
@@ -71,9 +78,10 @@ class NowPlayingTracker(
         observed.clear()
         controller = null
         initialized = false
+        lastEmittedSnapshots = null
     }
 
-    /** 回到前台、配置更新或后台保底轮询时主动拉取一次活跃会话，避免错过状态切换。 */
+    /** 回到前台、配置更新或低频兜底校验时主动拉取一次活跃会话，避免错过状态切换。 */
     fun refresh() {
         val cn = ComponentName(context, NowPlayingNotificationListener::class.java)
         runCatching {
@@ -138,6 +146,7 @@ class NowPlayingTracker(
                 lateinit var entry: ObservedController
                 val cb = object : MediaController.Callback() {
                     override fun onMetadataChanged(metadata: MediaMetadata?) {
+                        if (!publishMetadata) return
                         if (controller?.sessionToken == token) {
                             publish()
                         }
@@ -145,6 +154,10 @@ class NowPlayingTracker(
 
                     override fun onPlaybackStateChanged(state: PlaybackState?) {
                         val nowPlaying = isPlayingState(state?.state)
+                        if (!publishMetadata && entry.wasPlaying == nowPlaying) {
+                            // 后台纯会话监听模式：忽略同一播放态下的定期进度刷新
+                            return
+                        }
                         if (!entry.wasPlaying && nowPlaying) {
                             entry.lastBecamePlayingSeq = ++seqCounter
                         }
@@ -197,18 +210,26 @@ class NowPlayingTracker(
 
     private fun reselectAndEmit() {
         val snapshots = buildSnapshots()
-        val preferredPkg = com.miplay.sender.CastService.targetPackage
-        val isCasting = com.miplay.sender.CastService.running.get()
-        val chosen = ActiveMediaSessionSelector.selectDisplaySession(
-            sessions = snapshots,
-            preferredPackage = preferredPkg,
-            isCasting = isCasting,
-            selfPackage = context.packageName,
-        )
-        controller = chosen?.let { sel ->
-            observed.values.firstOrNull { it.tokenKey == sel.tokenKey }?.controller
+        if (publishMetadata) {
+            val preferredPkg = com.miplay.sender.CastService.targetPackage
+            val isCasting = com.miplay.sender.CastService.running.get()
+            val chosen = ActiveMediaSessionSelector.selectDisplaySession(
+                sessions = snapshots,
+                preferredPackage = preferredPkg,
+                isCasting = isCasting,
+                selfPackage = context.packageName,
+            )
+            controller = chosen?.let { sel ->
+                observed.values.firstOrNull { it.tokenKey == sel.tokenKey }?.controller
+            }
+            publish()
         }
-        publish()
+        emitSessionsIfChanged(snapshots)
+    }
+
+    private fun emitSessionsIfChanged(snapshots: List<ActiveMediaSessionSelector.SessionSnapshot>) {
+        if (snapshots == lastEmittedSnapshots) return
+        lastEmittedSnapshots = snapshots
         onSessionsChanged(snapshots)
     }
 

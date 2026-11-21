@@ -224,9 +224,13 @@ class CastService : Service() {
      * 仅在 [onCreate] 之后赋值。
      */
     private lateinit var localMute: LocalOutputMute
+    private lateinit var settingsStore: PrefsCastSettingsStore
+    private lateinit var targetStore: PrefsTargetAppStore
 
     override fun onCreate() {
         super.onCreate()
+        settingsStore = PrefsCastSettingsStore(applicationContext)
+        targetStore = PrefsTargetAppStore(applicationContext)
         localMute = LocalOutputMute(
             AndroidStreamMusicVolume.fromAttachedContext(applicationContext),
             restoreVolumeIndex = AcceptanceAudioDefaults.restoreLocalVolumeIndex(BuildConfig.IS_ACCEPTANCE),
@@ -505,7 +509,8 @@ class CastService : Service() {
                         event("未收到可捕获音频，可能未播放/禁止捕获/不支持")
                     }
                     val tick = ++statsTick
-                    if (source == "app" && tick % 2 == 0) {
+                    // 主路径为系统 MediaSession 事件回调；此处仅每 10 秒低频兜底一次且仅在快照变化时触发业务
+                    if (source == "app" && tick % 10 == 0 && settingsStore.autoDetectAudioSource) {
                         main.post {
                             if (running.get() && source == "app") sessionTracker?.refresh()
                         }
@@ -598,6 +603,7 @@ class CastService : Service() {
             context = this,
             onUpdate = {},
             onSessionsChanged = { sessions -> onActiveSessionsChanged(sessions) },
+            publishMetadata = false,
         ).also { it.start() }
     }
 
@@ -638,9 +644,8 @@ class CastService : Service() {
             )
         }
 
-        val settingsStore = PrefsCastSettingsStore(this)
         if (!settingsStore.autoDetectAudioSource || settingsStore.sourceMode != "app") return
-        val favs = PrefsTargetAppStore(this).loadFavoriteSources()
+        val favs = targetStore.loadFavoriteSources()
         if (favs.isEmpty()) return
 
         val candidate = ActiveMediaSessionSelector.selectAutoDetectCandidate(
@@ -712,7 +717,7 @@ class CastService : Service() {
                 captureUid = resolved.uid
                 noAudioHintPosted = false
                 lastFailMessage = ""
-                PrefsTargetAppStore(this).saveSelection(
+                targetStore.saveSelection(
                     TargetAppSelection(
                         packageName = resolved.packageName,
                         label = newLabel,
