@@ -176,23 +176,23 @@
     <!-- Reconcile Thread (Bottom-Right) -->
     <rect x="616" y="256" width="244" height="108" rx="10" class="node" stroke="#b45309"/>
     <circle cx="632" cy="274" r="4" fill="#fbbf24"/>
-    <text x="643" y="278" class="sans ntitle">cast-start / reconcile</text>
-    <text x="626" y="296" class="mono nmono">routeLock 串行协调队列</text>
+    <text x="643" y="278" class="sans ntitle">CastService 控制转发</text>
+    <text x="626" y="296" class="mono nmono">委托 L1 Rust Engine 串行协调</text>
     <text x="626" y="315" class="sans nbody">• 对齐 desired 与 active 音箱集</text>
     <text x="626" y="332" class="sans nbody">• 建连窗口期点击不丢失</text>
     <text x="626" y="350" class="sans nmeta">• 延迟音量排队 · 取消即刻中断</text>
 
-    <!-- SUBZONE B: JNI Bounded Boundary -->
+    <!-- SUBZONE B: FFI & L1 Engine Boundary -->
     <rect x="54" y="404" width="822" height="54" rx="10" fill="#141836" stroke="url(#jni-bar)" stroke-width="1.4"/>
-    <text x="70" y="425" class="mono tag" fill="#e0f2fe">JNI 边界 · ENGINES Registry</text>
-    <text x="70" y="444" class="mono nmeta">OnceLock&lt;Mutex&lt;HashMap&lt;jlong, Arc&lt;Engine&gt;&gt;&gt;&gt; · stop() 先 drop(feed) 防死锁</text>
+    <text x="70" y="425" class="mono tag" fill="#e0f2fe">FFI &amp; L1 Engine 门面 · core::engine (ENGINES + Coordinator)</text>
+    <text x="70" y="444" class="mono nmeta">OnceLock&lt;Mutex&lt;HashMap&lt;i64, Arc&lt;Engine&gt;&gt;&gt;&gt; · stop() 先 drop(feed) 防死锁</text>
     <rect x="576" y="415" width="286" height="32" rx="8" fill="#082f49" stroke="#22d3ee" stroke-width="1"/>
     <text x="719" y="435" text-anchor="middle" class="mono nmono" fill="#67e8f9">FEED_QUEUE_AUS = sync_channel(96) ≈ 2s</text>
 
     <!-- SUBZONE C: Rust Native Runtime -->
     <rect x="54" y="486" width="822" height="380" rx="12" class="zone-box"/>
     <rect x="54" y="486" width="4" height="380" rx="2" fill="#fb923c"/>
-    <text x="70" y="507" class="mono tag" fill="#fdba74">RUST NATIVE RUNTIME · core .so</text>
+    <text x="70" y="507" class="mono tag" fill="#fdba74">L1 RUST NATIVE RUNTIME · core (.so / .xcframework)</text>
 
     <!-- Session-Global Column -->
     <rect x="70" y="520" width="284" height="330" rx="10" fill="#0c1426" stroke="#293a5c" stroke-width="1"/>

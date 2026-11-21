@@ -149,7 +149,7 @@
     <rect x="198" y="106" width="470" height="138" rx="14" fill="url(#card-android)" stroke="#34d399" stroke-opacity="0.45" stroke-width="1.2"/>
     <text x="216" y="132" class="sans card-hd">Android 原生 UI（Kotlin）</text>
     <rect x="524" y="116" width="128" height="22" rx="11" fill="#064e3b" stroke="#34d399" stroke-opacity="0.5"/>
-    <text x="588" y="131" text-anchor="middle" class="sans badge-txt" fill="#a7f3d0">已实现 · 待 #6 统一</text>
+    <text x="588" y="131" text-anchor="middle" class="sans badge-txt" fill="#a7f3d0">已实现 · #6 已统一</text>
 
     <rect x="214" y="148" width="140" height="80" rx="10" fill="url(#sub-tile)" stroke="#334155"/>
     <text x="226" y="170" class="mono tile-hd">MainActivity</text>
@@ -305,9 +305,9 @@
   <text x="755" y="552" text-anchor="middle" class="mono tile-sub" fill="#d8b4fe">discover · connect · pushAac · stats</text>
 
   <!-- iOS C ABI Plug -->
-  <rect x="888" y="512" width="424" height="52" rx="10" fill="#0d1e33" stroke="#38bdf8" stroke-opacity="0.55" stroke-dasharray="5 3"/>
-  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI / UniFFI（MiPlayCore.swift ⇄ ffi_c）</text>
-  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：MiPlayCore.xcframework (staticlib · 规划)</text>
+  <rect x="888" y="512" width="424" height="52" rx="10" fill="#0d1e33" stroke="#38bdf8" stroke-opacity="0.55"/>
+  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI（miplay_core.h ⇄ ffi_c.rs）</text>
+  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：MiPlayCore.xcframework (staticlib · #7 已就绪)</text>
 
   <!-- ==================== GAP FFI -> L1 (CONVERGING) ==================== -->
   <use href="#p-ffi-and-l1" fill="none" stroke="#fb923c" stroke-width="2.2" marker-end="url(#arr-orange)"/>

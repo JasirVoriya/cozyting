@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 950" width="1360" height="950" role="img" aria-labelledby="arch-title arch-desc">
   <title id="arch-title">MiPlay Sender 系统整体架构与数据流向</title>
-  <desc id="arch-desc">五层架构图，展示 Android 表现层、投送服务与严格 UID 音频捕获编码层、JNI 桥接边界、Rust 多音箱协议核心层以及局域网接收端之间的音频媒体流、控制认证流、时钟同步流与发现遥测流。</desc>
+  <desc id="arch-desc">按 L3 表现与共享设计层、L2 平台系统接口层、FFI 跨语言桥接层、L1 Rust 公共核心层以及局域网接收端展示音频媒体流、控制认证流、时钟同步流与发现遥测流。</desc>
   <defs>
     <linearGradient id="bg-canvas" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#070b14"/>
@@ -157,8 +157,8 @@
   <!-- ==================== HEADER ==================== -->
   <g transform="translate(36, 22)">
     <rect x="0" y="4" width="6" height="44" rx="3" fill="url(#jni-border)"/>
-    <text x="18" y="24" class="sans title">MiPlay Sender · 系统整体架构与数据流向</text>
-    <text x="18" y="45" class="mono subtitle">Android (Kotlin · API 29–36)  ⇄  JNI (.so)  ⇄  Rust Core  ⇄  LAN Multi-Speaker</text>
+    <text x="18" y="24" class="sans title">MiPlay Sender · 系统整体架构与数据流向（L3 → L2 → FFI → L1 → LAN）</text>
+    <text x="18" y="45" class="mono subtitle">L3 Native UI &amp; design/  ⇄  L2 Platform Capture/Service  ⇄  FFI (JNI / C ABI)  ⇄  L1 Rust Core  ⇄  LAN Speakers</text>
 
     <g transform="translate(656, 3)">
       <rect x="0" y="0" width="632" height="46" rx="11" fill="#0d1526" stroke="#1e293b" stroke-width="1.1"/>
@@ -181,17 +181,17 @@
     </g>
   </g>
 
-  <!-- ==================== BAND 1: L1 UI & SYSTEM ==================== -->
+  <!-- ==================== BAND 1: L3 UI & DESIGN ==================== -->
   <g>
     <rect x="36" y="96" width="1288" height="122" rx="14" class="band-bg"/>
     <rect x="36" y="96" width="5" height="122" rx="2.5" fill="#38bdf8"/>
     <!-- Left Rail -->
     <rect x="52" y="114" width="110" height="22" rx="6" fill="#0c2640" stroke="#0369a1" stroke-width="0.9"/>
-    <text x="107" y="129" text-anchor="middle" class="mono rail-num" fill="#7dd3fc">L1 · UI 层</text>
-    <text x="54" y="156" class="sans rail-title">表现与交互</text>
-    <text x="54" y="174" class="sans rail-sub">主投送面板</text>
+    <text x="107" y="129" text-anchor="middle" class="mono rail-num" fill="#7dd3fc">L3 · 表现层</text>
+    <text x="54" y="156" class="sans rail-title">UI 与共享设计</text>
+    <text x="54" y="174" class="sans rail-sub">主面板 / 设置</text>
     <text x="54" y="190" class="sans rail-sub">音源 App 选择</text>
-    <text x="54" y="206" class="sans rail-sub">MediaSession</text>
+    <text x="54" y="206" class="sans rail-sub">design/ 明暗规范</text>
     <line x1="172" y1="112" x2="172" y2="202" stroke="#1e293b" stroke-width="1"/>
 
     <!-- Card 1.1: Source App -->
@@ -203,16 +203,16 @@
 
     <!-- Card 1.2: MainActivity -->
     <rect x="424" y="110" width="298" height="92" rx="10" class="card"/>
-    <text x="438" y="132" class="sans card-title">主投送面板 (MainActivity)</text>
-    <text x="438" y="149" class="mono card-file">MainActivity.kt · LatencyDisplay.kt</text>
-    <text x="438" y="169" class="sans card-body">本机/多选音箱互斥 · 1Hz 原位刷行内 ms</text>
-    <text x="438" y="187" class="sans card-meta">音量 · 认证选择 · MediaProjection 授权发起</text>
+    <text x="438" y="132" class="sans card-title">主投送面板与设置 (MainActivity)</text>
+    <text x="438" y="149" class="mono card-file">MainActivity · Settings · design/*</text>
+    <text x="438" y="169" class="sans card-body">明暗三态主题 · 1Hz 原位刷行内 ms</text>
+    <text x="438" y="187" class="sans card-meta">音量百分比 · 认证选择 · 投影授权发起</text>
 
     <!-- Card 1.3: AppPickerActivity -->
     <rect x="754" y="110" width="246" height="92" rx="10" class="card"/>
     <text x="768" y="132" class="sans card-title">音源选择器 (AppPicker)</text>
     <text x="768" y="149" class="mono card-file">AppPickerActivity · AppCatalog</text>
-    <text x="768" y="169" class="sans card-body">MAIN/LAUNCHER · 最近与推荐音乐</text>
+    <text x="768" y="169" class="sans card-body">MAIN/LAUNCHER · LruCache 图标</text>
     <text x="768" y="187" class="sans card-meta">仅存包名 + 签名摘要（不存 UID）</text>
 
     <!-- Card 1.4: NowPlaying -->
@@ -223,17 +223,17 @@
     <text x="1038" y="187" class="sans card-meta">转发播控至 TransportControls（不上传）</text>
   </g>
 
-  <!-- ==================== BAND 2: L2-L4 SERVICE / CAPTURE / CAST / COMPAT ==================== -->
+  <!-- ==================== BAND 2: L2 PLATFORM SYSTEM LAYER ==================== -->
   <g>
     <rect x="36" y="264" width="1288" height="140" rx="14" class="band-bg"/>
     <rect x="36" y="264" width="5" height="140" rx="2.5" fill="#818cf8"/>
     <!-- Left Rail -->
     <rect x="52" y="282" width="110" height="22" rx="6" fill="#1e1b4b" stroke="#4f46e5" stroke-width="0.9"/>
-    <text x="107" y="297" text-anchor="middle" class="mono rail-num" fill="#a5b4fc">L2–L4 · 业务</text>
+    <text x="107" y="297" text-anchor="middle" class="mono rail-num" fill="#a5b4fc">L2 · 系统层</text>
     <text x="54" y="324" class="sans rail-title">服务与捕获</text>
     <text x="54" y="342" class="sans rail-sub">严格 UID 捕获</text>
     <text x="54" y="358" class="sans rail-sub">硬件 AAC 编码</text>
-    <text x="54" y="374" class="sans rail-sub">路由/静音状态</text>
+    <text x="54" y="374" class="sans rail-sub">前台服务/静音</text>
     <text x="54" y="390" class="sans rail-sub">API 29–36 兼容</text>
     <line x1="172" y1="278" x2="172" y2="390" stroke="#1e293b" stroke-width="1"/>
 
@@ -255,27 +255,27 @@
 
     <!-- Card 2.3: CastService -->
     <rect x="710" y="278" width="310" height="112" rx="10" class="card" stroke="#b45309"/>
-    <text x="724" y="300" class="sans card-title">前台投送服务与协调器 (CastService)</text>
-    <text x="724" y="317" class="mono card-file">CastService.kt · AuthModeResolve.kt</text>
+    <text x="724" y="300" class="sans card-title">前台投送服务 (CastService)</text>
+    <text x="724" y="317" class="mono card-file">CastService.kt · LatencyDisplay.kt</text>
     <text x="724" y="337" class="sans card-body">FGS (mediaProjection|Playback) 先行</text>
-    <text x="724" y="355" class="sans card-body">triggerReconcile 串行扩缩组与延迟音量</text>
+    <text x="724" y="355" class="sans card-body">委托 L1 Rust Engine 串行协调音箱集</text>
     <text x="724" y="375" class="mono card-meta">1Hz statsLoop · Wake/WifiLock · ops.log</text>
 
     <!-- Card 2.4: Cast & Compat -->
     <rect x="1044" y="278" width="262" height="112" rx="10" class="card" stroke="#7e22ce"/>
     <text x="1058" y="300" class="sans card-title">路由 / 静音 / API 兼容层</text>
     <text x="1058" y="317" class="mono card-file">cast/* (8) · compat/* (7)</text>
-    <text x="1058" y="337" class="sans card-body">CastRouteSelection 互斥 &amp; 节点过滤</text>
+    <text x="1058" y="337" class="sans card-body">CastRouteSelection 对接 L1 设备目录</text>
     <text x="1058" y="355" class="sans card-body">LocalOutputMute (6 拍锁定，切歌保静音)</text>
     <text x="1058" y="375" class="mono card-meta">BlurCompat / Insets / Perm API29+</text>
   </g>
 
-  <!-- ==================== BAND 3: L5 JNI BRIDGE ==================== -->
+  <!-- ==================== BAND 3: FFI BRIDGE ==================== -->
   <g>
     <rect x="36" y="456" width="1288" height="58" rx="12" fill="url(#jni-surface)" stroke="url(#jni-border)" stroke-width="1.5" class="pulse-ring"/>
     <rect x="52" y="473" width="110" height="24" rx="6" fill="#091326" stroke="#38bdf8" stroke-width="1"/>
-    <text x="107" y="489" text-anchor="middle" class="mono rail-num" fill="#e0f2fe">L5 · JNI 桥</text>
-    <text x="188" y="489" class="mono card-meta">NativeBridge.kt ⇄ core/src/ffi.rs (.so)</text>
+    <text x="107" y="489" text-anchor="middle" class="mono rail-num" fill="#e0f2fe">FFI · 桥接层</text>
+    <text x="188" y="489" class="mono card-meta">JNI (ffi.rs .so) · C ABI (ffi_c.rs .xcframework)</text>
 
     <rect x="466" y="470" width="180" height="30" rx="8" fill="#082f49" stroke="#22d3ee" stroke-width="1"/>
     <text x="556" y="489" text-anchor="middle" class="mono pill-text" fill="#67e8f9">pushAac(h, au) [cap=96]</text>
@@ -284,35 +284,35 @@
     <text x="800" y="489" text-anchor="middle" class="mono pill-text" fill="#fde68a">connect / add / remove / vol / pause</text>
 
     <rect x="954" y="470" width="152" height="30" rx="8" fill="#23123a" stroke="#c084fc" stroke-width="1"/>
-    <text x="1030" y="489" text-anchor="middle" class="mono pill-text" fill="#e9d5ff">discover(ip, 3s)</text>
+    <text x="1030" y="489" text-anchor="middle" class="mono pill-text" fill="#e9d5ff">discover / catalog</text>
 
     <rect x="1124" y="470" width="182" height="30" rx="8" fill="#23123a" stroke="#c084fc" stroke-width="1"/>
     <text x="1215" y="489" text-anchor="middle" class="mono pill-text" fill="#e9d5ff">stats(h) → JSON / stop</text>
   </g>
 
-  <!-- ==================== BAND 4: L6 RUST CORE ==================== -->
+  <!-- ==================== BAND 4: L1 RUST CORE ==================== -->
   <g>
     <rect x="36" y="554" width="1288" height="160" rx="14" class="band-bg"/>
     <rect x="36" y="554" width="5" height="160" rx="2.5" fill="#fb923c"/>
     <!-- Left Rail -->
     <rect x="52" y="572" width="110" height="22" rx="6" fill="#3b1908" stroke="#ea580c" stroke-width="0.9"/>
-    <text x="107" y="587" text-anchor="middle" class="mono rail-num" fill="#fdba74">L6 · RUST 核</text>
-    <text x="54" y="614" class="sans rail-title">协议与同步</text>
-    <text x="54" y="632" class="mono rail-sub">core/ (22 .rs)</text>
-    <text x="54" y="650" class="sans rail-sub">共享时间线</text>
+    <text x="107" y="587" text-anchor="middle" class="mono rail-num" fill="#fdba74">L1 · 核心层</text>
+    <text x="54" y="614" class="sans rail-title">Rust 公共核心</text>
+    <text x="54" y="632" class="mono rail-sub">core/ (24 .rs)</text>
+    <text x="54" y="650" class="sans rail-sub">Engine 并发协调</text>
     <text x="54" y="666" class="sans rail-sub">TS/RTP 封装</text>
     <text x="54" y="682" class="sans rail-sub">8899 安全控制</text>
-    <text x="54" y="698" class="sans rail-sub">RTSP/UDP 时钟</text>
+    <text x="54" y="698" class="sans rail-sub">目录/RTSP/时钟</text>
     <line x1="172" y1="568" x2="172" y2="700" stroke="#1e293b" stroke-width="1"/>
 
-    <!-- Card 4.1: Session & Timeline -->
+    <!-- Card 4.1: Engine, Session & Timeline -->
     <rect x="188" y="568" width="276" height="132" rx="10" class="card" stroke="#0891b2"/>
-    <text x="202" y="590" class="sans card-title">组会话与共享时间线</text>
-    <text x="202" y="607" class="mono card-file">session · timeline · clock · group</text>
-    <text x="202" y="627" class="sans card-body">• OffsetBarrier: flush 积压 + 14 AU</text>
-    <text x="202" y="645" class="sans card-body">• media-clock: 90kHz PTS / 27MHz PCR</text>
-    <text x="202" y="663" class="sans card-body">• supervisor: 15s 超时 + 2→30s 重连</text>
-    <text x="202" y="684" class="mono card-meta">latency: (TIME_OFFSET+PTS-cap)/1000</text>
+    <text x="202" y="590" class="sans card-title">协调引擎与共享时间线</text>
+    <text x="202" y="607" class="mono card-file">engine · session · timeline · clock</text>
+    <text x="202" y="627" class="sans card-body">• Engine: 串行 reconcile + 音量排队</text>
+    <text x="202" y="645" class="sans card-body">• OffsetBarrier: flush 积压 + 14 AU</text>
+    <text x="202" y="663" class="sans card-body">• media-clock &amp; 15s 看门狗退避重连</text>
+    <text x="202" y="684" class="mono card-meta">latency: ui_state / display_latency_ms</text>
 
     <!-- Card 4.2: Media Packetizer -->
     <rect x="494" y="568" width="244" height="132" rx="10" class="card" stroke="#0891b2"/>
@@ -332,11 +332,11 @@
     <text x="776" y="663" class="sans card-body">• 5s 心跳 · 音量/暂停/双 Resume</text>
     <text x="776" y="684" class="mono card-meta">inspect.rs: 无 CLOSE 只查询</text>
 
-    <!-- Card 4.4: Discovery / RTSP / Timer -->
+    <!-- Card 4.4: Discovery / Catalog / RTSP / Timer -->
     <rect x="1040" y="568" width="266" height="132" rx="10" class="card" stroke="#059669"/>
-    <text x="1054" y="590" class="sans card-title">发现 · WFD RTSP · 时钟主</text>
-    <text x="1054" y="607" class="mono card-file">discovery · rtsp · clock_sync</text>
-    <text x="1054" y="627" class="sans card-body">• mDNS: _mi-connect / _lyra-mdns</text>
+    <text x="1054" y="590" class="sans card-title">发现 · 设备目录 · RTSP · 时钟</text>
+    <text x="1054" y="607" class="mono card-file">discovery · device_catalog · rtsp</text>
+    <text x="1054" y="627" class="sans card-body">• mDNS + catalog 过滤/缓存/互斥路由</text>
     <text x="1054" y="645" class="sans card-body">• SourceRtsp: M1–M5 / PLAY / Offset</text>
     <text x="1054" y="663" class="sans card-body">• TimerServer: 40B UDP 单调时钟</text>
     <text x="1054" y="684" class="mono card-meta">netinfo: 5GHz→800ms / 其他→1000ms</text>
@@ -384,7 +384,7 @@
     <rect x="996" y="786" width="328" height="134" rx="14" class="band-bg"/>
     <rect x="996" y="786" width="5" height="134" rx="2.5" fill="#94a3b8"/>
     <rect x="1014" y="796" width="176" height="20" rx="6" fill="#1e293b" stroke="#475569" stroke-width="0.9"/>
-    <text x="1102" y="810" text-anchor="middle" class="mono rail-num" fill="#cbd5e1">L7–L8 · CLI / 验收脚本</text>
+    <text x="1102" y="810" text-anchor="middle" class="mono rail-num" fill="#cbd5e1">工程支撑 · CLI / 验收脚本</text>
 
     <rect x="1014" y="824" width="292" height="82" rx="10" class="card"/>
     <text x="1028" y="845" class="sans card-title">独立诊断与受控验收栈</text>
