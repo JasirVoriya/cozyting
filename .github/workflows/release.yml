@@ -50,13 +50,11 @@ jobs:
         with:
           tool: cargo-ndk
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android API 36 platform, build-tools and NDK
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
+          SDKMANAGER="$(ls -d "${ANDROID_HOME}"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          yes | "${SDKMANAGER}" --licenses >/dev/null || true
+          "${SDKMANAGER}" "platforms;android-36" "build-tools;36.0.0" "ndk;${NDK_VERSION}"
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
