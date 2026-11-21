@@ -315,15 +315,9 @@ class MainActivity : Activity() {
         titleWrap.addView(statusPill)
         topBar.addView(titleWrap)
 
-        refreshBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_refresh, "重新发现设备") {
-            discover()
-        }.apply {
-            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(8)
-        }
         val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
             startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
         }
-        topBar.addView(refreshBtn)
         topBar.addView(settingsBtn)
         content.addView(topBar)
 
@@ -776,7 +770,32 @@ class MainActivity : Activity() {
             textSize = 11f
             setTextColor(palette.textTertiary)
         }
+        val refreshSize = dp(28)
+        refreshBtn = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(refreshSize, refreshSize).apply {
+                marginStart = dp(8)
+            }
+            background = UiComponents.rippleSurface(
+                fillColor = palette.controlSurface,
+                radiusPx = refreshSize / 2f,
+                rippleColor = palette.ripple,
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            isClickable = true
+            isFocusable = true
+            contentDescription = "重新发现输出设备"
+            setOnClickListener { discover() }
+            addView(
+                ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_ui_refresh)
+                    setColorFilter(palette.textSecondary)
+                    layoutParams = FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER)
+                },
+            )
+        }
         devHeader.addView(deviceCountView)
+        devHeader.addView(refreshBtn)
         mainCard.addView(devHeader)
 
         deviceList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
