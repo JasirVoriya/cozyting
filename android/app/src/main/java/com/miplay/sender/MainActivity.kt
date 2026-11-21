@@ -85,6 +85,8 @@ class MainActivity : Activity() {
     private lateinit var nowPlayingFullBox: LinearLayout
     private lateinit var nowPlayingHintBanner: LinearLayout
     private lateinit var albumArt: ImageView
+    private lateinit var albumAppBadgeWrap: FrameLayout
+    private lateinit var albumAppBadgeIcon: ImageView
     private lateinit var titleView: TextView
     private lateinit var artistView: TextView
     private lateinit var playBtnIcon: ImageView
@@ -331,24 +333,16 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        albumArt = ImageView(this).apply {
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            background = UiComponents.roundedDrawable(palette.controlSurface, dpf(12f))
-            layoutParams = LinearLayout.LayoutParams(dp(58), dp(58)).apply { marginEnd = dp(12) }
-            setImageResource(R.drawable.ic_ui_music_note)
-            setColorFilter(palette.textSecondary)
-            clipToOutline = true
-        }
         val meta = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = dp(8)
+                marginEnd = dp(14)
             }
         }
         titleView = TextView(this).apply {
             text = "未知标题"
             setTextColor(palette.textPrimary)
-            textSize = 16f
+            textSize = 18f
             setTypeface(null, Typeface.BOLD)
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
@@ -356,10 +350,10 @@ class MainActivity : Activity() {
         artistView = TextView(this).apply {
             text = "未取得正在播放"
             setTextColor(palette.textSecondary)
-            textSize = 12.5f
+            textSize = 13f
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
-            setPadding(0, dp(2), 0, 0)
+            setPadding(0, dp(3), 0, 0)
         }
         meta.addView(titleView)
         meta.addView(artistView)
@@ -367,9 +361,10 @@ class MainActivity : Activity() {
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(12), 0, 0)
         }
         fun transportBtn(res: Int, desc: String, onClick: () -> Unit): FrameLayout {
-            val sz = dp(34)
+            val sz = dp(38)
             return FrameLayout(this).apply {
                 layoutParams = LinearLayout.LayoutParams(sz, sz)
                 background = UiComponents.rippleSurface(Color.TRANSPARENT, sz / 2f, palette.ripple)
@@ -381,22 +376,22 @@ class MainActivity : Activity() {
                     ImageView(this@MainActivity).apply {
                         setImageResource(res)
                         setColorFilter(palette.textPrimary)
-                        layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
+                        layoutParams = FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
                     },
                 )
             }
         }
         controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, "上一首") { nowPlayingTracker?.skipPrevious() })
-        val playWrapSize = dp(38)
+        val playWrapSize = dp(42)
         playBtnIcon = ImageView(this).apply {
             setImageResource(R.drawable.ic_ui_play)
             setColorFilter(if (palette.isDark) palette.bgCanvas else Color.WHITE)
-            layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
         }
         val playWrap = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(playWrapSize, playWrapSize).apply {
-                marginStart = dp(4)
-                marginEnd = dp(4)
+                marginStart = dp(10)
+                marginEnd = dp(10)
             }
             background = UiComponents.rippleSurface(
                 fillColor = palette.textPrimary,
@@ -411,28 +406,75 @@ class MainActivity : Activity() {
         }
         controls.addView(playWrap)
         controls.addView(transportBtn(R.drawable.ic_ui_skip_next, "下一首") { nowPlayingTracker?.skipNext() })
+        meta.addView(controls)
 
-        mediaRow.addView(albumArt)
+        // 右侧大尺寸封面 + 右下角播放软件 Logo + 点击跳转对应 App
+        val artSize = dp(96)
+        val artRadius = dpf(16f)
+        albumArt = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = UiComponents.roundedDrawable(palette.controlSurface, artRadius)
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            setImageResource(R.drawable.ic_ui_music_note)
+            setColorFilter(palette.textSecondary)
+            clipToOutline = true
+        }
+        val badgeSize = dp(26)
+        albumAppBadgeIcon = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+        }
+        albumAppBadgeWrap = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(badgeSize, badgeSize, Gravity.BOTTOM or Gravity.END).apply {
+                marginEnd = dp(6)
+                bottomMargin = dp(6)
+            }
+            background = UiComponents.roundedDrawable(
+                fillColor = if (palette.isDark) Color.argb(230, 18, 22, 30) else Color.WHITE,
+                radiusPx = badgeSize / 2f,
+                strokeColor = if (palette.isDark) Color.argb(72, 255, 255, 255) else Color.argb(38, 15, 23, 42),
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(2), dp(2), dp(2), dp(2))
+            clipToOutline = true
+            elevation = dpf(2f)
+            visibility = View.GONE
+            addView(albumAppBadgeIcon)
+        }
+        val albumArtContainer = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(artSize, artSize)
+            foreground = UiComponents.rippleSurface(Color.TRANSPARENT, artRadius, palette.ripple)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "打开正在播放的音乐应用"
+            setOnClickListener { openNowPlayingApp() }
+            addView(albumArt)
+            addView(albumAppBadgeWrap)
+        }
+
         mediaRow.addView(meta)
-        mediaRow.addView(controls)
+        mediaRow.addView(albumArtContainer)
         nowPlayingFullBox.addView(mediaRow)
 
-        val progressRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(10), 0, dp(4))
+        val progressCol = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(10), 0, dp(2))
         }
         posView = TextView(this).apply {
             setTextColor(palette.textTertiary)
             textSize = 11f
             text = "—:—"
-            minWidth = dp(34)
         }
         durView = TextView(this).apply {
             setTextColor(palette.textTertiary)
             textSize = 11f
             text = "—:—"
-            minWidth = dp(34)
             gravity = Gravity.END
         }
         progressBar = UiComponents.styledSeekBar(
@@ -444,10 +486,10 @@ class MainActivity : Activity() {
         ).apply {
             max = 1000
             progress = 0
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dp(6)
-                marginEnd = dp(6)
-            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                     if (fromUser) {
@@ -465,10 +507,20 @@ class MainActivity : Activity() {
                 }
             })
         }
-        progressRow.addView(posView)
-        progressRow.addView(progressBar)
-        progressRow.addView(durView)
-        nowPlayingFullBox.addView(progressRow)
+        val timeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                topMargin = dp(2)
+            }
+            addView(posView, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(durView, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        progressCol.addView(progressBar)
+        progressCol.addView(timeRow)
+        nowPlayingFullBox.addView(progressCol)
         mainCard.addView(nowPlayingFullBox)
 
         // 未开启通知使用权/无活跃媒体会话时的精简可点击引导条
@@ -765,8 +817,25 @@ class MainActivity : Activity() {
         playBtnIcon.setImageResource(
             if (nowPlaying.isPlaying == true) R.drawable.ic_ui_pause else R.drawable.ic_ui_play,
         )
+        val badgePkg = nowPlaying.sourcePackage?.takeIf { it.isNotBlank() }
+            ?: selectedPackage.takeIf { it.isNotBlank() }
+        if (badgePkg != null) {
+            albumAppBadgeWrap.visibility = View.VISIBLE
+            UiIconCache.bindAppIcon(this, albumAppBadgeIcon, badgePkg)
+        } else {
+            albumAppBadgeWrap.visibility = View.GONE
+        }
         durView.text = NowPlayingInfo.formatTime(nowPlaying.durationMs)
         tickNowPlayingProgress()
+    }
+
+    private fun openNowPlayingApp() {
+        val pkg = nowPlaying.sourcePackage?.takeIf { it.isNotBlank() }
+            ?: selectedPackage.takeIf { it.isNotBlank() }
+            ?: return
+        val launch = packageManager.getLaunchIntentForPackage(pkg) ?: return
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { startActivity(launch) }
     }
 
     private fun tickNowPlayingProgress() {

@@ -240,6 +240,11 @@ object UiComponents {
         ).apply {
             setId(0, android.R.id.background)
             setId(1, android.R.id.progress)
+            // 显式锁定图层高度与垂直居中，避免 ProgressBar 将 4dp 细轨道拉伸撑满整个 SeekBar 高度
+            setLayerHeight(0, trackHeight)
+            setLayerGravity(0, Gravity.CENTER_VERTICAL or Gravity.FILL_HORIZONTAL)
+            setLayerHeight(1, trackHeight)
+            setLayerGravity(1, Gravity.CENTER_VERTICAL or Gravity.FILL_HORIZONTAL)
         }
         val thumbSize = dp(context, 14)
         val thumb = GradientDrawable().apply {
@@ -248,13 +253,16 @@ object UiComponents {
             setSize(thumbSize, thumbSize)
             setStroke(dp(context, 2).coerceAtLeast(2), thumbStrokeColor)
         }
+        val hPad = thumbSize / 2
+        val vPad = dp(context, 6)
         return SeekBar(context).apply {
             progressDrawable = progressLayer
             setThumb(thumb)
             splitTrack = false
-            thumbOffset = dp(context, 4)
-            minHeight = dp(context, 20)
-            maxHeight = dp(context, 20)
+            thumbOffset = hPad
+            setPadding(hPad, vPad, hPad, vPad)
+            minHeight = thumbSize
+            maxHeight = thumbSize
         }
     }
 
