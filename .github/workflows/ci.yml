@@ -37,8 +37,61 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect Changed Modules
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      android: ${{ steps.filter.outputs.android }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute affected jobs
+        id: filter
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+            echo "android=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          if [[ -z "${BASE}" || "${BASE}" == "0000000000000000000000000000000000000000" ]] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "Base commit unavailable; running all CI jobs."
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+            echo "android=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED="$(git diff --name-only "${BASE}" "${{ github.sha }}")"
+          echo "Changed files:"
+          echo "${CHANGED}"
+
+          RUST="false"
+          ANDROID="false"
+          if echo "${CHANGED}" | grep -Eq '^(Cargo\.(toml|lock)|core/|cli/|\.github/workflows/ci\.yml)'; then
+            RUST="true"
+          fi
+          if echo "${CHANGED}" | grep -Eq '^(Cargo\.(toml|lock)|core/|android/|scripts/|\.github/workflows/ci\.yml)'; then
+            ANDROID="true"
+          fi
+
+          echo "rust=${RUST}" >> "$GITHUB_OUTPUT"
+          echo "android=${ANDROID}" >> "$GITHUB_OUTPUT"
+          echo "Affected jobs -> rust=${RUST}, android=${ANDROID}"
+
   rust-core:
     name: Rust Core & CLI
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -62,6 +115,8 @@ jobs:
 
   android-build-and-test:
     name: Android JNI, Lint & Unit Tests
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: "-C link-arg=-Wl,-z,max-page-size=16384"
@@ -75,18 +130,40 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Restore cached 16KB-aligned Rust JNI library (arm64-v8a)
+        id: jni-cache
+        uses: actions/cache@v4
+        with:
+          path: android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so
+          key: android-jni-so-arm64-v1-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'core/Cargo.toml', 'core/src/**') }}
+
       - name: Set up Rust toolchain (aarch64-linux-android)
+        if: steps.jni-cache.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
 
       - name: Cache Cargo dependencies
+        if: steps.jni-cache.outputs.cache-hit != 'true'
         uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-ndk
+        if: steps.jni-cache.outputs.cache-hit != 'true'
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-ndk
+
+      - name: Build 16KB-aligned Rust JNI library (arm64-v8a)
+        if: steps.jni-cache.outputs.cache-hit != 'true'
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_ROOT:-$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)}"
+          echo "Using ANDROID_NDK_HOME=${ANDROID_NDK_HOME}"
+          cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
+
+      - name: Verify 16KB ELF alignment on libmiplay_sender_core.so
+        run: |
+          readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -E 'Type|LOAD|Align'
+          readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -q '0x4000'
 
       - name: Install Android API 36 platform and build-tools
         run: |
@@ -94,23 +171,14 @@ jobs:
           yes | "${SDKMANAGER}" --licenses >/dev/null || true
           "${SDKMANAGER}" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Build 16KB-aligned Rust JNI library (arm64-v8a)
-        run: |
-          export ANDROID_NDK_HOME="${ANDROID_NDK_ROOT:-$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)}"
-          echo "Using ANDROID_NDK_HOME=${ANDROID_NDK_HOME}"
-          cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
-          READELF="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
-          "${READELF}" -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -E 'Type|LOAD|Align'
-          "${READELF}" -l android/app/src/main/jniLibs/arm64-v8a/libmiplay_sender_core.so | grep -q '0x4000'
-
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run Android JVM tests, Lint (NewApi fatal) and Debug build
+      - name: Run Android standardDebug unit tests, Lint (NewApi fatal) and Debug APK build
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon test lintStandardDebug assembleStandardDebug
+          ./gradlew --no-daemon :app:testStandardDebugUnitTest :app:lintStandardDebug :app:assembleStandardDebug
 
       - name: Upload standard debug APK artifact
         uses: actions/upload-artifact@v4
