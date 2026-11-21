@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -21,8 +22,15 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.miplay.sender.capture.CaptureEngineCapabilities
+import com.miplay.sender.capture.CaptureEngineMode
+import com.miplay.sender.capture.CaptureScopeMode
 import com.miplay.sender.capture.LocalFilterAcceptanceGate
 import com.miplay.sender.capture.PrefsTargetAppStore
+import com.miplay.sender.capture.shell.PairingNotificationGuide
+import com.miplay.sender.capture.shell.WirelessAdbDiscovery
+import com.miplay.sender.capture.shell.WirelessAdbShellClient
+import com.miplay.sender.capture.shell.WirelessDebugGuideActivity
 import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.PrefsDiscoveredDeviceStore
@@ -51,6 +59,8 @@ class SettingsActivity : Activity() {
 
     private val main = Handler(Looper.getMainLooper())
     private var debugExpanded = false
+    private var wirelessFeedbackText: String = ""
+    private var wirelessFeedbackIsError: Boolean = false
     private var pendingLocalProbe: Intent? = null
     private var localProbeStatus: TextView? = null
     private var localProbeBtn: TextView? = null
@@ -182,12 +192,23 @@ class SettingsActivity : Activity() {
         // —— 卡片 2：投送与系统权限 ——
         root.addView(UiComponents.sectionTitle(this, palette, "投送与系统权限"))
         val castCard = UiComponents.panelCard(this, palette, padDp = 14)
+        buildCaptureEngineSection(castCard)
+        castCard.addView(spacer(10))
+
+        val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
+        val trueSingleAppMuteActive = settingsStore.captureEngineMode == CaptureEngineMode.WIRELESS_DEBUG &&
+            settingsStore.captureScopeMode == CaptureScopeMode.SINGLE_APP &&
+            caps.supportsTrueSingleAppLocalMute
         castCard.addView(
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
                 title = "投送时手机静音",
-                subtitle = "默认静音全局 STREAM_MUSIC；关闭后保留手机本机出声",
+                subtitle = if (trueSingleAppMuteActive) {
+                    "Android 13+ 无感单 App 环回静音：仅静音当前投送的音乐 App，手机其他 App 照常发声"
+                } else {
+                    "默认静音全局 STREAM_MUSIC；关闭后保留手机本机出声"
+                },
                 initialChecked = !settingsStore.keepLocalOutput,
             ) { checked ->
                 settingsStore.keepLocalOutput = !checked
@@ -195,7 +216,12 @@ class SettingsActivity : Activity() {
         )
         castCard.addView(
             TextView(this).apply {
-                text = "当前状态：${CastService.localMuteStatusZh}\n说明：Android 普通权限仅支持按 App UID 捕获，无公开 API 单独静音第三方 App 本机输出。"
+                val boundaryNote = if (trueSingleAppMuteActive) {
+                    "说明：当前启用无感单 App 环回模式，不再修改全局 STREAM_MUSIC；实际效果以真机 ROM 路由支持为准。"
+                } else {
+                    "说明：Android 标准普通权限仅支持按 App UID 捕获，无公开 API 单独静音第三方 App 本机输出。"
+                }
+                text = "当前状态：${CastService.localMuteStatusZh}\n$boundaryNote"
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
                 setPadding(dp(4), dp(6), dp(4), dp(10))
@@ -599,6 +625,199 @@ class SettingsActivity : Activity() {
         )
         localProbeBtn?.text = "停止本地过滤验收"
         localProbeStatus?.text = "本地过滤验收已启动"
+    }
+
+    private fun buildCaptureEngineSection(card: LinearLayout) {
+        val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
+        card.addView(
+            TextView(this).apply {
+                text = "采集引擎"
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                setPadding(dp(2), 0, 0, dp(8))
+            },
+        )
+        val engines = listOf(CaptureEngineMode.STANDARD, CaptureEngineMode.WIRELESS_DEBUG)
+        val engineIdx = engines.indexOf(settingsStore.captureEngineMode).coerceAtLeast(0)
+        card.addView(
+            UiComponents.segmentedControl(
+                context = this,
+                palette = palette,
+                labels = engines.map { it.labelZh },
+                initialIndex = engineIdx,
+            ) { idx ->
+                settingsStore.captureEngineMode = engines[idx]
+                wirelessFeedbackText = ""
+                renderUi()
+            },
+        )
+        card.addView(
+            TextView(this).apply {
+                text = caps.tierSummaryZh
+                textSize = 11.5f
+                setTextColor(palette.textSecondary)
+                setPadding(dp(4), dp(6), dp(4), dp(4))
+            },
+        )
+
+        if (settingsStore.captureEngineMode != CaptureEngineMode.WIRELESS_DEBUG) return
+
+        if (!caps.supportsWirelessDebugEngine) {
+            card.addView(
+                TextView(this).apply {
+                    text = "当前系统不支持内置无线调试免投屏采集，请切换回「标准投屏模式」。"
+                    textSize = 11.5f
+                    setTextColor(palette.statusWarning)
+                    setPadding(dp(4), dp(2), dp(4), dp(4))
+                },
+            )
+            return
+        }
+
+        val keyStore = PairingNotificationGuide.keyStore(this)
+        val paired = keyStore.isPaired()
+        card.addView(spacer(6))
+        card.addView(
+            permissionRow(
+                title = "内置无线调试配对状态",
+                subtitle = if (paired) {
+                    "已保存本机 TLS 配对证书；投送前确保系统「无线调试」开启即可自动直连（点击查看向导）"
+                } else {
+                    "仅需首次按 4 步向导完成 6 位码配对，无需安装 Shizuku 或连接电脑"
+                },
+                granted = paired,
+                grantedLabel = "已配对",
+                missingLabel = "未配对",
+            ) {
+                openWirelessDebugGuide(autoVerify = paired)
+            },
+        )
+
+        card.addView(spacer(8))
+        card.addView(fieldLabel("无感模式捕获范围"))
+        val scopes = listOf(CaptureScopeMode.SINGLE_APP, CaptureScopeMode.GLOBAL_MEDIA)
+        val scopeIdx = scopes.indexOf(settingsStore.captureScopeMode).coerceAtLeast(0)
+        card.addView(
+            UiComponents.segmentedControl(
+                context = this,
+                palette = palette,
+                labels = scopes.map { it.labelZh },
+                initialIndex = scopeIdx,
+            ) { idx ->
+                settingsStore.captureScopeMode = scopes[idx]
+                renderUi()
+            },
+        )
+        if (settingsStore.captureScopeMode == CaptureScopeMode.SINGLE_APP && !caps.supportsShellSingleAppPolicy) {
+            card.addView(
+                TextView(this).apply {
+                    text = "提示：Android 11–12 不支持 shell 单 App 隔离（Fail-Closed 会拒绝启动），请选择「全局媒体（显式）」或切回「标准投屏模式」。"
+                    textSize = 11.5f
+                    setTextColor(palette.statusWarning)
+                    setPadding(dp(4), dp(6), dp(4), dp(2))
+                },
+            )
+        }
+
+        card.addView(spacer(8))
+        val actionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        actionRow.addView(
+            UiComponents.tonalButton(
+                this,
+                palette,
+                if (paired) "查看向导 / 重新配对" else "打开 4 步配对引导",
+                primary = !paired,
+            ) {
+                openWirelessDebugGuide(autoVerify = paired)
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(8)
+                }
+            },
+        )
+        actionRow.addView(
+            UiComponents.tonalButton(this, palette, "测试连接", primary = paired) {
+                testWirelessAdbConnection()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        card.addView(actionRow)
+
+        if (paired) {
+            card.addView(spacer(8))
+            card.addView(
+                UiComponents.tonalButton(this, palette, "清除本机配对证书") {
+                    keyStore.clearPairing()
+                    PairingNotificationGuide.cancelNotification(this)
+                    wirelessFeedbackText = "已清除本机无线调试配对证书"
+                    wirelessFeedbackIsError = false
+                    renderUi()
+                },
+            )
+        }
+
+        if (wirelessFeedbackText.isNotBlank()) {
+            card.addView(
+                TextView(this).apply {
+                    text = wirelessFeedbackText
+                    textSize = 11.5f
+                    setTextColor(if (wirelessFeedbackIsError) palette.statusWarning else palette.statusSuccess)
+                    setPadding(dp(4), dp(8), dp(4), 0)
+                },
+            )
+        }
+    }
+
+    private fun openWirelessDebugGuide(autoVerify: Boolean) {
+        startActivity(
+            Intent(this, WirelessDebugGuideActivity::class.java)
+                .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, autoVerify),
+        )
+    }
+
+    private fun testWirelessAdbConnection() {
+        val store = PairingNotificationGuide.keyStore(this)
+        if (!store.isPaired()) {
+            wirelessFeedbackText = "尚未配对，请先点击「去配对」完成 6 位码握手"
+            wirelessFeedbackIsError = true
+            renderUi()
+            return
+        }
+        wirelessFeedbackText = "正在检测本机无线调试连接…"
+        wirelessFeedbackIsError = false
+        renderUi()
+        val appCtx = applicationContext
+        Thread({
+            val ep = WirelessAdbDiscovery(appCtx).discoverOnce(WirelessAdbDiscovery.SERVICE_CONNECT, 3_000L)
+            if (ep == null) {
+                main.post {
+                    wirelessFeedbackText = "未发现本机无线调试端口，请确认「开发者选项 → 无线调试」已开启"
+                    wirelessFeedbackIsError = true
+                    renderUi()
+                }
+                return@Thread
+            }
+            val identity = store.getOrCreateIdentity()
+            val res = WirelessAdbShellClient.runShellCommand(ep.host, ep.port, identity, "id")
+            main.post {
+                when (res) {
+                    is WirelessAdbShellClient.ShellResult.Ok -> {
+                        wirelessFeedbackText = "无线调试连接正常（127.0.0.1:${ep.port} · ${res.output.take(48)}）"
+                        wirelessFeedbackIsError = false
+                    }
+                    is WirelessAdbShellClient.ShellResult.Error -> {
+                        wirelessFeedbackText = res.messageZh
+                        wirelessFeedbackIsError = true
+                    }
+                }
+                renderUi()
+            }
+        }, "test-wireless-adb").start()
     }
 
     private fun fieldLabel(textStr: String): TextView = TextView(this).apply {

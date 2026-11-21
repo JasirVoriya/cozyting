@@ -3,6 +3,7 @@ package com.miplay.sender
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,6 +13,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.media.projection.MediaProjectionManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -34,6 +36,9 @@ import android.widget.TextView
 import com.miplay.sender.capture.AndroidLaunchableApps
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
 import com.miplay.sender.capture.AutoSourceSelectionPolicy
+import com.miplay.sender.capture.CaptureEngineCapabilities
+import com.miplay.sender.capture.CaptureEngineMode
+import com.miplay.sender.capture.CaptureScopeMode
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
 import com.miplay.sender.capture.FavoriteAudioSource
@@ -41,6 +46,8 @@ import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.LaunchableAppCatalog
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
+import com.miplay.sender.capture.shell.PairingNotificationGuide
+import com.miplay.sender.capture.shell.WirelessDebugGuideActivity
 import com.miplay.sender.cast.ActiveMediaSessionSelector
 import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
@@ -150,6 +157,7 @@ class MainActivity : Activity() {
     private var discovering: Boolean = false
     private var refreshAnim: ObjectAnimator? = null
     private var lastRenderedDark: Boolean = true
+    private var lastPromptedWirelessError: String = ""
     private var lastStatusMessage: String = "本机出声 · 点击下方音箱开始投送"
 
     private data class LatencyIndicatorViews(
@@ -168,6 +176,7 @@ class MainActivity : Activity() {
             } else if (CastService.lastFailMessage.isNotBlank()) {
                 castRequested = false
                 setStatusText(CastService.lastFailMessage)
+                maybePromptWirelessRecovery(CastService.lastFailMessage)
             }
             syncTargetFromActiveCast()
             val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
@@ -1257,14 +1266,43 @@ class MainActivity : Activity() {
     private fun startCastTo(speakerIds: Set<String>) {
         if (speakerIds.isEmpty()) return
         val appMode = settingsStore.sourceMode != "silent"
-        if (appMode && selectedPackage.isBlank()) {
+        val requestedEngine = settingsStore.captureEngineMode
+        val requestedScope = settingsStore.captureScopeMode
+        val validation = if (appMode) {
+            CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT).validate(
+                requestedEngine = requestedEngine,
+                requestedScope = requestedScope,
+                hasPairedCertificate = PairingNotificationGuide.keyStore(this).isPaired(),
+                keepLocalOutput = settingsStore.keepLocalOutput,
+            )
+        } else {
+            CaptureEngineCapabilities.ValidationResult.Allowed(
+                effectiveEngine = CaptureEngineMode.STANDARD,
+                effectiveScope = CaptureScopeMode.SINGLE_APP,
+                usesTrueSingleAppMute = false,
+            )
+        }
+        if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
+            setStatusText(validation.messageZh)
+            routeState = CastRouteSelection.selectThisDevice(routeState).state
+            renderDevices()
+            showWirelessPrecheckGuideDialog(speakerIds, validation.messageZh)
+            return
+        }
+        val allowed = validation as CaptureEngineCapabilities.ValidationResult.Allowed
+        val needsTargetApp = appMode && allowed.effectiveScope == CaptureScopeMode.SINGLE_APP
+
+        if (needsTargetApp && selectedPackage.isBlank()) {
             setStatusText("请先选择要投送的音频 App")
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             openAppPicker()
             return
         }
-        if (appMode && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (appMode &&
+            allowed.effectiveEngine == CaptureEngineMode.STANDARD &&
+            checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+        ) {
             setStatusText("需要音频捕获权限（仅用于播放捕获，不采集麦克风）")
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_PERMS)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
@@ -1282,8 +1320,33 @@ class MainActivity : Activity() {
                 CastService.EXTRA_LOCAL_MUTE_POLICY,
                 if (settingsStore.keepLocalOutput) "keep_local" else "global_mute",
             )
+            .putExtra(CastService.EXTRA_CAPTURE_ENGINE, allowed.effectiveEngine.id)
+            .putExtra(CastService.EXTRA_CAPTURE_SCOPE, allowed.effectiveScope.id)
         speakerIds.forEach { speakerVolume[it] = masterVolume }
-        if (appMode) {
+        if (appMode && allowed.effectiveEngine == CaptureEngineMode.WIRELESS_DEBUG) {
+            // 无感模式：零 MediaProjection 弹窗、直接启动 mediaPlayback 前台服务
+            castRequested = true
+            CastService.primeConnectingReceivers(speakerIds)
+            updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
+            updateHeaderStatusPill()
+            val svcIntent = base.putExtra(CastService.EXTRA_SOURCE, "app")
+            if (needsTargetApp) {
+                svcIntent
+                    .putExtra(CastService.EXTRA_TARGET_PACKAGE, selectedPackage)
+                    .putExtra(CastService.EXTRA_TARGET_LABEL, selectedLabel)
+                    .putExtra(CastService.EXTRA_TARGET_CERT, selectedCert)
+                    .putExtra(CastService.EXTRA_TARGET_AUTO_DETECTED, currentSelectionAutoDetected)
+                    .putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
+            }
+            startForegroundService(svcIntent)
+            setStatusText(
+                if (allowed.effectiveScope == CaptureScopeMode.GLOBAL_MEDIA) {
+                    "正在启动无感全局媒体投送…"
+                } else {
+                    "正在无感连接并投送 $selectedLabel…"
+                },
+            )
+        } else if (appMode) {
             val grantSession = UUID.randomUUID().toString()
             lastGrantSession = grantSession
             pendingStart = base
@@ -1309,6 +1372,104 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showWirelessPrecheckGuideDialog(speakerIds: Set<String>, reasonZh: String) {
+        if (isFinishing || isDestroyed || intent?.getBooleanExtra("ui_preview", false) == true) return
+        val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
+        val paired = PairingNotificationGuide.keyStore(this).isPaired()
+        val builder = AlertDialog.Builder(this)
+            .setMessage(reasonZh)
+            .setNegativeButton("取消", null)
+
+        when {
+            !caps.supportsWirelessDebugEngine -> {
+                builder.setTitle("当前系统不支持无感采集")
+                    .setPositiveButton("切回标准模式投送") { _, _ ->
+                        settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
+                        retrySpeakersAfterModeChange(speakerIds)
+                    }
+            }
+            !paired -> {
+                builder.setTitle("首次使用无感模式需配对")
+                    .setPositiveButton("打开 4 步配对引导") { _, _ ->
+                        startActivity(Intent(this, WirelessDebugGuideActivity::class.java))
+                    }
+                    .setNeutralButton("先用标准模式投送") { _, _ ->
+                        settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
+                        retrySpeakersAfterModeChange(speakerIds)
+                    }
+            }
+            !caps.supportsShellSingleAppPolicy -> {
+                builder.setTitle("Android 11–12 仅支持全局媒体")
+                    .setPositiveButton("切换显式全局媒体") { _, _ ->
+                        settingsStore.captureScopeMode = CaptureScopeMode.GLOBAL_MEDIA
+                        refreshTargetFromStore()
+                        retrySpeakersAfterModeChange(speakerIds)
+                    }
+                    .setNeutralButton("改用标准模式投送") { _, _ ->
+                        settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
+                        retrySpeakersAfterModeChange(speakerIds)
+                    }
+            }
+            else -> {
+                builder.setTitle("无感采集未就绪")
+                    .setPositiveButton("打开配置向导") { _, _ ->
+                        startActivity(
+                            Intent(this, WirelessDebugGuideActivity::class.java)
+                                .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
+                        )
+                    }
+                    .setNeutralButton("先用标准模式投送") { _, _ ->
+                        settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
+                        retrySpeakersAfterModeChange(speakerIds)
+                    }
+            }
+        }
+        builder.show()
+    }
+
+    private fun retrySpeakersAfterModeChange(speakerIds: Set<String>) {
+        var next = routeState
+        speakerIds.forEach { ip ->
+            next = CastRouteSelection.setSpeakerChecked(next, ip, true).state
+        }
+        routeState = next
+        renderDevices()
+        startCastTo(speakerIds)
+    }
+
+    private fun maybePromptWirelessRecovery(failMessage: String) {
+        if (isFinishing || isDestroyed || intent?.getBooleanExtra("ui_preview", false) == true) return
+        if (settingsStore.captureEngineMode != CaptureEngineMode.WIRELESS_DEBUG) return
+        if (failMessage == lastPromptedWirelessError) return
+        val isWirelessError = failMessage.contains("无线调试") || failMessage.contains("无感采集")
+        if (!isWirelessError) return
+        lastPromptedWirelessError = failMessage
+
+        val body = "$failMessage\n\n提示：手机重启后 Android 会自动关闭「无线调试」，只需重新点开开关即可恢复，无需重新输入 6 位配对码。"
+        AlertDialog.Builder(this)
+            .setTitle("无感采集需要检查无线调试")
+            .setMessage(body)
+            .setPositiveButton("去开启无线调试") { _, _ ->
+                CastService.lastFailMessage = ""
+                runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
+                    .onFailure { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } }
+            }
+            .setNeutralButton("打开配置向导") { _, _ ->
+                CastService.lastFailMessage = ""
+                startActivity(
+                    Intent(this, WirelessDebugGuideActivity::class.java)
+                        .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
+                )
+            }
+            .setNegativeButton("切回标准模式") { _, _ ->
+                CastService.lastFailMessage = ""
+                settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
+                refreshTargetFromStore()
+                setStatusText("已切回标准投屏模式，点击音箱即可投送")
+            }
+            .show()
+    }
+
     private fun refreshTargetFromStore() {
         val sel = store.loadSelection()
         if (sel != null) {
@@ -1317,7 +1478,15 @@ class MainActivity : Activity() {
             selectedCert = sel.signingCertSha256
         }
         if (::mainTargetTitle.isInitialized) {
-            if (selectedPackage.isBlank()) {
+            val globalWireless = settingsStore.captureEngineMode == CaptureEngineMode.WIRELESS_DEBUG &&
+                settingsStore.captureScopeMode == CaptureScopeMode.GLOBAL_MEDIA
+            if (globalWireless) {
+                mainTargetTitle.text = "全局媒体模式（无感采集）"
+                mainTargetSubtitle.text = "当前将捕获本机所有媒体音频 · 可在设置中切回单 App 隔离"
+                mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)
+                mainTargetIcon.setColorFilter(palette.accentBright)
+                if (::mainTargetAutoBadge.isInitialized) mainTargetAutoBadge.visibility = View.GONE
+            } else if (selectedPackage.isBlank()) {
                 mainTargetTitle.text = "投送音源：未选择"
                 mainTargetSubtitle.text = "点击管理常用音源或自动识别正在播放的 App"
                 mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)

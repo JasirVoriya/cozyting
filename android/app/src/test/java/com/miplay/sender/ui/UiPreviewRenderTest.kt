@@ -18,6 +18,8 @@ import com.miplay.sender.MainActivity
 import com.miplay.sender.SettingsActivity
 import com.miplay.sender.capture.FavoriteAudioSource
 import com.miplay.sender.capture.LaunchableApp
+import com.miplay.sender.capture.shell.WirelessDebugGuideActivity
+import com.miplay.sender.capture.shell.WirelessDebugOnboardingState
 import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.CastRouteSelection.Kind
@@ -106,7 +108,16 @@ class UiPreviewRenderTest {
         val pickerOverview = composeSideBySide(darkPicker, lightPicker)
         savePng(pickerOverview, "08_app_picker_dark_vs_light.png")
 
-        println("[UiPreviewRenderTest] Saved 9 preview PNGs to: ${outDir.absolutePath}")
+        val darkGuide = renderWirelessGuide(isDark = true)
+        savePng(darkGuide, "09_wireless_guide_dark.png")
+
+        val lightGuide = renderWirelessGuide(isDark = false)
+        savePng(lightGuide, "10_wireless_guide_light.png")
+
+        val guideOverview = composeSideBySide(darkGuide, lightGuide)
+        savePng(guideOverview, "11_wireless_guide_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 12 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -303,6 +314,27 @@ class UiPreviewRenderTest {
             previewFavorites = favorites,
             previewSelectedPackage = "com.example.music",
             previewExpandOthers = true,
+        )
+        val bitmap = captureActivityBitmap(activity)
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun renderWirelessGuide(isDark: Boolean): Bitmap {
+        val controller = Robolectric.buildActivity(WirelessDebugGuideActivity::class.java).setup()
+        val activity = controller.get()
+        val state = WirelessDebugOnboardingState.evaluate(
+            sdkInt = 34,
+            notificationsGranted = true,
+            developerOptionsEnabled = true,
+            paired = false,
+            connectionVerified = false,
+        )
+        activity.applyUiPreviewStateForTest(
+            isDark = isDark,
+            state = state,
+            expandTips = false,
         )
         val bitmap = captureActivityBitmap(activity)
         controller.pause().stop().destroy()

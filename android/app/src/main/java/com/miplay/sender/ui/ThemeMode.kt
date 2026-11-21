@@ -2,6 +2,9 @@ package com.miplay.sender.ui
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Build
+import com.miplay.sender.capture.CaptureEngineMode
+import com.miplay.sender.capture.CaptureScopeMode
 
 /**
  * 跨端主题模式（与 `design/tokens.json` 和后续 iOS SwiftUI 对齐）。
@@ -76,6 +79,26 @@ class PrefsCastSettingsStore(context: Context) {
         get() = prefs.getInt(KEY_AUTH_MODE, 0).coerceIn(0, 2)
         set(value) = prefs.edit().putInt(KEY_AUTH_MODE, value.coerceIn(0, 2)).apply()
 
+    /**
+     * Android 采集引擎模式：未手动设置时按系统版本自动选择默认模式
+     * （Android 13+ 默认无感模式；Android 10–12 默认标准投屏模式）。
+     */
+    var captureEngineMode: CaptureEngineMode
+        get() {
+            val raw = prefs.getString(KEY_CAPTURE_ENGINE, null)
+            return if (raw.isNullOrBlank()) {
+                CaptureEngineMode.defaultForSdkInt(Build.VERSION.SDK_INT)
+            } else {
+                CaptureEngineMode.fromId(raw)
+            }
+        }
+        set(value) = prefs.edit().putString(KEY_CAPTURE_ENGINE, value.id).apply()
+
+    /** 无感模式作用域：single_app（默认单 App 隔离）| global_media（显式全局媒体）。 */
+    var captureScopeMode: CaptureScopeMode
+        get() = CaptureScopeMode.fromId(prefs.getString(KEY_CAPTURE_SCOPE, CaptureScopeMode.SINGLE_APP.id))
+        set(value) = prefs.edit().putString(KEY_CAPTURE_SCOPE, value.id).apply()
+
     fun isDark(context: Context): Boolean =
         ThemeMode.resolveIsDark(themeMode, ThemeMode.isSystemNight(context))
 
@@ -89,5 +112,7 @@ class PrefsCastSettingsStore(context: Context) {
         private const val KEY_DELAY_MS = "delay_ms"
         private const val KEY_REF_FUNC = "ref_function"
         private const val KEY_AUTH_MODE = "auth_mode"
+        private const val KEY_CAPTURE_ENGINE = "capture_engine_mode"
+        private const val KEY_CAPTURE_SCOPE = "capture_scope_mode"
     }
 }

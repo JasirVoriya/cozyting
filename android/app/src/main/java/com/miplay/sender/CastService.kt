@@ -9,8 +9,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.media.AudioFormat
-import android.media.AudioRecord
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.net.wifi.WifiManager
@@ -20,22 +18,28 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
-import com.miplay.sender.cast.ActiveMediaSessionSelector
-import com.miplay.sender.cast.AndroidStreamMusicVolume
-import com.miplay.sender.compat.AcceptanceAudioDefaults
-import com.miplay.sender.compat.CaptureSelectionLayers
-import com.miplay.sender.cast.LocalOutputMute
-import com.miplay.sender.cast.NowPlayingTracker
 import com.miplay.sender.capture.AndroidPackageIdentityLookup
+import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.AutoSourceSelectionPolicy
+import com.miplay.sender.capture.CaptureEngineCapabilities
+import com.miplay.sender.capture.CaptureEngineMode
 import com.miplay.sender.capture.CaptureFailReason
+import com.miplay.sender.capture.CaptureScopeMode
 import com.miplay.sender.capture.CaptureTargetResolver
 import com.miplay.sender.capture.CaptureTargetResult
+import com.miplay.sender.capture.MediaProjectionBackend
 import com.miplay.sender.capture.PcmProbe
-import com.miplay.sender.capture.PlaybackCaptureFactory
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.ProjectionSessionPolicy
 import com.miplay.sender.capture.TargetAppSelection
+import com.miplay.sender.capture.shell.PairingNotificationGuide
+import com.miplay.sender.capture.shell.ShellCaptureBackend
+import com.miplay.sender.cast.ActiveMediaSessionSelector
+import com.miplay.sender.cast.AndroidStreamMusicVolume
+import com.miplay.sender.cast.LocalOutputMute
+import com.miplay.sender.cast.NowPlayingTracker
+import com.miplay.sender.compat.AcceptanceAudioDefaults
+import com.miplay.sender.compat.CaptureSelectionLayers
 import com.miplay.sender.ui.PrefsCastSettingsStore
 import org.json.JSONArray
 import org.json.JSONObject
@@ -84,6 +88,8 @@ class CastService : Service() {
         const val EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG = "manual_override_blocked_pkg"
         const val EXTRA_GRANT_SESSION = "grant_session"
         const val EXTRA_LOCAL_MUTE_POLICY = "local_mute_policy"
+        const val EXTRA_CAPTURE_ENGINE = "capture_engine" // "standard" | "wireless_debug"
+        const val EXTRA_CAPTURE_SCOPE = "capture_scope" // "single_app" | "global_media"
         private const val CHANNEL = "cast"
         private const val NOTIF_ID = 1
         private const val MAX_RECENT_EVENTS = 80
@@ -96,6 +102,8 @@ class CastService : Service() {
         @Volatile var lastEvent: String = "空闲"
         @Volatile var paused = false
         @Volatile var source = "silent"
+        @Volatile var activeEngineMode: CaptureEngineMode = CaptureEngineMode.STANDARD
+        @Volatile var activeScopeMode: CaptureScopeMode = CaptureScopeMode.SINGLE_APP
         @Volatile var targetPackage: String = ""
         @Volatile var targetLabel: String = ""
         @Volatile var targetAutoDetected: Boolean = false
@@ -197,11 +205,14 @@ class CastService : Service() {
     }
 
     private var projection: MediaProjection? = null
-    private var record: AudioRecord? = null
+    private var captureBackend: AudioCaptureBackend? = null
     private var encoder: AacEncoder? = null
-    private var captureThread: Thread? = null
     private val captureLock = Any()
-    private val captureGen = AtomicInteger(0)
+    private val pcmBlocks = AtomicInteger(0)
+    private var pcmPeak = 0
+    @Volatile private var activeMuteHandling: AudioCaptureBackend.LocalMuteHandling =
+        AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE
+    @Volatile private var activeKeepLocalOutput: Boolean = false
     private val switchExecutor = Executors.newSingleThreadExecutor { r -> Thread(r, "capture-switch") }
     private var sessionTracker: NowPlayingTracker? = null
     private var blockedUntilNewPlaySeq: Map<String, Long> = emptyMap()
@@ -314,11 +325,26 @@ class CastService : Service() {
         }
 
         source = intent?.getStringExtra(EXTRA_SOURCE) ?: "silent"
+        val requestedEngine = CaptureEngineMode.fromId(
+            intent?.getStringExtra(EXTRA_CAPTURE_ENGINE) ?: settingsStore.captureEngineMode.id,
+        )
+        val requestedScope = CaptureScopeMode.fromId(
+            intent?.getStringExtra(EXTRA_CAPTURE_SCOPE) ?: settingsStore.captureScopeMode.id,
+        )
+        val policyArgEarly = intent?.getStringExtra(EXTRA_LOCAL_MUTE_POLICY).orEmpty()
+        activeKeepLocalOutput = policyArgEarly == "keep_local"
+        activeEngineMode = if (source == "app") requestedEngine else CaptureEngineMode.STANDARD
+        activeScopeMode = if (source == "app" && activeEngineMode == CaptureEngineMode.WIRELESS_DEBUG) {
+            requestedScope
+        } else {
+            CaptureScopeMode.SINGLE_APP
+        }
         val ips = intent?.getStringExtra(EXTRA_IPS).orEmpty()
         val initialIps = parseIps(ips)
-        projectionType = source == "app"
+        // 无感模式无需 mediaProjection 前台类型，彻底避免「正在投屏」系统状态栏提示
+        projectionType = source == "app" && activeEngineMode == CaptureEngineMode.STANDARD
 
-        // Android 14+：先进入对应类型的 FGS，再 getMediaProjection
+        // Android 14+：先进入对应类型的 FGS，再 getMediaProjection（无感模式仅用 mediaPlayback）
         startForegroundCompat()
 
         if (running.getAndSet(true)) {
@@ -338,61 +364,90 @@ class CastService : Service() {
         acquireLocks()
 
         if (source == "app") {
-            val pkg = intent?.getStringExtra(EXTRA_TARGET_PACKAGE).orEmpty()
-            val cert = intent?.getStringExtra(EXTRA_TARGET_CERT).orEmpty()
-            val resolved = resolveTargetOrFail(pkg, cert)
-            if (resolved == null) {
-                running.set(false)
-                releaseLocks()
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            targetPackage = resolved.packageName
-            targetLabel = intent?.getStringExtra(EXTRA_TARGET_LABEL)?.takeIf { it.isNotBlank() }
-                ?: resolveAppLabel(resolved.packageName)
-            targetAutoDetected = intent?.getBooleanExtra(EXTRA_TARGET_AUTO_DETECTED, false) ?: false
-            initialBlockedPackage = intent?.getStringExtra(EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG)?.trim()
-                ?.takeIf { it.isNotEmpty() && it != resolved.packageName }
-            captureUid = resolved.uid
-            event(CaptureSelectionLayers.statusLine(targetPackage, captureUid))
-
-            val code = intent!!.getIntExtra(EXTRA_PROJ_CODE, 0)
-            val data: Intent? = if (Build.VERSION.SDK_INT >= 33) {
-                intent.getParcelableExtra(EXTRA_PROJ_DATA, Intent::class.java)
-            } else {
-                @Suppress("DEPRECATION") intent.getParcelableExtra(EXTRA_PROJ_DATA)
-            }
-            val grantSession = intent.getStringExtra(EXTRA_GRANT_SESSION) ?: UUID.randomUUID().toString()
-            val decision = sessionPolicy.beginAfterUserGrant(grantSession, code)
-            if (decision !is ProjectionSessionPolicy.Decision.ProceedToFgsThenGetProjection ||
-                code != Activity.RESULT_OK || data == null
-            ) {
-                event("缺少或无效的 MediaProjection 授权（每次会话需重新授权）")
-                lastFailMessage = "录屏/音频捕获授权无效或被拒绝"
-                running.set(false)
-                releaseLocks()
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            activeGrantSession = grantSession
-            // FGS 已启动 → 现在才 getMediaProjection
-            projection = getSystemService(MediaProjectionManager::class.java).getMediaProjection(code, data)
-            if (projection == null) {
-                event("getMediaProjection 返回 null")
-                lastFailMessage = "系统未能创建 MediaProjection"
-                running.set(false)
-                releaseLocks()
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            projection?.registerCallback(object : MediaProjection.Callback() {
-                override fun onStop() {
-                    event("MediaProjection 已停止/撤销，正在清理")
-                    lastFailMessage = "捕获授权已撤销或被系统终止"
-                    stopCast()
+            if (activeEngineMode == CaptureEngineMode.WIRELESS_DEBUG) {
+                val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
+                val validation = caps.validate(
+                    requestedEngine = activeEngineMode,
+                    requestedScope = activeScopeMode,
+                    hasPairedCertificate = PairingNotificationGuide.keyStore(this).isPaired(),
+                    keepLocalOutput = activeKeepLocalOutput,
+                )
+                if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
+                    lastFailMessage = validation.messageZh
+                    event("无感采集前置校验拒绝：${validation.messageZh}")
+                    running.set(false)
+                    releaseLocks()
                     stopSelf()
+                    return START_NOT_STICKY
                 }
-            }, main)
+            }
+
+            if (activeScopeMode == CaptureScopeMode.SINGLE_APP) {
+                val pkg = intent?.getStringExtra(EXTRA_TARGET_PACKAGE).orEmpty()
+                val cert = intent?.getStringExtra(EXTRA_TARGET_CERT).orEmpty()
+                val resolved = resolveTargetOrFail(pkg, cert)
+                if (resolved == null) {
+                    running.set(false)
+                    releaseLocks()
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                targetPackage = resolved.packageName
+                targetLabel = intent?.getStringExtra(EXTRA_TARGET_LABEL)?.takeIf { it.isNotBlank() }
+                    ?: resolveAppLabel(resolved.packageName)
+                targetAutoDetected = intent?.getBooleanExtra(EXTRA_TARGET_AUTO_DETECTED, false) ?: false
+                initialBlockedPackage = intent?.getStringExtra(EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG)?.trim()
+                    ?.takeIf { it.isNotEmpty() && it != resolved.packageName }
+                captureUid = resolved.uid
+                event(CaptureSelectionLayers.statusLine(targetPackage, captureUid))
+            } else {
+                targetPackage = ""
+                targetLabel = "全局媒体（无感采集）"
+                targetAutoDetected = false
+                initialBlockedPackage = null
+                captureUid = -1
+                event("已显式启用无感全局媒体捕获模式")
+            }
+
+            if (activeEngineMode == CaptureEngineMode.STANDARD) {
+                val code = intent!!.getIntExtra(EXTRA_PROJ_CODE, 0)
+                val data: Intent? = if (Build.VERSION.SDK_INT >= 33) {
+                    intent.getParcelableExtra(EXTRA_PROJ_DATA, Intent::class.java)
+                } else {
+                    @Suppress("DEPRECATION") intent.getParcelableExtra(EXTRA_PROJ_DATA)
+                }
+                val grantSession = intent.getStringExtra(EXTRA_GRANT_SESSION) ?: UUID.randomUUID().toString()
+                val decision = sessionPolicy.beginAfterUserGrant(grantSession, code)
+                if (decision !is ProjectionSessionPolicy.Decision.ProceedToFgsThenGetProjection ||
+                    code != Activity.RESULT_OK || data == null
+                ) {
+                    event("缺少或无效的 MediaProjection 授权（每次会话需重新授权）")
+                    lastFailMessage = "录屏/音频捕获授权无效或被拒绝"
+                    running.set(false)
+                    releaseLocks()
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                activeGrantSession = grantSession
+                // FGS 已启动 → 现在才 getMediaProjection
+                projection = getSystemService(MediaProjectionManager::class.java).getMediaProjection(code, data)
+                if (projection == null) {
+                    event("getMediaProjection 返回 null")
+                    lastFailMessage = "系统未能创建 MediaProjection"
+                    running.set(false)
+                    releaseLocks()
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                projection?.registerCallback(object : MediaProjection.Callback() {
+                    override fun onStop() {
+                        event("MediaProjection 已停止/撤销，正在清理")
+                        lastFailMessage = "捕获授权已撤销或被系统终止"
+                        stopCast()
+                        stopSelf()
+                    }
+                }, main)
+            }
         }
 
         val reqDelay = intent?.getIntExtra(EXTRA_DELAY, 0) ?: 0
@@ -428,15 +483,11 @@ class CastService : Service() {
             }
             lastStats = st
             if (source == "app") {
-                val policyArg = intent?.getStringExtra(EXTRA_LOCAL_MUTE_POLICY).orEmpty()
-                val policy = if (policyArg == "keep_local") {
-                    LocalOutputMute.Policy.KEEP_LOCAL_OUTPUT
-                } else {
-                    LocalOutputMute.Policy.GLOBAL_STREAM_MUTE
-                }
-                publishMute(localMute.beginMuteForCast(policy))
+                applyLocalMuteForActiveBackend()
                 event(localMuteStatusZh)
-                main.post { startAutoSourceMonitor() }
+                if (activeScopeMode == CaptureScopeMode.SINGLE_APP) {
+                    main.post { startAutoSourceMonitor() }
+                }
             } else {
                 publishMute(localMute.skip("silent source"))
             }
@@ -559,8 +610,14 @@ class CastService : Service() {
             this, 9, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
         val title = when {
+            paused && source == "app" && activeScopeMode == CaptureScopeMode.GLOBAL_MEDIA ->
+                "已暂停投送（全局媒体 · 无感模式）"
             paused && source == "app" -> "已暂停投送（选定 App）"
             paused -> "已暂停投送（静音测试）"
+            source == "app" && activeScopeMode == CaptureScopeMode.GLOBAL_MEDIA ->
+                "正在投送全局媒体音频（无感模式）"
+            source == "app" && activeEngineMode == CaptureEngineMode.WIRELESS_DEBUG ->
+                "正在无感投送选定 App 音频"
             source == "app" -> "正在投送选定 App 音频"
             else -> "正在投送到小米音箱（静音测试）"
         }
@@ -685,13 +742,37 @@ class CastService : Service() {
         }
     }
 
+    private fun applyLocalMuteForActiveBackend() {
+        when (activeMuteHandling) {
+            AudioCaptureBackend.LocalMuteHandling.ISOLATED_APP_LOOPBACK -> {
+                localMute.skip("isolated single-app loopback mute")
+                localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
+                localMuteStatusZh = "单 App 本机静音已生效（无感环回，不影响其他 App 手机出声）"
+                Log.i(TAG, "LOCAL_MUTE mode=ISOLATED_APP_LOOPBACK msg=$localMuteStatusZh")
+            }
+            AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK -> {
+                localMute.skip("system route loopback")
+                localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
+                localMuteStatusZh = "全局媒体本机静音已生效（无感环回路由）"
+                Log.i(TAG, "LOCAL_MUTE mode=SYSTEM_ROUTE_LOOPBACK msg=$localMuteStatusZh")
+            }
+            AudioCaptureBackend.LocalMuteHandling.KEEP_LOCAL_OUTPUT -> {
+                publishMute(localMute.beginMuteForCast(LocalOutputMute.Policy.KEEP_LOCAL_OUTPUT))
+            }
+            AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE -> {
+                publishMute(localMute.beginMuteForCast(LocalOutputMute.Policy.GLOBAL_STREAM_MUTE))
+            }
+        }
+    }
+
     /**
-     * 在保持当前 MediaProjection 与音箱投送会话不断线的前提下，按严格单 UID 热切换 AudioRecord。
+     * 在保持当前采集后端与音箱投送会话不断线的前提下，按严格单 UID 热切换捕获目标。
      * 任何解析或重建失败一律 fail-closed（尝试恢复原 UID，无法恢复则停止会话），绝不退化全系统捕获。
      */
     private fun hotSwitchCaptureTarget(newPackage: String, newLabel: String, autoDetected: Boolean) {
         synchronized(captureLock) {
-            if (!running.get() || source != "app" || projection == null) return
+            val backend = captureBackend ?: return
+            if (!running.get() || source != "app" || activeScopeMode != CaptureScopeMode.SINGLE_APP) return
             if (newPackage.isBlank() || newPackage == targetPackage) return
 
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
@@ -708,131 +789,88 @@ class CastService : Service() {
             val modeLabel = if (autoDetected) "自动" else "手动"
             event("正在${modeLabel}热切换音源：$prevLabel -> $newLabel（uid $prevUid -> ${resolved.uid}）")
 
-            stopCaptureOnlyLocked()
-            val switched = startCaptureLocked(resolved.uid, reuseEncoder = true)
-            if (switched) {
-                targetPackage = resolved.packageName
-                targetLabel = newLabel
-                targetAutoDetected = autoDetected
-                captureUid = resolved.uid
-                noAudioHintPosted = false
-                lastFailMessage = ""
-                targetStore.saveSelection(
-                    TargetAppSelection(
-                        packageName = resolved.packageName,
-                        label = newLabel,
-                        signingCertSha256 = resolved.signingCertSha256,
-                    ),
-                )
-                event(
-                    if (autoDetected) {
-                        "已自动切换音源：$newLabel（uid=${resolved.uid}）"
-                    } else {
-                        "已切换音源：$newLabel（uid=${resolved.uid}）"
-                    },
-                )
-                main.post {
-                    updateNotification()
-                    targetChangeListener?.invoke()
-                }
-            } else {
-                // Fail-closed：若系统限制复用 live MediaProjection，优先恢复原 UID；若亦失败则停止并提示重授。
-                if (running.get() && prevUid >= 0 && startCaptureLocked(prevUid, reuseEncoder = true)) {
+            when (val switched = backend.hotSwitchUid(resolved.uid, activeKeepLocalOutput)) {
+                is AudioCaptureBackend.StartResult.Started -> {
+                    activeMuteHandling = switched.muteHandling
+                    targetPackage = resolved.packageName
+                    targetLabel = newLabel
+                    targetAutoDetected = autoDetected
+                    captureUid = resolved.uid
+                    noAudioHintPosted = false
                     lastFailMessage = ""
-                    event("系统限制无法热切换至 $newLabel，已保持当前音源 $prevLabel")
+                    targetStore.saveSelection(
+                        TargetAppSelection(
+                            packageName = resolved.packageName,
+                            label = newLabel,
+                            signingCertSha256 = resolved.signingCertSha256,
+                        ),
+                    )
+                    event(
+                        if (autoDetected) {
+                            "已自动切换音源：$newLabel（uid=${resolved.uid}）"
+                        } else {
+                            "已切换音源：$newLabel（uid=${resolved.uid}）"
+                        },
+                    )
                     main.post {
                         updateNotification()
                         targetChangeListener?.invoke()
                     }
-                } else {
-                    lastFailMessage = "系统限制无法热切换音源为 $newLabel，已停止投送，请重新勾选音箱授权"
-                    event(lastFailMessage)
-                    main.post {
-                        stopCast()
-                        stopSelf()
-                        targetChangeListener?.invoke()
+                }
+                is AudioCaptureBackend.StartResult.Failed -> {
+                    if (switched.messageZh.contains("已恢复原音源")) {
+                        lastFailMessage = ""
+                        event("无法热切换至 $newLabel，已保持当前音源 $prevLabel：${switched.messageZh}")
+                        main.post {
+                            updateNotification()
+                            targetChangeListener?.invoke()
+                        }
+                    } else {
+                        lastFailMessage = "无法热切换音源为 $newLabel，已停止投送：${switched.messageZh}"
+                        event(lastFailMessage)
+                        main.post {
+                            stopCast()
+                            stopSelf()
+                            targetChangeListener?.invoke()
+                        }
                     }
                 }
             }
         }
     }
 
-    /** 仅停止当前 AudioRecord 捕获线程并释放 AudioRecord（保留编码器、MediaProjection 与音箱连接）。 */
+    /** 仅停止当前采集后端（保留编码器、MediaProjection 与音箱连接）。 */
     private fun stopCaptureOnlyLocked() {
-        captureGen.incrementAndGet()
-        val oldRec = record
-        record = null
-        val oldThread = captureThread
-        captureThread = null
-        runCatching { oldRec?.stop() }
-        oldThread?.interrupt()
-        if (oldThread != null && oldThread !== Thread.currentThread()) {
-            runCatching { oldThread.join(500) }
-        }
-        runCatching { oldRec?.release() }
+        val oldBackend = captureBackend
+        captureBackend = null
+        runCatching { oldBackend?.stop() }
     }
 
-    /** 严格 UID 过滤；失败返回 false，调用方必须停止或恢复原 UID，不得回退全系统。 */
+    /** 启动当前采集后端（MediaProjectionBackend 或 ShellCaptureBackend）；失败一律 fail-closed。 */
     private fun startCaptureLocked(uid: Int, reuseEncoder: Boolean): Boolean {
-        val proj = projection
-        if (proj == null) {
-            lastFailMessage = "MediaProjection 不可用"
-            event(lastFailMessage)
-            return false
-        }
-        if (uid < 0) {
-            lastFailMessage = "UID 无效，拒绝开始捕获"
-            event(lastFailMessage)
-            return false
-        }
-        val config = try {
-            PlaybackCaptureFactory.buildAppCapture(proj, uid)
-        } catch (e: Exception) {
-            lastFailMessage = "无法构建 UID 过滤捕获：${e.message}"
-            event(lastFailMessage)
-            return false
-        }
-        val fmt = AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-            .setSampleRate(48_000).setChannelMask(AudioFormat.CHANNEL_IN_STEREO).build()
-        val chunk = 1024 * 4
-        val minBuf = AudioRecord.getMinBufferSize(48_000, AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT)
-
-        // 热切换时 AOSP AudioRecord.release() 内部异步反注册旧 AudioPolicy，短暂退避重试避免竞态误判失败。
-        val retryDelaysMs = if (reuseEncoder) longArrayOf(0L, 60L, 150L) else longArrayOf(0L)
-        var rec: AudioRecord? = null
-        var lastBuildErr: String? = null
-        for (delayMs in retryDelaysMs) {
-            if (!running.get()) return false
-            if (delayMs > 0L) {
-                runCatching { Thread.sleep(delayMs) }
-                if (!running.get()) return false
-            }
-            @Suppress("MissingPermission")
-            val attempt = try {
-                AudioRecord.Builder().setAudioFormat(fmt).setAudioPlaybackCaptureConfig(config)
-                    // 收紧捕获环缓：原 16×chunk≈341ms 容量；4×chunk≈85ms，降低捕获侧积压（可证伪：若 read 欠载再放大）。
-                    .setBufferSizeInBytes(maxOf(chunk * 4, minBuf)).build()
-            } catch (e: Exception) {
-                lastBuildErr = "AudioRecord 创建失败（可能被拒绝捕获）：${e.message}"
-                null
-            }
-            if (attempt != null) {
-                if (attempt.state == AudioRecord.STATE_INITIALIZED) {
-                    rec = attempt
-                    break
-                } else {
-                    lastBuildErr = "AudioRecord 未初始化，拒绝捕获或设备不支持"
-                    runCatching { attempt.release() }
+        val backend: AudioCaptureBackend = when (activeEngineMode) {
+            CaptureEngineMode.STANDARD -> {
+                val proj = projection
+                if (proj == null) {
+                    lastFailMessage = "MediaProjection 不可用"
+                    event(lastFailMessage)
+                    return false
                 }
+                MediaProjectionBackend(
+                    projection = proj,
+                    isSessionRunning = { running.get() },
+                    onEvent = { event(it) },
+                )
+            }
+            CaptureEngineMode.WIRELESS_DEBUG -> {
+                ShellCaptureBackend(
+                    context = applicationContext,
+                    isSessionRunning = { running.get() },
+                    onEvent = { event(it) },
+                )
             }
         }
-        val initializedRec = rec
-        if (initializedRec == null) {
-            lastFailMessage = lastBuildErr ?: "AudioRecord 未初始化，拒绝捕获或设备不支持"
-            event(lastFailMessage)
-            return false
-        }
-        record = initializedRec
+
         val enc = if (reuseEncoder && encoder != null) {
             encoder!!
         } else {
@@ -843,60 +881,75 @@ class CastService : Service() {
                 }
             }.also { encoder = it }
         }
-        val myGen = captureGen.incrementAndGet()
-        initializedRec.startRecording()
-        event("AudioPlaybackCapture 已开始（uid=$uid, state=${initializedRec.recordingState}）")
-        captureThread = Thread({
-            val buf = ByteArray(chunk)
-            var peak = 0
-            var blocks = 0L
-            while (running.get() && captureGen.get() == myGen) {
-                var off = 0
-                while (off < chunk && running.get() && captureGen.get() == myGen) {
-                    val n = initializedRec.read(buf, off, chunk - off)
-                    if (n <= 0) {
-                        if (running.get() && captureGen.get() == myGen) {
-                            event("AudioRecord.read 返回 $n")
-                        }
-                        return@Thread
-                    }
-                    off += n
+
+        pcmBlocks.set(0)
+        pcmPeak = 0
+        val req = AudioCaptureBackend.CaptureRequest(
+            scopeMode = activeScopeMode,
+            targetUid = uid,
+            keepLocalOutput = activeKeepLocalOutput,
+        )
+        val result = backend.start(
+            request = req,
+            onPcmFrame = { buf, len -> onCapturedPcmFrame(enc, buf, len) },
+            onFatalError = { reason ->
+                lastFailMessage = reason
+                event(reason)
+                main.post {
+                    stopCast()
+                    stopSelf()
+                    targetChangeListener?.invoke()
                 }
-                if (captureGen.get() != myGen) break
-                if (paused) continue
-                var i = 0
-                while (i < chunk) {
-                    val s = (buf[i].toInt() and 0xff) or (buf[i + 1].toInt() shl 8)
-                    val a = kotlin.math.abs(s.toShort().toInt())
-                    if (a > peak) peak = a
-                    i += 2
-                }
-                blocks++
-                // 约每秒：验收频谱探针 + 本机静音捕获能量对照
-                if (blocks % 12 == 0L) {
-                    val snap = PcmProbe.analyzeInterleavedS16LeStereo(buf, chunk)
-                    if (BuildConfig.IS_ACCEPTANCE) {
-                        lastPcmProbe =
-                            "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
-                                "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
-                                "⇒ ${snap.dominant} | ${snap.verdictZh}"
-                        Log.i(TAG, "PCM_PROBE $lastPcmProbe")
-                    }
-                    val prevLocked = localMute.snapshot().probeLocked
-                    val muteSnap = localMute.onCaptureEnergy(snap.rms)
-                    if (muteSnap.status != localMuteStatus || muteSnap.probeLocked != prevLocked) {
-                        publishMute(muteSnap)
-                        event(muteSnap.messageZh)
-                    }
-                }
-                if (blocks % 470 == 0L) {
-                    Log.i(TAG, "capture blocks=$blocks peak=$peak aacProduced=${enc.produced}")
-                    peak = 0
-                }
-                enc.encode(buf, chunk)
+            },
+        )
+        return when (result) {
+            is AudioCaptureBackend.StartResult.Started -> {
+                captureBackend = backend
+                activeMuteHandling = result.muteHandling
+                true
             }
-        }, "capture").apply { priority = Thread.MAX_PRIORITY; start() }
-        return true
+            is AudioCaptureBackend.StartResult.Failed -> {
+                lastFailMessage = result.messageZh
+                event(result.messageZh)
+                runCatching { backend.stop() }
+                false
+            }
+        }
+    }
+
+    private fun onCapturedPcmFrame(enc: AacEncoder, buf: ByteArray, len: Int) {
+        if (paused || !running.get()) return
+        var i = 0
+        while (i + 1 < len) {
+            val s = (buf[i].toInt() and 0xff) or (buf[i + 1].toInt() shl 8)
+            val a = kotlin.math.abs(s.toShort().toInt())
+            if (a > pcmPeak) pcmPeak = a
+            i += 2
+        }
+        val blocks = pcmBlocks.incrementAndGet().toLong()
+        if (blocks % 12 == 0L) {
+            val snap = PcmProbe.analyzeInterleavedS16LeStereo(buf, len)
+            if (BuildConfig.IS_ACCEPTANCE) {
+                lastPcmProbe =
+                    "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
+                        "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
+                        "⇒ ${snap.dominant} | ${snap.verdictZh}"
+                Log.i(TAG, "PCM_PROBE $lastPcmProbe")
+            }
+            if (activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE) {
+                val prevLocked = localMute.snapshot().probeLocked
+                val muteSnap = localMute.onCaptureEnergy(snap.rms)
+                if (muteSnap.status != localMuteStatus || muteSnap.probeLocked != prevLocked) {
+                    publishMute(muteSnap)
+                    event(muteSnap.messageZh)
+                }
+            }
+        }
+        if (blocks % 470 == 0L) {
+            Log.i(TAG, "capture blocks=$blocks peak=$pcmPeak aacProduced=${enc.produced}")
+            pcmPeak = 0
+        }
+        enc.encode(buf, len)
     }
 
     private fun stopCast() {

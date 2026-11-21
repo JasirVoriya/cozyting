@@ -43,9 +43,16 @@
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="设置" />
+        <activity
+            android:name=".capture.shell.WirelessDebugGuideActivity"
+            android:exported="false"
+            android:label="无感采集配置向导" />
         <service
             android:name=".CastService"
             android:foregroundServiceType="mediaProjection|mediaPlayback"
+            android:exported="false" />
+        <receiver
+            android:name=".capture.shell.WirelessPairingReceiver"
             android:exported="false" />
         <service
             android:name=".NowPlayingNotificationListener"
