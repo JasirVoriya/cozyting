@@ -2,7 +2,10 @@ package com.miplay.sender.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.ClipDrawable
 import android.graphics.drawable.Drawable
@@ -37,6 +40,37 @@ object UiComponents {
 
     fun dpf(context: Context, value: Float): Float =
         value * context.resources.displayMetrics.density
+
+    /**
+     * 稳定圆角 ImageView：同时启用硬件 `clipToOutline` 与 `Canvas.clipPath`，
+     * 确保在真机硬件管线、软件画布及 JVM 截图预览中均严格按指定半径裁剪。
+     */
+    fun roundedImageView(context: Context, radiusPx: Float): ImageView = object : ImageView(context) {
+        private val clipPath = Path()
+        private val bounds = RectF()
+
+        init {
+            clipToOutline = true
+        }
+
+        override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+            super.onSizeChanged(w, h, oldw, oldh)
+            bounds.set(0f, 0f, w.toFloat(), h.toFloat())
+            clipPath.reset()
+            clipPath.addRoundRect(bounds, radiusPx, radiusPx, Path.Direction.CW)
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            if (radiusPx > 0f && width > 0 && height > 0) {
+                val save = canvas.save()
+                canvas.clipPath(clipPath)
+                super.onDraw(canvas)
+                canvas.restoreToCount(save)
+            } else {
+                super.onDraw(canvas)
+            }
+        }
+    }
 
     fun roundedDrawable(
         fillColor: Int,

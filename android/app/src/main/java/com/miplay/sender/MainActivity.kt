@@ -303,22 +303,10 @@ class MainActivity : Activity() {
         }.apply {
             (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(8)
         }
-        val themeBtn = UiComponents.iconCircleButton(
-            context = this,
-            palette = palette,
-            iconRes = if (isDark) R.drawable.ic_ui_sun else R.drawable.ic_ui_moon,
-            contentDesc = if (isDark) "切换浅色模式" else "切换深色模式",
-        ) {
-            settingsStore.themeMode = ThemeMode.quickToggleTarget(palette.isDark)
-            buildUi()
-        }.apply {
-            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(8)
-        }
         val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
             startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
         }
         topBar.addView(refreshBtn)
-        topBar.addView(themeBtn)
         topBar.addView(settingsBtn)
         content.addView(topBar)
 
@@ -333,85 +321,11 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val meta = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = dp(14)
-            }
-        }
-        titleView = TextView(this).apply {
-            text = "未知标题"
-            setTextColor(palette.textPrimary)
-            textSize = 18f
-            setTypeface(null, Typeface.BOLD)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-        }
-        artistView = TextView(this).apply {
-            text = "未取得正在播放"
-            setTextColor(palette.textSecondary)
-            textSize = 13f
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-            setPadding(0, dp(3), 0, 0)
-        }
-        meta.addView(titleView)
-        meta.addView(artistView)
 
-        val controls = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(12), 0, 0)
-        }
-        fun transportBtn(res: Int, desc: String, onClick: () -> Unit): FrameLayout {
-            val sz = dp(38)
-            return FrameLayout(this).apply {
-                layoutParams = LinearLayout.LayoutParams(sz, sz)
-                background = UiComponents.rippleSurface(Color.TRANSPARENT, sz / 2f, palette.ripple)
-                isClickable = true
-                isFocusable = true
-                contentDescription = desc
-                setOnClickListener { onClick() }
-                addView(
-                    ImageView(this@MainActivity).apply {
-                        setImageResource(res)
-                        setColorFilter(palette.textPrimary)
-                        layoutParams = FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
-                    },
-                )
-            }
-        }
-        controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, "上一首") { nowPlayingTracker?.skipPrevious() })
-        val playWrapSize = dp(42)
-        playBtnIcon = ImageView(this).apply {
-            setImageResource(R.drawable.ic_ui_play)
-            setColorFilter(if (palette.isDark) palette.bgCanvas else Color.WHITE)
-            layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
-        }
-        val playWrap = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(playWrapSize, playWrapSize).apply {
-                marginStart = dp(10)
-                marginEnd = dp(10)
-            }
-            background = UiComponents.rippleSurface(
-                fillColor = palette.textPrimary,
-                radiusPx = playWrapSize / 2f,
-                rippleColor = if (palette.isDark) palette.rippleOnSelected else Color.argb(48, 255, 255, 255),
-            )
-            isClickable = true
-            isFocusable = true
-            contentDescription = "播放或暂停"
-            setOnClickListener { nowPlayingTracker?.playPause() }
-            addView(playBtnIcon)
-        }
-        controls.addView(playWrap)
-        controls.addView(transportBtn(R.drawable.ic_ui_skip_next, "下一首") { nowPlayingTracker?.skipNext() })
-        meta.addView(controls)
-
-        // 右侧大尺寸封面 + 右下角播放软件 Logo + 点击跳转对应 App
+        // 左侧大尺寸圆角封面 + 右下角播放软件 Logo + 点击跳转对应 App
         val artSize = dp(96)
         val artRadius = dpf(16f)
-        albumArt = ImageView(this).apply {
+        albumArt = UiComponents.roundedImageView(this, artRadius).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = UiComponents.roundedDrawable(palette.controlSurface, artRadius)
             layoutParams = FrameLayout.LayoutParams(
@@ -420,10 +334,10 @@ class MainActivity : Activity() {
             )
             setImageResource(R.drawable.ic_ui_music_note)
             setColorFilter(palette.textSecondary)
-            clipToOutline = true
         }
         val badgeSize = dp(26)
-        albumAppBadgeIcon = ImageView(this).apply {
+        val badgePad = dp(2)
+        albumAppBadgeIcon = UiComponents.roundedImageView(this, (badgeSize - badgePad * 2) / 2f).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -441,7 +355,7 @@ class MainActivity : Activity() {
                 strokeColor = if (palette.isDark) Color.argb(72, 255, 255, 255) else Color.argb(38, 15, 23, 42),
                 strokeWidthPx = dp(1).coerceAtLeast(1),
             )
-            setPadding(dp(2), dp(2), dp(2), dp(2))
+            setPadding(badgePad, badgePad, badgePad, badgePad)
             clipToOutline = true
             elevation = dpf(2f)
             visibility = View.GONE
@@ -458,8 +372,104 @@ class MainActivity : Activity() {
             addView(albumAppBadgeWrap)
         }
 
-        mediaRow.addView(meta)
+        // 右侧：歌名 + 歌手 + 宽间距播控按钮组（左距封面 16dp，与主卡片左右 16dp 内边距完全对称；文字与播控统一沿中轴线居中并在 96dp 封面高度内垂直居中）
+        val meta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(0, artSize, 1f).apply {
+                marginStart = dp(16)
+            }
+        }
+        titleView = TextView(this).apply {
+            text = "未知标题"
+            setTextColor(palette.textPrimary)
+            textSize = 17.5f
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER_HORIZONTAL
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        artistView = TextView(this).apply {
+            text = "未取得正在播放"
+            setTextColor(palette.textSecondary)
+            textSize = 12.5f
+            gravity = Gravity.CENTER_HORIZONTAL
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, dp(3), 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        meta.addView(titleView)
+        meta.addView(artistView)
+
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                topMargin = dp(10)
+            }
+        }
+        fun transportBtn(res: Int, desc: String, onClick: () -> Unit): FrameLayout {
+            val sz = dp(38)
+            return FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(sz, sz)
+                background = UiComponents.rippleSurface(
+                    fillColor = palette.controlSurface,
+                    radiusPx = sz / 2f,
+                    rippleColor = palette.ripple,
+                )
+                isClickable = true
+                isFocusable = true
+                contentDescription = desc
+                setOnClickListener { onClick() }
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(res)
+                        setColorFilter(palette.textPrimary)
+                        layoutParams = FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER)
+                    },
+                )
+            }
+        }
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, "上一首") { nowPlayingTracker?.skipPrevious() })
+        val playWrapSize = dp(42)
+        playBtnIcon = ImageView(this).apply {
+            setImageResource(R.drawable.ic_ui_play)
+            setColorFilter(if (palette.isDark) palette.bgCanvas else Color.WHITE)
+            layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+        }
+        val playWrap = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(playWrapSize, playWrapSize).apply {
+                marginStart = dp(26)
+                marginEnd = dp(26)
+            }
+            background = UiComponents.rippleSurface(
+                fillColor = palette.textPrimary,
+                radiusPx = playWrapSize / 2f,
+                rippleColor = if (palette.isDark) palette.rippleOnSelected else Color.argb(48, 255, 255, 255),
+            )
+            isClickable = true
+            isFocusable = true
+            contentDescription = "播放或暂停"
+            setOnClickListener { nowPlayingTracker?.playPause() }
+            addView(playBtnIcon)
+        }
+        controls.addView(playWrap)
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_next, "下一首") { nowPlayingTracker?.skipNext() })
+        meta.addView(controls)
+
         mediaRow.addView(albumArtContainer)
+        mediaRow.addView(meta)
         nowPlayingFullBox.addView(mediaRow)
 
         val progressCol = LinearLayout(this).apply {
