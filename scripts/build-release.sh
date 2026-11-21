@@ -17,7 +17,7 @@ cd "$ROOT"
 export RUSTFLAGS="${RUSTFLAGS:--C link-arg=-Wl,-z,max-page-size=16384}"
 cargo test --workspace
 # --platform 29：与 app minSdk 对齐，避免 native 符号要求高于 API29
-cargo ndk -t arm64-v8a -p 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
+cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
 cd android
 ./gradlew --no-daemon test lintStandardRelease assembleStandardRelease
 
