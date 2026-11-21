@@ -19,6 +19,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
@@ -40,6 +41,7 @@ import com.miplay.sender.capture.LaunchableApp
 import com.miplay.sender.capture.LaunchableAppCatalog
 import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
+import com.miplay.sender.cast.ActiveMediaSessionSelector
 import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.CastRouteSelection.Effect
@@ -52,6 +54,7 @@ import com.miplay.sender.compat.AcceptanceAudioDefaults
 import com.miplay.sender.compat.BlurCompat
 import com.miplay.sender.compat.NotificationPermissionCompat
 import com.miplay.sender.compat.WindowInsetsApplyCompat
+import com.miplay.sender.ui.LinearDragReorderController
 import com.miplay.sender.ui.PrefsCastSettingsStore
 import com.miplay.sender.ui.ThemeMode
 import com.miplay.sender.ui.UiComponents
@@ -101,7 +104,10 @@ class MainActivity : Activity() {
     private lateinit var mainTargetTitle: TextView
     private lateinit var mainTargetAutoBadge: TextView
     private lateinit var mainTargetSubtitle: TextView
+    private lateinit var quickSwitchScroll: HorizontalScrollView
     private lateinit var quickSwitchRow: LinearLayout
+    private var quickChipDragController: LinearDragReorderController? = null
+    private val quickChipSelectedFlags = mutableMapOf<View, Boolean>()
     private lateinit var deviceCountView: TextView
     private lateinit var deviceList: LinearLayout
     private lateinit var statusLine: TextView
@@ -119,9 +125,22 @@ class MainActivity : Activity() {
     private var pendingIps: Set<String>? = null
     private var suppressRoute = false
     private var nowPlaying: NowPlayingInfo = NowPlayingInfo.unavailable("加载中…")
+    private var latestSessionSnapshots: List<ActiveMediaSessionSelector.SessionSnapshot> = emptyList()
     private var nowPlayingUpdatedAtMs: Long = 0L
     private var draggingProgress = false
     private var nowPlayingTracker: NowPlayingTracker? = null
+    private val castTargetChangeCallback: () -> Unit = {
+        main.post {
+            syncTargetFromActiveCast()
+            if (CastService.running.get()) {
+                val ev = CastService.lastEvent
+                if (ev.isNotBlank()) setStatusText(ev)
+            } else if (CastService.lastFailMessage.isNotBlank()) {
+                setStatusText(CastService.lastFailMessage)
+            }
+            updateHeaderStatusPill()
+        }
+    }
     private var masterVolume: Int = 30
     private val speakerVolume = linkedMapOf<String, Int>()
     private val latencyIndicators = linkedMapOf<String, LatencyIndicatorViews>()
@@ -150,6 +169,7 @@ class MainActivity : Activity() {
                 castRequested = false
                 setStatusText(CastService.lastFailMessage)
             }
+            syncTargetFromActiveCast()
             val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
             updateLatencyAndSubtitleIndicators(stats)
             updateHeaderStatusPill()
@@ -175,28 +195,47 @@ class MainActivity : Activity() {
         val need = NotificationPermissionCompat.runtimePermissionsForColdStart()
             .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (need.isNotEmpty()) requestPermissions(need.toTypedArray(), REQ_PERMS)
-        nowPlayingTracker = NowPlayingTracker(this) { info ->
-            main.post {
-                nowPlaying = info
-                nowPlayingUpdatedAtMs = System.currentTimeMillis()
-                manualOverrideBlockedPkg = AutoSourceSelectionPolicy.nextManualOverrideBlockedPackage(
-                    currentBlockedPackage = manualOverrideBlockedPkg,
-                    nowPlayingPackage = info.sourcePackage,
-                )
-                bindNowPlaying()
-                maybeAutoSelectFromNowPlaying()
-            }
-        }.also { it.start() }
+        CastService.targetChangeListener = castTargetChangeCallback
+        nowPlayingTracker = NowPlayingTracker(
+            context = this,
+            onUpdate = { info ->
+                main.post {
+                    nowPlaying = info
+                    nowPlayingUpdatedAtMs = System.currentTimeMillis()
+                    manualOverrideBlockedPkg = AutoSourceSelectionPolicy.nextManualOverrideBlockedPackage(
+                        currentBlockedPackage = manualOverrideBlockedPkg,
+                        nowPlayingPackage = info.sourcePackage,
+                    )
+                    bindNowPlaying()
+                    maybeAutoSelectFromNowPlaying()
+                }
+            },
+            onSessionsChanged = { sessions ->
+                main.post {
+                    latestSessionSnapshots = sessions
+                    maybeAutoSelectFromNowPlaying()
+                }
+            },
+        ).also { it.start() }
         main.postDelayed(refreshRunnable, 1000)
         if (intent?.extras == null) discover()
         handleAutomation(intent)
     }
 
     override fun onDestroy() {
+        quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
+        if (CastService.targetChangeListener === castTargetChangeCallback) {
+            CastService.targetChangeListener = null
+        }
         nowPlayingTracker?.stop()
         super.onDestroy()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (quickChipDragController?.onDispatchTouchEvent(ev) == true) return true
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -215,6 +254,7 @@ class MainActivity : Activity() {
             buildUi()
         }
         refreshTargetFromStore()
+        syncTargetFromActiveCast()
         renderDevices()
         nowPlayingTracker?.refresh()
         maybeAutoSelectFromNowPlaying()
@@ -740,15 +780,43 @@ class MainActivity : Activity() {
         quickSwitchRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(9), 0, 0)
+            setPadding(0, dp(9), 0, dp(2))
+            clipChildren = false
+            clipToPadding = false
             visibility = View.GONE
         }
-        val quickScroll = HorizontalScrollView(this).apply {
+        quickSwitchScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
+            clipChildren = false
+            clipToPadding = false
             addView(quickSwitchRow)
         }
-        sourceCard.addView(quickScroll)
+        sourceCard.clipChildren = false
+        sourceCard.clipToPadding = false
+        sourceCard.addView(quickSwitchScroll)
         mainCard.addView(sourceCard)
+
+        quickChipDragController?.cancel()
+        quickChipDragController = LinearDragReorderController(
+            context = this,
+            axis = LinearDragReorderController.Axis.HORIZONTAL,
+            containerProvider = { if (::quickSwitchRow.isInitialized) quickSwitchRow else null },
+            scrollViewProvider = { if (::quickSwitchScroll.isInitialized) quickSwitchScroll else null },
+            itemKeyProvider = { it.tag as? String },
+            isEnabled = { store.hasInitializedFavoriteSources() && favoriteSources.size >= 2 },
+            dispatchSyntheticCancel = { super.dispatchTouchEvent(it) },
+            onDragVisualStateChanged = { chip, dragging ->
+                applyQuickChipBackground(chip, isCurrent = quickChipSelectedFlags[chip] == true, dragging = dragging)
+            },
+            onItemMoved = { fromPkg, toPkg ->
+                favoriteSources = LaunchableAppCatalog.reorderFavoriteSources(favoriteSources, fromPkg, toPkg)
+            },
+            onDragFinished = { changed ->
+                if (changed) {
+                    store.saveFavoriteSources(favoriteSources)
+                }
+            },
+        )
 
         // —— 4. 输出设备区 ——
         val devHeader = LinearLayout(this).apply {
@@ -1221,7 +1289,10 @@ class MainActivity : Activity() {
             pendingStart = base
                 .putExtra(CastService.EXTRA_SOURCE, "app")
                 .putExtra(CastService.EXTRA_TARGET_PACKAGE, selectedPackage)
+                .putExtra(CastService.EXTRA_TARGET_LABEL, selectedLabel)
                 .putExtra(CastService.EXTRA_TARGET_CERT, selectedCert)
+                .putExtra(CastService.EXTRA_TARGET_AUTO_DETECTED, currentSelectionAutoDetected)
+                .putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
                 .putExtra(CastService.EXTRA_GRANT_SESSION, grantSession)
             startActivityForResult(
                 getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
@@ -1277,22 +1348,57 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    private fun syncTargetFromActiveCast() {
+        if (!::settingsStore.isInitialized || !::store.isInitialized) return
+        if (CastService.running.get() && CastService.source == "app") {
+            val activePkg = CastService.targetPackage
+            val activeLabel = CastService.targetLabel
+            val activeAuto = CastService.targetAutoDetected
+            if (activePkg.isNotBlank() &&
+                (activePkg != selectedPackage || activeAuto != currentSelectionAutoDetected)
+            ) {
+                selectedPackage = activePkg
+                selectedLabel = activeLabel.ifBlank { activePkg }
+                currentSelectionAutoDetected = activeAuto
+                refreshTargetFromStore()
+                nowPlayingTracker?.refresh()
+            }
+        } else if (!CastService.running.get() && !castRequested &&
+            routeState.selectedSpeakerIds.isNotEmpty() && CastService.lastFailMessage.isNotBlank()
+        ) {
+            routeState = CastRouteSelection.selectThisDevice(routeState).state
+            renderDevices()
+            updateHeaderStatusPill()
+        }
+    }
+
     private fun maybeAutoSelectFromNowPlaying() {
         if (!::settingsStore.isInitialized || !::store.isInitialized) return
+        // 投送进行中由 CastService 后台统一热切并回写状态，避免前后台双写导致 UI 与实际捕获不一致。
+        if (CastService.running.get() || castRequested) return
         val favs = if (favoriteSources.isNotEmpty() || store.hasInitializedFavoriteSources()) {
             favoriteSources
         } else {
             return
         }
+        val candidate = ActiveMediaSessionSelector.selectAutoDetectCandidate(
+            sessions = latestSessionSnapshots,
+            favoriteSources = favs,
+            isCasting = false,
+            currentSelectedPackage = selectedPackage,
+            selfPackage = packageName,
+        )
+        val candidatePkg = candidate?.packageName ?: nowPlaying.sourcePackage
+        val candidatePlaying = candidate?.isPlaying ?: nowPlaying.isPlaying
         val decision = AutoSourceSelectionPolicy.decide(
             AutoSourceSelectionPolicy.Input(
                 globalAutoDetectEnabled = settingsStore.autoDetectAudioSource,
-                isCasting = CastService.running.get() || castRequested,
+                isCasting = false,
                 sourceMode = settingsStore.sourceMode,
                 currentSelectedPackage = selectedPackage,
                 selfPackage = packageName,
-                nowPlayingPackage = nowPlaying.sourcePackage,
-                nowPlayingIsPlaying = nowPlaying.isPlaying,
+                nowPlayingPackage = candidatePkg,
+                nowPlayingIsPlaying = candidatePlaying,
                 favoriteSources = favs,
                 manualOverrideBlockedPackage = manualOverrideBlockedPkg,
             ),
@@ -1312,7 +1418,9 @@ class MainActivity : Activity() {
             main.post {
                 if (pendingAutoResolvePkg == targetPkg) pendingAutoResolvePkg = null
                 if (CastService.running.get() || castRequested) return@post
-                if (nowPlaying.sourcePackage != targetPkg) return@post
+                val stillCandidate = latestSessionSnapshots.any { it.packageName == targetPkg } ||
+                    nowPlaying.sourcePackage == targetPkg
+                if (!stillCandidate) return@post
                 if (result is CaptureTargetResult.Ok) {
                     store.saveSelection(
                         TargetAppSelection(
@@ -1333,15 +1441,35 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    private fun applyQuickChipBackground(chip: View, isCurrent: Boolean, dragging: Boolean) {
+        val bgColor = if (isCurrent) palette.rowSelectedBg else palette.controlSurface
+        val borderColor = when {
+            dragging -> palette.accent
+            isCurrent -> palette.rowSelectedBorder
+            else -> palette.panelBorder
+        }
+        val strokeW = if (dragging) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
+        chip.background = UiComponents.rippleSurface(
+            fillColor = bgColor,
+            radiusPx = dpf(999f),
+            rippleColor = if (isCurrent) palette.rippleOnSelected else palette.ripple,
+            strokeColor = borderColor,
+            strokeWidthPx = strokeW,
+        )
+    }
+
     private fun renderQuickSwitchRow() {
         if (!::quickSwitchRow.isInitialized) return
+        quickChipDragController?.cancel()
+        quickChipSelectedFlags.clear()
         quickSwitchRow.removeAllViews()
-        val candidates = if (store.hasInitializedFavoriteSources()) {
+        val useFavorites = store.hasInitializedFavoriteSources()
+        val candidates = if (useFavorites) {
             LaunchableAppCatalog.quickSwitchCandidatesFromFavorites(
                 apps = cachedLaunchableApps,
                 favoriteSources = favoriteSources,
                 currentPackage = selectedPackage.takeIf { it.isNotBlank() },
-                limit = 4,
+                limit = favoriteSources.size.coerceAtLeast(4),
                 selfPackage = packageName,
             )
         } else {
@@ -1358,21 +1486,13 @@ class MainActivity : Activity() {
             return
         }
         quickSwitchRow.visibility = View.VISIBLE
+        val favoritePkgSet = if (useFavorites) favoriteSources.map { it.packageName }.toSet() else emptySet()
         candidates.forEach { app ->
             val isCurrent = app.packageName == selectedPackage
-            val bgColor = if (isCurrent) palette.rowSelectedBg else palette.controlSurface
-            val borderColor = if (isCurrent) palette.rowSelectedBorder else palette.panelBorder
             val txtColor = if (isCurrent) palette.onSelectedPrimary else palette.textPrimary
             val chip = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = UiComponents.rippleSurface(
-                    fillColor = bgColor,
-                    radiusPx = dpf(999f),
-                    rippleColor = if (isCurrent) palette.rippleOnSelected else palette.ripple,
-                    strokeColor = borderColor,
-                    strokeWidthPx = dp(1).coerceAtLeast(1),
-                )
                 setPadding(dp(9), dp(5), dp(11), dp(5))
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1380,8 +1500,13 @@ class MainActivity : Activity() {
                 ).apply { marginEnd = dp(8) }
                 isClickable = true
                 isFocusable = true
+                if (useFavorites && app.packageName in favoritePkgSet) {
+                    tag = app.packageName
+                }
                 setOnClickListener { quickSelectApp(app) }
             }
+            quickChipSelectedFlags[chip] = isCurrent
+            applyQuickChipBackground(chip, isCurrent = isCurrent, dragging = false)
             val icon = ImageView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(17), dp(17)).apply { marginEnd = dp(6) }
                 setColorFilter(txtColor)
@@ -1428,10 +1553,12 @@ class MainActivity : Activity() {
                         settingsStore.sourceMode = "app"
                         refreshTargetFromStore()
                         if (CastService.running.get() && CastService.source == "app") {
-                            stopCast()
-                            routeState = CastRouteSelection.selectThisDevice(routeState).state
-                            renderDevices()
-                            setStatusText("已切换音源为 ${app.label} · 请重新勾选音箱开始投送")
+                            service(CastService.ACTION_SWITCH_SOURCE) {
+                                putExtra(CastService.EXTRA_TARGET_PACKAGE, r.packageName)
+                                putExtra(CastService.EXTRA_TARGET_LABEL, app.label)
+                                putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
+                            }
+                            setStatusText("正在切换投送音源为 ${app.label}…")
                         } else {
                             setStatusText("已选择音源：${app.label}")
                         }

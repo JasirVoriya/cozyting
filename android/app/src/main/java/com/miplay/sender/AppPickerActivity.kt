@@ -13,6 +13,7 @@ import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -32,6 +33,7 @@ import com.miplay.sender.capture.PrefsTargetAppStore
 import com.miplay.sender.capture.TargetAppSelection
 import com.miplay.sender.compat.CaptureSelectionLayers
 import com.miplay.sender.compat.WindowInsetsApplyCompat
+import com.miplay.sender.ui.LinearDragReorderController
 import com.miplay.sender.ui.PrefsCastSettingsStore
 import com.miplay.sender.ui.ThemeMode
 import com.miplay.sender.ui.UiComponents
@@ -41,7 +43,7 @@ import com.miplay.sender.ui.UiPalette
 /**
  * 常用音源管理与选择页：
  * - 用户可自由增删「常用音源」名单；
- * - 每个常用音源均提供独立的「自动识别」开关，仅允许已加入常用名单且开启该开关的 App 参与待机自动识别；
+ * - 每个常用音源均提供独立的「自动识别」开关，仅允许已加入常用名单且开启该开关的 App 参与自动识别（含投送中热切换）；
  * - 点击任意应用主行可立即将其设为当前投送音源（仍走单 UID + 签名 fail-closed 校验）。
  */
 class AppPickerActivity : Activity() {
@@ -55,7 +57,11 @@ class AppPickerActivity : Activity() {
     private lateinit var store: PrefsTargetAppStore
     private lateinit var settingsStore: PrefsCastSettingsStore
     private lateinit var palette: UiPalette
+    private lateinit var scrollView: ScrollView
     private lateinit var list: LinearLayout
+    private var favoritesContainer: LinearLayout? = null
+    private var dragController: LinearDragReorderController? = null
+    private val cardSelectedFlags = mutableMapOf<View, Boolean>()
     private lateinit var status: TextView
     private lateinit var filter: EditText
     private lateinit var clearBtn: ImageView
@@ -86,6 +92,16 @@ class AppPickerActivity : Activity() {
                 }
             }.start()
         }
+    }
+
+    override fun onDestroy() {
+        dragController?.cancel()
+        super.onDestroy()
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (dragController?.onDispatchTouchEvent(ev) == true) return true
+        return super.dispatchTouchEvent(ev)
     }
 
     private fun buildUi() {
@@ -125,9 +141,9 @@ class AppPickerActivity : Activity() {
                 AlertDialog.Builder(this)
                     .setTitle("常用音源与自动识别说明")
                     .setMessage(
-                        "1. 「常用音源」支持自由添加和移除，并会同步展示在主界面快捷切换栏。\n" +
-                            "2. 待机自动识别策略仅会从「常用音源」且已开启「自动识别」开关的 App 中选择，名单外或关闭开关的应用不会被自动切入。\n" +
-                            "3. 无论自动识别还是手动点选，开始投送前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。\n\n" +
+                        "1. 「常用音源」支持自由添加、移除以及长按拖动排序，排序结果会实时同步至主界面快捷切换栏。\n" +
+                            "2. 自动识别仅会从「常用音源」且已开启「自动识别」开关的 App 中跟随；即使旧软件未关闭，投送途中切到另一个常用音乐 App 播放也会自动热切换，名单外或关闭开关的应用不会被自动切入。\n" +
+                            "3. 无论自动识别还是手动点选，开始投送与热切换前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。\n\n" +
                             CaptureSelectionLayers.settingsHintZh(),
                     )
                     .setPositiveButton("知道了", null)
@@ -206,15 +222,45 @@ class AppPickerActivity : Activity() {
         }
         root.addView(loadingSpinner)
 
-        list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        list = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            clipChildren = false
+            clipToPadding = false
+        }
+        root.clipChildren = false
+        root.clipToPadding = false
         root.addView(list)
 
-        val scroll = ScrollView(this).apply {
+        scrollView = ScrollView(this).apply {
             setBackgroundColor(palette.bgCanvas)
+            clipToPadding = false
             addView(root)
         }
-        WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
-        setContentView(scroll)
+        WindowInsetsApplyCompat.applySystemBarsPadding(scrollView)
+        setContentView(scrollView)
+
+        dragController?.cancel()
+        dragController = LinearDragReorderController(
+            context = this,
+            axis = LinearDragReorderController.Axis.VERTICAL,
+            containerProvider = { favoritesContainer },
+            scrollViewProvider = { if (::scrollView.isInitialized) scrollView else null },
+            itemKeyProvider = { it.tag as? String },
+            isEnabled = { filter.text?.toString()?.trim().isNullOrEmpty() },
+            dispatchSyntheticCancel = { super.dispatchTouchEvent(it) },
+            onDragVisualStateChanged = { card, dragging ->
+                applyFavoriteCardBackground(card, isSelected = cardSelectedFlags[card] == true, dragging = dragging)
+            },
+            onItemMoved = { fromPkg, toPkg ->
+                favorites = LaunchableAppCatalog.reorderFavoriteSources(favorites, fromPkg, toPkg)
+            },
+            onDragFinished = { changed ->
+                if (changed) {
+                    store.saveFavoriteSources(favorites)
+                    updateStatusSummary()
+                }
+            },
+        )
     }
 
     private fun updateStatusSummary() {
@@ -228,6 +274,9 @@ class AppPickerActivity : Activity() {
     }
 
     private fun render() {
+        dragController?.cancel()
+        favoritesContainer = null
+        cardSelectedFlags.clear()
         list.removeAllViews()
         val currentPkg = store.loadSelection()?.packageName.orEmpty()
         val favByPkg = favorites.associateBy { it.packageName }
@@ -252,7 +301,7 @@ class AppPickerActivity : Activity() {
             shown.forEach { app ->
                 val fav = favByPkg[app.packageName]
                 if (fav != null) {
-                    list.addView(favoriteAppCard(app, fav, app.packageName == currentPkg))
+                    list.addView(favoriteAppCard(app, fav, app.packageName == currentPkg, allowDrag = false))
                 } else {
                     list.addView(otherAppRow(app, app.packageName == currentPkg))
                 }
@@ -266,7 +315,31 @@ class AppPickerActivity : Activity() {
             selfPackage = packageName,
         )
 
-        list.addView(UiComponents.sectionTitle(this, palette, "常用音源 (${cat.favorites.size})"))
+        val allowDrag = cat.favorites.size >= 2
+        val favHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(4), dp(10), dp(4), dp(6))
+        }
+        favHeader.addView(
+            TextView(this).apply {
+                text = "常用音源 (${cat.favorites.size})"
+                textSize = 12f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textSecondary)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        if (allowDrag) {
+            favHeader.addView(
+                TextView(this).apply {
+                    text = "长按拖动排序"
+                    textSize = 11f
+                    setTextColor(palette.textTertiary)
+                },
+            )
+        }
+        list.addView(favHeader)
         if (cat.favorites.isEmpty()) {
             list.addView(
                 TextView(this).apply {
@@ -287,9 +360,16 @@ class AppPickerActivity : Activity() {
                 },
             )
         } else {
-            cat.favorites.forEach { (app, fav) ->
-                list.addView(favoriteAppCard(app, fav, app.packageName == currentPkg))
+            val favBox = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                clipChildren = false
+                clipToPadding = false
             }
+            cat.favorites.forEach { (app, fav) ->
+                favBox.addView(favoriteAppCard(app, fav, app.packageName == currentPkg, allowDrag = allowDrag))
+            }
+            favoritesContainer = favBox
+            list.addView(favBox)
         }
 
         if (cat.others.isNotEmpty()) {
@@ -353,15 +433,33 @@ class AppPickerActivity : Activity() {
         }
     }
 
-    /** 常用音源卡片：上半部分点击设为当前音源，下半部分提供独立「自动识别」开关与「移出常用」按钮。 */
+    private fun applyFavoriteCardBackground(card: View, isSelected: Boolean, dragging: Boolean) {
+        val bgColor = if (isSelected) palette.rowSelectedBg else palette.panelBg
+        val borderColor = when {
+            dragging -> palette.accent
+            isSelected -> palette.rowSelectedBorder
+            else -> palette.panelBorder
+        }
+        val borderW = when {
+            dragging -> dp(2).coerceAtLeast(2)
+            isSelected && !palette.isDark -> dp(2).coerceAtLeast(2)
+            else -> dp(1).coerceAtLeast(1)
+        }
+        card.background = UiComponents.roundedDrawable(
+            fillColor = bgColor,
+            radiusPx = UiComponents.dpf(this, UiPalette.RADIUS_CARD_DP.toFloat()),
+            strokeColor = borderColor,
+            strokeWidthPx = borderW,
+        )
+    }
+
+    /** 常用音源卡片：上半部分点击设为当前音源，下半部分提供独立「自动识别」开关与「移出常用」按钮，支持长按拖动排序。 */
     private fun favoriteAppCard(
         app: LaunchableApp,
         fav: FavoriteAudioSource,
         isSelected: Boolean,
+        allowDrag: Boolean,
     ): View {
-        val bgColor = if (isSelected) palette.rowSelectedBg else palette.panelBg
-        val borderColor = if (isSelected) palette.rowSelectedBorder else palette.panelBorder
-        val borderW = if (isSelected && !palette.isDark) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
         val titleColor = if (isSelected) palette.onSelectedPrimary else palette.textPrimary
         val subColor = if (isSelected) palette.onSelectedSecondary else palette.textSecondary
         val dividerColor = if (isSelected) {
@@ -373,18 +471,17 @@ class AppPickerActivity : Activity() {
 
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = UiComponents.roundedDrawable(
-                fillColor = bgColor,
-                radiusPx = UiComponents.dpf(this@AppPickerActivity, UiPalette.RADIUS_CARD_DP.toFloat()),
-                strokeColor = borderColor,
-                strokeWidthPx = borderW,
-            )
             setPadding(dp(12), dp(10), dp(12), dp(10))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { bottomMargin = dp(8) }
+            if (allowDrag) {
+                tag = app.packageName
+            }
         }
+        cardSelectedFlags[card] = isSelected
+        applyFavoriteCardBackground(card, isSelected = isSelected, dragging = false)
 
         val mainRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -432,6 +529,19 @@ class AppPickerActivity : Activity() {
         )
         mainRow.addView(iconView)
         mainRow.addView(meta)
+        if (allowDrag) {
+            val dragHandle = ImageView(this).apply {
+                setImageResource(R.drawable.ic_ui_drag_handle)
+                setColorFilter(subColor)
+                alpha = 0.72f
+                val hp = dp(5)
+                setPadding(hp, hp, hp, hp)
+                layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginEnd = dp(4) }
+                tag = LinearDragReorderController.TAG_HANDLE
+                contentDescription = "长按拖动排序"
+            }
+            mainRow.addView(dragHandle)
+        }
         mainRow.addView(UiComponents.checkCircle(this, palette, selected = isSelected))
         card.addView(mainRow)
 
@@ -476,6 +586,8 @@ class AppPickerActivity : Activity() {
             favorites = store.setFavoriteAutoDetect(app.packageName, checked)
             updateStatusSummary()
             render()
+        }.apply {
+            tag = LinearDragReorderController.TAG_IGNORE
         }
         val autoWrap = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -505,6 +617,7 @@ class AppPickerActivity : Activity() {
             setPadding(dp(10), dp(4), dp(10), dp(4))
             isClickable = true
             isFocusable = true
+            tag = LinearDragReorderController.TAG_IGNORE
             setOnClickListener {
                 favorites = store.removeFavoriteSource(app.packageName)
                 updateStatusSummary()

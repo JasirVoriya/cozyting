@@ -159,6 +159,15 @@ class PrefsTargetAppStore(context: Context) : TargetAppStore {
         return updated
     }
 
+    fun reorderFavoriteSources(fromPackage: String, toPackage: String): List<FavoriteAudioSource> {
+        val current = loadFavoriteSources()
+        val updated = LaunchableAppCatalog.reorderFavoriteSources(current, fromPackage, toPackage)
+        if (updated != current) {
+            saveFavoriteSources(updated)
+        }
+        return updated
+    }
+
     companion object {
         private const val PREFS = "miplay_target_app"
         private const val KEY_PACKAGE = "package"

@@ -81,6 +81,27 @@ object LaunchableAppCatalog {
         return FavoriteCategorizedApps(favorites = favorites, others = others)
     }
 
+    /**
+     * 将常用音源名单中的 [fromPackage] 移动到 [toPackage] 所在位置，保留其余条目与各自的自动识别开关状态。
+     * 若任一包名不存在或相同则原样返回。
+     */
+    fun reorderFavoriteSources(
+        sources: List<FavoriteAudioSource>,
+        fromPackage: String,
+        toPackage: String,
+    ): List<FavoriteAudioSource> {
+        val from = fromPackage.trim()
+        val to = toPackage.trim()
+        if (from.isEmpty() || to.isEmpty() || from == to) return sources
+        val fromIdx = sources.indexOfFirst { it.packageName == from }
+        val toIdx = sources.indexOfFirst { it.packageName == to }
+        if (fromIdx < 0 || toIdx < 0 || fromIdx == toIdx) return sources
+        val updated = sources.toMutableList()
+        val moved = updated.removeAt(fromIdx)
+        updated.add(toIdx, moved)
+        return updated
+    }
+
     fun quickSwitchCandidatesFromFavorites(
         apps: List<LaunchableApp>,
         favoriteSources: List<FavoriteAudioSource>,
@@ -92,16 +113,23 @@ object LaunchableAppCatalog {
         if (cap == 0) return emptyList()
         val valid = filterLaunchable(apps, selfPackage = selfPackage)
         val byPkg = valid.associateBy { it.packageName }
+        val favApps = mutableListOf<LaunchableApp>()
+        val favPkgSet = mutableSetOf<String>()
+        for (fav in favoriteSources) {
+            val app = byPkg[fav.packageName] ?: continue
+            if (favPkgSet.add(app.packageName)) {
+                favApps += app
+            }
+        }
         val result = mutableListOf<LaunchableApp>()
-        if (!currentPackage.isNullOrBlank()) {
+        // 若当前选中音源不在常用名单内（例如临时点了其他应用），置前提示；
+        // 若已在常用名单内，则严格保留用户拖动排好的常用音源顺序。
+        if (!currentPackage.isNullOrBlank() && currentPackage !in favPkgSet) {
             byPkg[currentPackage]?.let { result += it }
         }
-        for (fav in favoriteSources) {
+        for (app in favApps) {
             if (result.size >= cap) break
-            val app = byPkg[fav.packageName] ?: continue
-            if (result.none { it.packageName == app.packageName }) {
-                result += app
-            }
+            result += app
         }
         return result.take(cap)
     }

@@ -62,9 +62,29 @@ class AutoSourceSelectionPolicyTest {
     }
 
     @Test
-    fun neverInterruptsWhileCasting() {
-        val d = AutoSourceSelectionPolicy.decide(baseInput(isCasting = true))
-        assertEquals(AutoSourceSelectionPolicy.Decision.Skip("casting_in_progress"), d)
+    fun switchesToPlayingFavoriteWhileCasting() {
+        val d = AutoSourceSelectionPolicy.decide(baseInput(isCasting = true, nowPlayingIsPlaying = true))
+        assertEquals(AutoSourceSelectionPolicy.Decision.AutoSelect("com.example.music"), d)
+    }
+
+    @Test
+    fun neverSwitchesToPausedFavoriteWhileCastingEvenIfCurrentBlank() {
+        val d = AutoSourceSelectionPolicy.decide(
+            baseInput(isCasting = true, currentSelected = "", nowPlayingIsPlaying = false),
+        )
+        assertEquals(AutoSourceSelectionPolicy.Decision.Skip("not_actively_playing"), d)
+    }
+
+    @Test
+    fun skipsNonFavoriteOrDisabledAppWhileCasting() {
+        assertEquals(
+            AutoSourceSelectionPolicy.Decision.Skip("not_in_favorites"),
+            AutoSourceSelectionPolicy.decide(baseInput(isCasting = true, nowPlayingPkg = "com.example.video")),
+        )
+        assertEquals(
+            AutoSourceSelectionPolicy.Decision.Skip("app_auto_detect_disabled"),
+            AutoSourceSelectionPolicy.decide(baseInput(isCasting = true, nowPlayingPkg = "com.example.podcast")),
+        )
     }
 
     @Test
@@ -133,6 +153,7 @@ class AutoSourceSelectionPolicyTest {
         assertEquals(listOf(false, true), cat.favorites.map { it.second.autoDetectEnabled })
         assertEquals(listOf("com.example.hifi", "com.example.browser"), cat.others.map { it.packageName })
 
+        // 当前选中已在常用名单内：严格保留用户自定义排序，不被强行置顶打乱
         val quick = LaunchableAppCatalog.quickSwitchCandidatesFromFavorites(
             apps = apps,
             favoriteSources = listOf(
@@ -143,6 +164,51 @@ class AutoSourceSelectionPolicyTest {
             limit = 4,
             selfPackage = "com.miplay.sender",
         )
-        assertEquals(listOf("com.example.music", "com.example.podcast"), quick.map { it.packageName })
+        assertEquals(listOf("com.example.podcast", "com.example.music"), quick.map { it.packageName })
+
+        // 当前选中不在常用名单内（临时点了其他应用）：置前提示，其后按常用排序
+        val quickWithNonFavoriteCurrent = LaunchableAppCatalog.quickSwitchCandidatesFromFavorites(
+            apps = apps,
+            favoriteSources = listOf(
+                FavoriteAudioSource("com.example.podcast", autoDetectEnabled = false),
+                FavoriteAudioSource("com.example.music", autoDetectEnabled = true),
+            ),
+            currentPackage = "com.example.browser",
+            limit = 4,
+            selfPackage = "com.miplay.sender",
+        )
+        assertEquals(
+            listOf("com.example.browser", "com.example.podcast", "com.example.music"),
+            quickWithNonFavoriteCurrent.map { it.packageName },
+        )
+    }
+
+    @Test
+    fun reorderFavoriteSourcesMovesItemPreservingAutoDetectAndMissingPackages() {
+        val initial = listOf(
+            FavoriteAudioSource("com.example.a", autoDetectEnabled = true),
+            FavoriteAudioSource("com.example.b", autoDetectEnabled = false),
+            FavoriteAudioSource("com.example.c", autoDetectEnabled = true),
+            FavoriteAudioSource("com.example.uninstalled", autoDetectEnabled = false),
+        )
+        // 把 c 拖到 a 位置（向上拖）
+        val movedUp = LaunchableAppCatalog.reorderFavoriteSources(initial, "com.example.c", "com.example.a")
+        assertEquals(
+            listOf("com.example.c", "com.example.a", "com.example.b", "com.example.uninstalled"),
+            movedUp.map { it.packageName },
+        )
+        assertEquals(listOf(true, true, false, false), movedUp.map { it.autoDetectEnabled })
+
+        // 把 c 拖回 b 位置（向下拖）
+        val movedDown = LaunchableAppCatalog.reorderFavoriteSources(movedUp, "com.example.c", "com.example.b")
+        assertEquals(
+            listOf("com.example.a", "com.example.b", "com.example.c", "com.example.uninstalled"),
+            movedDown.map { it.packageName },
+        )
+        assertEquals(initial, movedDown)
+
+        // 不存在或相同包名时原样返回
+        assertEquals(initial, LaunchableAppCatalog.reorderFavoriteSources(initial, "com.example.a", "com.example.a"))
+        assertEquals(initial, LaunchableAppCatalog.reorderFavoriteSources(initial, "com.example.missing", "com.example.a"))
     }
 }
