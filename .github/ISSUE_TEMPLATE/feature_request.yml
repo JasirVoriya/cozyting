@@ -13,11 +13,12 @@ body:
     attributes:
       label: 建议归属方向
       options:
-        - Android UI 与交互体验
+        - Android 端 UI 与交互体验
+        - iOS 端适配与交互体验（SwiftUI / ReplayKit）
+        - 跨端共享设计 (design/) 与 Rust 核心 (core/)
         - 音频捕获 / 静音策略 / 音质与延迟
         - 多音箱同步与断线重连
         - 新协议 / 新设备支持（DLNA / AirPlay / Google Cast 等）
-        - iOS / 跨平台支持
         - miplay-cli 命令行工具
         - 文档 / 构建 / 工程体验
         - 其他

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="sp-title sp-desc">
   <title id="sp-title">MiPlay Sender — Pure LAN Multi-Room Audio</title>
-  <desc id="sp-desc">GitHub Social Preview card for MiPlay Android Sender in clean flat industrial ceramic aesthetic.</desc>
+  <desc id="sp-desc">GitHub Social Preview card for MiPlay Sender in clean flat industrial ceramic aesthetic.</desc>
 
   <!-- Ceramic light background -->
   <rect width="1280" height="640" fill="#F4F6FA"/>
@@ -40,10 +40,10 @@
   <text x="396" y="264" fill="#14171F" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="68" font-weight="800" letter-spacing="-1.6">MiPlay Sender</text>
 
   <!-- Subtitle CN -->
-  <text x="396" y="324" fill="#334155" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="27" font-weight="600">Android 单 App 音频捕获 · 多音箱毫秒级同频投送</text>
+  <text x="396" y="324" fill="#334155" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="27" font-weight="600">跨端局域网音频捕获 · 多音箱毫秒级同频投送</text>
 
   <!-- Subtitle EN -->
-  <text x="396" y="366" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif" font-size="20" font-weight="500">Strict Per-App AudioPlaybackCapture · Multi-Room Sync Engine in Pure Rust</text>
+  <text x="396" y="366" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif" font-size="20" font-weight="500">Cross-Platform Audio Capture (Android &amp; iOS) · Multi-Room Sync Engine in Rust</text>
 
   <!-- Divider hairline -->
   <line x1="396" y1="406" x2="1156" y2="406" stroke="#0F172A" stroke-opacity="0.08" stroke-width="1.5"/>
@@ -52,11 +52,11 @@
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="15" font-weight="600">
     <!-- Chip 1 -->
     <rect x="396" y="434" width="166" height="42" rx="12" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.10" stroke-width="1.5"/>
-    <text x="479" y="460" text-anchor="middle" fill="#1F2430">Kotlin + Rust</text>
+    <text x="479" y="460" text-anchor="middle" fill="#1F2430">Rust L1 Core</text>
 
     <!-- Chip 2 -->
     <rect x="578" y="434" width="182" height="42" rx="12" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.10" stroke-width="1.5"/>
-    <text x="669" y="460" text-anchor="middle" fill="#1F2430">Android 10–16</text>
+    <text x="669" y="460" text-anchor="middle" fill="#1F2430">Android &amp; iOS</text>
 
     <!-- Chip 3 -->
     <rect x="776" y="434" width="194" height="42" rx="12" fill="#F8F9FB" stroke="#0F172A" stroke-opacity="0.10" stroke-width="1.5"/>
@@ -68,6 +68,6 @@
   </g>
 
   <!-- Bottom subtle repo footer -->
-  <text x="122" y="534" fill="#64748B" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" font-weight="500">github.com/JasirVoriya/miplay-android-sender</text>
-  <text x="1156" y="534" text-anchor="end" fill="#94A3B8" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="15" font-weight="500">mDNS · TCP 8899 · WFD RTSP · MPEG-TS/RTP · 16KB ELF</text>
+  <text x="122" y="534" fill="#64748B" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" font-weight="500">github.com/JasirVoriya/miplay-sender</text>
+  <text x="1156" y="534" text-anchor="end" fill="#94A3B8" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="15" font-weight="500">mDNS · TCP 8899 · WFD RTSP · MPEG-TS/RTP · JNI &amp; C ABI</text>
 </svg>

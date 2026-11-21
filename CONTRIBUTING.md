@@ -6,9 +6,9 @@
 
 ## 一、最快参与方式
 
-1. **上报音箱 / 手机兼容实测**：前往 [设备兼容实测模板](https://github.com/JasirVoriya/miplay-android-sender/issues/new?template=device_compatibility.yml) 提交你的测试结果（可用或不可用都同样宝贵），帮助完善 [设备兼容矩阵](docs/COMPATIBILITY.md)。
-2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/miplay-android-sender/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `miplay-cli inspect <IP> --auth legacy` 的脱敏输出。
-3. **提交功能建议**：使用 [功能建议模板](https://github.com/JasirVoriya/miplay-android-sender/issues/new?template=feature_request.yml) 描述真实使用场景。
+1. **上报音箱 / 手机兼容实测**：前往 [设备兼容实测模板](https://github.com/JasirVoriya/miplay-sender/issues/new?template=device_compatibility.yml) 提交你的测试结果（可用或不可用都同样宝贵），帮助完善 [设备兼容矩阵](docs/COMPATIBILITY.md)。
+2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/miplay-sender/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `miplay-cli inspect <IP> --auth legacy` 的脱敏输出。
+3. **提交功能建议**：使用 [功能建议模板](https://github.com/JasirVoriya/miplay-sender/issues/new?template=feature_request.yml) 描述真实使用场景。
 4. **提交代码或文档 PR**：按下方指南配好开发环境后发起 Pull Request。
 
 ---
@@ -64,7 +64,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **L1 公共核心层（`core/`）**：平台无关协议、mDNS 发现、认证、多箱同步、路由与协调状态机、统一延迟状态；通过 `ffi.rs`（Android JNI）与 `ffi_c.rs`（iOS C ABI）对外暴露薄接口。
 - **L2 / L3 平台实现层（`android/` 及规划中的 iOS）**：仅保留 OS 强相关能力（音频捕获、硬件编码、前台服务、原生 UI 与本地持久化）。
 
-如需先摸清全仓模块上下游，推荐浏览 [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-android-sender/)（本地源码位于 [docs/architecture.html](docs/architecture.html)）。
+如需先摸清全仓模块上下游，推荐浏览 [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)（本地源码位于 [docs/architecture.html](docs/architecture.html)）。
 
 ---
 

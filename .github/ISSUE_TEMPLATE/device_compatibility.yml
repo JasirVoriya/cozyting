@@ -34,8 +34,8 @@ body:
   - type: input
     id: phone_model
     attributes:
-      label: 手机型号与 Android / ROM 版本
-      placeholder: 例如：一加 12 · ColorOS 15 · Android 15（API 35）
+      label: 发送端设备型号与系统版本（Android / iOS）
+      placeholder: 例如：一加 12 · ColorOS 15 · Android 15（API 35） / iPhone 15 Pro · iOS 18
     validations:
       required: true
 

@@ -8,29 +8,30 @@
 
 # MiPlay 发送端（纯局域网）
 
-**Android 手机单 App 音频捕获 · 零云端纯局域网 · 多音箱毫秒级同频投送**
+**跨端局域网音频捕获与投送（Android & iOS）· 零云端纯局域网 · 多音箱毫秒级同频同步**
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
-  <a href="https://jasirvoriya.github.io/miplay-android-sender/">在线交互式架构图</a> ·
+  <a href="https://jasirvoriya.github.io/miplay-sender/">在线交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
   <a href="CONTRIBUTING.md">参与贡献</a>
 </p>
 
 <p>
-  <a href="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-android-sender/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miplay-android-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
+  <a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/miplay-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-FFI%20Ready%20%C2%B7%20SwiftUI-1F2430?style=flat-square&logo=apple&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
   <img alt="Multi-Room Up to 63" src="https://img.shields.io/badge/Multi--Room-Max%2063%20Speakers-10B981?style=flat-square">
 </p>
 
 <p>
-  <img alt="Kotlin 2.0.21" src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
   <img alt="Rust 2021 (1.75+)" src="https://img.shields.io/badge/Rust-2021%20(%E2%89%A51.75)-181B22?style=flat-square&logo=rust&logoColor=white">
-  <img alt="JNI + cargo-ndk" src="https://img.shields.io/badge/Bridge-JNI%20%C2%B7%20cargo--ndk-374151?style=flat-square&logo=rust&logoColor=white">
+  <img alt="Kotlin 2.0.21" src="https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
+  <img alt="JNI + C ABI (FFI)" src="https://img.shields.io/badge/Bridge-JNI%20%C2%B7%20C%20ABI%20(FFI)-374151?style=flat-square&logo=rust&logoColor=white">
   <img alt="Gradle 8.11 · AGP 8.7" src="https://img.shields.io/badge/Gradle-8.11%20%C2%B7%20AGP%208.7-02303A?style=flat-square&logo=gradle&logoColor=white">
   <img alt="ABI arm64-v8a · 16KB Page" src="https://img.shields.io/badge/ABI-arm64--v8a%20%C2%B7%2016KB-2B313D?style=flat-square">
 </p>
@@ -60,28 +61,32 @@
 | **🎯 严格单 App 音频隔离** | 基于 `AudioPlaybackCapture` 强制单 UID + `USAGE_MEDIA/GAME/UNKNOWN` 白名单，启动前校验包可见性、同用户、非共享 UID 与签名摘要（任一不满足即 **fail-closed** 拒绝），绝不静默退化为全系统录屏或采集麦克风。 |
 | **🔊 多音箱毫秒级同频同步** | Rust 引擎内置单调时基 `EPOCH`、UDP 40B `TimerServer` 时钟主、建连期 `OffsetBarrier` 冲刷积压与预读 14 AU 对齐，单会话最多并发同步 **63 台**局域网音箱，支持运行期动态加减箱与 15s 看门狗指数退避重连。 |
 | **🔐 纯局域网与双认证隔离** | 全程本地直连、零云端 API、零账号登录；严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条控制认证链路。 |
-| **🧩 App + CLI 双形态交付** | 提供 Android 10–16 毛玻璃投送面板、按设备原位延迟监控与本机静音能量探针；同时内置独立终端工具 `miplay-cli`（支持只读 `inspect`，退出仅 TCP shutdown 不发 `CLOSE`）。 |
+| **🧩 跨端客户端 + CLI 交付** | 共用同一套 L1 Rust 核心（`engine` / `device_catalog`）与 `design/` 跨端设计规范：提供 Android 10–16 原生客户端、iOS C ABI / XCFramework 跨语言桥接（SwiftUI 端规划中），以及独立桌面终端工具 `miplay-cli`（支持只读 `inspect`）。 |
 
 ## 技术栈
 
 | 分层 | 技术选型 / 协议 / 关键依赖 | 用途与工程约束 |
 | --- | --- | --- |
-| **Android 表现与控制层** | `Kotlin 2.0.21` · `Android SDK 29–36` · `AndroidX Core KTX` · `MediaSessionManager` | 纯代码构建轻量化 UI，API 31+ 使用 `RenderEffect` 毛玻璃、API 29–30 自动压暗降级；不申请 `QUERY_ALL_PACKAGES` |
-| **音频采集与硬件编码** | `AudioPlaybackCapture` · `AudioRecord` (48kHz s16le) · `MediaCodec` (AAC-LC 256kbps) · 自研 `PcmProbe` | `MAX_PRIORITY` 采集编码线程；RMS + Goertzel（1kHz/2kHz）数字域探针驱动静音锁定与隔离验收 |
-| **跨语言原生桥接** | `JNI` (`jni 0.21`) · `cargo-ndk` · `arm64-v8a` · **16KB ELF 页对齐** | 单进程零 IPC 拷贝；`FEED_QUEUE_AUS = 96`（≈2s）有界通道，`stop()` 先 `drop(feed)` 消除停播死锁 |
+| **原生表现与控制层（Android / iOS）** | `Kotlin 2.0.21` · `Android SDK 29–36` · 共享 `design/` 规范（规划 iOS `SwiftUI`） | Android 纯代码构建明暗双主题 UI，API 31+ 使用 `RenderEffect` 毛玻璃、API 29–30 自动压暗降级；不申请 `QUERY_ALL_PACKAGES` |
+| **音频采集与硬件编码** | Android `AudioPlaybackCapture` + `MediaCodec`（规划 iOS `ReplayKit` + `AudioToolbox`）· 48kHz AAC-LC 256kbps | `MAX_PRIORITY` 采集编码线程；RMS + Goertzel（1kHz/2kHz）数字域探针驱动静音锁定与隔离验收 |
+| **跨语言原生桥接（JNI + C ABI）** | Android `JNI` (`jni 0.21`, `cargo-ndk`, **16KB ELF 页对齐**) · iOS `C ABI` (`ffi_c.rs`, `miplay_core.h`, `.xcframework`) | 单进程零 IPC 拷贝；`FEED_QUEUE_AUS = 96`（≈2s）有界通道，`stop()` 先 `drop(feed)` 消除停播死锁 |
 | **Rust 协议与同步核心** | `Rust 2021 (≥1.75)` · `LTO` · **零异步运行时**（纯 `std::thread` + 有界 `sync_channel`） | 确定性实时调度：`media-clock`（21.333ms 节拍）+ `supervisor` + 每台音箱独立 5 线程，单端阻塞不拖垮整组 |
 | **网络发现与加密协议** | `mDNS` (`224.0.0.251:5353`) · `TCP 8899` · `WFD RTSP` · `UDP TimerServer` · RustCrypto (`aes`/`cbc`/`hmac`/`sha1`/`sha2`/`md-5`) | 优先融合 `_mi-connect` (`apps=[5]`) 与 `_lyra-mdns`；纯 Rust 实现无 OpenSSL 原生依赖 |
 | **流媒体封装** | `ADTS (7B)` → `PES (0xC0)` → `MPEG-TS (188B + CRC32)` → `RTP (PT=33)` → `$+24bit` TCP 线帧 | 每台接收端维护独立 `Packetizer`（独立 RTP 序号与 TS 连续计数），共享同源 90kHz PTS / 27MHz PCR |
-| **构建、测试与合规** | `Gradle 8.11.1` · `AGP 8.7.3` · `standard` / `acceptance` 双变体 · `NewApi` Fatal Lint | 18 组 JVM 契约单测 + `cargo test` + `:testtones` 三 UID 声道隔离验收包；全仓 `AGPL-3.0-only` |
+| **构建、测试与合规** | `Gradle 8.11.1` · `AGP 8.7.3` · `standard` / `acceptance` 双变体 · `NewApi` Fatal Lint | JVM 契约单测 + `cargo test` + C11 头文件校验 + `:testtones` 三 UID 声道隔离验收包；全仓 `AGPL-3.0-only` |
 
 ## 目录结构
 
 ```text
-miplay-android-sender/
-├── core/                         # [L1 公共核心] 纯 Rust 协议与多箱同步引擎（全平台共享）
+miplay-sender/
+├── core/                         # [L1 公共核心] 纯 Rust 协议与多箱同步引擎（Android / iOS / CLI 全平台共享）
 │   ├── Cargo.toml                #   支持 rlib / cdylib(.so) / staticlib(.xcframework)
+│   ├── include/                  #   面向 iOS Swift 的 C11 头文件 (miplay_core.h) 与 module.modulemap
 │   └── src/                      #   核心源码（以下展开最关键模块）
-│       ├── ffi.rs                #     跨语言 FFI 桥接（当前 Android JNI，后续扩展 iOS）
+│       ├── engine.rs             #     跨端会话句柄表与多箱并发协调器
+│       ├── device_catalog.rs     #     设备发现分类、过滤、缓存合并与路由互斥状态机
+│       ├── ffi.rs                #     Android JNI 桥接插头
+│       ├── ffi_c.rs              #     iOS / C ABI 桥接插头
 │       ├── discovery.rs          #     mDNS 局域网设备发现与能力解析
 │       ├── control.rs            #     TCP 8899 控制通道、心跳与音量/暂停恢复
 │       ├── auth/                 #     双认证隔离（legacy 明文 / safety 加密）
@@ -89,6 +94,7 @@ miplay-android-sender/
 │       ├── clock_sync.rs         #     UDP TimerServer 时钟主（与 timeline 同源）
 │       ├── session.rs            #     多音箱并发会话、建连对齐与断线重连（最多 63 台）
 │       └── media/                #     流媒体封装（ADTS -> MPEG-TS -> RTP）
+├── design/                       # [跨端共享设计层] Android 与 iOS 共用的 tokens.json、24x24 矢量图标与 UI_SPEC.md
 ├── cli/                          # 独立终端工具 miplay-cli（发现 / 只读 inspect / 投送调试）
 │   └── src/                      #   CLI 命令入口（main.rs）
 ├── android/                      # [L2+L3 Android 端] Kotlin 原生客户端与测试工程
@@ -97,11 +103,12 @@ miplay-android-sender/
 │   │   └── src/
 │   │       ├── main/             #     正式源码（UI · CastService · capture/ · cast/ · compat/）
 │   │       ├── acceptance/       #     验收变体叠加清单与本地音频过滤探针入口
-│   │       └── test/             #     18 组 JVM 单元与契约回归测试
+│   │       └── test/             #     JVM 单元与契约回归测试
 │   └── testtones/                #   三 UID 声道隔离验收音源 App（1kHz / 2kHz / deny）
 ├── scripts/                      # 构建、签名与校验脚本
 │   ├── build-debug.sh            #   Rust 测试 + 16KB 对齐 cargo-ndk + Gradle Debug
 │   ├── build-release.sh          #   正式签名 Release APK 与校验和流水线
+│   ├── build-ios-xcframework.sh  #   iOS 静态库与 MiPlayCore.xcframework 打包脚本
 │   └── verify-acceptance-apk.sh  #   验收包 16KB 对齐、签名与清单隔离校验
 ├── docs/                         # 架构可视化、专项文档、修复日志与需求排期
 │   ├── architecture.html         #   零依赖本地交互式架构浏览器
@@ -139,7 +146,7 @@ miplay-android-sender/
 
 本项目在演进上采用 **跨端三层架构**：**L1 公共核心层（Rust `core/`）** 全平台共享协议、认证、多箱时钟同步与流媒体打包；**L2 系统接口层**（音频捕获、硬件 AAC 编码、保活）与 **L3 原生 UI 层** 由 Android（已实现）与 iOS（规划中）各自原生实现，通过薄 FFI 插头对接同一份 Rust 引擎，并通过共享设计规范 `design/` 保持双端视觉一致。当前已落地的 Android 端运行在 **Android（Kotlin，API 29–36）⇄ JNI（`libmiplay_sender_core.so`）⇄ Rust（`miplay-sender-core`）** 单进程内。
 
-> **交互式架构浏览器**：如需在浏览器中点击任意模块追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按 6 个阶段演练运行时线程切换，或按关键词检索全仓文件职责，可直接访问 **[在线交互式架构浏览器（GitHub Pages）](https://jasirvoriya.github.io/miplay-android-sender/)**，或打开零依赖本地页面 [`docs/architecture.html`](docs/architecture.html)。
+> **交互式架构浏览器**：如需在浏览器中点击任意模块追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按 6 个阶段演练运行时线程切换，或按关键词检索全仓文件职责，可直接访问 **[在线交互式架构浏览器（GitHub Pages）](https://jasirvoriya.github.io/miplay-sender/)**，或打开零依赖本地页面 [`docs/architecture.html`](docs/architecture.html)。
 
 ### 1. 跨端三层架构（L2/L3 双端各自实现 · L1 Rust 公共共享）
 

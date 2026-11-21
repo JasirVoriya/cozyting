@@ -2,7 +2,7 @@
 
 <!-- 简述本次 PR 解决的问题或新增的能力，并关联对应 Issue -->
 - 关联 Issue：Fixes #（如无请删除）
-- 变更方向：`[ ] Rust 核心 (core/)` · `[ ] CLI (cli/)` · `[ ] Android 端 (android/)` · `[ ] 文档 / 工程化`
+- 变更方向：`[ ] Rust 核心 (core/)` · `[ ] CLI (cli/)` · `[ ] Android 端 (android/)` · `[ ] iOS 端 / 跨端设计 (design/)` · `[ ] 文档 / 工程化`
 
 ## 改动要点
 

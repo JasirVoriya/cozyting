@@ -39,9 +39,9 @@ body:
   - type: input
     id: phone_env
     attributes:
-      label: 手机型号与系统版本
-      description: Android 10–16 各厂商 ROM 在 AudioPlaybackCapture 与后台保活上行为差异较大
-      placeholder: 例如：Xiaomi 14 · HyperOS 2.0 · Android 15（API 35）
+      label: 发送端设备型号与系统版本（Android / iOS / 桌面 CLI）
+      description: 请注明手机或终端设备型号与操作系统版本（如 Android 10–16 各厂商 ROM、iOS 版本或桌面端系统）
+      placeholder: 例如：Xiaomi 14 · HyperOS 2.0 · Android 15（API 35） / iPhone 16 Pro · iOS 18
     validations:
       required: true
 
