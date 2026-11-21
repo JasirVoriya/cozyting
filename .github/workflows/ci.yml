@@ -68,7 +68,7 @@ jobs:
           tool: cargo-ndk
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install Android API 36 platform, build-tools and NDK
         run: |
