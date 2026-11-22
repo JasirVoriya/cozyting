@@ -79,6 +79,9 @@ import com.miplay.sender.ui.ThemeMode
 import com.miplay.sender.ui.UiComponents
 import com.miplay.sender.ui.UiIconCache
 import com.miplay.sender.ui.UiPalette
+import com.miplay.sender.update.AppUpdateManager
+import com.miplay.sender.update.UpdateCheckState
+import com.miplay.sender.update.UpdateDialogController
 import org.json.JSONObject
 import java.util.UUID
 
@@ -111,6 +114,10 @@ class MainActivity : Activity() {
     private lateinit var latencyPillChevron: ImageView
     private var latencyPopup: PopupWindow? = null
     private var latencyDetailsDialog: Dialog? = null
+    private var updateDialog: Dialog? = null
+    private var settingsUpdateBadge: View? = null
+    private var updateBanner: LinearLayout? = null
+    private var updateBannerText: TextView? = null
     private lateinit var refreshBtn: FrameLayout
     private lateinit var nowPlayingFullBox: LinearLayout
     private lateinit var nowPlayingHintBanner: LinearLayout
@@ -183,12 +190,24 @@ class MainActivity : Activity() {
         val unit: TextView,
     )
 
+    private val updateCheckListener: (UpdateCheckState) -> Unit = {
+        if (!isFinishing && !isDestroyed) {
+            refreshUpdateUi()
+        }
+    }
+    private val autoUpdateCheckRunnable = Runnable {
+        if (!isFinishing && !isDestroyed) {
+            AppUpdateManager.maybeAutoCheck(this)
+        }
+    }
+
     private val refreshRunnable = object : Runnable {
         override fun run() {
             syncCastStateFromService(forceSyncRoute = false)
             val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
             updateLatencyAndSubtitleIndicators(stats)
             updateHeaderStatusPill()
+            refreshUpdateUi()
             tickNowPlayingProgress()
             main.postDelayed(this, 1000)
         }
@@ -235,15 +254,23 @@ class MainActivity : Activity() {
             },
         ).also { it.start() }
         main.postDelayed(refreshRunnable, 1000)
-        if (intent?.extras == null) discover()
+        AppUpdateManager.addListener(updateCheckListener)
+        if (intent?.extras == null) {
+            discover()
+            main.postDelayed(autoUpdateCheckRunnable, 1500)
+        }
         handleAutomation(intent)
     }
 
     override fun onDestroy() {
+        AppUpdateManager.removeListener(updateCheckListener)
+        main.removeCallbacks(autoUpdateCheckRunnable)
         runCatching { latencyPopup?.dismiss() }
         latencyPopup = null
         runCatching { latencyDetailsDialog?.dismiss() }
         latencyDetailsDialog = null
+        runCatching { updateDialog?.dismiss() }
+        updateDialog = null
         quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
@@ -277,6 +304,7 @@ class MainActivity : Activity() {
         refreshTargetFromStore()
         syncCastStateFromService(forceSyncRoute = true)
         updateLatencyCapsuleUi()
+        refreshUpdateUi()
         renderDevices()
         nowPlayingTracker?.refresh()
         maybeAutoSelectFromNowPlaying()
@@ -296,6 +324,25 @@ class MainActivity : Activity() {
     private fun dp(v: Int) = UiComponents.dp(this, v)
     private fun dpf(v: Float) = UiComponents.dpf(this, v)
 
+    private fun refreshUpdateUi() {
+        val showBadge = AppUpdateManager.shouldShowUpdateBadge()
+        settingsUpdateBadge?.visibility = if (showBadge) View.VISIBLE else View.GONE
+
+        val bannerDecision = AppUpdateManager.activeBannerDecision(CastService.running.get())
+        val banner = updateBanner ?: return
+        if (bannerDecision == null) {
+            banner.visibility = View.GONE
+        } else {
+            val suffix = if (bannerDecision.versionsBehind > 1) {
+                "（${bannerDecision.versionsBehind} 个版本更新）"
+            } else {
+                ""
+            }
+            updateBannerText?.text = "发现新版本 ${bannerDecision.latestTag}$suffix"
+            banner.visibility = View.VISIBLE
+        }
+    }
+
     private fun setStatusText(msg: String) {
         lastStatusMessage = msg
         if (::statusLine.isInitialized) statusLine.text = msg
@@ -306,6 +353,8 @@ class MainActivity : Activity() {
         latencyPopup = null
         runCatching { latencyDetailsDialog?.dismiss() }
         latencyDetailsDialog = null
+        runCatching { updateDialog?.dismiss() }
+        updateDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -418,8 +467,104 @@ class MainActivity : Activity() {
         val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
             startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
         }
-        topBar.addView(settingsBtn)
+        val settingsBadgeSize = dp(8)
+        settingsUpdateBadge = View(this).apply {
+            background = UiComponents.roundedDrawable(
+                fillColor = palette.accentBright,
+                radiusPx = settingsBadgeSize / 2f,
+                strokeColor = palette.bgCanvas,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            layoutParams = FrameLayout.LayoutParams(settingsBadgeSize, settingsBadgeSize, Gravity.TOP or Gravity.END).apply {
+                topMargin = dp(2)
+                marginEnd = dp(2)
+            }
+            visibility = View.GONE
+        }
+        val settingsWrap = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+            addView(settingsBtn)
+            addView(settingsUpdateBadge)
+        }
+        topBar.addView(settingsWrap)
         content.addView(topBar)
+
+        // —— 非阻塞版本更新轻提示条（仅非投送态发现新版本时展示，可一键关闭，绝不抢焦点） ——
+        updateBannerText = TextView(this).apply {
+            textSize = 12.5f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dp(8)
+                marginEnd = dp(8)
+            }
+        }
+        val bannerIcon = ImageView(this).apply {
+            setImageResource(R.drawable.ic_ui_update)
+            setColorFilter(palette.accentBright)
+            layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+        }
+        val bannerAction = TextView(this).apply {
+            text = "查看"
+            textSize = 11.5f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+            background = UiComponents.roundedDrawable(
+                fillColor = if (palette.isDark) Color.argb(46, 76, 141, 255) else Color.argb(26, 37, 99, 235),
+                radiusPx = dpf(999f),
+            )
+            setPadding(dp(10), dp(4), dp(10), dp(4))
+        }
+        val bannerClose = ImageView(this).apply {
+            setImageResource(R.drawable.ic_ui_close)
+            setColorFilter(palette.textSecondary)
+            contentDescription = "关闭更新提示"
+            setPadding(dp(6), dp(6), dp(2), dp(6))
+            layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginStart = dp(4) }
+            setOnClickListener {
+                AppUpdateManager.activeBannerDecision(CastService.running.get())?.let { d ->
+                    AppUpdateManager.dismissBannerForTag(d.latestTag)
+                }
+            }
+        }
+        updateBanner = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = palette.accentSoftBg,
+                radiusPx = dpf(UiPalette.RADIUS_CARD_DP.toFloat()),
+                rippleColor = palette.ripple,
+                strokeColor = Color.argb(56, Color.red(palette.accentBright), Color.green(palette.accentBright), Color.blue(palette.accentBright)),
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(12), dp(9), dp(10), dp(9))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(10) }
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            addView(bannerIcon)
+            addView(updateBannerText)
+            addView(bannerAction)
+            addView(bannerClose)
+            setOnClickListener {
+                val d = AppUpdateManager.activeBannerDecision(CastService.running.get()) ?: return@setOnClickListener
+                runCatching { updateDialog?.dismiss() }
+                updateDialog = UpdateDialogController.show(this@MainActivity, palette, d) {
+                    updateDialog = null
+                    refreshUpdateUi()
+                }
+            }
+        }
+        content.addView(updateBanner)
+        refreshUpdateUi()
 
         // —— 主面板容器 ——
         val mainCard = UiComponents.panelCard(this, palette, padDp = 16)

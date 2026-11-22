@@ -76,6 +76,22 @@ char *miplay_engine_stats_json(int64_t handle);
 /* 停止投送并释放引擎句柄（无死锁清理）。 */
 void miplay_engine_stop(int64_t handle);
 
+/* 比较两个版本号字符串（自动剥离前导 v 与 -release/-acceptance/-debug 后缀）。
+ * 返回值：-1 (a < b), 0 (a == b), 1 (a > b), -2 (格式非法)。 */
+int32_t miplay_compare_versions(const char *a, const char *b);
+
+/* 跨端更新裁决引擎：解析 update.json 或 GitHub Releases API JSON，
+ * 返回归一化决策 JSON（含 (current_version, target_version] 跨版本区间日志）。 */
+char *miplay_update_evaluate_json(
+    const char *current_version,
+    const char *channel,
+    const char *platform,
+    const char *abi,
+    const char *os_version,
+    const char *ignored_tag,
+    const char *raw_response_json
+);
+
 #ifdef __cplusplus
 }
 #endif

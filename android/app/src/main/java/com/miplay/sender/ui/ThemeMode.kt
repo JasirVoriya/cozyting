@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import com.miplay.sender.capture.CaptureEngineMode
 import com.miplay.sender.capture.CaptureScopeMode
+import com.miplay.sender.update.UpdateChannel
 
 /**
  * 跨端主题模式（与 `design/tokens.json` 和后续 iOS SwiftUI 对齐）。
@@ -99,6 +100,36 @@ class PrefsCastSettingsStore(context: Context) {
         get() = CaptureScopeMode.fromId(prefs.getString(KEY_CAPTURE_SCOPE, CaptureScopeMode.SINGLE_APP.id))
         set(value) = prefs.edit().putString(KEY_CAPTURE_SCOPE, value.id).apply()
 
+    /** 是否在启动时每 24 小时自动检查一次公开更新清单（默认开启，可一键关闭实现 100% 零外网请求）。 */
+    var autoCheckUpdates: Boolean
+        get() = prefs.getBoolean(KEY_UPDATE_AUTO_CHECK, true)
+        set(value) = prefs.edit().putBoolean(KEY_UPDATE_AUTO_CHECK, value).apply()
+
+    /** 用户显式选择的更新通道；留空表示跟随当前安装包类型（预览版跟预览、正式版跟稳定）。 */
+    var updateChannelRaw: String
+        get() = prefs.getString(KEY_UPDATE_CHANNEL, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_UPDATE_CHANNEL, value.trim()).apply()
+
+    fun resolvedUpdateChannel(currentVersionName: String): UpdateChannel =
+        UpdateChannel.fromId(updateChannelRaw) ?: UpdateChannel.defaultForCurrentVersion(currentVersionName)
+
+    /** 用户点击「跳过此版本」记录的 tag（如 v0.9.8）。 */
+    var ignoredUpdateTag: String
+        get() = prefs.getString(KEY_UPDATE_IGNORED_TAG, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_UPDATE_IGNORED_TAG, value.trim()).apply()
+
+    var lastUpdateCheckMs: Long
+        get() = prefs.getLong(KEY_UPDATE_LAST_CHECK_MS, 0L).coerceAtLeast(0L)
+        set(value) = prefs.edit().putLong(KEY_UPDATE_LAST_CHECK_MS, value.coerceAtLeast(0L)).apply()
+
+    var updateEtag: String
+        get() = prefs.getString(KEY_UPDATE_ETAG, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_UPDATE_ETAG, value).apply()
+
+    var cachedUpdateManifestJson: String
+        get() = prefs.getString(KEY_UPDATE_CACHED_JSON, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_UPDATE_CACHED_JSON, value).apply()
+
     fun isDark(context: Context): Boolean =
         ThemeMode.resolveIsDark(themeMode, ThemeMode.isSystemNight(context))
 
@@ -114,5 +145,11 @@ class PrefsCastSettingsStore(context: Context) {
         private const val KEY_AUTH_MODE = "auth_mode"
         private const val KEY_CAPTURE_ENGINE = "capture_engine_mode"
         private const val KEY_CAPTURE_SCOPE = "capture_scope_mode"
+        private const val KEY_UPDATE_AUTO_CHECK = "update_auto_check"
+        private const val KEY_UPDATE_CHANNEL = "update_channel"
+        private const val KEY_UPDATE_IGNORED_TAG = "update_ignored_tag"
+        private const val KEY_UPDATE_LAST_CHECK_MS = "update_last_check_ms"
+        private const val KEY_UPDATE_ETAG = "update_etag"
+        private const val KEY_UPDATE_CACHED_JSON = "update_cached_manifest_json"
     }
 }

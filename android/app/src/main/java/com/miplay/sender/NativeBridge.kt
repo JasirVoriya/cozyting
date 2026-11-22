@@ -62,5 +62,17 @@ object NativeBridge {
     @JvmStatic external fun debugBlackhole(handle: Long, ip: String, secs: Int): Boolean
     /** 只做 SafetyAuth 互验 + 加密 GetDeviceInfo，返回 JSON。 */
     @JvmStatic external fun safetyProbe(ip: String): String
+    /** 跨端 SemVer 比较（自动剥离 v 与构建后缀）：-1 / 0 / 1 / -2(非法)。 */
+    @JvmStatic external fun compareVersions(a: String, b: String): Int
+    /** 跨端更新裁决与区间日志聚合（纯逻辑，零网络 I/O）。 */
+    @JvmStatic external fun evaluateUpdateJson(
+        currentVersion: String,
+        channel: String,
+        platform: String,
+        abi: String,
+        osVersion: String,
+        ignoredTag: String,
+        rawResponseJson: String,
+    ): String
     @JvmStatic external fun stop(handle: Long)
 }

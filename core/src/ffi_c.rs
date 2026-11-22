@@ -6,6 +6,7 @@
 
 use crate::device_catalog;
 use crate::engine;
+use crate::update;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
@@ -204,6 +205,35 @@ pub extern "C" fn miplay_engine_stop(handle: i64) {
     engine::stop(handle);
 }
 
+/// 比较两个版本号字符串（自动剥离前导 `v` 与 `-release`/`-acceptance`/`-debug` 后缀）。
+/// 返回值：`-1` (a < b), `0` (a == b), `1` (a > b), `-2` (非法格式)。
+#[no_mangle]
+pub unsafe extern "C" fn miplay_compare_versions(a: *const c_char, b: *const c_char) -> i32 {
+    update::compare_versions(cstr_to_str(a), cstr_to_str(b))
+}
+
+/// 跨端更新裁决与跨版本区间日志聚合入口；返回归一化决策 JSON。
+#[no_mangle]
+pub unsafe extern "C" fn miplay_update_evaluate_json(
+    current_version: *const c_char,
+    channel: *const c_char,
+    platform: *const c_char,
+    abi: *const c_char,
+    os_version: *const c_char,
+    ignored_tag: *const c_char,
+    raw_response_json: *const c_char,
+) -> *mut c_char {
+    into_c_string(update::evaluate_update_json(
+        cstr_to_str(current_version),
+        cstr_to_str(channel),
+        cstr_to_str(platform),
+        cstr_to_str(abi),
+        cstr_to_str(os_version),
+        cstr_to_str(ignored_tag),
+        cstr_to_str(raw_response_json),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,6 +286,31 @@ mod tests {
             let tgt = CString::new("s1").unwrap();
             let tr = take_str(miplay_route_apply_json(devs.as_ptr(), act.as_ptr(), tgt.as_ptr()));
             assert!(tr.contains("\"type\":\"start_cast\""));
+
+            let va = CString::new("0.9.6-release").unwrap();
+            let vb = CString::new("v0.9.7").unwrap();
+            assert_eq!(miplay_compare_versions(va.as_ptr(), vb.as_ptr()), -1);
+
+            let ch = CString::new("stable").unwrap();
+            let pl = CString::new("ios").unwrap();
+            let ab = CString::new("").unwrap();
+            let os = CString::new("17.4").unwrap();
+            let ig = CString::new("").unwrap();
+            let raw = CString::new(
+                "{\"schema_version\":1,\"channels\":{\"stable\":{\"tag\":\"v0.9.7\",\"prerelease\":false,\"release_url\":\"https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.7\",\"notes\":\"- 新功能\",\"ios\":{\"min_os\":\"16.0\"}}}}",
+            )
+            .unwrap();
+            let dec = take_str(miplay_update_evaluate_json(
+                va.as_ptr(),
+                ch.as_ptr(),
+                pl.as_ptr(),
+                ab.as_ptr(),
+                os.as_ptr(),
+                ig.as_ptr(),
+                raw.as_ptr(),
+            ));
+            assert!(dec.contains("\"status\":\"update_available\""));
+            assert!(dec.contains("\"latest_tag\":\"v0.9.7\""));
         }
     }
 }

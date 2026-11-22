@@ -12,7 +12,7 @@
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> ·
-  <a href="https://jasirvoriya.github.io/miplay-sender/">Interactive Architecture</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/">Interactive Architecture</a> ·
   <a href="docs/ARCHITECTURE.md">Deep-Dive Architecture Doc</a> ·
   <a href="docs/COMPATIBILITY.md">Device Compatibility</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
@@ -21,7 +21,7 @@
 
 <p>
   <a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miplay-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
+  <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Releases" src="https://img.shields.io/badge/Releases-MiaoCast-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-FFI%20Ready%20%C2%B7%20SwiftUI-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -49,7 +49,7 @@ System-wide screen/audio mirroring broadcasts everything—including chat voice 
 ## Visual Architecture Overview
 
 > 🧭 **Explore Deeper**:
-> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/miplay-sender/)** (local file: [`docs/architecture.html`](docs/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
+> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/)** (local file: [`docs/architecture.html`](docs/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
 > - **Full Source Dictionary**: Read **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for the complete file-by-file responsibility tables (41 Android files, 24 Rust modules, 19 JVM test suites, and 6-stage lifecycle invariants).
 
 ### 1. Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
@@ -100,7 +100,7 @@ clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
 cd android && ./gradlew --no-daemon test lintStandardDebug
 ```
 
-Prebuilt APKs and cross-platform `miplay-cli` binaries are published on **[GitHub Releases](https://github.com/JasirVoriya/miplay-sender/releases)**.
+Prebuilt APKs and cross-platform `miplay-cli` binaries are published on **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
 
 ---
 

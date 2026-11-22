@@ -165,6 +165,11 @@ jobs:
     needs: [build-android, build-cli]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository (full history for release notes)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all release artifacts
         uses: actions/download-artifact@v4
         with:
@@ -177,11 +182,33 @@ jobs:
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - name: Create GitHub Release
+      - name: Extract Release Notes (CHANGELOG.md -> git log fallback)
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          python3 scripts/extract-release-notes.py \
+            --tag "${RELEASE_TAG}" \
+            --changelog CHANGELOG.md \
+            --out release-notes.md
+          cat release-notes.md
+
+      - name: Create GitHub Release (private archive)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           name: MiaoCast (妙投) ${{ inputs.tag || github.ref_name }}
-          generate_release_notes: true
+          body_path: release-notes.md
+          prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
+          files: release-assets/*
+
+      - name: Mirror Release to Public Repo (JasirVoriya/miaocast-releases)
+        if: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: JasirVoriya/miaocast-releases
+          token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: MiaoCast (妙投) ${{ inputs.tag || github.ref_name }}
+          body_path: release-notes.md
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*

@@ -7,6 +7,7 @@
 mod android {
     use crate::device_catalog;
     use crate::engine;
+    use crate::update;
     use jni::objects::{JByteArray, JClass, JString};
     use jni::sys::{jboolean, jint, jlong, jstring};
     use jni::JNIEnv;
@@ -318,5 +319,42 @@ mod android {
         h: jlong,
     ) {
         engine::stop(h);
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_miplay_sender_NativeBridge_compareVersions(
+        mut env: JNIEnv,
+        _c: JClass,
+        a: JString,
+        b: JString,
+    ) -> jint {
+        let sa = jstr(&mut env, &a);
+        let sb = jstr(&mut env, &b);
+        update::compare_versions(&sa, &sb)
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_miplay_sender_NativeBridge_evaluateUpdateJson(
+        mut env: JNIEnv,
+        _c: JClass,
+        current_version: JString,
+        channel: JString,
+        platform: JString,
+        abi: JString,
+        os_version: JString,
+        ignored_tag: JString,
+        raw_response_json: JString,
+    ) -> jstring {
+        let cv = jstr(&mut env, &current_version);
+        let ch = jstr(&mut env, &channel);
+        let pl = jstr(&mut env, &platform);
+        let ab = jstr(&mut env, &abi);
+        let os = jstr(&mut env, &os_version);
+        let ig = jstr(&mut env, &ignored_tag);
+        let raw = jstr(&mut env, &raw_response_json);
+        out(
+            &mut env,
+            update::evaluate_update_json(&cv, &ch, &pl, &ab, &os, &ig, &raw),
+        )
     }
 }

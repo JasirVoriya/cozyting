@@ -1,8 +1,10 @@
 package com.miplay.sender
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Typeface
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
@@ -40,6 +42,15 @@ import com.miplay.sender.ui.PrefsCastSettingsStore
 import com.miplay.sender.ui.ThemeMode
 import com.miplay.sender.ui.UiComponents
 import com.miplay.sender.ui.UiPalette
+import com.miplay.sender.update.AppUpdateManager
+import com.miplay.sender.update.UpdateChannel
+import com.miplay.sender.update.UpdateCheckState
+import com.miplay.sender.update.UpdateConfig
+import com.miplay.sender.update.UpdateDecisionStatus
+import com.miplay.sender.update.UpdateDialogController
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -66,6 +77,21 @@ class SettingsActivity : Activity() {
     private var localProbeBtn: TextView? = null
     private var devicesChanged = false
     private var triggerDiscover = false
+    private var pendingOpenDialogAfterManualCheck = false
+    private var updateDialog: Dialog? = null
+    private val updateListener: (UpdateCheckState) -> Unit = { st ->
+        if (!isFinishing && !isDestroyed) {
+            renderUi()
+            if (pendingOpenDialogAfterManualCheck && st is UpdateCheckState.Ready) {
+                pendingOpenDialogAfterManualCheck = false
+                if (st.decision.hasNewerVersion) {
+                    showUpdateDialog(st.decision)
+                }
+            } else if (st is UpdateCheckState.Failed) {
+                pendingOpenDialogAfterManualCheck = false
+            }
+        }
+    }
 
     private val probeTicker = object : Runnable {
         override fun run() {
@@ -84,6 +110,7 @@ class SettingsActivity : Activity() {
         settingsStore = PrefsCastSettingsStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
         targetStore = PrefsTargetAppStore(this)
+        AppUpdateManager.addListener(updateListener)
         renderUi()
         if (BuildConfig.IS_ACCEPTANCE) main.postDelayed(probeTicker, 1000)
     }
@@ -94,6 +121,9 @@ class SettingsActivity : Activity() {
     }
 
     override fun onDestroy() {
+        AppUpdateManager.removeListener(updateListener)
+        runCatching { updateDialog?.dismiss() }
+        updateDialog = null
         main.removeCallbacks(probeTicker)
         super.onDestroy()
     }
@@ -331,6 +361,12 @@ class SettingsActivity : Activity() {
         buildDebugBody(debugBody)
         debugCard.addView(debugBody)
         root.addView(debugCard)
+
+        // —— 卡片 4：关于与更新 ——
+        root.addView(UiComponents.sectionTitle(this, palette, "关于与更新"))
+        val updateCard = UiComponents.panelCard(this, palette, padDp = 14)
+        buildAboutAndUpdateCard(updateCard)
+        root.addView(updateCard)
 
         val scroll = ScrollView(this).apply {
             setBackgroundColor(palette.bgCanvas)
@@ -872,6 +908,250 @@ class SettingsActivity : Activity() {
                 renderUi()
             }
         }, "test-wireless-adb").start()
+    }
+
+    private fun buildAboutAndUpdateCard(card: LinearLayout) {
+        val state = AppUpdateManager.state
+        val displayVer = AppUpdateManager.currentDisplayVersion()
+        val isPre = UpdateChannel.isPrereleaseVersion(displayVer)
+        val readyDecision = (state as? UpdateCheckState.Ready)?.decision
+        val hasNew = readyDecision?.hasNewerVersion == true
+
+        // 顶部版本信息行 + 状态胶囊
+        val versionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(2), 0, dp(2), dp(10))
+        }
+        val verMeta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
+        }
+        val verTitle = buildString {
+            append(getString(R.string.app_brand_name))
+            append(" v").append(displayVer)
+            if (BuildConfig.IS_ACCEPTANCE) {
+                append(" · 验收版")
+            } else if (isPre) {
+                append(" · 预览版")
+            }
+        }
+        verMeta.addView(
+            TextView(this).apply {
+                text = verTitle
+                textSize = 14.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+            },
+        )
+        val subLine = when (state) {
+            is UpdateCheckState.Checking -> "正在检查公开更新清单…"
+            is UpdateCheckState.Failed -> state.message
+            is UpdateCheckState.Ready -> when (state.decision.status) {
+                UpdateDecisionStatus.UPDATE_AVAILABLE -> {
+                    val behind = if (state.decision.versionsBehind > 1) {
+                        "（含 ${state.decision.versionsBehind} 个版本变更）"
+                    } else {
+                        ""
+                    }
+                    "发现新版本 ${state.decision.latestTag}$behind"
+                }
+                UpdateDecisionStatus.IGNORED -> "发现新版本 ${state.decision.latestTag}（已跳过提醒）"
+                UpdateDecisionStatus.UNSUPPORTED_OS -> "新版本 ${state.decision.latestTag} 需要更高系统版本"
+                UpdateDecisionStatus.UP_TO_DATE -> "当前已是最新版本 · 上次检查 ${formatCheckTime(state.checkedAtMs)}"
+                UpdateDecisionStatus.ERROR -> state.decision.error.ifBlank { "更新解析异常" }
+            }
+            UpdateCheckState.Idle -> {
+                val last = settingsStore.lastUpdateCheckMs
+                if (last > 0L) "上次检查：${formatCheckTime(last)}" else "尚未检查更新 · 只读静态清单、零遥测"
+            }
+        }
+        verMeta.addView(
+            TextView(this).apply {
+                text = subLine
+                textSize = 11.5f
+                setTextColor(
+                    when {
+                        state is UpdateCheckState.Failed -> palette.statusWarning
+                        hasNew -> palette.accentBright
+                        else -> palette.textSecondary
+                    },
+                )
+                setPadding(0, dp(2), 0, 0)
+            },
+        )
+        versionRow.addView(verMeta)
+
+        val (pillText, pillFg, pillBg) = when {
+            state is UpdateCheckState.Checking -> Triple("检测中…", palette.accentBright, palette.accentSoftBg)
+            state is UpdateCheckState.Failed -> Triple(
+                "检查失败",
+                palette.statusWarning,
+                Color.argb(30, Color.red(palette.statusWarning), Color.green(palette.statusWarning), Color.blue(palette.statusWarning)),
+            )
+            hasNew -> Triple("有新版本", palette.accentBright, palette.accentSoftBg)
+            state is UpdateCheckState.Ready && state.decision.status == UpdateDecisionStatus.UP_TO_DATE -> Triple(
+                "已是最新",
+                palette.statusSuccess,
+                Color.argb(28, Color.red(palette.statusSuccess), Color.green(palette.statusSuccess), Color.blue(palette.statusSuccess)),
+            )
+            else -> Triple("v$displayVer", palette.textSecondary, palette.controlSurface)
+        }
+        versionRow.addView(
+            TextView(this).apply {
+                text = pillText
+                textSize = 11f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(pillFg)
+                background = UiComponents.roundedDrawable(pillBg, UiComponents.dpf(this@SettingsActivity, 999f))
+                setPadding(dp(9), dp(4), dp(9), dp(4))
+            },
+        )
+        card.addView(versionRow)
+
+        // 主操作按钮：检查更新 / 查看新版本
+        val isChecking = state is UpdateCheckState.Checking
+        val actionLabel = when {
+            isChecking -> "正在检查更新…"
+            hasNew -> "查看新版本 ${readyDecision!!.latestTag}"
+            state is UpdateCheckState.Failed -> "重试检查更新"
+            else -> "立即检查更新"
+        }
+        val actionBtn = UiComponents.tonalButton(
+            context = this,
+            palette = palette,
+            label = actionLabel,
+            primary = hasNew,
+        ) {
+            if (isChecking) return@tonalButton
+            if (hasNew) {
+                showUpdateDialog(readyDecision!!)
+            } else {
+                pendingOpenDialogAfterManualCheck = true
+                AppUpdateManager.checkManually(this)
+            }
+        }.apply {
+            isEnabled = !isChecking
+            alpha = if (isChecking) 0.6f else 1f
+        }
+        card.addView(actionBtn)
+        card.addView(spacer(10))
+
+        // 启动时自动检查开关（默认开启，可一键关闭以 100% 零外网请求）
+        card.addView(
+            UiComponents.switchRow(
+                context = this,
+                palette = palette,
+                title = "启动时自动检查更新",
+                subtitle = "每 24 小时仅向公开更新清单发起一次只读 HTTPS 请求，不上传任何设备或局域网数据",
+                initialChecked = settingsStore.autoCheckUpdates,
+            ) { checked ->
+                settingsStore.autoCheckUpdates = checked
+            },
+        )
+        card.addView(spacer(10))
+
+        // 更新通道分段选择：[稳定版 | 预览版 (RC)]
+        card.addView(fieldLabel("更新通道"))
+        val channels = listOf(UpdateChannel.STABLE, UpdateChannel.PRERELEASE)
+        val currentCh = settingsStore.resolvedUpdateChannel(BuildConfig.VERSION_NAME)
+        val chIdx = channels.indexOf(currentCh).coerceAtLeast(0)
+        card.addView(
+            UiComponents.segmentedControl(
+                context = this,
+                palette = palette,
+                labels = channels.map { it.labelZh },
+                initialIndex = chIdx,
+            ) { idx ->
+                settingsStore.updateChannelRaw = channels[idx].id
+                AppUpdateManager.reevaluateFromCache(this, manual = false)
+                renderUi()
+            },
+        )
+        card.addView(spacer(10))
+
+        // 公开 Release 与完整更新日志外链行（无权限绿点，简洁右箭头）
+        card.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = UiComponents.rippleSurface(
+                    fillColor = palette.rowIdleBg,
+                    radiusPx = UiComponents.dpf(this@SettingsActivity, UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                    rippleColor = palette.ripple,
+                    strokeColor = palette.rowIdleBorder,
+                    strokeWidthPx = dp(1).coerceAtLeast(1),
+                )
+                setPadding(dp(12), dp(11), dp(12), dp(11))
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    runCatching {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(UpdateConfig.PUBLIC_RELEASES_WEB_URL)))
+                    }
+                }
+                val meta = LinearLayout(this@SettingsActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        marginEnd = dp(8)
+                    }
+                }
+                meta.addView(
+                    TextView(this@SettingsActivity).apply {
+                        text = "公开版本发布页与完整更新日志"
+                        textSize = 14f
+                        setTypeface(null, Typeface.BOLD)
+                        setTextColor(palette.textPrimary)
+                    },
+                )
+                meta.addView(
+                    TextView(this@SettingsActivity).apply {
+                        text = "github.com/${UpdateConfig.PUBLIC_RELEASE_REPO}/releases"
+                        textSize = 11.5f
+                        setTextColor(palette.textSecondary)
+                        setPadding(0, dp(2), 0, 0)
+                    },
+                )
+                addView(meta)
+                addView(
+                    TextView(this@SettingsActivity).apply {
+                        text = "打开"
+                        textSize = 11.5f
+                        setTypeface(null, Typeface.BOLD)
+                        setTextColor(palette.textSecondary)
+                        setPadding(0, 0, dp(4), 0)
+                    },
+                )
+                addView(
+                    ImageView(this@SettingsActivity).apply {
+                        setImageResource(R.drawable.ic_ui_chevron_right)
+                        setColorFilter(palette.textTertiary)
+                        layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
+                    },
+                )
+            },
+        )
+    }
+
+    private fun showUpdateDialog(decision: com.miplay.sender.update.UpdateDecision) {
+        runCatching { updateDialog?.dismiss() }
+        updateDialog = UpdateDialogController.show(this, palette, decision) {
+            updateDialog = null
+            if (!isFinishing && !isDestroyed) renderUi()
+        }
+    }
+
+    private fun formatCheckTime(tsMs: Long): String {
+        if (tsMs <= 0L) return "刚刚"
+        val diff = (System.currentTimeMillis() - tsMs).coerceAtLeast(0L)
+        return when {
+            diff < 60_000L -> "刚刚"
+            diff < 3_600_000L -> "${diff / 60_000L} 分钟前"
+            diff < 86_400_000L -> "${diff / 3_600_000L} 小时前"
+            else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(tsMs))
+        }
     }
 
     private fun fieldLabel(textStr: String): TextView = TextView(this).apply {

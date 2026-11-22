@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 仅暴露应用私有缓存下的 updates 目录供系统安装器读取已校验 APK -->
+    <cache-path
+        name="updates"
+        path="updates/" />
+</paths>

@@ -12,7 +12,7 @@
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
-  <a href="https://jasirvoriya.github.io/miplay-sender/">在线交互式架构图</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/">在线交互式架构图</a> ·
   <a href="docs/ARCHITECTURE.md">源码深度手册</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
@@ -21,7 +21,7 @@
 
 <p>
   <a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miplay-sender/releases"><img alt="Version v0.9.4" src="https://img.shields.io/badge/Version-v0.9.4-1F2430?style=flat-square"></a>
+  <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Releases" src="https://img.shields.io/badge/Releases-MiaoCast-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-FFI%20Ready%20%C2%B7%20SwiftUI-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -57,7 +57,7 @@
 ## 架构总览（以图代表）
 
 > 🧭 **深入探索源码与模块上下游**：
-> - **交互式图形探索**：访问 **[在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
+> - **交互式图形探索**：访问 **[在线交互式架构浏览器](https://jasirvoriya.github.io/miaocast-releases/)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
 > - **全仓源码字典**：查阅 **[《架构与全仓源码深度手册》(docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)**（含 41 个 Android 源码、24 个 Rust 核心模块、19 组 JVM 契约单测与 6 阶段生命周期不变量详表）。
 
 ### 1. 跨端三层架构（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
@@ -105,7 +105,7 @@ miplay-sender/
 
 ### 1. 下载或使用 `miplay-cli` 只读诊断局域网音箱
 
-正式版 APK 与三端 `miplay-cli` 二进制可在 **[GitHub Releases](https://github.com/JasirVoriya/miplay-sender/releases)** 直接下载，也可本地运行：
+正式版 APK 与三端 `miplay-cli` 二进制可在 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载，也可本地运行：
 
 ```sh
 # 扫描局域网 MiPlay / 小爱音箱（输出 6 列 TSV：IP、名称、型号、MiPlay 能力声明等）
@@ -159,7 +159,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **不把编译通过等同于全机型兼容**：各厂商后台冻结（如 HyperOS Greeze）及部分音箱固件差异（如 LX06 晚加入扩组，见 [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)）需按机型实测核验。
 
 📚 **延伸文档索引**：
-- [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)（[本地 HTML](docs/architecture.html)）
+- [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [在线交互式架构浏览器](https://jasirvoriya.github.io/miaocast-releases/)（[本地 HTML](docs/architecture.html)）
 - [音箱与发送端设备兼容矩阵](docs/COMPATIBILITY.md) · [未测限制与已知缺口](docs/LIMITATIONS.md)
 - [Android 免投屏感采集方案 · 内置无线调试（待实现）](docs/ANDROID_WIRELESS_DEBUG_CAPTURE_DESIGN.md) · [iOS 客户端设计方案（待实现）](docs/IOS_CLIENT_DESIGN.md) · [局域网 AirPlay 2 网关设计方案（保留）](docs/AIRPLAY_BRIDGE_DESIGN.md)
 - [更新日志 (CHANGELOG)](CHANGELOG.md) · [本机静音边界](docs/LOCAL_MUTE.md) · [延迟预算模型](docs/LATENCY_BUDGET.md)
@@ -170,4 +170,4 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 
 - **开源许可证**：本项目采用 **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** 开源发布。
 - **非官方与互操作性声明**：本项目为独立的第三方开源客户端实现，仅用于局域网设备互操作性与音频投送技术研究。本项目与小米集团（Xiaomi）及其关联公司没有任何隶属、授权、认可或合作关系。文中所提及的产品名称、协议名称或商标均归其各自所有者所有。
-- **隐私与边界**：仅捕获用户授权的声音流，不采集屏幕图像或麦克风，不连接任何云端 API，仅在用户本地局域网内按选定目标投送音频。
+- **隐私与边界**：仅捕获用户授权的声音流，不采集屏幕图像或麦克风，投送全程在本地局域网直连运行；应用内置的公开版本更新检测为只读零遥测 HTTPS 清单（强制 SHA-256 与签名校验），并可在设置中随时关闭以保持 100% 零外网请求。

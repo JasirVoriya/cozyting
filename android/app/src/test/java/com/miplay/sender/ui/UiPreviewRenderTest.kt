@@ -24,6 +24,9 @@ import com.miplay.sender.cast.CastProtocol
 import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.CastRouteSelection.Kind
 import com.miplay.sender.cast.NowPlayingInfo
+import com.miplay.sender.update.AppUpdateManager
+import com.miplay.sender.update.UpdateHttpClient
+import android.widget.ScrollView
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
@@ -73,6 +76,7 @@ class UiPreviewRenderTest {
 
     @After
     fun tearDown() {
+        AppUpdateManager.resetForTest()
         CastService.running.set(false)
         CastService.lastFailMessage = ""
         CastService.lastStats = ""
@@ -117,7 +121,19 @@ class UiPreviewRenderTest {
         val guideOverview = composeSideBySide(darkGuide, lightGuide)
         savePng(guideOverview, "11_wireless_guide_dark_vs_light.png")
 
-        println("[UiPreviewRenderTest] Saved 12 preview PNGs to: ${outDir.absolutePath}")
+        val updateSettingsOverview = composeSideBySide(
+            renderSettingsUpdateBottom(isDark = true),
+            renderSettingsUpdateBottom(isDark = false),
+        )
+        savePng(updateSettingsOverview, "12_settings_update_card_dark_vs_light.png")
+
+        val updateBannerOverview = composeSideBySide(
+            renderMainWithUpdateBanner(isDark = true),
+            renderMainWithUpdateBanner(isDark = false),
+        )
+        savePng(updateBannerOverview, "13_main_update_banner_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 14 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -289,6 +305,101 @@ class UiPreviewRenderTest {
         val activity = controller.get()
         val bitmap = captureActivityBitmap(activity)
         controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun seedMockUpdateAvailable() {
+        val ctx = RuntimeEnvironment.getApplication()
+        AppUpdateManager.resetForTest()
+        AppUpdateManager.currentVersionProvider = { "0.9.5-release" }
+        AppUpdateManager.isAcceptanceProvider = { false }
+        AppUpdateManager.evaluator = AppUpdateManager.Evaluator { _, _, _, _, _, _, _ ->
+            """
+            {
+              "status": "update_available",
+              "current_version": "0.9.5",
+              "latest_tag": "v0.9.7",
+              "latest_version": "0.9.7",
+              "is_prerelease": false,
+              "published_at": "2026-11-22T08:00:00Z",
+              "release_notes": "v0.9.7\n- 妙投品牌升级与无线调试无感采集\n\nv0.9.6\n- 局域网只读 miName 与房间名解析",
+              "changelog_entries": [
+                {"tag":"v0.9.7","version":"0.9.7","prerelease":false,"published_at":"2026-11-22T08:00:00Z","notes":"- 妙投品牌升级与无线调试无感采集"},
+                {"tag":"v0.9.6","version":"0.9.6","prerelease":false,"published_at":"2026-11-21T14:00:00Z","notes":"- 局域网只读 miName 与房间名解析"}
+              ],
+              "versions_behind": 2,
+              "changelog_truncated": false,
+              "release_url": "https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.7",
+              "asset_name": "miplay-sender-v0.9.7-arm64-v8a.apk",
+              "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.7/miplay-sender-v0.9.7-arm64-v8a.apk",
+              "asset_size_bytes": 6890123,
+              "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+              "sha256sums_url": "",
+              "installable": true,
+              "error": ""
+            }
+            """.trimIndent()
+        }
+        AppUpdateManager.transport = AppUpdateManager.Transport { _, _ ->
+            UpdateHttpClient.FetchResult.Ok("{\"schema_version\":1}", null)
+        }
+        AppUpdateManager.checkBlocking(ctx, manual = false)
+        AppUpdateManager.reevaluateFromCache(ctx, manual = false)
+    }
+
+    private fun renderSettingsUpdateBottom(isDark: Boolean): Bitmap {
+        val ctx = RuntimeEnvironment.getApplication()
+        PrefsCastSettingsStore(ctx).themeMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
+        seedMockUpdateAvailable()
+
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+        val activity = controller.get()
+        val contentRoot = activity.findViewById<android.view.ViewGroup>(android.R.id.content)
+        val scroll = contentRoot.getChildAt(0) as? ScrollView
+        // 先测量布局再滚至底部展示卡片 4「关于与更新」
+        val dm = activity.resources.displayMetrics
+        val wSpec = View.MeasureSpec.makeMeasureSpec(dm.widthPixels, View.MeasureSpec.EXACTLY)
+        val hSpec = View.MeasureSpec.makeMeasureSpec(dm.heightPixels, View.MeasureSpec.EXACTLY)
+        activity.window.decorView.measure(wSpec, hSpec)
+        activity.window.decorView.layout(0, 0, dm.widthPixels, dm.heightPixels)
+        val childHeight = scroll?.getChildAt(0)?.height ?: 0
+        scroll?.scrollTo(0, (childHeight - dm.heightPixels).coerceAtLeast(0))
+        val bitmap = Bitmap.createBitmap(dm.widthPixels, dm.heightPixels, Bitmap.Config.ARGB_8888)
+        activity.window.decorView.draw(Canvas(bitmap))
+
+        controller.pause().stop().destroy()
+        AppUpdateManager.resetForTest()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun renderMainWithUpdateBanner(isDark: Boolean): Bitmap {
+        seedMockUpdateAvailable()
+        val controller = Robolectric.buildActivity(
+            MainActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+        val devices = listOf(
+            CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true, selected = true),
+            CastRouteSelection.Device("192.0.2.10", "小爱音箱Pro-0002", Kind.SPEAKER, castable = true, selected = false, protocol = CastProtocol.MIPLAY, roomName = "客厅"),
+        )
+        activity.applyUiPreviewStateForTest(
+            isDark = isDark,
+            previewNowPlaying = NowPlayingInfo.unavailable("开启「通知使用权」以显示正在播放并启用播控"),
+            previewDevices = devices,
+            previewLaunchableApps = listOf(LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true)),
+            previewSelectedPackage = "com.example.music",
+            previewSelectedLabel = "云音乐",
+            previewMasterVolume = 40,
+            previewCasting = false,
+            previewStats = null,
+            previewStatusText = "本机出声 · 点击下方音箱开始投送",
+        )
+        val bitmap = captureActivityBitmap(activity)
+        controller.pause().stop().destroy()
+        AppUpdateManager.resetForTest()
         shadowOf(Looper.getMainLooper()).idle()
         return bitmap
     }
