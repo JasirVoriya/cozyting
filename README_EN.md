@@ -33,6 +33,44 @@
 
 ---
 
+## App UI Showcase (Dark / Light Dual Theme)
+
+> All screenshots below are rendered directly from the real Android View hierarchy via JVM native Skia (`./scripts/ui-preview.sh`) with RFC 5737 mock LAN addresses (`192.0.2.x`), showcasing every core screen and workflow at full width.
+
+### 1. Main Screen · Synchronized Multi-Speaker Casting
+
+![MiaoCast Main Screen Multi-Speaker Casting (Dark vs Light)](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
+
+### 2. 4-Tier Live Latency Switching (`TIME_OFFSET` Hot Rebase)
+
+![Latency Tiers Dialog (Dark vs Light)](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
+
+### 3. Favorite Audio Sources (Per-App Auto-Detect & Drag Reorder)
+
+![Favorite Audio Sources Manager (Dark vs Light)](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
+
+### 4. Built-In Wireless Debugging 4-Step Zero-Projection Wizard
+
+![Wireless Debugging 4-Step Guide (Dark vs Light)](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
+
+### 5. Settings · Theme, Capture Engine, Single-App Mute & Permissions
+
+![Settings Core Configuration (Dark vs Light)](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
+
+### 6. Settings · Advanced Debug & About / Updates Card
+
+![Settings About & Updates Card (Dark vs Light)](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
+
+### 7. Main Screen Non-Intrusive Update Banner & Badge
+
+![Main Screen Update Banner (Dark vs Light)](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
+
+### 8. Cross-Version Range Changelog & Verified In-App Update Dialog
+
+![Cross-Version Update Details Dialog (Dark vs Light)](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+
+---
+
 ## Core Capabilities & Technical Foundation
 
 System-wide screen/audio mirroring broadcasts everything—including chat voice messages, short videos, and notification chimes—straight to your living-room speakers. **MiaoCast (妙投)** solves this with the **MiPlay LAN protocol** and a pure-Rust cross-platform engine (`miplay-core`) that captures **only your selected music app** and synchronizes up to **63 Xiaomi/XiaoAi speakers** in real time:
@@ -43,35 +81,6 @@ System-wide screen/audio mirroring broadcasts everything—including chat voice 
 - **🔊 63-Speaker Millisecond Sync**: Deterministic pure-Rust engine (`std::thread` + bounded `sync_channel`, **zero async runtime**) with monotonic `EPOCH`, UDP 40B `TimerServer` clock master, and `OffsetBarrier` 14-AU preroll alignment.
 - **🔐 100% Pure LAN & Dual Auth Isolation**: Zero cloud APIs, zero account logins. Strictly isolates Legacy (`MD5 + HMAC-SHA1`) and Safety (`OPack + mutual HMAC + chained AES-128-CBC`) control channels.
 - **🧩 Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog`) and `design/` spec across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`miplay_core.h` C ABI + `.xcframework` script ready, SwiftUI planned), and `miplay-cli inspect` (read-only diagnostics via TCP shutdown without sending `CLOSE`).
-
----
-
-## App UI Showcase (Dark / Light Dual Theme)
-
-> All screenshots below are rendered directly from the real Android View hierarchy via JVM native Skia (`./scripts/ui-preview.sh`) with RFC 5737 mock LAN addresses (`192.0.2.x`), showcasing every core screen and workflow.
-
-### Main Screen · Synchronized Multi-Speaker Casting
-
-![MiaoCast Main Screen Multi-Speaker Casting (Dark vs Light)](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
-
-### Feature & Screen Gallery (Click Any Image to Zoom)
-
-| 4-Tier Live Latency Switching (`TIME_OFFSET` Rebase) | Favorite Audio Sources (Per-App Auto-Detect & Drag Reorder) |
-| :---: | :---: |
-| ![Latency Tiers Dialog (Dark vs Light)](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png) | ![Favorite Audio Sources Manager (Dark vs Light)](docs/assets/screenshots/03-app-picker-dark-vs-light.png) |
-| **Built-In Wireless Debugging 4-Step Zero-Projection Wizard** | **Settings · Theme, Capture Engine, Single-App Mute & Permissions** |
-| ![Wireless Debugging 4-Step Guide (Dark vs Light)](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png) | ![Settings Core Configuration (Dark vs Light)](docs/assets/screenshots/05-settings-core-dark-vs-light.png) |
-| **Settings · Advanced Debug & About / Updates Card** | **Main Screen Non-Intrusive Update Banner & Badge** |
-| ![Settings About & Updates Card (Dark vs Light)](docs/assets/screenshots/06-settings-update-dark-vs-light.png) | ![Main Screen Update Banner (Dark vs Light)](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png) |
-
-<details>
-<summary><strong>Expand: Cross-Version Range Changelog & Verified In-App Update Dialog (SHA-256 + Signature Check)</strong></summary>
-
-<br>
-
-![Cross-Version Update Details Dialog (Dark vs Light)](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
-
-</details>
 
 ---
 

@@ -41,6 +41,44 @@
 
 ---
 
+## 界面实机渲染一览（深色 / 浅色双主题）
+
+> 以下全部界面均由 Android 真实视图代码通过 JVM 原生 Skia 渲染管线（`./scripts/ui-preview.sh`）直出，采用匿名测试数据与 RFC 5737 示例地址（`192.0.2.x`），完整展示从多音箱同频投送、延迟热切、常用音源管理、免投屏无感采集向导到跨版本应用内更新的全部核心界面。
+
+### 1. 主界面 · 多音箱同频投送（专辑氛围底 · 房间名同行 · 实时 `ms` 延迟 · 独立音量）
+
+![妙投主界面多音箱同步投送（深/浅双主题）](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
+
+### 2. 4 档播放延迟热切换（投送中免重连 `TIME_OFFSET` 实时重锚）
+
+![延迟档位说明弹窗（深/浅双主题）](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
+
+### 3. 常用音源管理（自由增删 · 单 App 自动识别开关 · 长按拖动排序）
+
+![常用音源管理页（深/浅双主题）](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
+
+### 4. 内置无线调试 · 4 步免投屏无感采集向导（Android 13+ 单 App 隔离与双区音频焦点）
+
+![内置无线调试 4 步配对向导（深/浅双主题）](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
+
+### 5. 独立设置页 · 明暗三态主题、采集引擎、无感单 App 静音与系统权限
+
+![独立设置页核心配置（深/浅双主题）](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
+
+### 6. 独立设置页 · 高级连接调试与「关于与更新」卡片
+
+![设置页关于与更新卡片（深/浅双主题）](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
+
+### 7. 主界面无打扰更新提示（顶栏蓝点角标 · 非投送态可关闭轻提示条）
+
+![主界面更新轻提示条（深/浅双主题）](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
+
+### 8. 跨版本区间更新日志与安全下载安装弹窗（强制 SHA-256 + 签名证书双重校验）
+
+![跨版本更新详情弹窗（深/浅双主题）](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+
+---
+
 ## 核心能力与技术底座
 
 为什么不用系统录屏投屏？整机投音会把微信语音、短视频和通知提示音一并广播到客厅音箱；而原厂妙播又受限于特定品牌机型。**妙投（MiaoCast）** 基于 **MiPlay 局域网协议**与自研纯 Rust 引擎（`miplay-core`），实现了**「只投你选的那一个音乐 App，最多 63 台小米/小爱音箱毫秒级同频合唱」**：
@@ -51,35 +89,6 @@
 - **🔊 63 台音箱毫秒级同频**：L1 纯 Rust 引擎采用确定性实时线程（**零异步运行时**），通过 `EPOCH` 单调时基、`UDP 40B TimerServer` 时钟主与 `OffsetBarrier` 14 AU 预读对齐，支持播放中途随时加减音箱与设备行内原位显示整数 `ms` 延迟。
 - **🔐 零云端纯局域网 · 双认证隔离**：全程本地局域网直连、零账号登录；严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条控制链路。
 - **🧩 跨端客户端 + 无副作用诊断 CLI**：双端共用 L1 Rust 核心与 `design/` 明暗双主题规范（支持深色/浅色/跟随系统）；桌面端 `miplay-cli inspect` 支持只读查询音箱状态（退出仅 `TCP shutdown`，绝不发 `CLOSE` 打断当前播放）。
-
----
-
-## 界面实机渲染一览（深色 / 浅色双主题）
-
-> 以下全部界面均由 Android 真实视图代码通过 JVM 原生 Skia 渲染管线（`./scripts/ui-preview.sh`）直出，采用测试占位数据（RFC 5737 示例地址 `192.0.2.x`），完整覆盖主界面、延迟热切、常用音源、无线调试无感向导、设置页与跨版本应用内更新全流程。
-
-### 主界面 · 多音箱同频投送（专辑氛围底 · 房间名同行 · 实时 `ms` 延迟 · 独立音量）
-
-![妙投主界面多音箱同步投送（深/浅双主题）](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
-
-### 核心功能与全部页面（点击任意图片可放大查看）
-
-| 4 档延迟模式热切换（免重连 `TIME_OFFSET` 重锚） | 常用音源管理（单 App 自动识别 · 长按拖动排序） |
-| :---: | :---: |
-| ![延迟档位说明弹窗（深/浅双主题）](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png) | ![常用音源管理页（深/浅双主题）](docs/assets/screenshots/03-app-picker-dark-vs-light.png) |
-| **内置无线调试 · 4 步免投屏无感采集向导** | **独立设置页 · 主题 / 采集引擎 / 单 App 静音与权限** |
-| ![内置无线调试 4 步配对向导（深/浅双主题）](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png) | ![独立设置页核心配置（深/浅双主题）](docs/assets/screenshots/05-settings-core-dark-vs-light.png) |
-| **独立设置页 · 高级连接调试与「关于与更新」** | **主界面无打扰更新提示（仅非投送态 · 顶栏角标）** |
-| ![设置页关于与更新卡片（深/浅双主题）](docs/assets/screenshots/06-settings-update-dark-vs-light.png) | ![主界面更新轻提示条（深/浅双主题）](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png) |
-
-<details>
-<summary><strong>展开查看：跨版本区间更新日志与安全下载安装弹窗（强制 SHA-256 + 签名双重校验）</strong></summary>
-
-<br>
-
-![跨版本更新详情弹窗（深/浅双主题）](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
-
-</details>
 
 ---
 
