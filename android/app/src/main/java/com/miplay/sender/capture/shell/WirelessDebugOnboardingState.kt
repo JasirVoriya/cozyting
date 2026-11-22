@@ -114,11 +114,13 @@ data class WirelessDebugOnboardingState(
                 detailZh = if (paired) {
                     "已保存本机 TLS 配对证书；以后无需重复输入配对码（重启手机后只需重新打开无线调试开关）"
                 } else {
-                    "点击下方按钮发出配对通知并进入「开发者选项」→ 打开「无线调试」→ 点「使用配对码配对设备」→ 保持弹窗不关闭，直接下拉通知栏填入 6 位数字"
+                    "① 打开「无线调试」开关并点「使用配对码配对设备」\n" +
+                        "② 保持 6 位数字弹窗不关闭（切回本 App 会导致系统销毁配对码）\n" +
+                        "③ 等顶部横幅弹出直接点「输入 6 位配对码」；若横幅未弹出或按钮被折叠，下拉通知栏后单指下滑/长按本通知展开即可（也可用小窗/分屏点右侧「手动填码」）"
                 },
                 status = statusFor(StepId.WIRELESS_PAIRING, paired),
                 statusBadgeZh = if (paired) "已配对" else "待配对",
-                primaryActionLabelZh = if (paired) "重新配对" else "发出配对通知并前往设置",
+                primaryActionLabelZh = if (paired) "重新配对" else "开始配对并前往设置",
             )
 
             val step4 = StepItem(

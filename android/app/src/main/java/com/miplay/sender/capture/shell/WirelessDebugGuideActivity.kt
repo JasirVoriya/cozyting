@@ -76,7 +76,7 @@ class WirelessDebugGuideActivity : Activity() {
         val paired = PairingNotificationGuide.keyStore(this).isPaired()
         renderUi()
         // 从配对流程或系统设置返回后，若已配对且尚未验证，自动静默验证一次连接
-        if (paired && !connectionVerified && !testingConnection && (autoCheckPending || feedbackText.contains("配对通知"))) {
+        if (paired && !connectionVerified && !testingConnection && (autoCheckPending || feedbackText.contains("配对"))) {
             autoCheckPending = false
             testConnection(silent = false)
         }
@@ -428,7 +428,7 @@ class WirelessDebugGuideActivity : Activity() {
                 actionBox.addView(spacer(8))
                 actionBox.addView(
                     TextView(this).apply {
-                        text = "若通知栏被系统折叠无法回复，可与系统设置分屏后在此填入弹窗显示的端口与 6 位码："
+                        text = "提示：可将本 App 挂为「小窗」或与系统设置「分屏」，直接对照弹窗填入端口与 6 位配对码，无需操作通知栏："
                         textSize = 11f
                         setTextColor(palette.textTertiary)
                         setPadding(0, 0, 0, dp(6))
@@ -506,8 +506,9 @@ class WirelessDebugGuideActivity : Activity() {
         card.addView(header)
 
         val tips = listOf(
+            "• 通知栏配对码输入框：弹出系统 6 位码后，顶部横幅会直接露出「输入 6 位配对码」；若开启了免打扰或小米/HyperOS 折叠通知按钮，请下拉通知栏后单指下滑或长按本通知展开，或将本 App 挂为小窗/分屏使用「手动填码」。",
             "• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。",
-            "• 小米 / HyperOS：若连接被拒，请在开发者选项里同步检查「无线调试」与安全调试相关开关；MIUI 通知风格折叠回复框时可点「手动填码」配合分屏完成。",
+            "• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。",
             "• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。",
             "• 状态栏小绿点：无感模式会彻底消除投屏弹窗与「正在投屏」横幅；部分 Android 12+ 机型右上角仍可能显示极小的系统录音隐私绿点，属系统隐私机制。",
         )
@@ -540,8 +541,9 @@ class WirelessDebugGuideActivity : Activity() {
                     renderUi()
                     return
                 }
+                autoCheckPending = true
                 PairingNotificationGuide.startPairingSession(this)
-                feedbackText = "已发出配对通知：请打开「无线调试 → 使用配对码配对设备」，保持弹窗不关闭并下拉通知栏填 6 位码"
+                feedbackText = "配对监听已就绪：点「使用配对码配对设备」后，顶部将弹出横幅直接填 6 位码（若被折叠，单指下滑/长按通知展开）"
                 feedbackIsError = false
                 renderUi()
                 openDeveloperOptions()

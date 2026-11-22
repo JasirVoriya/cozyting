@@ -7,7 +7,9 @@ import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.HandlerThread
 import android.os.Looper
+import android.util.Log
 import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.CaptureScopeMode
 import com.miplay.sender.compat.ShellCaptureCompat
@@ -20,6 +22,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
  * 严格遵循 Fail-Closed：任何反射或注册失败均直接返回明确错误原因，绝不静默降级为整机捕获。
  */
 object AudioPolicyReflector {
+    private const val TAG = "MiPlayAudioPolicy"
     private const val RULE_MATCH_ATTRIBUTE_USAGE = 0x1
     private const val RULE_MATCH_UID = 0x4
     private const val ROUTE_FLAG_LOOP_BACK = 0x2
@@ -101,6 +104,8 @@ object AudioPolicyReflector {
         muteLocal: Boolean,
     ): OpenResult {
         var registeredPolicy: Any? = null
+        var focusThread: HandlerThread? = null
+        var focusBridge: ShellAudioFocusPolicyBridge? = null
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             ?: return OpenResult.Error("无法获取 AudioManager 服务")
 
@@ -153,32 +158,78 @@ object AudioPolicyReflector {
 
             val policyBuilderCls = Class.forName("android.media.audiopolicy.AudioPolicy\$Builder")
             val audioMixCls = Class.forName("android.media.audiopolicy.AudioMix")
-            val policyBuilder = policyBuilderCls.getDeclaredConstructor(Context::class.java).newInstance(context)
-            policyBuilderCls.getMethod("addMix", audioMixCls).invoke(policyBuilder, audioMix)
-            runCatching {
-                policyBuilderCls.getMethod("setLooper", Looper::class.java)
-                    .invoke(policyBuilder, Looper.getMainLooper())
-            }
-            val audioPolicy = policyBuilderCls.getMethod("build").invoke(policyBuilder)
-
             val policyCls = Class.forName("android.media.audiopolicy.AudioPolicy")
             val registerMethod = AudioManager::class.java.getMethod("registerAudioPolicy", policyCls)
-            val regStatus = (registerMethod.invoke(audioManager, audioPolicy) as? Int) ?: -1
-            if (regStatus != 0) {
-                return OpenResult.Error(
-                    "registerAudioPolicy 注册失败（code=$regStatus），可能是当前 ROM 限制 shell 动态路由策略",
-                )
-            }
-            registeredPolicy = audioPolicy
 
-            val record = buildAudioRecordForMix(context, policyCls, audioPolicy, audioMixCls, audioMix)
+            // 仅在「独立单 App 环回投送」（音箱放音乐、手机放其他应用）时启用双区 AudioFocus 隔离，
+            // 彻底避免刷短视频暂停音箱音乐或恢复音乐导致视频短暂无声；若 ROM 已有外部焦点策略冲突则自动回退纯音频路由策略。
+            val wantFocusIsolation = scopeMode == CaptureScopeMode.SINGLE_APP && muteLocal
+            var focusIsolationActive = false
+            var audioPolicy: Any? = null
+            var regStatus = -1
+
+            if (wantFocusIsolation) {
+                runCatching {
+                    val ht = HandlerThread("miplay-focus-policy").apply { start() }
+                    val bridge = ShellAudioFocusPolicyBridge(audioManager, uid)
+                    val pb = policyBuilderCls.getDeclaredConstructor(Context::class.java).newInstance(context)
+                    policyBuilderCls.getMethod("addMix", audioMixCls).invoke(pb, audioMix)
+                    policyBuilderCls.getMethod("setLooper", Looper::class.java).invoke(pb, ht.looper)
+                    val listenerCls = Class.forName("android.media.audiopolicy.AudioPolicy\$AudioPolicyFocusListener")
+                    policyBuilderCls.getMethod("setAudioPolicyFocusListener", listenerCls).invoke(pb, bridge)
+                    policyBuilderCls.getMethod("setIsAudioFocusPolicy", Boolean::class.javaPrimitiveType)
+                        .invoke(pb, true)
+                    val candidate = policyBuilderCls.getMethod("build").invoke(pb)!!
+                    bridge.attachPolicy(candidate)
+                    val status = (registerMethod.invoke(audioManager, candidate) as? Int) ?: -1
+                    if (status == 0) {
+                        audioPolicy = candidate
+                        regStatus = 0
+                        focusThread = ht
+                        focusBridge = bridge
+                        focusIsolationActive = true
+                    } else {
+                        bridge.clear()
+                        ht.quitSafely()
+                        runCatching { Log.w(TAG, "registerAudioPolicy(with focus policy) rc=$status, falling back to mix-only") }
+                    }
+                }.onFailure { t ->
+                    runCatching { Log.w(TAG, "focus isolation setup failed (${t.message}), falling back to mix-only") }
+                }
+            }
+
+            if (audioPolicy == null) {
+                val policyBuilder = policyBuilderCls.getDeclaredConstructor(Context::class.java).newInstance(context)
+                policyBuilderCls.getMethod("addMix", audioMixCls).invoke(policyBuilder, audioMix)
+                runCatching {
+                    policyBuilderCls.getMethod("setLooper", Looper::class.java)
+                        .invoke(policyBuilder, Looper.getMainLooper())
+                }
+                val fallbackPolicy = policyBuilderCls.getMethod("build").invoke(policyBuilder)!!
+                regStatus = (registerMethod.invoke(audioManager, fallbackPolicy) as? Int) ?: -1
+                if (regStatus != 0) {
+                    return OpenResult.Error(
+                        "registerAudioPolicy 注册失败（code=$regStatus），可能是当前 ROM 限制 shell 动态路由策略",
+                    )
+                }
+                audioPolicy = fallbackPolicy
+            }
+
+            val finalPolicy = audioPolicy!!
+            registeredPolicy = finalPolicy
+
+            val record = buildAudioRecordForMix(context, policyCls, finalPolicy, audioMixCls, audioMix)
                 ?: return OpenResult.Error("无法为 AudioMix 创建 AudioRecord").also {
-                    unregisterQuietly(audioManager, audioPolicy)
+                    focusBridge?.clear()
+                    focusThread?.quitSafely()
+                    unregisterQuietly(audioManager, finalPolicy)
                 }
 
             if (record.state != AudioRecord.STATE_INITIALIZED) {
                 runCatching { record.release() }
-                unregisterQuietly(audioManager, audioPolicy)
+                focusBridge?.clear()
+                focusThread?.quitSafely()
+                unregisterQuietly(audioManager, finalPolicy)
                 return OpenResult.Error("AudioPolicy 创建的 AudioRecord 未初始化（state=${record.state}）")
             }
 
@@ -187,22 +238,33 @@ object AudioPolicyReflector {
                 scopeMode == CaptureScopeMode.SINGLE_APP -> AudioCaptureBackend.LocalMuteHandling.ISOLATED_APP_LOOPBACK
                 else -> AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK
             }
-            val status = if (scopeMode == CaptureScopeMode.SINGLE_APP) {
-                "无感单 App 捕获已启动（uid=$uid, loopbackMute=$muteLocal）"
-            } else {
-                "无感全局媒体捕获已启动（loopbackMute=$muteLocal）"
+            val status = when {
+                scopeMode == CaptureScopeMode.SINGLE_APP && focusIsolationActive ->
+                    "无感单 App 捕获已启动（uid=$uid, 独立音频焦点隔离已开启）"
+                scopeMode == CaptureScopeMode.SINGLE_APP ->
+                    "无感单 App 捕获已启动（uid=$uid, loopbackMute=$muteLocal）"
+                else ->
+                    "无感全局媒体捕获已启动（loopbackMute=$muteLocal）"
             }
 
+            val releaseBridge = focusBridge
+            val releaseThread = focusThread
             OpenResult.Ok(
                 CaptureHandle(
                     record = record,
                     muteHandling = muteHandling,
                     statusLine = status,
-                    onRelease = { unregisterQuietly(audioManager, audioPolicy) },
+                    onRelease = {
+                        releaseBridge?.clear()
+                        unregisterQuietly(audioManager, finalPolicy)
+                        releaseThread?.quitSafely()
+                    },
                 ),
             )
         } catch (t: Throwable) {
+            focusBridge?.clear()
             registeredPolicy?.let { unregisterQuietly(audioManager, it) }
+            focusThread?.quitSafely()
             val root = t.cause ?: t
             OpenResult.Error("AudioPolicy 隐藏 API 反射启动失败：${root.javaClass.simpleName}: ${root.message}")
         }

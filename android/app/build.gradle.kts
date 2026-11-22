@@ -137,6 +137,7 @@ androidComponents {
 }
 
 dependencies {
+    compileOnly(project(":hiddenapi-stubs"))
     implementation("androidx.core:core-ktx:1.13.1")
     // 纯 Java/Dex 放行 android.media.audiopolicy 等隐藏系统 API（无任何 native .so，保持 16KB 页对齐）
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")

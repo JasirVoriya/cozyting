@@ -5,4 +5,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "MiPlaySender"
 include(":app")
+include(":hiddenapi-stubs")
 include(":testtones")

@@ -6,3 +6,7 @@
 # 内置无线调试 app_process 音频采集 Helper 入口（uid=2000）
 -keep class com.miplay.sender.capture.shell.ShellAudioHelperMain { public static void main(java.lang.String[]); }
 -keep class com.miplay.sender.capture.shell.AudioPolicyReflector { *; }
+-keep class com.miplay.sender.capture.shell.ShellAudioFocusPolicyBridge { *; }
+-dontwarn android.media.AudioFocusInfo
+-dontwarn android.media.audiopolicy.AudioPolicy
+-dontwarn android.media.audiopolicy.AudioPolicy$AudioPolicyFocusListener
