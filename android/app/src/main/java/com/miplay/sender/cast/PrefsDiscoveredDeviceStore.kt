@@ -32,6 +32,12 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                     else -> CastProtocol.MIPLAY
                 }
                 val nameFromDeviceInfo = obj.optBoolean("name_from_device_info", false)
+                val roomName = obj.optString("room_name", "").trim()
+                val roomInfoQueried = if (obj.has("room_info_queried")) {
+                    obj.optBoolean("room_info_queried", false)
+                } else {
+                    roomName.isNotEmpty()
+                }
                 if (list.none { it.id == id }) {
                     list += CastRouteSelection.Device(
                         id = id,
@@ -41,6 +47,8 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                         selected = false,
                         protocol = proto,
                         nameFromDeviceInfo = nameFromDeviceInfo,
+                        roomName = roomName,
+                        roomInfoQueried = roomInfoQueried,
                     )
                 }
             }
@@ -58,7 +66,9 @@ class PrefsDiscoveredDeviceStore(context: Context) {
                     .put("name", d.name)
                     .put("kind", d.kind.name)
                     .put("protocol", (d.protocol ?: CastProtocol.MIPLAY).name)
-                    .put("name_from_device_info", d.nameFromDeviceInfo),
+                    .put("name_from_device_info", d.nameFromDeviceInfo)
+                    .put("room_name", d.roomName)
+                    .put("room_info_queried", d.roomInfoQueried),
             )
         }
         prefs.edit().putString(KEY_DEVICES, arr.toString()).apply()

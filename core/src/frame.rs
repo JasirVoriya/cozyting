@@ -127,13 +127,39 @@ pub fn device_info_channel(p: &[u8]) -> Option<String> {
     decode_kv(p).into_iter().find(|(k, _)| k == "channel").map(|(_, v)| v)
 }
 
+/// 从 GetDeviceInfo(0x001f) 应答里提取的跨端展示元数据。
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct DeviceInfoMeta {
+    pub mi_name: Option<String>,
+    pub room_name: Option<String>,
+}
+
+/// 从 GetDeviceInfo 应答里同时提取用户自定义设备名（`miName`）与米家房间名（`roomName`）；
+/// 缺失或空白字段归一化为 `None`。
+pub fn device_info_meta(p: &[u8]) -> DeviceInfoMeta {
+    let mut meta = DeviceInfoMeta::default();
+    for (k, v) in decode_kv(p) {
+        let trimmed = v.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        match k.as_str() {
+            "miName" if meta.mi_name.is_none() => meta.mi_name = Some(trimmed.to_string()),
+            "roomName" if meta.room_name.is_none() => meta.room_name = Some(trimmed.to_string()),
+            _ => {}
+        }
+    }
+    meta
+}
+
 /// 从 GetDeviceInfo 应答里取用户自定义设备名（`miName`）；缺失或空白返回 `None`。
 pub fn device_info_mi_name(p: &[u8]) -> Option<String> {
-    decode_kv(p)
-        .into_iter()
-        .find(|(k, _)| k == "miName")
-        .map(|(_, v)| v.trim().to_string())
-        .filter(|v| !v.is_empty())
+    device_info_meta(p).mi_name
+}
+
+/// 从 GetDeviceInfo 应答里取米家房间名（`roomName`）；缺失或空白返回 `None`。
+pub fn device_info_room_name(p: &[u8]) -> Option<String> {
+    device_info_meta(p).room_name
 }
 
 #[cfg(test)]
@@ -169,6 +195,47 @@ mod tests {
         let total_b = (blank.len() - 3) as u16;
         blank[1..3].copy_from_slice(&total_b.to_be_bytes());
         assert_eq!(device_info_mi_name(&blank), None);
+        assert_eq!(device_info_room_name(&blank), None);
+    }
+
+    #[test]
+    fn device_info_meta_extracts_mi_name_and_room_name_and_hides_blank_room() {
+        let name = "小爱音箱Pro-0001";
+        let room = "客厅";
+        let nb = name.as_bytes();
+        let rb = room.as_bytes();
+        let mut p = vec![0u8, 0, 0];
+        p.push(6);
+        p.extend_from_slice(b"miName");
+        p.push(0x0c);
+        p.extend_from_slice(&(nb.len() as u16).to_be_bytes());
+        p.extend_from_slice(nb);
+        p.push(8);
+        p.extend_from_slice(b"roomName");
+        p.push(0x0c);
+        p.extend_from_slice(&(rb.len() as u16).to_be_bytes());
+        p.extend_from_slice(rb);
+        let total = (p.len() - 3) as u16;
+        p[1..3].copy_from_slice(&total.to_be_bytes());
+        assert_eq!(
+            device_info_meta(&p),
+            DeviceInfoMeta {
+                mi_name: Some(name.into()),
+                room_name: Some(room.into()),
+            }
+        );
+
+        let mut empty_room = vec![0u8, 0, 0];
+        empty_room.extend_from_slice(b"\x06miName\x0c\x00\x09Sound Pro\x08roomName\x0c\x00\x00");
+        let total_e = (empty_room.len() - 3) as u16;
+        empty_room[1..3].copy_from_slice(&total_e.to_be_bytes());
+        assert_eq!(
+            device_info_meta(&empty_room),
+            DeviceInfoMeta {
+                mi_name: Some("Sound Pro".into()),
+                room_name: None,
+            }
+        );
     }
 
     #[test]

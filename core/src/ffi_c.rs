@@ -48,7 +48,7 @@ pub unsafe extern "C" fn miplay_discover_json(
     into_c_string(engine::discover_json(ip, timeout_ms, cached))
 }
 
-/// 扫描局域网设备并融合本地缓存，按需并发只读查询 8899 `miName`，返回结构化 JSON。
+/// 扫描局域网设备并融合本地缓存，按需并发只读查询 8899 `miName`/`roomName`，返回结构化 JSON。
 #[no_mangle]
 pub unsafe extern "C" fn miplay_discover_json_ex(
     local_ip: *const c_char,

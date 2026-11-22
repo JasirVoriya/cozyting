@@ -7,12 +7,13 @@
 //! - 向上分别支撑极薄的 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs`)，消除双端重复造轮子。
 
 use crate::clock::now_us;
-use crate::control::{fetch_device_mi_name, SourceIdentity};
+use crate::control::{fetch_device_info_meta, SourceIdentity};
 use crate::device_catalog::{
-    self, apply_resolved_mi_name, coerce_auth_mode, discovered_result_to_json,
+    self, apply_resolved_device_info, coerce_auth_mode, discovered_result_to_json,
     extract_cacheable_devices, merge_cached_and_discovered, parse_devices_json,
     should_query_mi_name, DEFAULT_CACHE_LIMIT,
 };
+use crate::frame::DeviceInfoMeta;
 use crate::session::{
     AuSource, AuthMode, CapturedAu, CastConfig, CastSession, ChannelSource, ReceiverStats,
     SilenceSource,
@@ -155,7 +156,7 @@ pub fn discover_tsv(local_ip: &str, timeout_ms: i32) -> String {
     }
 }
 
-/// 单台设备只读 8899 `miName` 查询超时（多台并发执行，总额外等待上限等于此值）。
+/// 单台设备只读 8899 `miName`/`roomName` 查询超时（多台并发执行，总额外等待上限等于此值）。
 const MI_NAME_QUERY_TIMEOUT: Duration = Duration::from_millis(800);
 
 fn active_cast_ips() -> HashSet<String> {
@@ -179,14 +180,14 @@ fn active_cast_ips() -> HashSet<String> {
     out
 }
 
-/// 跨端结构化发现 JSON：一次完成 mDNS 扫描、按需并发只读 8899 `miName` 查询、可投性分类、历史缓存合并与可缓存列表提取。
+/// 跨端结构化发现 JSON：一次完成 mDNS 扫描、按需并发只读 8899 `miName`/`roomName` 查询、可投性分类、历史缓存合并与可缓存列表提取。
 pub fn discover_json(local_ip: &str, timeout_ms: i32, cached_json: &str) -> String {
     discover_json_with_options(local_ip, timeout_ms, cached_json, false)
 }
 
 /// 带刷新选项的跨端结构化发现 JSON：
-/// - `force_refresh_names=false`（冷启动自动扫描）：已有缓存 `miName` 的设备直接沿用，仅新设备或旧缓存查 8899；
-/// - `force_refresh_names=true`（用户手动刷新）：对所有非投送中的可投设备重新并发查 8899 `miName`（音箱/电视一视同仁）。
+/// - `force_refresh_names=false`（冷启动自动扫描）：已有缓存 `miName` 且已查过 `roomName` 的设备直接沿用，仅新设备或旧缓存查 8899；
+/// - `force_refresh_names=true`（用户手动刷新）：对所有非投送中的可投设备重新并发查 8899 `miName`/`roomName`（音箱/电视一视同仁）。
 pub fn discover_json_with_options(
     local_ip: &str,
     timeout_ms: i32,
@@ -227,11 +228,11 @@ pub fn discover_json_with_options(
                 .collect();
 
             if !targets.is_empty() {
-                let resolved: Vec<(usize, Option<String>)> = std::thread::scope(|scope| {
+                let resolved: Vec<(usize, Option<DeviceInfoMeta>)> = std::thread::scope(|scope| {
                     let handles: Vec<_> = targets
                         .into_iter()
                         .map(|(idx, ip)| {
-                            scope.spawn(move || (idx, fetch_device_mi_name(ip, MI_NAME_QUERY_TIMEOUT)))
+                            scope.spawn(move || (idx, fetch_device_info_meta(ip, MI_NAME_QUERY_TIMEOUT)))
                         })
                         .collect();
                     handles
@@ -239,8 +240,8 @@ pub fn discover_json_with_options(
                         .filter_map(|h| h.join().ok())
                         .collect()
                 });
-                for (idx, mi_name) in resolved {
-                    apply_resolved_mi_name(&mut fresh_rows[idx], mi_name.as_deref());
+                for (idx, meta) in resolved {
+                    apply_resolved_device_info(&mut fresh_rows[idx], meta.as_ref());
                 }
             }
 

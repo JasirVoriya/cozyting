@@ -20,7 +20,7 @@
 //! 注：序号是**每条连接**独立的；引导+准备阶段使用 0..15，运行期序号从 16 开始递增。
 
 use crate::commands as c;
-use crate::frame::{decode_notify, decode_scalar5, device_info_mi_name, encode_volume, Frame};
+use crate::frame::{decode_notify, decode_scalar5, device_info_meta, encode_volume, DeviceInfoMeta, Frame};
 use crate::auth::legacy;
 use crate::{proto, Result};
 use std::io::{BufReader, BufWriter, Write};
@@ -594,44 +594,50 @@ impl ControlSession {
     }
 }
 
-/// 极简只读查询设备在 TCP 8899 `GET_DEVICE_INFO(0x001e)` 中返回的 `miName`（用户自定义名）。
+/// 极简只读查询设备在 TCP 8899 `GET_DEVICE_INFO(0x001e)` 中返回的展示元数据（`miName` + `roomName`）。
 ///
 /// 约束：
 /// - 优先明文 legacy 挑战应答后仅发 `GET_DEVICE_INFO(0x001e)`；若未收到合法 `0x001f` 且时间预算有余，回退 Safety 互验后再查 `GET_DEVICE_INFO`。
 /// - 全程绝不发送 `OPEN` / `CLOSE` / `SET_*`，结束后仅 `tcp_shutdown_only()`。
-/// - 超时、拒连、缺失或空白 `miName` 时返回 `None`，由调用方回退缓存名或 mDNS 老名字。
-pub fn fetch_device_mi_name(ip: Ipv4Addr, timeout: Duration) -> Option<String> {
-    fetch_device_mi_name_at(SocketAddrV4::new(ip, crate::discovery::CONTROL_PORT), timeout)
+/// - 超时、拒连或协议错误时返回 `None`，由调用方回退缓存名/房间名或 mDNS 老名字；
+///   收到合法 `0x001f` 时返回 `Some(DeviceInfoMeta)`（字段缺失或空白时对应项为 `None`）。
+pub fn fetch_device_info_meta(ip: Ipv4Addr, timeout: Duration) -> Option<DeviceInfoMeta> {
+    fetch_device_info_meta_at(SocketAddrV4::new(ip, crate::discovery::CONTROL_PORT), timeout)
 }
 
-fn fetch_device_mi_name_at(peer: SocketAddrV4, timeout: Duration) -> Option<String> {
+/// 极简只读查询设备在 TCP 8899 `GET_DEVICE_INFO(0x001e)` 中返回的 `miName`（用户自定义名）。
+pub fn fetch_device_mi_name(ip: Ipv4Addr, timeout: Duration) -> Option<String> {
+    fetch_device_info_meta(ip, timeout).and_then(|m| m.mi_name)
+}
+
+fn fetch_device_info_meta_at(peer: SocketAddrV4, timeout: Duration) -> Option<DeviceInfoMeta> {
     let deadline = Instant::now() + timeout;
     let rem = deadline.saturating_duration_since(Instant::now());
     if rem.is_zero() {
         return None;
     }
-    match fetch_mi_name_legacy(peer, rem) {
-        Ok(mi_name) => return mi_name,
+    match fetch_device_info_meta_legacy(peer, rem) {
+        Ok(meta) => return Some(meta),
         Err(e) => {
-            log::debug!("fetch_mi_name legacy {peer} failed: {e}");
+            log::debug!("fetch_device_info_meta legacy {peer} failed: {e}");
         }
     }
     let rem = deadline.saturating_duration_since(Instant::now());
     if rem < Duration::from_millis(120) {
         return None;
     }
-    match fetch_mi_name_safety(peer, rem) {
-        Ok(mi_name) => mi_name,
+    match fetch_device_info_meta_safety(peer, rem) {
+        Ok(meta) => Some(meta),
         Err(e) => {
-            log::debug!("fetch_mi_name safety {peer} failed: {e}");
+            log::debug!("fetch_device_info_meta safety {peer} failed: {e}");
             None
         }
     }
 }
 
-fn fetch_mi_name_legacy(peer: SocketAddrV4, timeout: Duration) -> Result<Option<String>> {
+fn fetch_device_info_meta_legacy(peer: SocketAddrV4, timeout: Duration) -> Result<DeviceInfoMeta> {
     let mut ctl = ControlSession::connect_peer_with_timeout(peer, timeout, timeout)?;
-    let res = (|| -> Result<Option<String>> {
+    let res = (|| -> Result<DeviceInfoMeta> {
         let ch = ctl.read_skipping_notify()?;
         if ch.command != c::LEGACY_CHALLENGE || !legacy::is_valid_challenge(&ch.payload) {
             return proto(format!("expected 0x0028 challenge, got {:#06x}", ch.command));
@@ -644,7 +650,7 @@ fn fetch_mi_name_legacy(peer: SocketAddrV4, timeout: Duration) -> Result<Option<
         for _ in 0..8 {
             let f = ctl.read_skipping_notify()?;
             match (f.command, f.sequence) {
-                (c::GET_DEVICE_INFO_ACK, 1) => return Ok(device_info_mi_name(&f.payload)),
+                (c::GET_DEVICE_INFO_ACK, 1) => return Ok(device_info_meta(&f.payload)),
                 (c::NATIVE_VERSION_ACK, _) | (c::HEARTBEAT, _) => continue,
                 (cmd, seq) => return proto(format!("unexpected {cmd:#06x}/{seq} waiting for GET_DEVICE_INFO_ACK")),
             }
@@ -655,9 +661,9 @@ fn fetch_mi_name_legacy(peer: SocketAddrV4, timeout: Duration) -> Result<Option<
     res
 }
 
-fn fetch_mi_name_safety(peer: SocketAddrV4, timeout: Duration) -> Result<Option<String>> {
+fn fetch_device_info_meta_safety(peer: SocketAddrV4, timeout: Duration) -> Result<DeviceInfoMeta> {
     let mut ctl = ControlSession::connect_peer_with_timeout(peer, timeout, timeout)?;
-    let res = (|| -> Result<Option<String>> {
+    let res = (|| -> Result<DeviceInfoMeta> {
         let rep = ctl.safety_handshake(SAFETY_NATIVE_VERSION, &[])?;
         if !rep.mutual_auth {
             return proto("safety mutual_auth failed");
@@ -666,7 +672,7 @@ fn fetch_mi_name_safety(peer: SocketAddrV4, timeout: Duration) -> Result<Option<
         for _ in 0..8 {
             let f = ctl.read_skipping_notify()?;
             match (f.command, f.sequence) {
-                (c::GET_DEVICE_INFO_ACK, 4) => return Ok(device_info_mi_name(&f.payload)),
+                (c::GET_DEVICE_INFO_ACK, 4) => return Ok(device_info_meta(&f.payload)),
                 (c::NATIVE_VERSION_ACK, _) | (c::HEARTBEAT, _) => continue,
                 (cmd, seq) => return proto(format!("unexpected {cmd:#06x}/{seq} waiting for encrypted GET_DEVICE_INFO_ACK")),
             }
@@ -763,13 +769,20 @@ mod tests {
             }
             Frame::new(c::NATIVE_VERSION_ACK, 0, vec![]).write_to(&mut stream).unwrap();
             let name = "客厅音箱Pro";
+            let room = "客厅";
             let nb = name.as_bytes();
+            let rb = room.as_bytes();
             let mut tlv = vec![0u8, 0, 0];
             tlv.push(6);
             tlv.extend_from_slice(b"miName");
             tlv.push(0x0c);
             tlv.extend_from_slice(&(nb.len() as u16).to_be_bytes());
             tlv.extend_from_slice(nb);
+            tlv.push(8);
+            tlv.extend_from_slice(b"roomName");
+            tlv.push(0x0c);
+            tlv.extend_from_slice(&(rb.len() as u16).to_be_bytes());
+            tlv.extend_from_slice(rb);
             let total = (tlv.len() - 3) as u16;
             tlv[1..3].copy_from_slice(&total.to_be_bytes());
             Frame::new(c::GET_DEVICE_INFO_ACK, 1, tlv).write_to(&mut stream).unwrap();
@@ -779,9 +792,15 @@ mod tests {
             seen_cmds
         });
 
-        let got = fetch_device_mi_name_at(addr, Duration::from_secs(2));
+        let got = fetch_device_info_meta_at(addr, Duration::from_secs(2));
         let seen_cmds = server.join().unwrap();
-        assert_eq!(got.as_deref(), Some("客厅音箱Pro"));
+        assert_eq!(
+            got,
+            Some(DeviceInfoMeta {
+                mi_name: Some("客厅音箱Pro".into()),
+                room_name: Some("客厅".into()),
+            })
+        );
         assert_eq!(seen_cmds, vec![c::NATIVE_VERSION, c::LEGACY_CHALLENGE_ACK, c::GET_DEVICE_INFO]);
         assert!(!seen_cmds.contains(&c::CLOSE));
         assert!(!seen_cmds.contains(&c::OPEN));

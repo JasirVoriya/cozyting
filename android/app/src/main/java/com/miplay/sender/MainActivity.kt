@@ -20,7 +20,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
@@ -1557,11 +1562,11 @@ class MainActivity : Activity() {
             }
         }
         val displayName = if (d.kind == Kind.THIS_DEVICE) "本机播放" else d.name
+        val displayRoom = if (d.kind == Kind.THIS_DEVICE) "" else d.roomName.trim()
         val name = TextView(this).apply {
-            text = displayName
+            text = formatDeviceTitle(displayName, displayRoom, subColor)
             setTextColor(titleColor)
-            textSize = 14.5f
-            setTypeface(null, Typeface.BOLD)
+            textSize = 13f
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         }
@@ -1684,6 +1689,28 @@ class MainActivity : Activity() {
             box.addView(volLine)
         }
         return box
+    }
+
+    private fun formatDeviceTitle(deviceName: String, roomName: String, roomColor: Int): CharSequence {
+        val sb = SpannableStringBuilder(deviceName)
+        sb.setSpan(StyleSpan(Typeface.BOLD), 0, deviceName.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (roomName.isNotEmpty()) {
+            val start = sb.length
+            sb.append(" · ").append(roomName)
+            sb.setSpan(
+                RelativeSizeSpan(11.5f / 13f),
+                start,
+                sb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            sb.setSpan(
+                ForegroundColorSpan(roomColor),
+                start,
+                sb.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
+        return sb
     }
 
     private fun onDeviceClicked(d: CastRouteSelection.Device) {

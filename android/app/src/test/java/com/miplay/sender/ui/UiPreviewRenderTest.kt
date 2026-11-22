@@ -137,27 +137,30 @@ class UiPreviewRenderTest {
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.10",
-                name = "客厅小爱音箱-0001",
+                name = "Sound Pro-0001",
                 kind = Kind.SPEAKER,
                 selected = true,
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
+                roomName = "",
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.11",
-                name = "卧室音箱 Pro-0002",
+                name = "小爱音箱Pro-0002",
                 kind = Kind.SPEAKER,
                 selected = true,
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
+                roomName = "客厅",
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.12",
-                name = "客厅电视-0003",
+                name = "REDMI G Pro 27U",
                 kind = Kind.TV,
                 selected = false,
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
+                roomName = "Living room",
             ),
         )
 
@@ -169,13 +172,13 @@ class UiPreviewRenderTest {
                         JSONObject()
                             .put("ip", "192.0.2.10")
                             .put("ui_state", "streaming")
-                            .put("display_latency_ms", 28),
+                            .put("display_latency_ms", 551),
                     )
                     put(
                         JSONObject()
                             .put("ip", "192.0.2.11")
                             .put("ui_state", "streaming")
-                            .put("display_latency_ms", 34),
+                            .put("display_latency_ms", 551),
                     )
                 },
             )

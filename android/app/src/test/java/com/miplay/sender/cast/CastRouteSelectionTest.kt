@@ -164,6 +164,8 @@ class CastRouteSelectionTest {
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
                 nameFromDeviceInfo = true,
+                roomName = "客厅",
+                roomInfoQueried = true,
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.35",
@@ -202,12 +204,33 @@ class CastRouteSelectionTest {
         )
         val merged = CastRouteSelection.mergeCachedAndDiscovered(cached, fresh)
         assertEquals(listOf("192.0.2.34", "192.0.2.35", "192.0.2.234"), merged.map { it.id })
-        // 已有 miName 缓存不被本次 mDNS 兜底老名反向覆盖
+        // 已有 miName 与 roomName 缓存不被本次 mDNS 兜底老名反向覆盖
         assertEquals("Sound Pro-0001", merged[0].name)
         assertTrue(merged[0].nameFromDeviceInfo)
+        assertEquals("客厅", merged[0].roomName)
+        assertTrue(merged[0].roomInfoQueried)
         // 老格式带型号缓存被洗成新的纯名字
         assertEquals("小爱音箱-0002", merged[1].name)
         assertFalse(merged[1].nameFromDeviceInfo)
+
+        // 手动刷新查到设备已清空房间（roomInfoQueried=true, roomName=""）时不回填旧房间名
+        val cleared = CastRouteSelection.mergeCachedAndDiscovered(
+            cached,
+            listOf(
+                CastRouteSelection.Device(
+                    id = "192.0.2.34",
+                    name = "Sound Pro-0001",
+                    kind = Kind.SPEAKER,
+                    castable = true,
+                    protocol = CastProtocol.MIPLAY,
+                    nameFromDeviceInfo = true,
+                    roomName = "",
+                    roomInfoQueried = true,
+                ),
+            ),
+        )
+        assertEquals("", cleared[0].roomName)
+        assertTrue(cleared[0].roomInfoQueried)
     }
 
     @Test
@@ -227,7 +250,9 @@ class CastRouteSelectionTest {
                     "selected": false,
                     "detail": "",
                     "protocol": "MIPLAY",
-                    "name_from_device_info": true
+                    "name_from_device_info": true,
+                    "room_name": "客厅",
+                    "room_info_queried": true
                   },
                   "advertises_miplay": true,
                   "service": "_mi-connect._udp.local",
@@ -245,7 +270,9 @@ class CastRouteSelectionTest {
                   "selected": false,
                   "detail": "",
                   "protocol": "MIPLAY",
-                  "name_from_device_info": true
+                  "name_from_device_info": true,
+                  "room_name": "客厅",
+                  "room_info_queried": true
                 }
               ],
               "cacheable": [
@@ -257,7 +284,9 @@ class CastRouteSelectionTest {
                   "selected": false,
                   "detail": "",
                   "protocol": "MIPLAY",
-                  "name_from_device_info": true
+                  "name_from_device_info": true,
+                  "room_name": "客厅",
+                  "room_info_queried": true
                 }
               ]
             }
@@ -267,6 +296,8 @@ class CastRouteSelectionTest {
         assertEquals(1, parsed.castableCount)
         assertEquals("Sound Pro-0001", parsed.merged.single().name)
         assertTrue(parsed.merged.single().nameFromDeviceInfo)
+        assertEquals("客厅", parsed.merged.single().roomName)
+        assertTrue(parsed.merged.single().roomInfoQueried)
 
         val err = CastRouteSelection.parseDiscoverJsonResult("""{"error":"socket failed"}""")!!
         assertEquals("socket failed", err.error)

@@ -4,6 +4,7 @@
 //! 与后续 iOS C ABI / SwiftUI 共用同一份业务口径，避免双端重复实现。
 
 use crate::discovery::Speaker;
+use crate::frame::DeviceInfoMeta;
 use std::collections::{HashMap, HashSet};
 use std::net::Ipv4Addr;
 
@@ -126,6 +127,11 @@ pub struct Device {
     /// `true` 表示 `name` 来自 TCP 8899 `GET_DEVICE_INFO` 的 `miName`；
     /// `false` 表示来自 mDNS 广播老名字或未区分来源的旧版缓存。
     pub name_from_device_info: bool,
+    /// 来自 TCP 8899 `GET_DEVICE_INFO` 的米家房间名（`roomName`）；空串表示未知或未配置，UI 隐藏。
+    pub room_name: String,
+    /// `true` 表示已完成包含 `roomName` 的只读 8899 `GET_DEVICE_INFO` 查询（即使 `roomName` 为空）；
+    /// 旧版缓存缺少该字段时为 `false`，触发升级后首次冷启动补查一次。
+    pub room_info_queried: bool,
 }
 
 impl Device {
@@ -139,6 +145,8 @@ impl Device {
             detail: String::new(),
             protocol: None,
             name_from_device_info: false,
+            room_name: String::new(),
+            room_info_queried: false,
         }
     }
 
@@ -218,6 +226,8 @@ pub fn classify_discovered(
         detail,
         protocol: if castable { Some(CastProtocol::MiPlay) } else { None },
         name_from_device_info: false,
+        room_name: String::new(),
+        room_info_queried: false,
     };
     let log_line = format!(
         "discover_row ip={ip} name={name} model={model} advertises_miplay={advertises_miplay} \
@@ -234,6 +244,26 @@ pub fn classify_discovered(
     })
 }
 
+/// 将只读 `GET_DEVICE_INFO` 查到的展示元数据（`miName` + `roomName`）应用到发现行；
+/// - `meta = None`（连接失败/超时）：保持原状，交由后续缓存合并兜底；
+/// - `meta = Some(m)`：标记 `room_info_queried = true`（即使 `roomName` 为空），有非空 `miName` 时更新设备名。
+pub fn apply_resolved_device_info(row: &mut DiscoveredRow, meta: Option<&DeviceInfoMeta>) {
+    let Some(m) = meta else {
+        return;
+    };
+    row.device.room_info_queried = true;
+    if let Some(clean_name) = m.mi_name.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        row.device.name = clean_name.to_string();
+        row.device.name_from_device_info = true;
+        row.log_line.push_str(&format!(" mi_name={clean_name}"));
+    }
+    let clean_room = m.room_name.as_deref().map(str::trim).unwrap_or("");
+    row.device.room_name = clean_room.to_string();
+    if !clean_room.is_empty() {
+        row.log_line.push_str(&format!(" room_name={clean_room}"));
+    }
+}
+
 /// 将只读 `GET_DEVICE_INFO` 查到的 `miName` 应用到发现行；缺失或空白时保留原 mDNS 兜底名。
 pub fn apply_resolved_mi_name(row: &mut DiscoveredRow, mi_name: Option<&str>) {
     let Some(clean) = mi_name.map(str::trim).filter(|s| !s.is_empty()) else {
@@ -244,14 +274,14 @@ pub fn apply_resolved_mi_name(row: &mut DiscoveredRow, mi_name: Option<&str>) {
     row.log_line.push_str(&format!(" mi_name={clean}"));
 }
 
-/// 判断该发现设备在本次扫描中是否需要主动只读查询 8899 `miName`。
+/// 判断该发现设备在本次扫描中是否需要主动只读查询 8899 `miName`/`roomName`。
 ///
 /// 规则：
 /// - 不可投设备不查；
 /// - 当前正在投送中的设备跳过（避免干扰活跃会话）；
 /// - 音箱与电视/显示器一视同仁，不做形态跳过；
 /// - `force_refresh_names=true`（用户手动刷新）时必查；
-/// - 否则仅对「未缓存」或「缓存尚未拿到 `miName`」的设备查一次。
+/// - 否则仅对「未缓存」、「尚未拿到 `miName`」或「旧版缓存未查过 `roomName`」的设备查一次。
 pub fn should_query_mi_name(
     device: &Device,
     cached_by_id: &HashMap<&str, &Device>,
@@ -268,7 +298,9 @@ pub fn should_query_mi_name(
         return true;
     }
     match cached_by_id.get(device.id.as_str()) {
-        Some(prev) => !prev.name_from_device_info || prev.name.trim().is_empty(),
+        Some(prev) => {
+            !prev.name_from_device_info || !prev.room_info_queried || prev.name.trim().is_empty()
+        }
         None => true,
     }
 }
@@ -350,12 +382,17 @@ pub fn merge_cached_and_discovered(cached: &[Device], discovered: &[Device]) -> 
             let mut copy = d.clone();
             // 若本次未拿到 `miName`（如超时/跳过），保留缓存中已确认的 `miName`，
             // 不被 mDNS 老名字反向覆盖；若缓存是旧格式（name_from_device_info=false）则使用本次新名。
-            if !copy.name_from_device_info {
-                if let Some(prev) = cached_by_id.get(copy.id.as_str()) {
-                    if prev.name_from_device_info && !prev.name.trim().is_empty() {
-                        copy.name = prev.name.clone();
-                        copy.name_from_device_info = true;
-                    }
+            if let Some(prev) = cached_by_id.get(copy.id.as_str()) {
+                if !copy.name_from_device_info
+                    && prev.name_from_device_info
+                    && !prev.name.trim().is_empty()
+                {
+                    copy.name = prev.name.clone();
+                    copy.name_from_device_info = true;
+                }
+                if !copy.room_info_queried && prev.room_info_queried {
+                    copy.room_name = prev.room_name.clone();
+                    copy.room_info_queried = true;
                 }
             }
             copy
@@ -598,7 +635,7 @@ pub fn device_to_json(d: &Device) -> String {
         .map(|p| json_escape(p.wire_name()))
         .unwrap_or_else(|| "null".into());
     format!(
-        "{{\"id\":{},\"name\":{},\"kind\":{},\"castable\":{},\"selected\":{},\"detail\":{},\"protocol\":{},\"name_from_device_info\":{}}}",
+        "{{\"id\":{},\"name\":{},\"kind\":{},\"castable\":{},\"selected\":{},\"detail\":{},\"protocol\":{},\"name_from_device_info\":{},\"room_name\":{},\"room_info_queried\":{}}}",
         json_escape(&d.id),
         json_escape(&d.name),
         json_escape(d.kind.as_str()),
@@ -607,6 +644,8 @@ pub fn device_to_json(d: &Device) -> String {
         json_escape(&d.detail),
         proto,
         d.name_from_device_info,
+        json_escape(&d.room_name),
+        d.room_info_queried,
     )
 }
 
@@ -709,6 +748,11 @@ pub fn parse_devices_json(raw: &str) -> Vec<Device> {
         let selected = json_field_bool(&obj, "selected").unwrap_or(false);
         let detail = json_field_str(&obj, "detail").unwrap_or_default();
         let name_from_device_info = json_field_bool(&obj, "name_from_device_info").unwrap_or(false);
+        let room_name = json_field_str(&obj, "room_name")
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+        let room_info_queried =
+            json_field_bool(&obj, "room_info_queried").unwrap_or_else(|| !room_name.is_empty());
         let protocol = if kind == DeviceKind::ThisDevice {
             None
         } else {
@@ -736,6 +780,8 @@ pub fn parse_devices_json(raw: &str) -> Vec<Device> {
             detail,
             protocol,
             name_from_device_info,
+            room_name,
+            room_info_queried,
         });
     }
     out
@@ -905,6 +951,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: true,
+                room_name: "客厅".into(),
+                room_info_queried: true,
             },
             Device {
                 id: "s2".into(),
@@ -915,6 +963,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: false,
+                room_name: String::new(),
+                room_info_queried: false,
             },
             Device {
                 id: "tv".into(),
@@ -925,6 +975,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: false,
+                room_name: String::new(),
+                room_info_queried: false,
             },
         ])
     }
@@ -997,13 +1049,21 @@ mod tests {
         assert_eq!(spk.device.name, "A1B2C3D4");
         assert!(!spk.device.name_from_device_info);
 
-        apply_resolved_mi_name(&mut spk, Some("Sound Pro-0001"));
+        apply_resolved_device_info(
+            &mut spk,
+            Some(&DeviceInfoMeta {
+                mi_name: Some("Sound Pro-0001".into()),
+                room_name: Some("客厅".into()),
+            }),
+        );
         assert_eq!(spk.device.name, "Sound Pro-0001");
         assert!(spk.device.name_from_device_info);
+        assert_eq!(spk.device.room_name, "客厅");
+        assert!(spk.device.room_info_queried);
     }
 
     #[test]
-    fn cache_merge_preserves_mi_name_on_fallback_and_cleans_legacy_cache() {
+    fn cache_merge_preserves_mi_name_and_room_name_on_fallback_and_cleans_legacy_cache() {
         let cached = vec![
             Device {
                 id: "192.0.2.34".into(),
@@ -1014,6 +1074,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: true,
+                room_name: "客厅".into(),
+                room_info_queried: true,
             },
             Device {
                 id: "192.0.2.35".into(),
@@ -1024,6 +1086,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: false,
+                room_name: String::new(),
+                room_info_queried: false,
             },
             Device {
                 id: "192.0.2.36".into(),
@@ -1034,13 +1098,15 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: true,
+                room_name: "书房".into(),
+                room_info_queried: true,
             },
         ];
         let json = devices_to_json(&cached);
         let parsed = parse_devices_json(&json);
         assert_eq!(parsed, cached);
 
-        // 本次扫描：.34 查 miName 超时退回 mDNS 老名字；.35 也只拿到纯 mDNS 名
+        // 本次扫描：.34 查 8899 超时退回 mDNS 老名字；.35 也只拿到纯 mDNS 名
         let fresh = vec![
             Device {
                 id: "192.0.2.34".into(),
@@ -1051,6 +1117,8 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: false,
+                room_name: String::new(),
+                room_info_queried: false,
             },
             Device {
                 id: "192.0.2.35".into(),
@@ -1061,25 +1129,47 @@ mod tests {
                 detail: String::new(),
                 protocol: Some(CastProtocol::MiPlay),
                 name_from_device_info: false,
+                room_name: String::new(),
+                room_info_queried: false,
             },
         ];
         let merged = merge_cached_and_discovered(&parsed, &fresh);
         assert_eq!(merged.len(), 3);
-        // .34 保留已确认的 miName，不被 mDNS 老名字反向覆写
+        // .34 保留已确认的 miName 与 room_name，不被 mDNS 老名字反向覆写
         assert_eq!(merged[0].id, "192.0.2.34");
         assert_eq!(merged[0].name, "Sound Pro-0001");
         assert!(merged[0].name_from_device_info);
+        assert_eq!(merged[0].room_name, "客厅");
+        assert!(merged[0].room_info_queried);
         // .35 旧缓存非 miName（带 ` · LX06`）会被洗成新的纯名字
         assert_eq!(merged[1].id, "192.0.2.35");
         assert_eq!(merged[1].name, "小爱音箱-0002");
         assert!(!merged[1].name_from_device_info);
-        // .36 未在线，保留历史缓存
+        // .36 未在线，保留历史缓存（含房间名）
         assert_eq!(merged[2].id, "192.0.2.36");
         assert_eq!(merged[2].name, "Offline Speaker");
+        assert_eq!(merged[2].room_name, "书房");
+
+        // 手动刷新查到房间被清空（room_info_queried=true, room_name=""）时不回填旧房间名
+        let fresh_cleared = vec![Device {
+            id: "192.0.2.34".into(),
+            name: "Sound Pro-0001".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: true,
+            room_name: String::new(),
+            room_info_queried: true,
+        }];
+        let merged_cleared = merge_cached_and_discovered(&parsed, &fresh_cleared);
+        assert_eq!(merged_cleared[0].room_name, "");
+        assert!(merged_cleared[0].room_info_queried);
     }
 
     #[test]
-    fn should_query_mi_name_treats_tv_and_speaker_equally_and_skips_active() {
+    fn should_query_mi_name_treats_tv_and_speaker_equally_and_upgrades_legacy_cache() {
         let spk = Device {
             id: "192.0.2.34".into(),
             name: "小爱音箱-0001".into(),
@@ -1089,6 +1179,8 @@ mod tests {
             detail: String::new(),
             protocol: Some(CastProtocol::MiPlay),
             name_from_device_info: false,
+            room_name: String::new(),
+            room_info_queried: false,
         };
         let tv = Device {
             id: "192.0.2.50".into(),
@@ -1099,19 +1191,35 @@ mod tests {
             detail: String::new(),
             protocol: Some(CastProtocol::MiPlay),
             name_from_device_info: false,
+            room_name: String::new(),
+            room_info_queried: false,
         };
-        let cached_mi = Device {
+        let cached_mi_and_room = Device {
             name: "Sound Pro-0001".into(),
             name_from_device_info: true,
+            room_name: String::new(),
+            room_info_queried: true,
             ..spk.clone()
         };
         let mut cached_by_id = HashMap::new();
-        cached_by_id.insert(cached_mi.id.as_str(), &cached_mi);
+        cached_by_id.insert(cached_mi_and_room.id.as_str(), &cached_mi_and_room);
         let active: HashSet<&str> = HashSet::new();
 
-        // 冷启动：已有 miName 缓存的音箱不重复查；无缓存的电视同样需要查（不做区分）
+        // 冷启动：已有 miName 且已查过 roomName 的音箱（即便房间为空）不重复查；无缓存的电视同样需要查
         assert!(!should_query_mi_name(&spk, &cached_by_id, false, &active));
         assert!(should_query_mi_name(&tv, &cached_by_id, false, &active));
+
+        // 升级兼容：旧缓存仅有 name_from_device_info=true 但未查过 roomName → 冷启动自动补查一次
+        let legacy_cached = Device {
+            name: "Sound Pro-0001".into(),
+            name_from_device_info: true,
+            room_name: String::new(),
+            room_info_queried: false,
+            ..spk.clone()
+        };
+        let mut legacy_map = HashMap::new();
+        legacy_map.insert(legacy_cached.id.as_str(), &legacy_cached);
+        assert!(should_query_mi_name(&spk, &legacy_map, false, &active));
 
         // 手动刷新：已缓存的音箱也重新查
         assert!(should_query_mi_name(&spk, &cached_by_id, true, &active));

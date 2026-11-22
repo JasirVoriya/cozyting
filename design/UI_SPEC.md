@@ -38,8 +38,8 @@
    - **iOS（未来）**：同一视觉卡槽展示 `ReplayKit` 系统广播捕获入口（`RPSystemBroadcastPickerView`）或 App 内音源状态；受 iOS 沙箱限制无法读取第三方 App `MediaSession` 包名，也不按单 App UID 选源，因此常用音源增删、长按拖动排序与自动识别开关仅作用于 Android 端。
 4. **输出设备区（Output Devices）**
    - 分节标题栏：左侧 `输出设备`，右侧展示已发现设备数 + **`28dp/pt` 圆形刷新扫描按钮**（仅刷新局域网输出设备，扫描中旋转动画），避免放在顶栏造成全局刷新的语义误解。
-   - 首行：`本机播放`（与外部接收端互斥）。
-   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ 纯设备名（单行末尾省略，不拼接型号后缀与房间名；Android 与 iOS 统一消费第 1 层 Rust `miplay_discover_json_ex`，按优先级取「TCP 8899 只读 `GET_DEVICE_INFO` 的 `miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已缓存 `miName`，首次发现/旧缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
+   - 首行：`本机播放`（与外部接收端互斥，标题字号与外部设备行统一为 `13sp/pt Bold`）。
+   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ **同行轻分隔标题「设备名 + 可选房间名」**（单行末尾省略，不拼接型号后缀；设备名采用 `13sp/pt Bold` 主色，获取到非空房间名时紧随 ` · <房间名>` 采用 `11.5sp/pt Regular` 次级色，无房间名或获取不到时彻底隐藏、不留分隔符；Android 通过 `SpannableStringBuilder` 实现，iOS SwiftUI 通过 `Text(name).font(.system(size: 13, weight: .bold)) + Text(" · \(room)").font(.system(size: 11.5)).foregroundStyle(subColor)` 等价实现；双端统一消费第 1 层 Rust `miplay_discover_json_ex`，单次只读 TCP 8899 `GET_DEVICE_INFO` TLV 帧内同步提取 `miName` 与 `roomName`，名称优先级为「`miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已含 `room_info_queried=true` 的本地缓存，首次发现/缺房间字段的旧版缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
    - 选中后行内展开带实时百分比的独立音量滑块；拖动音量时仅原位更新，禁止重建设备列表。
 
 ## 3. 独立设置页（3 张卡片分组）

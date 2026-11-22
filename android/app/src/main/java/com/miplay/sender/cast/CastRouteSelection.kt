@@ -28,6 +28,10 @@ object CastRouteSelection {
         val protocol: CastProtocol? = null,
         /** true 表示 name 来自 8899 GET_DEVICE_INFO 的 miName；false 表示 mDNS 老名或旧缓存。 */
         val nameFromDeviceInfo: Boolean = false,
+        /** 来自 8899 GET_DEVICE_INFO 的 roomName（米家房间名）；空串表示未知或未配置，UI 隐藏。 */
+        val roomName: String = "",
+        /** true 表示已完成包含 roomName 的 8899 查询（即便房间名为空）；旧缓存缺该字段时为 false，升级后自动补查一次。 */
+        val roomInfoQueried: Boolean = false,
     ) {
         val isCastSink: Boolean get() = kind == Kind.SPEAKER || kind == Kind.TV
     }
@@ -306,15 +310,18 @@ object CastRouteSelection {
     ): List<Device> {
         val cachedById = cached.filter { it.kind != Kind.THIS_DEVICE }.associateBy { it.id }
         val fresh = discovered.filter { it.kind != Kind.THIS_DEVICE }.map { d ->
-            if (!d.nameFromDeviceInfo) {
-                val prev = cachedById[d.id]
-                if (prev != null && prev.nameFromDeviceInfo && prev.name.isNotBlank()) {
-                    d.copy(name = prev.name, nameFromDeviceInfo = true)
-                } else {
-                    d
-                }
-            } else {
+            val prev = cachedById[d.id]
+            if (prev == null) {
                 d
+            } else {
+                var merged = d
+                if (!merged.nameFromDeviceInfo && prev.nameFromDeviceInfo && prev.name.isNotBlank()) {
+                    merged = merged.copy(name = prev.name, nameFromDeviceInfo = true)
+                }
+                if (!merged.roomInfoQueried && prev.roomInfoQueried) {
+                    merged = merged.copy(roomName = prev.roomName, roomInfoQueried = true)
+                }
+                merged
             }
         }
         val freshIds = fresh.map { it.id }.toSet()
@@ -336,6 +343,12 @@ object CastRouteSelection {
         val selected = obj.optBoolean("selected", false)
         val detail = obj.optString("detail", "")
         val nameFromDeviceInfo = obj.optBoolean("name_from_device_info", false)
+        val roomName = obj.optString("room_name", "").trim()
+        val roomInfoQueried = if (obj.has("room_info_queried")) {
+            obj.optBoolean("room_info_queried", false)
+        } else {
+            roomName.isNotEmpty()
+        }
         val protocol = if (kind == Kind.THIS_DEVICE || obj.isNull("protocol")) {
             null
         } else {
@@ -357,6 +370,8 @@ object CastRouteSelection {
             detail = detail,
             protocol = protocol,
             nameFromDeviceInfo = nameFromDeviceInfo,
+            roomName = roomName,
+            roomInfoQueried = roomInfoQueried,
         )
     }
 
