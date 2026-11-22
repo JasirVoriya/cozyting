@@ -80,7 +80,15 @@ object WirelessAdbShellClient {
     }
 
     /**
-     * 连接本机无线调试端口，通过 `A_STLS` 升级 TLS 1.3 并执行一条 shell 命令。
+     * 构造 ADB `A_OPEN` 目标服务串：
+     * - `exec:<cmd>`（API 21+ 原生支持，非 PTY 裸流，避免 PTY 退出时触发 `SIGHUP` 或 `\r\n` 改写）；
+     * - `shell:<cmd>`（兼容回退路径）。
+     */
+    fun buildServiceDestination(command: String, useExec: Boolean = true): String =
+        if (useExec) "exec:$command\u0000" else "shell:$command\u0000"
+
+    /**
+     * 连接本机无线调试端口，通过 `A_STLS` 升级 TLS 1.3 并执行一条命令。
      * 用于连接测试（如 `id`）或点火拉起 `app_process` 后台采集 Helper。
      */
     fun runShellCommand(
@@ -89,6 +97,7 @@ object WirelessAdbShellClient {
         identity: AdbCrypto.AdbIdentity,
         command: String,
         timeoutMs: Int = 6_000,
+        useExec: Boolean = true,
     ): ShellResult {
         var rawSocket: Socket? = null
         var tlsSocket: SSLSocket? = null
@@ -136,9 +145,9 @@ object WirelessAdbShellClient {
                 return ShellResult.Error("无线 ADB 握手未完成，请确认「无线调试」已开启")
             }
 
-            // 3. 打开 shell:<command> 流
+            // 3. 打开 exec:<command>（非 PTY 裸流）或 shell:<command> 流
             val localId = 1
-            val dest = "shell:$command\u0000".toByteArray(Charsets.UTF_8)
+            val dest = buildServiceDestination(command, useExec).toByteArray(Charsets.UTF_8)
             writePacket(output, AdbPacket(A_OPEN, localId, 0, dest))
 
             var remoteId = 0

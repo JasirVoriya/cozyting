@@ -18,7 +18,7 @@ object ShellCaptureProtocol {
     const val LOOPBACK_HOST = "127.0.0.1"
     const val TOKEN_BYTES = 32
     const val HEARTBEAT_INTERVAL_MS = 500L
-    const val HEARTBEAT_TIMEOUT_MS = 1_500L
+    const val HEARTBEAT_TIMEOUT_MS = 2_500L
     const val WRITE_STALL_TIMEOUT_MS = 2_000L
 
     const val CMD_START_SINGLE_UID = "start_single_uid"
@@ -140,7 +140,13 @@ object ShellCaptureProtocol {
 
     /**
      * 构造通过本机无线 ADB 执行的 `app_process` 后台点火命令。
-     * 所有参数均经单引号安全转义，避免路径含特殊字符导致 shell 注入或拆词。
+     *
+     * 关键时序说明（已在 Android 17 `adbd` 实测验证）：
+     * - 不能裸写 `setsid ... &` 立刻让父 `sh` 退出：`sh` 毫秒级退出后，`adbd` 清理 `Subprocess` 会立刻
+     *   向原进程组发送信号，导致子进程尚未完成 `setsid(2)` 脱离会话就被提前终止；
+     * - 通过 `(... setsid ... </dev/null >/dev/null 2>&1 &); sleep 1`：子进程完整脱离会话且不持有
+     *   任何父级 stdio 管道，同时父 `sh` 存活 1 秒保护点火窗口；主 App 侧异步等待环回握手（通常 ~250ms
+     *   即返回，不叠加 1 秒启动延迟），1 秒后 `sh` 与 ADB TLS 连接干净关闭，不留常驻连接。
      */
     fun buildAppProcessLaunchCommand(
         apkPath: String,
@@ -150,9 +156,9 @@ object ShellCaptureProtocol {
     ): String {
         val safeApk = shellSingleQuote(apkPath)
         val safeToken = shellSingleQuote(tokenHex)
-        return "CLASSPATH=$safeApk setsid /system/bin/app_process /system/bin " +
+        return "(CLASSPATH=$safeApk setsid /system/bin/app_process /system/bin " +
             "com.miplay.sender.capture.shell.ShellAudioHelperMain " +
-            "--ctl-port $ctlPort --pcm-port $pcmPort --token $safeToken </dev/null >/dev/null 2>&1 &"
+            "--ctl-port $ctlPort --pcm-port $pcmPort --token $safeToken </dev/null >/dev/null 2>&1 &); sleep 1"
     }
 
     private fun shellSingleQuote(raw: String): String =

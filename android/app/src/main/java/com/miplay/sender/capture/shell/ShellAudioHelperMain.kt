@@ -2,6 +2,7 @@ package com.miplay.sender.capture.shell
 
 import android.content.Context
 import android.os.Looper
+import android.util.Log
 import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.CaptureScopeMode
 import com.miplay.sender.compat.ShellCaptureCompat
@@ -26,6 +27,7 @@ import kotlin.system.exitProcess
  * 3. 心跳看门狗（`1.5s` 无 `ping` 或写阻塞超 `2.0s`）：立即反注册策略并退出，防止目标音乐 App 持续无声。
  */
 object ShellAudioHelperMain {
+    private const val TAG = "MiPlayShellHelper"
     private val exiting = AtomicBoolean(false)
     private val captureLock = Any()
     private val captureGen = AtomicLong(0L)
@@ -59,17 +61,18 @@ object ShellAudioHelperMain {
         }
 
         Thread.setDefaultUncaughtExceptionHandler { _, t ->
-            System.err.println("ShellAudioHelperMain uncaught: ${t.message}")
+            logError("uncaught: ${t.message}", t)
             cleanupAndExit(1)
         }
         Runtime.getRuntime().addShutdownHook(Thread { cleanupResourcesOnly() })
 
         try {
+            logInfo("starting ctlPort=$ctlPort pcmPort=$pcmPort")
             AudioPolicyReflector.ensureHiddenApiBypass()
             val systemContext = bootstrapSystemContext()
             connectAndServe(systemContext, ctlPort, pcmPort, tokenHex, tokenBytes)
         } catch (t: Throwable) {
-            System.err.println("ShellAudioHelperMain fatal: ${t.message}")
+            logError("fatal: ${t.message}", t)
             cleanupAndExit(1)
         }
     }
@@ -127,13 +130,13 @@ object ShellAudioHelperMain {
                 }
                 val now = System.currentTimeMillis()
                 if (now - lastHeartbeatMs.get() > ShellCaptureProtocol.HEARTBEAT_TIMEOUT_MS) {
-                    System.err.println("ShellAudioHelperMain: heartbeat timeout, cleaning up AudioPolicy")
+                    logError("heartbeat timeout, cleaning up AudioPolicy")
                     cleanupAndExit(0)
                     return@Thread
                 }
                 val ws = writeStartMs.get()
                 if (ws > 0L && now - ws > ShellCaptureProtocol.WRITE_STALL_TIMEOUT_MS) {
-                    System.err.println("ShellAudioHelperMain: PCM pipe write stall, cleaning up AudioPolicy")
+                    logError("PCM pipe write stall, cleaning up AudioPolicy")
                     cleanupAndExit(0)
                     return@Thread
                 }
@@ -174,6 +177,7 @@ object ShellAudioHelperMain {
 
                 else -> ShellCaptureProtocol.encodeResponse(ok = false, error = "未知控制命令：${parsed.cmd}")
             }
+            lastHeartbeatMs.set(System.currentTimeMillis())
             ctlWriter.write(resp)
             ctlWriter.newLine()
             ctlWriter.flush()
@@ -284,5 +288,16 @@ object ShellAudioHelperMain {
         if (!exiting.compareAndSet(false, true)) return
         cleanupResourcesOnly()
         exitProcess(code)
+    }
+
+    private fun logInfo(msg: String) {
+        runCatching { Log.i(TAG, msg) }
+    }
+
+    private fun logError(msg: String, t: Throwable? = null) {
+        System.err.println("ShellAudioHelperMain $msg")
+        runCatching {
+            if (t != null) Log.e(TAG, msg, t) else Log.e(TAG, msg)
+        }
     }
 }

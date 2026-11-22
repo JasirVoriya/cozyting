@@ -79,6 +79,8 @@ class ShellCaptureBackend(
             val ctlRef = AtomicReference<Pair<Socket, BufferedReader>?>(null)
             val pcmRef = AtomicReference<Socket?>(null)
             val errRef = AtomicReference<String?>(null)
+            val launchErrRef = AtomicReference<String?>(null)
+            val handshakeDone = AtomicBoolean(false)
             val readyLatch = CountDownLatch(2)
 
             Thread({
@@ -111,34 +113,54 @@ class ShellCaptureBackend(
                 }
             }, "shell-accept-pcm").start()
 
-            // 通过本机无线 ADB 发射一次性 app_process 点火命令
+            // 在独立守护线程并发通过本机无线 ADB 发射点火命令：
+            // 命令末尾保留 `sleep 1` 保护 setsid 脱离窗口，并发等待 readyLatch 让回连（通常 ~250ms）立即推进，
+            // 不叠加 1 秒启动延迟；若无线 ADB 自身报错（证书未信任/端口拒绝）则立刻关闭监听以快速报错。
             val apkPath = context.applicationInfo.sourceDir
             val cmd = ShellCaptureProtocol.buildAppProcessLaunchCommand(apkPath, ctlPort, pcmPort, tokenHex)
             val identity = keyStore.getOrCreateIdentity()
             onEvent("正在经内置无线调试（127.0.0.1:${endpoint.port}）启动无感采集引擎…")
-            when (val launch = WirelessAdbShellClient.runShellCommand(endpoint.host, endpoint.port, identity, cmd)) {
-                is WirelessAdbShellClient.ShellResult.Error -> {
-                    stop()
-                    return AudioCaptureBackend.StartResult.Failed(launch.messageZh)
+            Thread({
+                when (val launch = WirelessAdbShellClient.runShellCommand(endpoint.host, endpoint.port, identity, cmd)) {
+                    is WirelessAdbShellClient.ShellResult.Error -> {
+                        if (!handshakeDone.get()) {
+                            launchErrRef.compareAndSet(null, launch.messageZh)
+                            runCatching { ctlSrv.close() }
+                            runCatching { pcmSrv.close() }
+                        }
+                    }
+                    is WirelessAdbShellClient.ShellResult.Ok -> {
+                        val out = launch.output.trim()
+                        if (out.isNotEmpty() && !handshakeDone.get()) {
+                            onEvent("无线调试点火输出：${out.take(120)}")
+                        }
+                    }
                 }
-                is WirelessAdbShellClient.ShellResult.Ok -> {
-                    // nohup 后台启动，继续等待 Helper 反向连回 LocalSocket
-                }
+            }, "shell-adb-ignite").apply {
+                isDaemon = true
+                start()
             }
 
             if (!readyLatch.await(6_000L, TimeUnit.MILLISECONDS)) {
+                val launchErr = launchErrRef.get()
                 stop()
                 return AudioCaptureBackend.StartResult.Failed(
-                    "等待无感采集 Helper 回连超时，请检查无线调试状态或尝试重新配对",
+                    launchErr ?: "等待无感采集 Helper 回连超时，请检查无线调试状态或尝试重新配对",
                 )
             }
+            val launchErr = launchErrRef.get()
             val acceptErr = errRef.get()
             val ctlPair = ctlRef.get()
             val pcm = pcmRef.get()
+            if (launchErr != null) {
+                stop()
+                return AudioCaptureBackend.StartResult.Failed(launchErr)
+            }
             if (acceptErr != null || ctlPair == null || pcm == null) {
                 stop()
                 return AudioCaptureBackend.StartResult.Failed(acceptErr ?: "无感采集 Helper 握手失败")
             }
+            handshakeDone.set(true)
             val (ctl, reader) = ctlPair
 
             ctlSocket = ctl

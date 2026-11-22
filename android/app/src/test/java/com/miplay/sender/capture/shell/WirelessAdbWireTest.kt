@@ -43,4 +43,10 @@ class WirelessAdbWireTest {
         }
         assertTrue(threw)
     }
+
+    @Test
+    fun buildServiceDestinationDefaultsToNonPtyExec() {
+        assertEquals("exec:id\u0000", WirelessAdbShellClient.buildServiceDestination("id"))
+        assertEquals("shell:id\u0000", WirelessAdbShellClient.buildServiceDestination("id", useExec = false))
+    }
 }

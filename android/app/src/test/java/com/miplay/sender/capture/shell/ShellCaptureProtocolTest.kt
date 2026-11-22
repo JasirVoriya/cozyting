@@ -60,9 +60,10 @@ class ShellCaptureProtocolTest {
             pcmPort = 41235,
             tokenHex = "a".repeat(64),
         )
-        assertTrue(cmd.contains("CLASSPATH='/data/app/it'\\''s/base.apk'"))
+        assertTrue(cmd.startsWith("(CLASSPATH='/data/app/it'\\''s/base.apk' setsid /system/bin/app_process"))
         assertTrue(cmd.contains("com.miplay.sender.capture.shell.ShellAudioHelperMain"))
         assertTrue(cmd.contains("--ctl-port 41234"))
         assertTrue(cmd.contains("--pcm-port 41235"))
+        assertTrue(cmd.endsWith("</dev/null >/dev/null 2>&1 &); sleep 1"))
     }
 }
