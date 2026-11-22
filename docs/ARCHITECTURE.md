@@ -2,7 +2,7 @@
 
 > 本文档是 [README.md](../README.md) 的深度工程配套手册，完整收录了 **L1–L3 跨端三层架构细节、4 条正交数据流向、全仓模块与文件职责字典（3.1–3.8）、19 个 JVM 契约测试清单、单进程实时线程与有界队列模型、6 条局域网网络通路及 6 阶段生命周期不变量**。
 >
-> 💡 **交互式图形探索**：如需在浏览器中点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按阶段演练线程切换或实时搜索文件职责，可访问 **[在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)** 或直接打开本地零依赖页面 [`docs/architecture.html`](architecture.html)。
+> 💡 **交互式图形探索**：如需在浏览器中点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**、按阶段演练线程切换或实时搜索文件职责，可访问 **[在线交互式架构浏览器](https://jasirvoriya.github.io/miaocast-releases/)** 或直接打开本地零依赖页面 [`docs/architecture.html`](architecture.html)。
 
 ---
 

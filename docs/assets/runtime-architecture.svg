@@ -135,7 +135,7 @@
   <g>
     <rect x="36" y="92" width="858" height="790" rx="16" class="proc-box"/>
     <rect x="52" y="104" width="256" height="22" rx="6" fill="#0d2342" stroke="#2563eb" stroke-width="0.9"/>
-    <text x="180" y="119" text-anchor="middle" class="mono tag" fill="#93c5fd">ANDROID PROCESS · com.miplay.sender</text>
+    <text x="180" y="119" text-anchor="middle" class="mono tag" fill="#93c5fd">ANDROID PROCESS · com.miaocast.app</text>
     <text x="322" y="119" class="sans nmeta">单进程承载 UI / FGS / MediaCodec，并在同地址空间加载 Rust 动态库 (.so)</text>
 
     <!-- SUBZONE A: ART / Kotlin Runtime (Resources bar on TOP, Threads on BOTTOM for zero wire-crossing!) -->

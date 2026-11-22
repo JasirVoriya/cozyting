@@ -20,7 +20,7 @@
 </p>
 
 <p>
-  <a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Releases" src="https://img.shields.io/badge/Releases-MiaoCast-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
@@ -69,7 +69,7 @@ System-wide screen/audio mirroring broadcasts everything—including chat voice 
 ## Repository Structure
 
 ```text
-miplay-sender/
+miaocast/
 ├── core/               # [L1 Shared Core] Pure Rust protocol, multi-room sync engine, coordinator (engine) & catalog
 │   ├── include/        #   [FFI] iOS C11 header (miplay_core.h) & module.modulemap
 │   └── src/            #   24 core modules (including Android JNI ffi.rs & iOS C ABI ffi_c.rs)

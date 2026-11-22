@@ -4,7 +4,7 @@
 
 📣 **欢迎共建**：如果你手上有小米 / MiPlay 音箱或不同系统版本的 Android / iOS 发送端设备，无论测试结果是 **可用 ✅** 还是 **异常 ❌**，都欢迎点此提交实测反馈：
 
-👉 **[提交你的设备兼容实测报告（GitHub 表单）](https://github.com/JasirVoriya/miplay-sender/issues/new?template=device_compatibility.yml)**
+👉 **[提交你的设备兼容实测报告（GitHub 表单）](https://github.com/JasirVoriya/miaocast-releases/issues/new)**
 
 ---
 
@@ -64,4 +64,4 @@ miplay-cli discover
 miplay-cli inspect <音箱IP> --auth legacy
 ```
 
-将脱敏后的输出附在 [设备兼容实测报告](https://github.com/JasirVoriya/miplay-sender/issues/new?template=device_compatibility.yml) 中即可。
+将脱敏后的输出附在 [设备兼容实测报告](https://github.com/JasirVoriya/miaocast-releases/issues/new) 中即可。

@@ -68,6 +68,6 @@
   </g>
 
   <!-- Bottom subtle repo footer -->
-  <text x="122" y="534" fill="#64748B" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" font-weight="500">github.com/JasirVoriya/miplay-sender</text>
+  <text x="122" y="534" fill="#64748B" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="16" font-weight="500">github.com/JasirVoriya/miaocast-releases</text>
   <text x="1156" y="534" text-anchor="end" fill="#94A3B8" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="15" font-weight="500">mDNS · TCP 8899 · WFD RTSP · MPEG-TS/RTP · JNI &amp; C ABI</text>
 </svg>

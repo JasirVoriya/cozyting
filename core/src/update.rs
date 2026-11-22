@@ -1243,13 +1243,13 @@ mod tests {
             "body": "<!-- auto comment -->\n\n- 新增应用内更新检测\n\n**Full Changelog**: https://github.com/JasirVoriya/miaocast-releases/compare/v0.9.7...v0.9.8",
             "assets": [
               {
-                "name": "miplay-sender-v0.9.8-arm64-v8a-unsigned.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miplay-sender-v0.9.8-arm64-v8a-unsigned.apk",
+                "name": "miaocast-v0.9.8-arm64-v8a-unsigned.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miaocast-v0.9.8-arm64-v8a-unsigned.apk",
                 "size": 6500000
               },
               {
-                "name": "miplay-sender-v0.9.8-arm64-v8a.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miplay-sender-v0.9.8-arm64-v8a.apk",
+                "name": "miaocast-v0.9.8-arm64-v8a.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miaocast-v0.9.8-arm64-v8a.apk",
                 "size": 6600000
               },
               {
@@ -1264,7 +1264,7 @@ mod tests {
         let out = evaluate_update_json("0.9.7", "stable", "android", "arm64-v8a", "29", "", gh_api);
         let parsed = parse_json(&out).unwrap();
         assert_eq!(parsed.str_field("status"), "update_available");
-        assert_eq!(parsed.str_field("asset_name"), "miplay-sender-v0.9.8-arm64-v8a.apk");
+        assert_eq!(parsed.str_field("asset_name"), "miaocast-v0.9.8-arm64-v8a.apk");
         assert_eq!(parsed.bool_field("installable"), Some(true));
         assert!(parsed.str_field("sha256sums_url").ends_with("SHA256SUMS.txt"));
         assert_eq!(parsed.str_field("release_notes"), "- 新增应用内更新检测");

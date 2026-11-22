@@ -1,7 +1,7 @@
 # iOS 原生客户端设计方案（`ReplayKit` 系统广播扩展 + L1 Rust 核心）
 
 > **状态：待实现（Proposed / Not Implemented）**
-> 本文档为 `miplay-sender` iOS 原生客户端的架构与工程实施设计方案。文中涉及的现有 Rust L1 C ABI 与打包脚本均已在仓库就绪；所有 iOS 真机运行行为（DRM 兼容性、音量键静音、50MB 内存红线、锁屏保活）均须按第七节验收清单在真机实测确认后，方可写入 [COMPATIBILITY.md](COMPATIBILITY.md)。
+> 本文档为 **妙投（MiaoCast）** iOS 原生客户端的架构与工程实施设计方案（iOS Bundle ID 对齐 Android `com.miaocast.app`：主 App 为 `com.miaocast.app`，Broadcast Upload Extension 为 `com.miaocast.app.broadcast`）。文中涉及的现有 Rust L1 C ABI 与打包脚本均已在仓库就绪；所有 iOS 真机运行行为（DRM 兼容性、音量键静音、50MB 内存红线、锁屏保活）均须按第七节验收清单在真机实测确认后，方可写入 [COMPATIBILITY.md](COMPATIBILITY.md)。
 
 ---
 

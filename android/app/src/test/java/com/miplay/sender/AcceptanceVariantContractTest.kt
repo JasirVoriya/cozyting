@@ -40,13 +40,13 @@ class AcceptanceVariantContractTest {
 
     @Test
     fun buildConfig_acceptanceFlag_matchesApplicationId() {
-        // standard：IS_ACCEPTANCE=false / com.miplay.sender*
-        // acceptance：IS_ACCEPTANCE=true / com.miplay.sender.acceptance*
+        // standard：IS_ACCEPTANCE=false / com.miaocast.app*
+        // acceptance：IS_ACCEPTANCE=true / com.miaocast.app.acceptance*
         if (BuildConfig.IS_ACCEPTANCE) {
-            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender.acceptance"))
+            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miaocast.app.acceptance"))
         } else {
-            assertFalse(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender.acceptance"))
-            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miplay.sender"))
+            assertFalse(BuildConfig.APPLICATION_ID.startsWith("com.miaocast.app.acceptance"))
+            assertTrue(BuildConfig.APPLICATION_ID.startsWith("com.miaocast.app"))
         }
     }
 
@@ -62,7 +62,7 @@ class AcceptanceVariantContractTest {
             Regex("""(storePassword|keyPassword)\s*=\s*"[^"]+"""").containsMatchIn(text),
         )
         assertFalse(
-            "Release buildType must not append .release applicationIdSuffix to official com.miplay.sender package",
+            "Release buildType must not append .release applicationIdSuffix to official com.miaocast.app package",
             Regex("""applicationIdSuffix\s*=\s*"\.release"""").containsMatchIn(text),
         )
         assertTrue(

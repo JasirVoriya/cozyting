@@ -74,8 +74,8 @@ object ApkIntegrityVerifier {
 
     /**
      * 完整三重校验：SHA-256 + 包名 + 签名证书 SHA-256。
-     * 注意：若当前运行的是 `acceptance` 验收包（`com.miplay.sender.acceptance`），
-     * 官方正式 APK 包名为 `com.miplay.sender`，会在此拦截并提示改用浏览器独立安装。
+     * 注意：若当前运行的是 `acceptance` 验收包（`com.miaocast.app.acceptance`），
+     * 官方正式 APK 包名为 `com.miaocast.app`，会在此拦截并提示改用浏览器独立安装。
      */
     fun verifyApkForUpgrade(
         context: Context,

@@ -7,12 +7,12 @@
 
 | APK | applicationId | 说明 |
 |---|---|---|
-| `妙投·验收` | `com.miplay.sender.acceptance` | 独立验收签名 |
+| `妙投·验收` | `com.miaocast.app.acceptance` | 独立验收签名 |
 | `受控音源A·1kHz` | `com.miplay.testtone.a` | 可捕获，1000Hz |
 | `受控音源B·2kHz` | `com.miplay.testtone.b` | 可捕获，2000Hz |
 | `受控音源·禁止捕获` | `com.miplay.testtone.deny` | `allowAudioPlaybackCapture=false`，1500Hz |
 
-三者不同 UID（系统安装时分配）。发送端正式包名 `com.miplay.sender` / `.release` 不变。
+三者不同 UID（系统安装时分配）。发送端正式包名 `com.miaocast.app` 不变。
 
 ## 量化判据（发送端 PCM 探针）
 

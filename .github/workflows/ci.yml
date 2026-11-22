@@ -183,7 +183,7 @@ jobs:
       - name: Upload standard debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: miplay-sender-standard-debug-apk
+          name: miaocast-standard-debug-apk
           path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
           retention-days: 14
           if-no-files-found: error

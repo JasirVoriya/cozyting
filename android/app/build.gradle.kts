@@ -25,7 +25,7 @@ android {
     namespace = "com.miplay.sender"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.miplay.sender"
+        applicationId = "com.miaocast.app"
         minSdk = 29
         targetSdk = 36
         versionCode = 21
@@ -68,7 +68,7 @@ android {
         }
         create("acceptance") {
             dimension = "channel"
-            applicationId = "com.miplay.sender.acceptance"
+            applicationId = "com.miaocast.app.acceptance"
             versionNameSuffix = "-acceptance"
             buildConfigField("boolean", "IS_ACCEPTANCE", "true")
             signingConfig = signingConfigs.getByName("acceptance")

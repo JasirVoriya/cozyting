@@ -20,7 +20,7 @@
 </p>
 
 <p>
-  <a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Releases" src="https://img.shields.io/badge/Releases-MiaoCast-1F2430?style=flat-square"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-FF5C6C?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
@@ -86,7 +86,7 @@
 ## 目录结构
 
 ```text
-miplay-sender/
+miaocast/
 ├── core/               # [L1 公共核心层] 纯 Rust 协议、多箱同步引擎、并发协调器 (engine) 与设备目录 (device_catalog)
 │   ├── include/        #   [FFI] iOS / C11 头文件 (miplay_core.h) 与 module.modulemap
 │   └── src/            #   24 个核心模块（含 Android JNI ffi.rs 与 iOS C ABI ffi_c.rs）

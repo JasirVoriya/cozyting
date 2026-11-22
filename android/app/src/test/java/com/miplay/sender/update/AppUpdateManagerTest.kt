@@ -36,8 +36,8 @@ class AppUpdateManagerTest {
           "versions_behind": 2,
           "changelog_truncated": false,
           "release_url": "https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.6",
-          "asset_name": "miplay-sender-v0.9.6-arm64-v8a.apk",
-          "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.6/miplay-sender-v0.9.6-arm64-v8a.apk",
+          "asset_name": "miaocast-v0.9.6-arm64-v8a.apk",
+          "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.6/miaocast-v0.9.6-arm64-v8a.apk",
           "asset_size_bytes": 6710886,
           "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "sha256sums_url": "",
@@ -148,8 +148,8 @@ class AppUpdateManagerTest {
 
         // 验收渠道权威隔离：FileProvider authority 包含包名
         assertEquals(
-            "com.miplay.sender.acceptance.update.fileprovider",
-            ApkInstallerCompat.fileProviderAuthority("com.miplay.sender.acceptance"),
+            "com.miaocast.app.acceptance.update.fileprovider",
+            ApkInstallerCompat.fileProviderAuthority("com.miaocast.app.acceptance"),
         )
     }
 }
