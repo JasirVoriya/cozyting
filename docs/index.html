@@ -356,7 +356,7 @@
 
       @media (max-width: 860px) {
         .hero-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1fr);
         }
       }
 
@@ -445,7 +445,7 @@
       /* Feature grid */
       .cards-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
         gap: 1.15rem;
       }
 
@@ -541,6 +541,7 @@
 
       @container (width < 680px) {
         table.compare-table,
+        .compare-table caption,
         .compare-table thead,
         .compare-table tbody,
         .compare-table tr,
@@ -576,7 +577,7 @@
       /* Screenshots gallery */
       .gallery-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
         gap: 1.25rem;
       }
 
@@ -606,7 +607,7 @@
       /* Steps */
       .steps-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
         gap: 1rem;
         counter-reset: step;
       }
@@ -646,6 +647,7 @@
       /* Accordion FAQ (follows modern-web-guidance accordion) */
       .accordion {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.75rem;
       }
 
@@ -968,6 +970,14 @@
           <figure class="shot-card">
             <img src="assets/screenshots/05-settings-core-dark-vs-light.png" alt="妙投设置页：主题模式、采集引擎与单 App 静音配置" width="1440" height="1568" loading="lazy">
             <figcaption><strong>设置页 · 采集引擎与本机静音策略</strong>自由切换标准投屏与无感模式，透明展示静音边界。</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="assets/screenshots/06-settings-update-dark-vs-light.png" alt="妙投设置页：自定义延迟微调与关于更新卡片" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>高级延迟微调与关于更新</strong>支持自定义播放延迟 ms，并可随时开关自动更新检查。</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="assets/screenshots/08-update-dialog-dark-vs-light.png" alt="妙投跨版本区间更新日志与 SHA-256 校验安全安装弹窗" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>跨版本更新日志与双重安全校验</strong>自动汇总跨版本变更，下载强制校验 SHA-256 与签名证书。</figcaption>
           </figure>
         </div>
       </div>
