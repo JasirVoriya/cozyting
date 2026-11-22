@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MiaoCast</string>
+    <string name="app_brand_name">MiaoCast</string>
+    <string name="notification_listener_label">MiaoCast · Now Playing</string>
+</resources>

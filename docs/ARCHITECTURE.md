@@ -1,4 +1,4 @@
-# MiPlay Sender 架构与全仓源码深度手册
+# 妙投（MiaoCast）架构与全仓源码深度手册
 
 > 本文档是 [README.md](../README.md) 的深度工程配套手册，完整收录了 **L1–L3 跨端三层架构细节、4 条正交数据流向、全仓模块与文件职责字典（3.1–3.8）、19 个 JVM 契约测试清单、单进程实时线程与有界队列模型、6 条局域网网络通路及 6 阶段生命周期不变量**。
 >
@@ -8,7 +8,7 @@
 
 ## 一、跨端三层架构总览（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
 
-![MiPlay Sender 跨端三层架构](assets/cross-platform-architecture.svg)
+![妙投（MiaoCast）跨端三层架构](assets/cross-platform-architecture.svg)
 
 | 分层 | 归属 | Android（已实现） | iOS（C ABI 就绪 · UI 规划中） | 说明 |
 | --- | --- | --- | --- | --- |
@@ -21,7 +21,7 @@
 
 ## 二、整体数据流向（4 条正交链路）
 
-![MiPlay Sender 整体架构与数据流向](assets/architecture-overview.svg)
+![妙投（MiaoCast）整体架构与数据流向](assets/architecture-overview.svg)
 
 | 数据流 | 颜色 / 标识 | 端到端上下游路径 | 协议与关键特征 |
 | --- | --- | --- | --- |
@@ -188,7 +188,7 @@
 
 ## 四、软件运行时整体架构（进程 · 线程 · 有界队列 · 网络拓扑）
 
-![MiPlay Sender 软件运行时整体架构](assets/runtime-architecture.svg)
+![妙投（MiaoCast）软件运行时整体架构](assets/runtime-architecture.svg)
 
 ### 4.1 进程、线程与有界队列模型
 

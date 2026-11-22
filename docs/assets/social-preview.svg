@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="sp-title sp-desc">
-  <title id="sp-title">MiPlay Sender — Pure LAN Multi-Room Audio</title>
-  <desc id="sp-desc">GitHub Social Preview card for MiPlay Sender in clean flat industrial ceramic aesthetic.</desc>
+  <title id="sp-title">MiaoCast (妙投) — Pure LAN Multi-Room Audio via MiPlay</title>
+  <desc id="sp-desc">GitHub Social Preview card for MiaoCast in clean flat industrial ceramic aesthetic.</desc>
 
   <!-- Ceramic light background -->
   <rect width="1280" height="640" fill="#F4F6FA"/>
@@ -37,13 +37,13 @@
   <text x="434" y="179" fill="#D93848" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="14" font-weight="700" letter-spacing="0.8">PURE LAN · ZERO CLOUD</text>
 
   <!-- Title -->
-  <text x="396" y="264" fill="#14171F" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="68" font-weight="800" letter-spacing="-1.6">MiPlay Sender</text>
+  <text x="396" y="264" fill="#14171F" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="68" font-weight="800" letter-spacing="-1.6">妙投 · MiaoCast</text>
 
   <!-- Subtitle CN -->
-  <text x="396" y="324" fill="#334155" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="27" font-weight="600">跨端局域网音频捕获 · 多音箱毫秒级同频投送</text>
+  <text x="396" y="324" fill="#334155" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="27" font-weight="600">基于 MiPlay 协议的跨端局域网音频投送 · 多音箱毫秒级同频</text>
 
   <!-- Subtitle EN -->
-  <text x="396" y="366" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif" font-size="20" font-weight="500">Cross-Platform Audio Capture (Android &amp; iOS) · Multi-Room Sync Engine in Rust</text>
+  <text x="396" y="366" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif" font-size="20" font-weight="500">Cross-Platform Audio Casting via MiPlay Protocol (Android &amp; iOS) · Rust Sync Engine</text>
 
   <!-- Divider hairline -->
   <line x1="396" y1="406" x2="1156" y2="406" stroke="#0F172A" stroke-opacity="0.08" stroke-width="1.5"/>

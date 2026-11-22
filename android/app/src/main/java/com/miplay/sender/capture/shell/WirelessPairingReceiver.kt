@@ -47,7 +47,7 @@ class WirelessPairingReceiver : BroadcastReceiver() {
                                 PairingNotificationGuide.postResultNotification(
                                     appCtx,
                                     success = true,
-                                    messageZh = "已保存本机配对证书，返回 MiPlay 即可启用无感采集",
+                                    messageZh = "已保存本机配对证书，返回妙投即可启用无感采集",
                                 )
                             }
                             is WirelessAdbPairingClient.PairResult.Failure -> {

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MiPlay 发送端</string>
+    <string name="app_name">妙投</string>
+    <string name="app_brand_name">妙投</string>
+    <string name="notification_listener_label">妙投 · 正在播放读取</string>
 </resources>

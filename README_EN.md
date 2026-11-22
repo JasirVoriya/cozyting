@@ -3,12 +3,12 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-banner-light.svg">
-  <img alt="MiPlay Sender — Android & iPhone Pure-LAN Casting to Xiaomi Speakers" src="docs/assets/hero-banner-light.svg" width="100%">
+  <img alt="MiaoCast — Cross-Platform Pure-LAN Audio Casting via MiPlay Protocol" src="docs/assets/hero-banner-light.svg" width="100%">
 </picture>
 
-# MiPlay Sender (Pure LAN)
+# MiaoCast (妙投)
 
-**Cross-Platform LAN Audio Capture & Casting (Android & iOS) · Zero-Cloud Pure LAN · Synchronized Multi-Speaker Engine**
+**Cross-Platform Pure-LAN Audio Casting via the MiPlay Protocol (Android & iOS) · Zero Cloud · Synchronized Multi-Speaker Engine**
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> ·
@@ -35,9 +35,9 @@
 
 ## Core Capabilities & Technical Foundation
 
-System-wide screen/audio mirroring broadcasts everything—including chat voice messages, short videos, and notification chimes—straight to your living-room speakers. **MiPlay Sender** solves this with a pure-LAN, cross-platform engine that captures **only your selected music app** and synchronizes up to **63 speakers** in real time:
+System-wide screen/audio mirroring broadcasts everything—including chat voice messages, short videos, and notification chimes—straight to your living-room speakers. **MiaoCast (妙投)** solves this with the **MiPlay LAN protocol** and a pure-Rust cross-platform engine (`miplay-core`) that captures **only your selected music app** and synchronizes up to **63 Xiaomi/XiaoAi speakers** in real time:
 
-![MiPlay Sender Core Capabilities](docs/assets/feature-highlights.svg)
+![MiaoCast Core Capabilities](docs/assets/feature-highlights.svg)
 
 - **🎯 Strict Per-App Audio Isolation (Fail-Closed)**: Uses Android `AudioPlaybackCapture` with single-UID allowlisting and real-time SHA-256 package signature verification—never silently falling back to full-system capture or microphone input. Includes a 6-beat `PcmProbe` energy lock so track transitions never trigger brief dual-output on phone and speaker.
 - **🔊 63-Speaker Millisecond Sync**: Deterministic pure-Rust engine (`std::thread` + bounded `sync_channel`, **zero async runtime**) with monotonic `EPOCH`, UDP 40B `TimerServer` clock master, and `OffsetBarrier` 14-AU preroll alignment.
@@ -54,15 +54,15 @@ System-wide screen/audio mirroring broadcasts everything—including chat voice 
 
 ### 1. Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
 
-![MiPlay Sender Cross-Platform 3-Layer Architecture](docs/assets/cross-platform-architecture.svg)
+![MiaoCast Cross-Platform 3-Layer Architecture](docs/assets/cross-platform-architecture.svg)
 
 ### 2. Four Orthogonal Data Flows (Media · Control · Clock Sync · Telemetry)
 
-![MiPlay Sender Architecture & Data Flows](docs/assets/architecture-overview.svg)
+![MiaoCast Architecture & Data Flows](docs/assets/architecture-overview.svg)
 
 ### 3. Single-Process Real-Time Threading & 6 LAN Channels
 
-![MiPlay Sender Runtime Architecture](docs/assets/runtime-architecture.svg)
+![MiaoCast Runtime Architecture](docs/assets/runtime-architecture.svg)
 
 ---
 

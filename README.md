@@ -3,12 +3,12 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-banner-light.svg">
-  <img alt="MiPlay Sender — Android & iPhone 纯局域网投送小米音箱" src="docs/assets/hero-banner-light.svg" width="100%">
+  <img alt="妙投（MiaoCast）— 基于 MiPlay 协议的 Android & iPhone 纯局域网音频投送" src="docs/assets/hero-banner-light.svg" width="100%">
 </picture>
 
-# MiPlay 发送端（纯局域网）
+# 妙投（MiaoCast）
 
-**跨端局域网音频捕获与投送（Android & iOS）· 零云端纯局域网 · 多音箱毫秒级同频同步**
+**基于 MiPlay 协议的跨端局域网音频投送应用（Android & iOS）· 零云端纯局域网 · 多音箱毫秒级同频同步**
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
@@ -43,9 +43,9 @@
 
 ## 核心能力与技术底座
 
-为什么不用系统录屏投屏？整机投音会把微信语音、短视频和通知提示音一并广播到客厅音箱；而原厂妙播又受限于特定品牌机型。**MiPlay Sender** 用纯局域网跨端架构实现了**「只投你选的那一个音乐 App，最多 63 台音箱毫秒级同频合唱」**：
+为什么不用系统录屏投屏？整机投音会把微信语音、短视频和通知提示音一并广播到客厅音箱；而原厂妙播又受限于特定品牌机型。**妙投（MiaoCast）** 基于 **MiPlay 局域网协议**与自研纯 Rust 引擎（`miplay-core`），实现了**「只投你选的那一个音乐 App，最多 63 台小米/小爱音箱毫秒级同频合唱」**：
 
-![MiPlay Sender 核心能力与技术底座](docs/assets/feature-highlights.svg)
+![妙投（MiaoCast）核心能力与技术底座](docs/assets/feature-highlights.svg)
 
 - **🎯 只投音乐、不串杂音（Fail-Closed）**：启动前实时校验目标包同用户、非共享 UID 与 SHA-256 签名，严禁静默退化为全系统录屏或麦克风采集；内置 `PcmProbe` 6 拍有声验证锁定，彻底解决切歌间隙手机/音箱短暂双出声。
 - **🔊 63 台音箱毫秒级同频**：L1 纯 Rust 引擎采用确定性实时线程（**零异步运行时**），通过 `EPOCH` 单调时基、`UDP 40B TimerServer` 时钟主与 `OffsetBarrier` 14 AU 预读对齐，支持播放中途随时加减音箱与设备行内原位显示整数 `ms` 延迟。
@@ -62,21 +62,21 @@
 
 ### 1. 跨端三层架构（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
 
-![MiPlay Sender 跨端三层架构](docs/assets/cross-platform-architecture.svg)
+![妙投（MiaoCast）跨端三层架构](docs/assets/cross-platform-architecture.svg)
 
 - **L1 公共核心层（Rust `core/`，100% 跨端共享）**：统一承载 mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步、流媒体封装，以及下沉的 `engine` 多箱并发协调器和 `device_catalog` 路由状态机。
 - **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`miplay_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
 
 ### 2. 四条正交数据流向（媒体 · 控制 · 时钟同步 · 发现遥测）
 
-![MiPlay Sender 整体架构与数据流向](docs/assets/architecture-overview.svg)
+![妙投（MiaoCast）整体架构与数据流向](docs/assets/architecture-overview.svg)
 
 - **青色主音频流**：目标 App → 单 UID `AudioRecord` (48kHz) → `MediaCodec` (256kbps 裸 AAC) → `sync_channel(96)` → `media-clock` (21.333ms 节拍) → 每台接收端独立 `Packetizer` (`ADTS → PES → MPEG-TS → RTP PT=33`) → 音箱反向 Audio TCP。
 - **琥珀控制流 & 翡翠时钟流 & 紫色遥测流**：`engine` 串行协调正向 TCP `8899` 控制认证；`UDP TimerServer` 与反向 `SourceRtsp` 汇合于 `OffsetBarrier` 锁定共享 `TIME_OFFSET`；1Hz 统计与 `PcmProbe` 驱动 UI 原位刷新。
 
 ### 3. 单进程实时线程模型与 6 条局域网通路
 
-![MiPlay Sender 软件运行时整体架构](docs/assets/runtime-architecture.svg)
+![妙投（MiaoCast）软件运行时整体架构](docs/assets/runtime-architecture.svg)
 
 - **单进程零 IPC 拷贝**：原生采集线程（`MAX_PRIORITY`）与 Rust 引擎在同一地址空间内通过有界通道解耦；每台接收端拥有独立 5 线程（`media` / `rtsp` / `ctl` / `hb` / `timer`），慢端满队单端剔除，绝不阻塞全组。
 - **无死锁停止协议**：停止投送时 `Engine::stop` **先 `drop(feed)` 唤醒 `media-clock`**，再 `join` 全部工作线程并向每台音箱下发 `CLOSE(0x0002)` 释放会话。

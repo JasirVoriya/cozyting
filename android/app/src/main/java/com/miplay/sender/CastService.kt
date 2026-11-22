@@ -36,8 +36,10 @@ import com.miplay.sender.capture.shell.PairingNotificationGuide
 import com.miplay.sender.capture.shell.ShellCaptureBackend
 import com.miplay.sender.cast.ActiveMediaSessionSelector
 import com.miplay.sender.cast.AndroidStreamMusicVolume
+import com.miplay.sender.cast.CastNotificationFormatter
 import com.miplay.sender.cast.LocalOutputMute
 import com.miplay.sender.cast.NowPlayingTracker
+import com.miplay.sender.cast.PrefsDiscoveredDeviceStore
 import com.miplay.sender.compat.AcceptanceAudioDefaults
 import com.miplay.sender.compat.CaptureSelectionLayers
 import com.miplay.sender.ui.PrefsCastSettingsStore
@@ -238,11 +240,15 @@ class CastService : Service() {
     private lateinit var localMute: LocalOutputMute
     private lateinit var settingsStore: PrefsCastSettingsStore
     private lateinit var targetStore: PrefsTargetAppStore
+    private lateinit var deviceStore: PrefsDiscoveredDeviceStore
+    @Volatile private var activeInitialIps: List<String> = emptyList()
+    @Volatile private var lastNotificationSignature: String = ""
 
     override fun onCreate() {
         super.onCreate()
         settingsStore = PrefsCastSettingsStore(applicationContext)
         targetStore = PrefsTargetAppStore(applicationContext)
+        deviceStore = PrefsDiscoveredDeviceStore(applicationContext)
         localMute = LocalOutputMute(
             AndroidStreamMusicVolume.fromAttachedContext(applicationContext),
             restoreVolumeIndex = AcceptanceAudioDefaults.restoreLocalVolumeIndex(BuildConfig.IS_ACCEPTANCE),
@@ -291,6 +297,7 @@ class CastService : Service() {
                     val res = NativeBridge.queueAddReceiver(h, ip)
                     lastStats = NativeBridge.stats(h)
                     event("协调加入 $ip: $res")
+                    updateNotification(force = true)
                 }
                 return START_NOT_STICKY
             }
@@ -300,6 +307,7 @@ class CastService : Service() {
                     NativeBridge.queueRemoveReceiver(h, ip)
                     lastStats = NativeBridge.stats(h)
                     event("协调移除 $ip")
+                    updateNotification(force = true)
                 }
                 return START_NOT_STICKY
             }
@@ -357,6 +365,15 @@ class CastService : Service() {
         }
         val ips = intent?.getStringExtra(EXTRA_IPS).orEmpty()
         val initialIps = parseIps(ips)
+        if (!running.get()) {
+            activeInitialIps = initialIps
+            if (source == "app" && activeScopeMode == CaptureScopeMode.SINGLE_APP) {
+                val earlyPkg = intent?.getStringExtra(EXTRA_TARGET_PACKAGE).orEmpty().trim()
+                val earlyLabel = intent?.getStringExtra(EXTRA_TARGET_LABEL).orEmpty().trim()
+                if (earlyPkg.isNotEmpty()) targetPackage = earlyPkg
+                if (earlyLabel.isNotEmpty()) targetLabel = earlyLabel
+            }
+        }
         // 无感模式无需 mediaProjection 前台类型，彻底避免「正在投屏」系统状态栏提示
         projectionType = source == "app" && activeEngineMode == CaptureEngineMode.STANDARD
 
@@ -368,6 +385,7 @@ class CastService : Service() {
                 initialIps.forEach { ip -> NativeBridge.queueAddReceiver(h, ip) }
                 lastStats = NativeBridge.stats(h)
                 event("已在投送中，合并目标音箱: ${initialIps.joinToString(",")}")
+                updateNotification(force = true)
             } else {
                 event("已在投送中，忽略重复开始")
             }
@@ -377,6 +395,7 @@ class CastService : Service() {
         lastFailMessage = ""
         noAudioHintPosted = false
         lastStats = mergeConnectingReceivers("", initialIps.toSet())
+        updateNotification(force = true)
         acquireLocks()
 
         if (source == "app") {
@@ -582,7 +601,8 @@ class CastService : Service() {
                             if (running.get() && source == "app") sessionTracker?.refresh()
                         }
                     }
-                    if (tick % 5 == 0) main.post { updateNotification() }
+                    // 文案或设备状态变化时立即刷新通知，无变化时不重复打扰系统通知栏
+                    main.post { updateNotification(force = false) }
                 }
                 // 1s 刷新，供界面持续更新延迟诊断
                 main.postDelayed(this, 1000)
@@ -590,31 +610,26 @@ class CastService : Service() {
         })
     }
 
-    private fun summary(): String = runCatching {
-        val o = JSONObject(lastStats)
-        val rs = o.getJSONArray("receivers")
-        val parts = (0 until rs.length()).map { i ->
-            val r = rs.getJSONObject(i)
-            val st = when {
-                !r.isNull("error") -> "断开"
-                r.optInt("state", -1) == 2 -> "播放"
-                r.optInt("state", -1) == 3 -> "暂停"
-                else -> r.optString("phase").take(8)
-            }
-            val rc = r.optInt("reconnects", 0)
-            r.getString("ip").substringAfterLast('.') + ":" + st + (if (rc > 0) "(重连$rc)" else "")
-        }
-        val src = if (source == "app") {
-            targetLabel.ifBlank { targetPackage.substringAfterLast('.') }
-        } else {
-            "静音"
-        }
-        val e2e = LatencyDisplay.formatMs(LatencyDisplay.optLongOrNull(o.optJSONObject("latency"), "e2e_est_ms"))
-        val cfgDelay = o.optLong("playback_delay_us") / 1000
-        "${rs.length()} 台 · $src · 配置${cfgDelay}ms · E2E估$e2e · " + parts.joinToString(" ")
-    }.getOrDefault(lastEvent)
+    private fun cachedDeviceNamesByIp(): Map<String, String> = runCatching {
+        if (!::deviceStore.isInitialized) return@runCatching emptyMap<String, String>()
+        deviceStore.loadDevices()
+            .filter { it.isCastSink && it.id.isNotBlank() && it.name.isNotBlank() }
+            .associate { it.id to it.name }
+    }.getOrDefault(emptyMap())
 
-    private fun buildNotification(): Notification {
+    private fun formatNotificationCopy(): CastNotificationFormatter.NotificationCopy =
+        CastNotificationFormatter.format(
+            source = source,
+            scopeMode = activeScopeMode,
+            targetLabel = targetLabel,
+            targetPackage = targetPackage,
+            paused = paused,
+            statsJson = lastStats,
+            fallbackIps = activeInitialIps,
+            deviceNamesByIp = cachedDeviceNamesByIp(),
+        )
+
+    private fun buildNotification(copy: CastNotificationFormatter.NotificationCopy = formatNotificationCopy()): Notification {
         val pi = { action: String, code: Int ->
             PendingIntent.getService(
                 this, code,
@@ -625,21 +640,9 @@ class CastService : Service() {
         val open = PendingIntent.getActivity(
             this, 9, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
-        val title = when {
-            paused && source == "app" && activeScopeMode == CaptureScopeMode.GLOBAL_MEDIA ->
-                "已暂停投送（全局媒体 · 无感模式）"
-            paused && source == "app" -> "已暂停投送（选定 App）"
-            paused -> "已暂停投送（静音测试）"
-            source == "app" && activeScopeMode == CaptureScopeMode.GLOBAL_MEDIA ->
-                "正在投送全局媒体音频（无感模式）"
-            source == "app" && activeEngineMode == CaptureEngineMode.WIRELESS_DEBUG ->
-                "正在无感投送选定 App 音频"
-            source == "app" -> "正在投送选定 App 音频"
-            else -> "正在投送到小米音箱（静音测试）"
-        }
-        return Notification.Builder(this, CHANNEL)
-            .setContentTitle(title)
-            .setContentText(summary())
+        val builder = Notification.Builder(this, CHANNEL)
+            .setContentTitle(copy.title)
+            .setContentText(copy.collapsedText)
             .setSmallIcon(if (paused) android.R.drawable.ic_media_pause else R.drawable.ic_stat_miplay)
             .setContentIntent(open)
             .addAction(
@@ -652,12 +655,19 @@ class CastService : Service() {
             .addAction(Notification.Action.Builder(null, "停止", pi(ACTION_STOP, 1)).build())
             .setOnlyAlertOnce(true)
             .setOngoing(true)
-            .build()
+        if (!copy.expandedText.isNullOrBlank()) {
+            builder.setStyle(Notification.BigTextStyle().bigText(copy.expandedText))
+        }
+        return builder.build()
     }
 
-    private fun updateNotification() {
+    private fun updateNotification(force: Boolean = true) {
         if (!running.get()) return
-        getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification())
+        val copy = formatNotificationCopy()
+        val signature = "${paused}|${copy.title}|${copy.collapsedText}|${copy.expandedText.orEmpty()}"
+        if (!force && signature == lastNotificationSignature) return
+        lastNotificationSignature = signature
+        getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(copy))
     }
 
     private fun resolveAppLabel(pkg: String): String =
@@ -983,6 +993,8 @@ class CastService : Service() {
         val h = handle
         handle = 0L
         lastStats = ""
+        activeInitialIps = emptyList()
+        lastNotificationSignature = ""
         if (h != 0L) {
             Thread {
                 val finalStats = NativeBridge.stats(h)
@@ -1032,12 +1044,14 @@ class CastService : Service() {
 
     private fun startForegroundCompat() {
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "妙播投送", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, "妙投 · 投送状态", NotificationManager.IMPORTANCE_LOW))
         val type = if (projectionType) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
         } else {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         }
-        startForeground(NOTIF_ID, buildNotification(), type)
+        val copy = formatNotificationCopy()
+        lastNotificationSignature = "${paused}|${copy.title}|${copy.collapsedText}|${copy.expandedText.orEmpty()}"
+        startForeground(NOTIF_ID, buildNotification(copy), type)
     }
 }

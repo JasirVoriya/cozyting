@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 850" width="1360" height="850" role="img" aria-labelledby="cp-title cp-desc">
-  <title id="cp-title">MiPlay Sender 跨端三层架构（Android / iOS 各自实现 L2/L3 + 共享 Rust L1 核心）</title>
+  <title id="cp-title">妙投（MiaoCast）跨端三层架构（Android / iOS 各自实现 L2/L3 + 共享 Rust L1 核心）</title>
   <desc id="cp-desc">展示 L3 UI 表现层（Android 原生与未来 iOS SwiftUI 各自实现，共用 design/ 设计规范）、L2 系统接口层（各自实现音频捕获、AAC 编码与保活）、FFI 跨语言薄插头层（Android JNI 与未来 iOS C ABI/UniFFI）以及 L1 公共核心层（Rust miplay-sender-core 全平台共享）。</desc>
 
   <defs>

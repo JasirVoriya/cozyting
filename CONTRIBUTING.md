@@ -1,6 +1,6 @@
 # 参与贡献（Contributing Guide）
 
-感谢你关注 **MiPlay 发送端（纯局域网）**！无论是上报真机/音箱实测结果、反馈 Bug、完善文档，还是提交 Rust 核心与 Android/iOS 代码 PR，都非常欢迎。
+感谢你关注 **妙投（MiaoCast）**（基于 MiPlay 协议的纯局域网音频投送应用）！无论是上报真机/音箱实测结果、反馈 Bug、完善文档，还是提交 Rust 核心与 Android/iOS 代码 PR，都非常欢迎。
 
 ---
 

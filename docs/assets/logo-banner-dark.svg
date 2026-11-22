@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 120" width="680" height="120" role="img" aria-labelledby="banner-dark-title banner-dark-desc">
-  <title id="banner-dark-title">MiPlay Sender — Pure LAN Multi-Room Audio</title>
-  <desc id="banner-dark-desc">Horizontal brand lockup for MiPlay Sender (dark theme).</desc>
+  <title id="banner-dark-title">MiaoCast (妙投) — Pure LAN Multi-Room Audio via MiPlay</title>
+  <desc id="banner-dark-desc">Horizontal brand lockup for MiaoCast (dark theme).</desc>
   <!-- Icon mark (96x96 at x=6, y=12) -->
   <g transform="translate(6 12) scale(0.1875)">
     <rect x="2" y="2" width="508" height="508" rx="115" fill="#15171E" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="5"/>
@@ -12,10 +12,10 @@
     <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF6B79" stroke-width="38" stroke-linecap="round"/>
   </g>
   <!-- Wordmark -->
-  <text x="124" y="57" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="34" font-weight="750" letter-spacing="-0.6">MiPlay Sender</text>
+  <text x="124" y="57" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'PingFang SC', sans-serif" font-size="34" font-weight="750" letter-spacing="-0.6">妙投 · MiaoCast</text>
   <!-- Pure LAN Pill Badge -->
-  <rect x="366" y="33" width="164" height="26" rx="13" fill="#FF6B79" fill-opacity="0.14" stroke="#FF6B79" stroke-opacity="0.50" stroke-width="1.2"/>
-  <text x="448" y="50" text-anchor="middle" fill="#FF8C97" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="600" letter-spacing="0.4">PURE LAN · SYNC</text>
+  <rect x="396" y="33" width="164" height="26" rx="13" fill="#FF6B79" fill-opacity="0.14" stroke="#FF6B79" stroke-opacity="0.50" stroke-width="1.2"/>
+  <text x="478" y="50" text-anchor="middle" fill="#FF8C97" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="11.5" font-weight="600" letter-spacing="0.4">PURE LAN · SYNC</text>
   <!-- Subtitle -->
-  <text x="125" y="88" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="14.5" font-weight="500">跨端局域网音频捕获 · 多音箱毫秒级同频投送（Android · iOS · Rust Core）</text>
+  <text x="125" y="88" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Segoe UI', sans-serif" font-size="14.5" font-weight="500">基于 MiPlay 协议的跨端局域网音频投送 · 多音箱毫秒级同频（Android · iOS）</text>
 </svg>

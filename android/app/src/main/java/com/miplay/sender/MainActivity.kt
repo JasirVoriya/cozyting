@@ -348,7 +348,7 @@ class MainActivity : Activity() {
         }
         titleWrap.addView(
             TextView(this).apply {
-                text = "音频投送"
+                text = getString(R.string.app_brand_name)
                 textSize = 20f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
