@@ -233,6 +233,16 @@ mod android {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_com_miplay_sender_NativeBridge_setPlaybackDelay(
+        mut env: JNIEnv,
+        _c: JClass,
+        h: jlong,
+        delay_ms: jint,
+    ) -> jstring {
+        out(&mut env, engine::set_playback_delay(h, delay_ms))
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_com_miplay_sender_NativeBridge_debugDrop(
         mut env: JNIEnv,
         _c: JClass,

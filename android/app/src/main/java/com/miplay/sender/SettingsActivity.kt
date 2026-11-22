@@ -12,12 +12,12 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.text.Editable
 import android.text.InputType
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -406,25 +406,79 @@ class SettingsActivity : Activity() {
         )
         body.addView(spacer(10))
 
-        // 播放缓冲延迟
+        // 播放缓冲延迟（输入框 + 生效按钮：投送中直接热重锚 TIME_OFFSET 生效，待机时保存并下次连接生效）
         val autoMs = CastService.autoDelayMs(this)
-        body.addView(fieldLabel("播放缓冲延迟 ms（留空或 0 为自动：$autoMs ms）"))
+        body.addView(fieldLabel("播放缓冲延迟 ms（留空或 0 为自动：$autoMs ms；范围 50–5000）"))
+        val delayRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val delayFeedback = TextView(this).apply {
+            textSize = 11.5f
+            setTextColor(palette.textTertiary)
+            setPadding(0, dp(6), 0, 0)
+            visibility = View.GONE
+        }
         val delayEdit = UiComponents.styledEditText(
             context = this,
             palette = palette,
             hintText = "自动 ($autoMs)",
             inputTypeFlags = InputType.TYPE_CLASS_NUMBER,
         ).apply {
+            imeOptions = EditorInfo.IME_ACTION_DONE
             if (settingsStore.delayMs > 0) setText(settingsStore.delayMs.toString())
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    settingsStore.delayMs = s?.toString()?.trim()?.toIntOrNull() ?: 0
-                }
-            })
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
         }
-        body.addView(delayEdit)
+        val applyDelayAction = {
+            val raw = delayEdit.text.toString().trim()
+            val parsed = if (raw.isEmpty()) 0 else raw.toIntOrNull()
+            if (parsed == null || (parsed != 0 && parsed !in 50..5000)) {
+                delayFeedback.text = "请输入 50–5000 之间的毫秒数（留空或填 0 恢复自动 $autoMs ms）"
+                delayFeedback.setTextColor(palette.statusWarning)
+                delayFeedback.visibility = View.VISIBLE
+            } else {
+                settingsStore.delayMs = parsed
+                val effectiveMs = if (parsed > 0) parsed else autoMs
+                val autoSuffix = if (parsed == 0) "（自动）" else ""
+                val lowHint = if (effectiveMs < 250) "；低于 250ms 在弱网或多箱场景可能卡顿" else ""
+                runCatching {
+                    getSystemService(InputMethodManager::class.java)
+                        ?.hideSoftInputFromWindow(delayEdit.windowToken, 0)
+                }
+                delayEdit.clearFocus()
+                if (CastService.running.get()) {
+                    startService(
+                        Intent(this, CastService::class.java)
+                            .setAction(CastService.ACTION_SET_DELAY)
+                            .putExtra(CastService.EXTRA_DELAY, effectiveMs),
+                    )
+                    delayFeedback.text = "已生效：当前投送已热更新为 ${effectiveMs}ms$autoSuffix（无需重连）$lowHint"
+                    delayFeedback.setTextColor(if (effectiveMs < 250) palette.statusWarning else palette.statusSuccess)
+                } else {
+                    delayFeedback.text = "已保存：${effectiveMs}ms$autoSuffix，下次连接音箱时生效$lowHint"
+                    delayFeedback.setTextColor(if (effectiveMs < 250) palette.statusWarning else palette.statusSuccess)
+                }
+                delayFeedback.visibility = View.VISIBLE
+            }
+        }
+        delayEdit.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                applyDelayAction()
+                true
+            } else {
+                false
+            }
+        }
+        delayRow.addView(delayEdit)
+        delayRow.addView(
+            UiComponents.tonalButton(this, palette, "生效", primary = true) {
+                applyDelayAction()
+            },
+        )
+        body.addView(delayRow)
+        body.addView(delayFeedback)
         body.addView(spacer(10))
 
         // 房间参考模式

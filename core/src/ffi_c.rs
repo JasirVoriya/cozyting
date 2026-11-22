@@ -185,6 +185,11 @@ pub extern "C" fn miplay_engine_switch_source(handle: i64) -> *mut c_char {
 }
 
 #[no_mangle]
+pub extern "C" fn miplay_engine_set_playback_delay(handle: i64, delay_ms: i32) -> *mut c_char {
+    into_c_string(engine::set_playback_delay(handle, delay_ms))
+}
+
+#[no_mangle]
 pub extern "C" fn miplay_engine_stats_json(handle: i64) -> *mut c_char {
     into_c_string(engine::stats_json(handle))
 }
@@ -227,6 +232,9 @@ mod tests {
             assert!(stats.contains("\"ip\":\"192.0.2.88\""));
             assert!(stats.contains("\"ui_state\":\"connecting\""));
             assert!(miplay_engine_remove_receiver(h, ip.as_ptr()));
+
+            let delay_res = take_str(miplay_engine_set_playback_delay(h, 400));
+            assert!(delay_res.contains("\"error\":\"no session\""));
 
             miplay_engine_stop(h);
             assert_eq!(miplay_engine_push_aac(h, aac.as_ptr(), aac.len()), -1);

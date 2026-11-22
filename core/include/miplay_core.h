@@ -64,6 +64,8 @@ char *miplay_engine_set_volume(int64_t handle, const char *ip, int32_t volume);
 char *miplay_engine_pause(int64_t handle);
 char *miplay_engine_resume(int64_t handle);
 char *miplay_engine_switch_source(int64_t handle);
+/* 运行期热更新播放缓冲延迟（delay_ms <= 0 按频段自动；重锚并广播 TIME_OFFSET，无需重连）。 */
+char *miplay_engine_set_playback_delay(int64_t handle, int32_t delay_ms);
 
 /* 拉取实时统计 JSON（每台设备均含归一化 ui_state 与 display_latency_ms）。 */
 char *miplay_engine_stats_json(int64_t handle);

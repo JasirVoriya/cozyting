@@ -707,6 +707,25 @@ pub fn switch_source(handle: i64) -> String {
     }
 }
 
+/// 运行期热更新播放缓冲延迟（`delay_ms <= 0` 按当前 Wi-Fi 频段自动决策）。
+pub fn set_playback_delay(handle: i64, delay_ms: i32) -> String {
+    let delay_us = if delay_ms > 0 {
+        delay_ms as i64 * 1000
+    } else {
+        crate::netinfo::auto_playback_delay_us().0
+    };
+    match session(handle) {
+        Some(s) => match s.set_playback_delay_us(delay_us) {
+            Ok((applied_us, offset)) => format!(
+                "{{\"playback_delay_ms\":{},\"time_offset_us\":{offset}}}",
+                applied_us / 1000
+            ),
+            Err(e) => err_json(e),
+        },
+        None => err_json("no session"),
+    }
+}
+
 pub fn debug_drop(handle: i64, ip_raw: &str) -> bool {
     match (session(handle), ip_raw.trim().parse::<Ipv4Addr>()) {
         (Some(s), Ok(ip)) => s.debug_drop_connection(ip),

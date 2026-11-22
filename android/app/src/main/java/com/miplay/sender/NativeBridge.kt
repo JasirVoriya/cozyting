@@ -56,6 +56,8 @@ object NativeBridge {
     @JvmStatic external fun setAuthMode(mode: Int)
     /** 切歌/换音源：丢弃旧缓冲，重锚时间线并对所有音箱重发 TIME_OFFSET。 */
     @JvmStatic external fun switchSource(handle: Long): String
+    /** 运行期热更新播放缓冲延迟（delayMs <= 0 按频段自动；清缓冲并广播新 TIME_OFFSET，无需重连）。 */
+    @JvmStatic external fun setPlaybackDelay(handle: Long, delayMs: Int): String
     /** 调试：对某台“网络黑洞” secs 秒（控制/音频/RTSP/计时器都不收不发，TCP 不关），验证超时重连。 */
     @JvmStatic external fun debugBlackhole(handle: Long, ip: String, secs: Int): Boolean
     /** 只做 SafetyAuth 互验 + 加密 GetDeviceInfo，返回 JSON。 */

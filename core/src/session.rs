@@ -26,6 +26,12 @@ use std::time::{Duration, Instant};
 
 pub const STARTUP_RUNWAY_AUS: usize = 14;
 pub const MAX_RECEIVERS: usize = 63;
+pub const MIN_PLAYBACK_DELAY_US: i64 = 50_000;
+pub const MAX_PLAYBACK_DELAY_US: i64 = 5_000_000;
+
+pub fn clamp_playback_delay_us(delay_us: i64) -> i64 {
+    delay_us.clamp(MIN_PLAYBACK_DELAY_US, MAX_PLAYBACK_DELAY_US)
+}
 
 /// 起播突发预热节奏（毫秒），之后按 1024/48000 s 推进。
 const STARTUP_DUE_MS: [f64; 19] = [
@@ -435,8 +441,10 @@ struct Inner {
     receivers: Mutex<Vec<ReceiverHandle>>,
     stop: AtomicBool,
     paused: AtomicBool,
-    /// 当前组 TIME_OFFSET（初值来自屏障；恢复播放后更新）。0 = 尚未确定。
+    /// 当前组 TIME_OFFSET（初值来自屏障；恢复播放或热更新延迟后更新）。0 = 尚未确定。
     offset: AtomicI64,
+    /// 当前生效的播放缓冲延迟（µs），支持运行期热更新并随 TIME_OFFSET 重锚广播。
+    playback_delay_us: AtomicI64,
     media: Arc<Mutex<MediaState>>,
     clock: Mutex<MediaClock>,
     aus_sent: AtomicU64,
@@ -978,12 +986,14 @@ impl CastSession {
         } else {
             vec![]
         };
+        let initial_delay_us = clamp_playback_delay_us(cfg.playback_delay_us);
         let inner = Arc::new(Inner {
             cfg,
             receivers: Mutex::new(receivers),
             stop: AtomicBool::new(false),
             paused: AtomicBool::new(false),
             offset: AtomicI64::new(barrier.current().unwrap_or(0)),
+            playback_delay_us: AtomicI64::new(initial_delay_us),
             media,
             clock: Mutex::new(MediaClock { timeline: SharedTimeline::default(), sent: 0, started: Instant::now() }),
             aus_sent: AtomicU64::new(0),
@@ -1179,6 +1189,22 @@ impl CastSession {
         Ok(self.rebase_and_broadcast("switch_source"))
     }
 
+    /// 运行期热更新播放缓冲延迟（µs）：无需断开重连，清缓冲并向全部存活成员重锚广播 RTSP `TIME_OFFSET`。
+    /// 暂停态下仅更新延迟并清空缓冲，恢复播放时自动按新值重锚。
+    pub fn set_playback_delay_us(&self, delay_us: i64) -> Result<(i64, i64)> {
+        let clamped = clamp_playback_delay_us(delay_us);
+        let _g = self.inner.control_lock.lock().unwrap();
+        self.inner.playback_delay_us.store(clamped, Ordering::SeqCst);
+        if self.inner.paused.load(Ordering::SeqCst) {
+            let mut m = self.inner.media.lock().unwrap();
+            m.runway.clear();
+            m.source.flush();
+            return Ok((clamped, self.inner.offset.load(Ordering::SeqCst)));
+        }
+        let new_offset = self.rebase_and_broadcast("set_delay");
+        Ok((clamped, new_offset))
+    }
+
     /// 清缓冲 → newOffset = now − sendPos + playDelay → 时间线重锚、发送节奏重置 → 对所有存活成员发 RTSP TIME_OFFSET。
     fn rebase_and_broadcast(&self, why: &str) -> i64 {
         {
@@ -1189,7 +1215,8 @@ impl CastSession {
         let mut ck = self.inner.clock.lock().unwrap();
         let now = now_us();
         let send_pos = ck.timeline.next_pts_us(ck.sent);
-        let new_offset = now - send_pos + self.inner.cfg.playback_delay_us;
+        let delay_us = self.inner.playback_delay_us.load(Ordering::SeqCst);
+        let new_offset = now - send_pos + delay_us;
         let idx = ck.sent;
         ck.timeline.reanchor(idx, now);
         // 发送节奏：下一个 AU 立即发，之后按 21.333 ms
@@ -1289,7 +1316,7 @@ impl CastSession {
         }
         let rs_json: Vec<String> = rs.iter().map(|s| s.to_json()).collect();
         let off = self.inner.offset.load(Ordering::SeqCst);
-        let delay_us = self.inner.cfg.playback_delay_us;
+        let delay_us = self.inner.playback_delay_us.load(Ordering::SeqCst);
         let flushed = self.inner.feed_flushed_at_start.load(Ordering::Relaxed);
         // 总体端到端：各接收端估计的最大值（组共享时间线，通常接近；缺测时 null）
         let e2e_overall = rs.iter().filter_map(|s| s.latency_e2e_est_ms).max();
@@ -1632,5 +1659,12 @@ mod tests {
         }
         drop(tx);
         assert!(matches!(src.poll_au(Duration::from_millis(10)), PollAu::Ended));
+    }
+
+    #[test]
+    fn clamp_playback_delay_enforces_safe_bounds() {
+        assert_eq!(clamp_playback_delay_us(10_000), MIN_PLAYBACK_DELAY_US);
+        assert_eq!(clamp_playback_delay_us(400_000), 400_000);
+        assert_eq!(clamp_playback_delay_us(9_000_000), MAX_PLAYBACK_DELAY_US);
     }
 }

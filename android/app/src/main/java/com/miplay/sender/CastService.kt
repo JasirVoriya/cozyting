@@ -70,6 +70,7 @@ class CastService : Service() {
         const val ACTION_ADD = "com.miplay.sender.ADD"
         const val ACTION_REMOVE = "com.miplay.sender.REMOVE"
         const val ACTION_SWITCH_SOURCE = "com.miplay.sender.SWITCH_SOURCE"
+        const val ACTION_SET_DELAY = "com.miplay.sender.SET_DELAY"
         const val EXTRA_IPS = "ips"
         const val EXTRA_IP = "ip"
         const val EXTRA_SOURCE = "source" // "silent" | "app"
@@ -318,6 +319,21 @@ class CastService : Service() {
                     }
                     if (pkg != targetPackage && pkg != switchingToPackage) {
                         requestHotSwitchTarget(pkg, label.ifEmpty { resolveAppLabel(pkg) }, autoDetected = false)
+                    }
+                }
+                return START_NOT_STICKY
+            }
+            ACTION_SET_DELAY -> {
+                val reqDelay = intent.getIntExtra(EXTRA_DELAY, 0)
+                val effectiveMs = if (reqDelay > 0) reqDelay else autoDelayMs(this)
+                if (h != 0L && running.get()) {
+                    bg("set-delay") {
+                        val res = NativeBridge.setPlaybackDelay(h, effectiveMs)
+                        if (handle == h && running.get()) {
+                            lastStats = NativeBridge.stats(h)
+                            event("热更新播放缓冲延迟(${effectiveMs}ms): $res")
+                            main.post { updateNotification() }
+                        }
                     }
                 }
                 return START_NOT_STICKY
