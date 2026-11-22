@@ -28,8 +28,8 @@ android {
         applicationId = "com.miplay.sender"
         minSdk = 29
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.9.7-rc.4"
+        versionCode = 20
+        versionName = "0.9.7-rc.5"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
