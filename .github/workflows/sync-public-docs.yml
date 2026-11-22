@@ -22,15 +22,28 @@ concurrency:
 jobs:
   sync:
     name: Sync Whitelisted Public Docs -> JasirVoriya/miaocast-releases
-    if: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check PUBLIC_RELEASE_TOKEN configured
+        id: guard
+        env:
+          TOKEN_PRESENT: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
+        run: |
+          if [[ "$TOKEN_PRESENT" == "true" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::PUBLIC_RELEASE_TOKEN 未配置，跳过公开文档自动同步。"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout private source repository
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
           path: src
 
       - name: Checkout public release repository
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
           repository: JasirVoriya/miaocast-releases
@@ -39,6 +52,7 @@ jobs:
           path: dst
 
       - name: Sync whitelisted public docs (zero source code, preserve dst/.github)
+        if: steps.guard.outputs.enabled == 'true'
         run: |
           set -euo pipefail
 
@@ -91,6 +105,7 @@ jobs:
           PY
 
       - name: Safety & privacy gate (block secrets or source dirs)
+        if: steps.guard.outputs.enabled == 'true'
         working-directory: dst
         run: |
           set -euo pipefail
@@ -106,6 +121,7 @@ jobs:
           fi
 
       - name: Commit and push if changed
+        if: steps.guard.outputs.enabled == 'true'
         working-directory: dst
         env:
           SRC_SHA: ${{ github.sha }}

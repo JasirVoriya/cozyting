@@ -201,8 +201,20 @@ jobs:
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
 
+      - name: Check PUBLIC_RELEASE_TOKEN configured
+        id: public_sync_guard
+        env:
+          TOKEN_PRESENT: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
+        run: |
+          if [[ "$TOKEN_PRESENT" == "true" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::未配置 PUBLIC_RELEASE_TOKEN，跳过同步至公开分发仓 JasirVoriya/miaocast-releases。"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Mirror Release to Public Repo (JasirVoriya/miaocast-releases)
-        if: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
+        if: steps.public_sync_guard.outputs.enabled == 'true'
         uses: softprops/action-gh-release@v2
         with:
           repository: JasirVoriya/miaocast-releases
