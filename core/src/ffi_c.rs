@@ -95,6 +95,11 @@ pub extern "C" fn miplay_delay_for_frequency(mhz: i32) -> i32 {
     engine::delay_for_frequency(mhz)
 }
 
+#[no_mangle]
+pub extern "C" fn miplay_startup_runway_aus(delay_ms: i32) -> i32 {
+    crate::latency::startup_runway_aus_for_delay_ms(delay_ms) as i32
+}
+
 /// 解析认证模式字符串（`"auto"`/`"legacy"`/`"safety"` → `0`/`1`/`2`，无法识别返回 `-1`）。
 #[no_mangle]
 pub unsafe extern "C" fn miplay_parse_auth_mode(raw: *const c_char) -> i32 {
@@ -215,6 +220,10 @@ mod tests {
         unsafe {
             assert_eq!(miplay_delay_for_frequency(5180), 800);
             assert_eq!(miplay_delay_for_frequency(2412), 1000);
+            assert_eq!(miplay_startup_runway_aus(0), 14);
+            assert_eq!(miplay_startup_runway_aus(400), 8);
+            assert_eq!(miplay_startup_runway_aus(250), 5);
+            assert_eq!(miplay_startup_runway_aus(150), 3);
 
             let mode_s = CString::new("safety").unwrap();
             assert_eq!(miplay_parse_auth_mode(mode_s.as_ptr()), 2);

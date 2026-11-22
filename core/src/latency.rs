@@ -29,6 +29,30 @@ pub fn startup_runway_ms(aus: usize) -> i64 {
     (aus as f64 * AU_DURATION_MS).round() as i64
 }
 
+/// 根据目标 `playback_delay_us` 自动缩放冷启动预热帧数（AU）：
+/// - `>= 700ms`（标准 800/1000ms）：保持官方基线 14 AU（≈299ms）；
+/// - `350–699ms`（均衡 400ms）：8 AU（≈171ms）；
+/// - `200–349ms`（低延迟 250ms）：5 AU（≈107ms）；
+/// - `< 200ms`（极速 150ms 等）：3 AU（≈64ms）。
+/// 使冷启动手感与运行期热重锚保持连贯。
+pub fn startup_runway_aus_for_delay_us(delay_us: i64) -> usize {
+    match delay_us {
+        d if d >= 700_000 => 14,
+        d if d >= 350_000 => 8,
+        d if d >= 200_000 => 5,
+        _ => 3,
+    }
+}
+
+/// 毫秒入口（供跨端展示与 C ABI 共用；`delay_ms <= 0` 视为标准自动档 14 AU）。
+pub fn startup_runway_aus_for_delay_ms(delay_ms: i32) -> usize {
+    if delay_ms <= 0 {
+        14
+    } else {
+        startup_runway_aus_for_delay_us(delay_ms as i64 * 1000)
+    }
+}
+
 /// 端到端估计（捕获戳 → 协议播放点）。任一前置条件不满足则 `None`（UI 显示 —）。
 pub fn capture_to_play_est_ms(time_offset_us: i64, pts_us: i64, capture_us: i64) -> Option<i64> {
     if time_offset_us <= 0 || capture_us <= 0 {
@@ -134,6 +158,15 @@ mod tests {
     fn runway_budget_matches_14_aus() {
         let ms = startup_runway_ms(STARTUP_RUNWAY_AUS);
         assert!((298..=300).contains(&ms), "got {ms}");
+    }
+
+    #[test]
+    fn startup_runway_scales_with_latency_tier() {
+        assert_eq!(startup_runway_aus_for_delay_ms(0), 14);
+        assert_eq!(startup_runway_aus_for_delay_ms(800), 14);
+        assert_eq!(startup_runway_aus_for_delay_ms(400), 8);
+        assert_eq!(startup_runway_aus_for_delay_ms(250), 5);
+        assert_eq!(startup_runway_aus_for_delay_ms(150), 3);
     }
 
     #[test]

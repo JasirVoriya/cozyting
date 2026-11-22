@@ -32,6 +32,9 @@ char *miplay_route_apply_json(const char *devices_json, const char *action, cons
 /* Wi-Fi 频段（MHz，<=0 未知）→ 推荐播放缓冲延迟（ms）。 */
 int32_t miplay_delay_for_frequency(int32_t mhz);
 
+/* 根据目标播放延迟（ms，<=0 表示标准自动档）返回冷启动预热帧数（AU）。 */
+int32_t miplay_startup_runway_aus(int32_t delay_ms);
+
 /* 认证模式字符串解析："auto"->0, "legacy"->1, "safety"->2, 未知->-1。 */
 int32_t miplay_parse_auth_mode(const char *raw);
 

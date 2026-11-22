@@ -4,6 +4,7 @@ import android.Manifest
 import android.animation.ObjectAnimator
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -11,6 +12,7 @@ import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.media.projection.MediaProjectionManager
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -24,11 +26,13 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupWindow
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -61,6 +65,9 @@ import com.miplay.sender.compat.AcceptanceAudioDefaults
 import com.miplay.sender.compat.BlurCompat
 import com.miplay.sender.compat.NotificationPermissionCompat
 import com.miplay.sender.compat.WindowInsetsApplyCompat
+import com.miplay.sender.ui.LatencyModePreset
+import com.miplay.sender.ui.LatencyModeSelection
+import com.miplay.sender.ui.LatencyModeTone
 import com.miplay.sender.ui.LinearDragReorderController
 import com.miplay.sender.ui.PrefsCastSettingsStore
 import com.miplay.sender.ui.ThemeMode
@@ -93,6 +100,12 @@ class MainActivity : Activity() {
     private lateinit var bgArt: ImageView
     private lateinit var headerStatusDot: View
     private lateinit var headerStatusLabel: TextView
+    private lateinit var latencyPill: LinearLayout
+    private lateinit var latencyPillIcon: ImageView
+    private lateinit var latencyPillLabel: TextView
+    private lateinit var latencyPillChevron: ImageView
+    private var latencyPopup: PopupWindow? = null
+    private var latencyDetailsDialog: Dialog? = null
     private lateinit var refreshBtn: FrameLayout
     private lateinit var nowPlayingFullBox: LinearLayout
     private lateinit var nowPlayingHintBanner: LinearLayout
@@ -232,6 +245,10 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        runCatching { latencyPopup?.dismiss() }
+        latencyPopup = null
+        runCatching { latencyDetailsDialog?.dismiss() }
+        latencyDetailsDialog = null
         quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
@@ -264,6 +281,7 @@ class MainActivity : Activity() {
         }
         refreshTargetFromStore()
         syncTargetFromActiveCast()
+        updateLatencyCapsuleUi()
         renderDevices()
         nowPlayingTracker?.refresh()
         maybeAutoSelectFromNowPlaying()
@@ -289,6 +307,10 @@ class MainActivity : Activity() {
     }
 
     private fun buildUi() {
+        runCatching { latencyPopup?.dismiss() }
+        latencyPopup = null
+        runCatching { latencyDetailsDialog?.dismiss() }
+        latencyDetailsDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -363,6 +385,40 @@ class MainActivity : Activity() {
         statusPill.addView(headerStatusLabel)
         titleWrap.addView(statusPill)
         topBar.addView(titleWrap)
+
+        // 延迟模式快捷胶囊（紧贴设置按钮左侧，点击弹出极简 4 档热切下拉框）
+        latencyPillIcon = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(13), dp(13)).apply { marginEnd = dp(4) }
+        }
+        latencyPillLabel = TextView(this).apply {
+            textSize = 11.5f
+            setTypeface(null, Typeface.BOLD)
+            maxLines = 1
+        }
+        latencyPillChevron = ImageView(this).apply {
+            setImageResource(R.drawable.ic_ui_chevron_down)
+            layoutParams = LinearLayout.LayoutParams(dp(11), dp(11)).apply { marginStart = dp(2) }
+        }
+        latencyPill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            contentDescription = "切换播放延迟模式"
+            setPadding(dp(10), 0, dp(8), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                dp(32),
+            ).apply {
+                marginEnd = dp(8)
+            }
+            addView(latencyPillIcon)
+            addView(latencyPillLabel)
+            addView(latencyPillChevron)
+            setOnClickListener { showLatencyModeDropdown(it) }
+        }
+        updateLatencyCapsuleUi()
+        topBar.addView(latencyPill)
 
         val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
             startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
@@ -936,6 +992,436 @@ class MainActivity : Activity() {
         }
         headerStatusDot.background = UiComponents.roundedDrawable(dotColor, dp(7) / 2f)
         headerStatusLabel.text = label
+    }
+
+    private fun latencyWarningSoftColor(): Int = Color.argb(
+        if (palette.isDark) 42 else 30,
+        Color.red(palette.statusWarning),
+        Color.green(palette.statusWarning),
+        Color.blue(palette.statusWarning),
+    )
+
+    private fun latencyPopupSolidBg(): Int =
+        if (palette.isDark) Color.parseColor("#181F2B") else Color.WHITE
+
+    private fun updateLatencyCapsuleUi() {
+        if (!::latencyPill.isInitialized) return
+        val sel = LatencyModePreset.resolve(settingsStore.delayMs)
+        val (fill, stroke, fg) = when (sel.tone) {
+            LatencyModeTone.NEUTRAL -> Triple(palette.panelBg, palette.panelBorder, palette.textPrimary)
+            LatencyModeTone.ACCENT -> Triple(palette.accentSoftBg, palette.accentBright, palette.accentBright)
+            LatencyModeTone.WARNING -> Triple(latencyWarningSoftColor(), palette.statusWarning, palette.statusWarning)
+        }
+        latencyPill.background = UiComponents.rippleSurface(
+            fillColor = fill,
+            radiusPx = dpf(999f),
+            rippleColor = palette.ripple,
+            strokeColor = stroke,
+            strokeWidthPx = dp(1).coerceAtLeast(1),
+        )
+        latencyPillIcon.setImageResource(sel.iconRes)
+        latencyPillIcon.setColorFilter(fg)
+        latencyPillLabel.text = sel.capsuleLabelZh
+        latencyPillLabel.setTextColor(fg)
+        latencyPillChevron.setColorFilter(fg)
+    }
+
+    private fun showLatencyModeDropdown(anchor: View) {
+        if (latencyPopup?.isShowing == true) {
+            latencyPopup?.dismiss()
+            return
+        }
+        val sel = LatencyModePreset.resolve(settingsStore.delayMs)
+        val popupWidth = dp(200)
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = latencyPopupSolidBg(),
+                radiusPx = dpf(16f),
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            elevation = dpf(12f)
+        }
+
+        fun buildMenuRow(
+            iconRes: Int,
+            title: String,
+            trailing: String,
+            active: Boolean,
+            tone: LatencyModeTone,
+            onClick: (() -> Unit)?,
+        ): LinearLayout {
+            val accentCol = when (tone) {
+                LatencyModeTone.WARNING -> palette.statusWarning
+                LatencyModeTone.NEUTRAL -> palette.textPrimary
+                LatencyModeTone.ACCENT -> palette.accentBright
+            }
+            val rowFill = when {
+                !active -> Color.TRANSPARENT
+                tone == LatencyModeTone.WARNING -> latencyWarningSoftColor()
+                else -> palette.accentSoftBg
+            }
+            return LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(10), 0, dp(10), 0)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(38),
+                )
+                background = UiComponents.rippleSurface(
+                    fillColor = rowFill,
+                    radiusPx = dpf(11f),
+                    rippleColor = palette.ripple,
+                )
+                isClickable = onClick != null
+                isFocusable = onClick != null
+                if (onClick != null) setOnClickListener { onClick() }
+
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(iconRes)
+                        setColorFilter(
+                            when {
+                                active -> accentCol
+                                tone == LatencyModeTone.WARNING -> palette.statusWarning
+                                else -> palette.textSecondary
+                            },
+                        )
+                        layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply {
+                            marginEnd = dp(8)
+                        }
+                    },
+                )
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = title
+                        textSize = 13f
+                        setTypeface(null, if (active) Typeface.BOLD else Typeface.NORMAL)
+                        setTextColor(if (active) accentCol else palette.textPrimary)
+                        maxLines = 1
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    },
+                )
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = trailing
+                        textSize = 11.5f
+                        setTextColor(palette.textSecondary)
+                        maxLines = 1
+                        setPadding(dp(6), 0, dp(6), 0)
+                    },
+                )
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(R.drawable.ic_ui_check)
+                        setColorFilter(accentCol)
+                        visibility = if (active) View.VISIBLE else View.INVISIBLE
+                        layoutParams = LinearLayout.LayoutParams(dp(14), dp(14))
+                    },
+                )
+            }
+        }
+
+        LatencyModePreset.entries.forEach { preset ->
+            val active = sel is LatencyModeSelection.Preset && sel.preset == preset
+            panel.addView(
+                buildMenuRow(
+                    iconRes = preset.iconRes,
+                    title = preset.nameZh,
+                    trailing = preset.shortMsZh,
+                    active = active,
+                    tone = preset.tone,
+                ) {
+                    latencyPopup?.dismiss()
+                    applyLatencyPreset(preset)
+                },
+            )
+        }
+
+        // 仅当用户在设置页填写了非预设毫秒数时动态展示「自定义」行，不伪装成任何预设
+        if (sel is LatencyModeSelection.Custom) {
+            panel.addView(
+                View(this).apply {
+                    setBackgroundColor(palette.panelBorder)
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1).coerceAtLeast(1)).apply {
+                        topMargin = dp(4)
+                        bottomMargin = dp(4)
+                        marginStart = dp(6)
+                        marginEnd = dp(6)
+                    }
+                },
+            )
+            panel.addView(
+                buildMenuRow(
+                    iconRes = sel.iconRes,
+                    title = "自定义",
+                    trailing = "${sel.delayMs}ms",
+                    active = true,
+                    tone = sel.tone,
+                    onClick = null,
+                ),
+            )
+        }
+
+        // 底部分割线 + 按需查看「档位说明」入口
+        panel.addView(
+            View(this).apply {
+                setBackgroundColor(palette.panelBorder)
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1).coerceAtLeast(1)).apply {
+                    topMargin = dp(5)
+                    bottomMargin = dp(5)
+                    marginStart = dp(6)
+                    marginEnd = dp(6)
+                }
+            },
+        )
+        panel.addView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(10), 0, dp(8), 0)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(34),
+                )
+                background = UiComponents.rippleSurface(
+                    fillColor = Color.TRANSPARENT,
+                    radiusPx = dpf(10f),
+                    rippleColor = palette.ripple,
+                )
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    latencyPopup?.dismiss()
+                    showLatencyDetailsDialog()
+                }
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(R.drawable.ic_ui_info)
+                        setColorFilter(palette.textSecondary)
+                        layoutParams = LinearLayout.LayoutParams(dp(14), dp(14)).apply { marginEnd = dp(8) }
+                    },
+                )
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = "档位说明"
+                        textSize = 12f
+                        setTypeface(null, Typeface.BOLD)
+                        setTextColor(palette.textSecondary)
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    },
+                )
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(R.drawable.ic_ui_chevron_right)
+                        setColorFilter(palette.textTertiary)
+                        layoutParams = LinearLayout.LayoutParams(dp(13), dp(13))
+                    },
+                )
+            },
+        )
+
+        val popup = PopupWindow(panel, popupWidth, ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
+            isOutsideTouchable = true
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            elevation = dpf(12f)
+            setOnDismissListener {
+                if (::latencyPillChevron.isInitialized) latencyPillChevron.rotation = 0f
+            }
+        }
+        latencyPopup = popup
+        latencyPillChevron.rotation = 180f
+        popup.showAsDropDown(anchor, anchor.width - popupWidth, dp(6))
+    }
+
+    private fun applyLatencyPreset(preset: LatencyModePreset) {
+        settingsStore.delayMs = preset.delayMs
+        updateLatencyCapsuleUi()
+        val effectiveMs = if (preset.delayMs > 0) preset.delayMs else CastService.autoDelayMs(this)
+        if (CastService.running.get()) {
+            startService(
+                Intent(this, CastService::class.java)
+                    .setAction(CastService.ACTION_SET_DELAY)
+                    .putExtra(CastService.EXTRA_DELAY, effectiveMs),
+            )
+            val multiWarn = if (preset == LatencyModePreset.ULTRA && routeState.selectedSpeakerIds.size >= 2) {
+                "（多音箱若卡顿建议切均衡）"
+            } else {
+                "（实时热生效，免重连）"
+            }
+            setStatusText("已切换至「${preset.nameZh} · ${preset.shortMsZh}」$multiWarn")
+        } else {
+            setStatusText("已设为「${preset.nameZh} · ${preset.shortMsZh}」，下次连接音箱时生效")
+        }
+    }
+
+    private fun showLatencyDetailsDialog() {
+        runCatching { latencyDetailsDialog?.dismiss() }
+        val sel = LatencyModePreset.resolve(settingsStore.delayMs)
+        val dialog = Dialog(this).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = latencyPopupSolidBg(),
+                radiusPx = dpf(22f),
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(18), dp(16), dp(18), dp(16))
+        }
+
+        // 标题行
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(
+            TextView(this).apply {
+                text = "延迟档位说明"
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        header.addView(
+            FrameLayout(this).apply {
+                val sz = dp(30)
+                layoutParams = LinearLayout.LayoutParams(sz, sz)
+                background = UiComponents.rippleSurface(palette.controlSurface, sz / 2f, palette.ripple)
+                isClickable = true
+                isFocusable = true
+                contentDescription = "关闭"
+                setOnClickListener { dialog.dismiss() }
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(R.drawable.ic_ui_close)
+                        setColorFilter(palette.textSecondary)
+                        layoutParams = FrameLayout.LayoutParams(dp(15), dp(15), Gravity.CENTER)
+                    },
+                )
+            },
+        )
+        card.addView(header)
+        card.addView(
+            TextView(this).apply {
+                text = "投送中切换档位会通过 TIME_OFFSET 实时热重锚生效，无需断开重连。"
+                textSize = 11.5f
+                setTextColor(palette.textSecondary)
+                setLineSpacing(dpf(2f), 1f)
+                setPadding(0, dp(6), 0, dp(10))
+            },
+        )
+
+        LatencyModePreset.entries.forEach { preset ->
+            val active = sel is LatencyModeSelection.Preset && sel.preset == preset
+            val iconCol = when (preset.tone) {
+                LatencyModeTone.WARNING -> palette.statusWarning
+                LatencyModeTone.NEUTRAL -> palette.textPrimary
+                LatencyModeTone.ACCENT -> palette.accentBright
+            }
+            val itemFill = when {
+                !active -> palette.controlSurface
+                preset.tone == LatencyModeTone.WARNING -> latencyWarningSoftColor()
+                else -> palette.accentSoftBg
+            }
+            val itemBox = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = UiComponents.roundedDrawable(itemFill, dpf(14f))
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = dp(8) }
+            }
+            val titleRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            titleRow.addView(
+                ImageView(this).apply {
+                    setImageResource(preset.iconRes)
+                    setColorFilter(iconCol)
+                    layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(8) }
+                },
+            )
+            titleRow.addView(
+                TextView(this).apply {
+                    text = if (active) "${preset.nameZh} · 当前" else preset.nameZh
+                    textSize = 13f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(palette.textPrimary)
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                },
+            )
+            titleRow.addView(
+                TextView(this).apply {
+                    text = preset.fullMsZh
+                    textSize = 11f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(iconCol)
+                },
+            )
+            itemBox.addView(titleRow)
+            itemBox.addView(
+                TextView(this).apply {
+                    text = preset.detailZh
+                    textSize = 11.5f
+                    setTextColor(palette.textSecondary)
+                    setLineSpacing(dpf(1.5f), 1f)
+                    setPadding(dp(23), dp(4), 0, 0)
+                },
+            )
+            itemBox.addView(
+                TextView(this).apply {
+                    text = "冷启动预热：${preset.runwaySummaryZh}"
+                    textSize = 10.5f
+                    setTextColor(palette.textTertiary)
+                    setPadding(dp(23), dp(2), 0, 0)
+                },
+            )
+            card.addView(itemBox)
+        }
+
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(4), 0, 0)
+        }
+        btnRow.addView(
+            UiComponents.tonalButton(this, palette, "去设置自定义 ms") {
+                dialog.dismiss()
+                startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(8)
+                }
+            },
+        )
+        btnRow.addView(
+            UiComponents.tonalButton(this, palette, "知道了", primary = true) {
+                dialog.dismiss()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        card.addView(btnRow)
+
+        val scroll = ScrollView(this).apply {
+            addView(card)
+        }
+        dialog.setContentView(scroll)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.90f).toInt().coerceAtMost(dp(380)),
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+        latencyDetailsDialog = dialog
+        dialog.show()
     }
 
     private fun bindNowPlaying() {

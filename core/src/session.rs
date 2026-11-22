@@ -390,7 +390,8 @@ impl OffsetBarrier {
                 );
             }
             let mut ok = true;
-            while m.runway.len() < STARTUP_RUNWAY_AUS {
+            let target_runway = latency::startup_runway_aus_for_delay_us(delay);
+            while m.runway.len() < target_runway {
                 match m.source.next_au() { Some(au) => m.runway.push_back(au), None => { ok = false; break } }
             }
             if ok { Ok(now_us() + delay) } else { Err("source ended during prewarm".to_string()) }
@@ -1334,7 +1335,7 @@ impl CastSession {
             self.is_paused(),
             json_str(LATENCY_DEFINITION),
             delay_us / 1000,
-            latency::startup_runway_ms(STARTUP_RUNWAY_AUS),
+            latency::startup_runway_ms(latency::startup_runway_aus_for_delay_us(delay_us)),
             flushed,
             (flushed as f64 * latency::AU_DURATION_MS).round() as i64,
             e2e_js,
