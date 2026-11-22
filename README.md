@@ -54,6 +54,35 @@
 
 ---
 
+## 界面实机渲染一览（深色 / 浅色双主题）
+
+> 以下全部界面均由 Android 真实视图代码通过 JVM 原生 Skia 渲染管线（`./scripts/ui-preview.sh`）直出，采用测试占位数据（RFC 5737 示例地址 `192.0.2.x`），完整覆盖主界面、延迟热切、常用音源、无线调试无感向导、设置页与跨版本应用内更新全流程。
+
+### 主界面 · 多音箱同频投送（专辑氛围底 · 房间名同行 · 实时 `ms` 延迟 · 独立音量）
+
+![妙投主界面多音箱同步投送（深/浅双主题）](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
+
+### 核心功能与全部页面（点击任意图片可放大查看）
+
+| 4 档延迟模式热切换（免重连 `TIME_OFFSET` 重锚） | 常用音源管理（单 App 自动识别 · 长按拖动排序） |
+| :---: | :---: |
+| ![延迟档位说明弹窗（深/浅双主题）](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png) | ![常用音源管理页（深/浅双主题）](docs/assets/screenshots/03-app-picker-dark-vs-light.png) |
+| **内置无线调试 · 4 步免投屏无感采集向导** | **独立设置页 · 主题 / 采集引擎 / 单 App 静音与权限** |
+| ![内置无线调试 4 步配对向导（深/浅双主题）](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png) | ![独立设置页核心配置（深/浅双主题）](docs/assets/screenshots/05-settings-core-dark-vs-light.png) |
+| **独立设置页 · 高级连接调试与「关于与更新」** | **主界面无打扰更新提示（仅非投送态 · 顶栏角标）** |
+| ![设置页关于与更新卡片（深/浅双主题）](docs/assets/screenshots/06-settings-update-dark-vs-light.png) | ![主界面更新轻提示条（深/浅双主题）](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png) |
+
+<details>
+<summary><strong>展开查看：跨版本区间更新日志与安全下载安装弹窗（强制 SHA-256 + 签名双重校验）</strong></summary>
+
+<br>
+
+![跨版本更新详情弹窗（深/浅双主题）](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+
+</details>
+
+---
+
 ## 架构总览（以图代表）
 
 > 🧭 **深入探索源码与模块上下游**：

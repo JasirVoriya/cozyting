@@ -25,7 +25,10 @@ import com.miplay.sender.cast.CastRouteSelection
 import com.miplay.sender.cast.CastRouteSelection.Kind
 import com.miplay.sender.cast.NowPlayingInfo
 import com.miplay.sender.update.AppUpdateManager
+import com.miplay.sender.update.UpdateCheckState
+import com.miplay.sender.update.UpdateDialogController
 import com.miplay.sender.update.UpdateHttpClient
+import android.app.Dialog
 import android.widget.ScrollView
 import org.json.JSONArray
 import org.json.JSONObject
@@ -133,7 +136,22 @@ class UiPreviewRenderTest {
         )
         savePng(updateBannerOverview, "13_main_update_banner_dark_vs_light.png")
 
-        println("[UiPreviewRenderTest] Saved 14 preview PNGs to: ${outDir.absolutePath}")
+        val settingsTopOverview = composeSideBySide(darkSettings, lightSettings)
+        savePng(settingsTopOverview, "14_settings_top_dark_vs_light.png")
+
+        val latencyDialogOverview = composeSideBySide(
+            renderLatencyDetailsDialogOverlay(isDark = true),
+            renderLatencyDetailsDialogOverlay(isDark = false),
+        )
+        savePng(latencyDialogOverview, "15_latency_dialog_dark_vs_light.png")
+
+        val updateDialogOverview = composeSideBySide(
+            renderUpdateDialogOverlay(isDark = true),
+            renderUpdateDialogOverlay(isDark = false),
+        )
+        savePng(updateDialogOverview, "16_update_dialog_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 17 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -470,6 +488,120 @@ class UiPreviewRenderTest {
         val canvas = Canvas(bitmap)
         root.draw(canvas)
         return bitmap
+    }
+
+    private fun captureActivityWithDialogOverlay(
+        activity: Activity,
+        dialog: Dialog,
+        maxWidthFraction: Float = 0.92f,
+    ): Bitmap {
+        val base = captureActivityBitmap(activity)
+        val canvas = Canvas(base)
+        canvas.drawColor(Color.argb(145, 4, 7, 12))
+        val dialogRoot = dialog.window?.findViewById<View>(android.R.id.content) ?: return base
+        val dialogMaxW = (base.width * maxWidthFraction).toInt()
+        val dialogMaxH = (base.height * 0.86f).toInt()
+        dialogRoot.measure(
+            View.MeasureSpec.makeMeasureSpec(dialogMaxW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(dialogMaxH, View.MeasureSpec.AT_MOST),
+        )
+        val dw = dialogRoot.measuredWidth
+        val dh = dialogRoot.measuredHeight
+        dialogRoot.layout(0, 0, dw, dh)
+        val dx = (base.width - dw) / 2f
+        val dy = (base.height - dh) / 2f
+        canvas.save()
+        canvas.translate(dx, dy)
+        dialogRoot.draw(canvas)
+        canvas.restore()
+        return base
+    }
+
+    private fun renderLatencyDetailsDialogOverlay(isDark: Boolean): Bitmap {
+        val controller = Robolectric.buildActivity(
+            MainActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+        seedCastingStateOnMain(activity, isDark = isDark)
+        val dialog = activity.openLatencyDetailsDialogForTest()
+        val bitmap = captureActivityWithDialogOverlay(activity, dialog, maxWidthFraction = 0.90f)
+        runCatching { dialog.dismiss() }
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun renderUpdateDialogOverlay(isDark: Boolean): Bitmap {
+        seedMockUpdateAvailable()
+        val decision = (AppUpdateManager.state as UpdateCheckState.Ready).decision
+        val controller = Robolectric.buildActivity(
+            MainActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+        seedCastingStateOnMain(activity, isDark = isDark)
+        val dialog = UpdateDialogController.show(activity, UiPalette.forMode(isDark), decision)
+        val bitmap = captureActivityWithDialogOverlay(activity, dialog, maxWidthFraction = 0.96f)
+        runCatching { dialog.dismiss() }
+        controller.pause().stop().destroy()
+        AppUpdateManager.resetForTest()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun seedCastingStateOnMain(activity: MainActivity, isDark: Boolean) {
+        val devices = listOf(
+            CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true, selected = false),
+            CastRouteSelection.Device("192.0.2.10", "Sound Pro-0001", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = "书房"),
+            CastRouteSelection.Device("192.0.2.11", "小爱音箱Pro-0002", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = "客厅"),
+            CastRouteSelection.Device("192.0.2.12", "REDMI G Pro 27U", Kind.TV, selected = false, castable = true, protocol = CastProtocol.MIPLAY, roomName = "Living room"),
+        )
+        val stats = JSONObject().apply {
+            put(
+                "receivers",
+                JSONArray().apply {
+                    put(JSONObject().put("ip", "192.0.2.10").put("ui_state", "streaming").put("display_latency_ms", 551))
+                    put(JSONObject().put("ip", "192.0.2.11").put("ui_state", "streaming").put("display_latency_ms", 551))
+                },
+            )
+        }
+        val mockApps = listOf(
+            LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
+            LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
+            LaunchableApp("com.example.hifi", "无损播放器", hasMainLauncher = true),
+        )
+        val nowPlaying = NowPlayingInfo(
+            title = "夜航星（Night Voyager）",
+            artist = "星海乐团 · 局域网无损音轨",
+            durationMs = 248_000L,
+            positionMs = 94_000L,
+            isPlaying = true,
+            artwork = createMockAlbumArt(),
+            sourcePackage = "com.example.music",
+            available = true,
+            placeholderReasonZh = "",
+        )
+        activity.applyUiPreviewStateForTest(
+            isDark = isDark,
+            previewNowPlaying = nowPlaying,
+            previewDevices = devices,
+            previewSelectedSpeakerIds = setOf("192.0.2.10", "192.0.2.11"),
+            previewLaunchableApps = mockApps,
+            previewFavoriteSources = listOf(
+                FavoriteAudioSource("com.example.music", autoDetectEnabled = true),
+                FavoriteAudioSource("com.example.podcast", autoDetectEnabled = false),
+                FavoriteAudioSource("com.example.hifi", autoDetectEnabled = true),
+            ),
+            previewSelectedPackage = "com.example.music",
+            previewSelectedLabel = "云音乐",
+            previewAutoDetected = true,
+            previewMasterVolume = 58,
+            previewSpeakerVolumes = mapOf("192.0.2.10" to 62, "192.0.2.11" to 48),
+            previewCasting = true,
+            previewStats = stats,
+            previewStatusText = "多音箱同步投送中 · 48kHz AAC · 本机已静音",
+        )
     }
 
     private fun seedMockAppIcons() {

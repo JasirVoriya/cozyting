@@ -59,10 +59,11 @@ object UpdateDialogController {
         val dp: (Int) -> Int = { UiComponents.dp(activity, it) }
         val dpf: (Float) -> Float = { UiComponents.dpf(activity, it) }
 
+        val dialogSolidBg = if (palette.isDark) Color.rgb(21, 26, 35) else Color.WHITE
         val card = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             background = UiComponents.roundedDrawable(
-                fillColor = palette.panelBg,
+                fillColor = dialogSolidBg,
                 radiusPx = dpf(UiPalette.RADIUS_PANEL_DP.toFloat()),
                 strokeColor = palette.panelBorder,
                 strokeWidthPx = dp(1).coerceAtLeast(1),

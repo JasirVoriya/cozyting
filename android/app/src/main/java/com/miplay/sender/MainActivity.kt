@@ -1566,6 +1566,11 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
+    internal fun openLatencyDetailsDialogForTest(): Dialog {
+        showLatencyDetailsDialog()
+        return requireNotNull(latencyDetailsDialog)
+    }
+
     private fun bindNowPlaying() {
         if (!::nowPlayingFullBox.isInitialized) return
         val available = nowPlaying.available
