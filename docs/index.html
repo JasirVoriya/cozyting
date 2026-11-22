@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>妙投（MiaoCast）— 非小米手机也能用的开源 MiPlay 纯局域网多音箱音频投送</title>
+  <meta name="description" content="妙投（MiaoCast）是一款免费开源（AGPL-3.0）的第三方小米妙播 / MiPlay 纯局域网音频投送客户端。支持华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机免 Root 直连最多 63 台小米 / 小爱音箱毫秒级同频听歌，严格单 App 音频隔离不串微信语音与通知，Android 13+ 支持内置无线调试无感采集与双区音频焦点隔离。">
+  <meta name="keywords" content="妙投,MiaoCast,小米妙播第三方,MiPlay,小爱音箱投音,小米音箱多房间同步,非小米手机小米妙播,局域网音频投送,单App音频隔离,无线调试无感采集,Android AudioPlaybackCapture,Rust音频同步引擎,开源多房间音响">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/">
+  <link rel="alternate" type="text/plain" href="llms.txt" title="MiaoCast LLM-friendly summary (llms.txt)">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:site_name" content="妙投 · MiaoCast">
+  <meta property="og:title" content="妙投（MiaoCast）— 打破品牌限制的开源 MiPlay 纯局域网多音箱音频投送">
+  <meta property="og:description" content="只投你选的那一个音乐 App，让多台小米 / 小爱音箱毫秒级同频合唱。支持任意 Android 10+ 手机、零云端免登录、最多 63 台音箱同步、4 档延迟热切与 Android 13+ 免 Root 无感采集。">
+  <meta property="og:url" content="https://jasirvoriya.github.io/miaocast-releases/">
+  <meta property="og:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="妙投（MiaoCast）— 基于 MiPlay 协议的跨端局域网音频投送与多音箱毫秒级同频引擎">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="妙投（MiaoCast）— 开源纯局域网 MiPlay 多音箱音频投送">
+  <meta name="twitter:description" content="任意 Android 10+ 手机免 Root 直连小米 / 小爱音箱：严格单 App 隔离不串音、最多 63 台毫秒级同频、4 档延迟实时热切换、零云端零账号。">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+
+  <!-- Structured Data (JSON-LD) for Search Engines & AI Generative Engines (GEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/#website",
+        "url": "https://jasirvoriya.github.io/miaocast-releases/",
+        "name": "妙投（MiaoCast）",
+        "alternateName": ["MiaoCast", "妙投", "MiPlay Sender"],
+        "inLanguage": ["zh-CN", "en"],
+        "description": "基于 MiPlay 协议的开源跨端纯局域网音频投送客户端，支持多台小米 / 小爱音箱毫秒级同频同步与严格单 App 音频隔离。"
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/#app",
+        "name": "妙投（MiaoCast）",
+        "alternateName": "MiaoCast",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Android 10+ (API 29-36), iOS (Planned)",
+        "softwareRequirements": "Android 10 (API 29) or higher, arm64-v8a, local Wi-Fi network shared with MiPlay-capable Xiaomi / XiaoAi speakers",
+        "isAccessibleForFree": true,
+        "license": "https://github.com/JasirVoriya/miaocast-releases/blob/main/LICENSE",
+        "url": "https://jasirvoriya.github.io/miaocast-releases/",
+        "downloadUrl": "https://github.com/JasirVoriya/miaocast-releases/releases",
+        "releaseNotes": "https://github.com/JasirVoriya/miaocast-releases/blob/main/CHANGELOG.md",
+        "screenshot": "https://jasirvoriya.github.io/miaocast-releases/assets/screenshots/01-main-casting-dark-vs-light.png",
+        "image": "https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "CNY"
+        },
+        "featureList": [
+          "不限手机品牌：华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机局域网直连小米 / 小爱音箱",
+          "严格单 App 音频隔离（Fail-Closed）：仅投送选定的音乐 App，微信语音与系统通知不外放",
+          "最多 63 台小米 / 小爱音箱毫秒级同频同步，独立音量调节，播放中随时加减音箱",
+          "4 档播放延迟一键热切换（标准 / 均衡 400ms / 低延迟 250ms / 极速 150ms）与自定义 ms，免重连生效",
+          "Android 13+ 内置无线调试无感采集：免 Root、免电脑、免 Shizuku，免投屏弹窗并支持真单 App 静音与双区音频焦点隔离",
+          "100% 纯局域网直连，零云端服务器、免登录小米账号、AGPL-3.0 开源"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "非小米手机（华为、三星、OPPO、vivo、一加、Pixel 等）能用妙投投音到小爱音箱吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "可以。只要手机系统为 Android 10 及以上且与小米 / 小爱音箱连接在同一家庭 Wi-Fi 局域网下，即可通过 MiPlay 局域网协议直接投送音乐，无需小米手机，也无需登录小米账号。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "妙投和直接连小爱音箱蓝牙有什么区别？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "蓝牙通常只能连 1 台音箱、穿墙易断连且会把手机所有声音（微信语音、通知、短视频）全部外放。妙投走家庭 Wi-Fi 局域网，支持最多 63 台音箱毫秒级同频合唱、48kHz 256kbps AAC 高质量直传，并且严格只投你选定的那一个音乐 App。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "音箱放歌时，手机刷抖音、看 B 站或听微信语音会串音或暂停音箱音乐吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不会串音。妙投只捕获你选定的音乐 App 的音频。在 Android 13+ 开启内置无线调试无感模式后，还会启用双区音频焦点隔离与真单 App 本机静音，手机刷短视频或听语音不会暂停音箱正在播放的音乐。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "开启无感模式需要 Root 手机、连电脑，或者安装 Shizuku 吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "都不需要。妙投内置轻量无线调试客户端，按 App 内 4 步引导输入一次系统 6 位配对码即可完成本机直连，无需 Root、无需电脑、无需安装 Shizuku。若不想开启无线调试，默认的标准投屏模式也支持 Android 10+ 开箱即用。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "妙投会上传音频隐私或要求登录小米账号吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "不会。设备发现与音频投送全程在本地局域网直连，零云端、零账号登录、零音频上传。应用内每日更新检测仅拉取公开只读清单（经 SHA-256 与签名校验），并可在设置中一键关闭以保持 100% 零外网请求。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "支持 iPhone / iPad（iOS）吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "底层共享 Rust 核心（miplay_core.h C ABI 与 XCFramework 构建流水线）以及跨端视觉设计规范已经就绪，原生 SwiftUI + ReplayKit iOS 客户端正在规划推进中。"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    @layer reset, tokens, base, layout, components;
+
+    @layer tokens {
+      :root {
+        /* Raw light & dark tokens (Ceramic & Slate flat industrial palette) */
+        --bg-page-light: #F4F6FA;
+        --bg-page-dark: #10131A;
+        --bg-surface-light: #FFFFFF;
+        --bg-surface-dark: #181C26;
+        --bg-subtle-light: #EEF1F7;
+        --bg-subtle-dark: #202634;
+        --border-light: rgba(15, 23, 42, 0.10);
+        --border-dark: rgba(248, 250, 252, 0.11);
+        --text-1-light: #14171F;
+        --text-1-dark: #F4F6FA;
+        --text-2-light: #475569;
+        --text-2-dark: #A6B0C3;
+        --text-3-light: #64748B;
+        --text-3-dark: #8592A8;
+        --accent-light: #E13E50;
+        --accent-dark: #FF6B7A;
+        --accent-soft-light: #FFF0F2;
+        --accent-soft-dark: rgba(255, 92, 108, 0.16);
+        --ok-light: #0F8A5F;
+        --ok-dark: #34D399;
+        --shadow-light: 0 10px 30px rgba(15, 23, 42, 0.06);
+        --shadow-dark: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+        /* Default light values + @media fallback for browsers without light-dark() */
+        --bg-page: var(--bg-page-light);
+        --bg-surface: var(--bg-surface-light);
+        --bg-subtle: var(--bg-subtle-light);
+        --border: var(--border-light);
+        --text-1: var(--text-1-light);
+        --text-2: var(--text-2-light);
+        --text-3: var(--text-3-light);
+        --accent: var(--accent-light);
+        --accent-soft: var(--accent-soft-light);
+        --ok: var(--ok-light);
+        --shadow: var(--shadow-light);
+
+        @media (prefers-color-scheme: dark) {
+          --bg-page: var(--bg-page-dark);
+          --bg-surface: var(--bg-surface-dark);
+          --bg-subtle: var(--bg-subtle-dark);
+          --border: var(--border-dark);
+          --text-1: var(--text-1-dark);
+          --text-2: var(--text-2-dark);
+          --text-3: var(--text-3-dark);
+          --accent: var(--accent-dark);
+          --accent-soft: var(--accent-soft-dark);
+          --ok: var(--ok-dark);
+          --shadow: var(--shadow-dark);
+        }
+
+        @supports (color: light-dark(white, black)) {
+          --bg-page: light-dark(var(--bg-page-light), var(--bg-page-dark));
+          --bg-surface: light-dark(var(--bg-surface-light), var(--bg-surface-dark));
+          --bg-subtle: light-dark(var(--bg-subtle-light), var(--bg-subtle-dark));
+          --border: light-dark(var(--border-light), var(--border-dark));
+          --text-1: light-dark(var(--text-1-light), var(--text-1-dark));
+          --text-2: light-dark(var(--text-2-light), var(--text-2-dark));
+          --text-3: light-dark(var(--text-3-light), var(--text-3-dark));
+          --accent: light-dark(var(--accent-light), var(--accent-dark));
+          --accent-soft: light-dark(var(--accent-soft-light), var(--accent-soft-dark));
+          --ok: light-dark(var(--ok-light), var(--ok-dark));
+        }
+
+        color-scheme: light dark;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --radius-sm: 10px;
+        --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+        --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+      }
+
+      html {
+        accent-color: var(--accent);
+      }
+    }
+
+    @layer reset {
+      *, *::before, *::after { box-sizing: border-box; }
+      body, h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+      img { display: block; max-inline-size: 100%; height: auto; }
+    }
+
+    @layer base {
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-page);
+        color: var(--text-1);
+        line-height: 1.65;
+        min-block-size: 100dvh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      :where(a:any-link, button, summary, [tabindex="0"]):focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+        background: var(--bg-subtle);
+        padding: 0.12em 0.42em;
+        border-radius: 6px;
+      }
+    }
+
+    @layer layout {
+      .container {
+        width: min(1120px, calc(100% - 2rem));
+        margin-inline: auto;
+      }
+
+      .site-header {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 20;
+        background: color-mix(in srgb, var(--bg-page) 88%, transparent);
+        backdrop-filter: blur(12px);
+        border-block-end: 1px solid var(--border);
+      }
+
+      .nav-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-block-size: 64px;
+        flex-wrap: wrap;
+        padding-block: 0.5rem;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        text-decoration: none;
+        color: var(--text-1);
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        list-style: none;
+        font-size: 0.94rem;
+      }
+
+      .nav-links a {
+        color: var(--text-2);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .nav-links a:hover {
+        color: var(--text-1);
+      }
+
+      section.block {
+        padding-block: clamp(2.5rem, 5vw, 4.25rem);
+      }
+
+      .section-head {
+        max-inline-size: 46rem;
+        margin-block-end: 1.75rem;
+      }
+
+      .section-eyebrow {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        margin-block-end: 0.75rem;
+      }
+
+      .section-head h2 {
+        font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+        letter-spacing: -0.025em;
+        line-height: 1.25;
+        margin-block-end: 0.5rem;
+      }
+
+      .section-head p {
+        color: var(--text-2);
+        font-size: 1rem;
+      }
+    }
+
+    @layer components {
+      .hero {
+        padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 4vw, 3rem);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: clamp(1.75rem, 4vw, 3rem);
+        align-items: center;
+      }
+
+      @media (max-width: 860px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .hero h1 {
+        font-size: clamp(2rem, 4.4vw, 3.1rem);
+        line-height: 1.16;
+        letter-spacing: -0.03em;
+        margin-block-end: 1rem;
+      }
+
+      .hero-lead {
+        font-size: 1.08rem;
+        color: var(--text-2);
+        margin-block-end: 1.5rem;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-block-end: 1.35rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.78rem 1.35rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.96rem;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      .btn:hover { transform: translateY(-1px); }
+
+      .btn-primary {
+        background: #FF5C6C;
+        color: #FFFFFF;
+      }
+
+      .btn-secondary {
+        background: var(--bg-surface);
+        color: var(--text-1);
+        border-color: var(--border);
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+      }
+
+      .chip {
+        font-size: 0.84rem;
+        color: var(--text-2);
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.28rem 0.78rem;
+      }
+
+      .hero-shot {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 0.75rem;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-shot img {
+        border-radius: calc(var(--radius-lg) - 6px);
+      }
+
+      .hero-shot figcaption {
+        margin-block-start: 0.65rem;
+        font-size: 0.84rem;
+        color: var(--text-3);
+        text-align: center;
+      }
+
+      /* Feature grid */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 1.15rem;
+      }
+
+      .card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.35rem 1.4rem;
+      }
+
+      .card h3 {
+        font-size: 1.08rem;
+        margin-block-end: 0.45rem;
+        letter-spacing: -0.01em;
+      }
+
+      .card p {
+        color: var(--text-2);
+        font-size: 0.94rem;
+      }
+
+      .card-tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--accent);
+        margin-block-end: 0.5rem;
+        font-weight: 700;
+      }
+
+      /* Responsive Comparison Table (follows modern-web-guidance responsive-table) */
+      .table-wrapper {
+        overflow: auto;
+        max-inline-size: 100%;
+        container-type: inline-size;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+      }
+
+      table.compare-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.93rem;
+        --label-2: "妙投（MiaoCast）";
+        --label-3: "普通蓝牙连接";
+        --label-4: "原厂小米妙播";
+        --label-5: "整机投屏 / 录屏";
+      }
+
+      .compare-table caption {
+        text-align: start;
+        padding: 1rem 1.2rem 0.6rem;
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: var(--text-1);
+      }
+
+      .compare-table thead {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 2;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        text-align: start;
+        padding: 0.85rem 1rem;
+        border-block-end: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      .compare-table thead th {
+        background: var(--bg-subtle);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .compare-table tbody th {
+        position: sticky;
+        inset-inline-start: 0;
+        z-index: 1;
+        background: var(--bg-surface);
+        font-weight: 700;
+        min-inline-size: 10rem;
+      }
+
+      .compare-table td.highlight {
+        background: color-mix(in srgb, var(--accent-soft) 55%, var(--bg-surface));
+        font-weight: 600;
+      }
+
+      @container (width < 680px) {
+        table.compare-table,
+        .compare-table thead,
+        .compare-table tbody,
+        .compare-table tr,
+        .compare-table th,
+        .compare-table td {
+          display: block;
+        }
+
+        .compare-table thead {
+          display: none;
+        }
+
+        .compare-table tr {
+          margin: 0.85rem;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+        }
+
+        .compare-table tbody th {
+          position: sticky;
+          inset-block-start: 0;
+          z-index: 2;
+          background: var(--bg-subtle);
+        }
+
+        .compare-table td:nth-child(2)::before { content: var(--label-2) "："; font-weight: 700; color: var(--accent); }
+        .compare-table td:nth-child(3)::before { content: var(--label-3) "："; font-weight: 600; color: var(--text-3); }
+        .compare-table td:nth-child(4)::before { content: var(--label-4) "："; font-weight: 600; color: var(--text-3); }
+        .compare-table td:nth-child(5)::before { content: var(--label-5) "："; font-weight: 600; color: var(--text-3); }
+      }
+
+      /* Screenshots gallery */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .shot-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.9rem;
+      }
+
+      .shot-card img {
+        border-radius: 10px;
+      }
+
+      .shot-card figcaption {
+        margin-block-start: 0.7rem;
+        font-size: 0.9rem;
+        color: var(--text-2);
+      }
+
+      .shot-card strong {
+        display: block;
+        color: var(--text-1);
+        margin-block-end: 0.15rem;
+      }
+
+      /* Steps */
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        counter-reset: step;
+      }
+
+      .step-item {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem 1.35rem;
+      }
+
+      .step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 0.85rem;
+        margin-block-end: 0.65rem;
+      }
+
+      .step-item h3 {
+        font-size: 1.02rem;
+        margin-block-end: 0.35rem;
+      }
+
+      .step-item p {
+        color: var(--text-2);
+        font-size: 0.92rem;
+      }
+
+      /* Accordion FAQ (follows modern-web-guidance accordion) */
+      .accordion {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .accordion details {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding-inline: 1.2rem;
+      }
+
+      .accordion summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding-block: 1.05rem;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .accordion summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .accordion summary::before {
+        content: "";
+        inline-size: 1.1em;
+        block-size: 1.1em;
+        flex-shrink: 0;
+        background-color: var(--accent);
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 9l6 6 6-6' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' fill-opacity='0'/%3E%3C/svg%3E") no-repeat center / contain;
+        rotate: -90deg;
+      }
+
+      .accordion details[open] > summary::before {
+        rotate: 0deg;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .accordion summary::before {
+          transition: rotate 0.2s ease;
+        }
+      }
+
+      .accordion details::details-content {
+        interpolate-size: allow-keywords;
+        overflow: clip;
+        contain: layout;
+      }
+
+      .accordion details:not([open])::details-content {
+        block-size: 0;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .accordion details::details-content {
+          transition: block-size 0.25s ease, content-visibility 0.25s ease, display 0.25s ease;
+          transition-behavior: allow-discrete;
+        }
+      }
+
+      .faq-answer {
+        color: var(--text-2);
+        font-size: 0.95rem;
+        padding-block-end: 1.15rem;
+        padding-inline-start: 1.75rem;
+      }
+
+      /* Tech summary banner */
+      .tech-banner {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: clamp(1.4rem, 3vw, 2.2rem);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+      }
+
+      .tech-banner h2 {
+        font-size: clamp(1.3rem, 2.2vw, 1.65rem);
+        margin-block-end: 0.4rem;
+      }
+
+      .tech-banner p {
+        color: var(--text-2);
+        max-inline-size: 42rem;
+        font-size: 0.95rem;
+      }
+
+      .site-footer {
+        border-block-start: 1px solid var(--border);
+        padding-block: 2rem 2.75rem;
+        color: var(--text-3);
+        font-size: 0.86rem;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-block-end: 0.75rem;
+      }
+
+      .footer-links a {
+        color: var(--text-2);
+        text-decoration: none;
+      }
+
+      .footer-links a:hover {
+        color: var(--accent);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+          <img src="assets/logo.svg" alt="" width="30" height="30">
+        </picture>
+        <span>妙投 · MiaoCast</span>
+      </a>
+      <nav aria-label="主导航">
+        <ul class="nav-links">
+          <li><a href="#pain-points">痛点对比</a></li>
+          <li><a href="#features">核心功能</a></li>
+          <li><a href="#screenshots">界面预览</a></li>
+          <li><a href="#faq">常见问题</a></li>
+          <li><a href="architecture.html">交互式架构图</a></li>
+          <li><a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/README_EN.md">English</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="section-eyebrow">Pure LAN · Zero Cloud · AGPL-3.0</span>
+          <h1>非小米手机也能用的开源 MiPlay 多音箱音频投送</h1>
+          <p class="hero-lead">
+            <strong>妙投（MiaoCast）</strong> 是一款免费的第三方 MiPlay 局域网音频投送应用（Android 10+，iOS 规划中）。
+            无需 Root、无需登录小米账号，直接将你选定的单个音乐 App 高保真投送到家里一台或多台小米 / 小爱音箱（最多 63 台毫秒级同频），微信语音与系统通知绝不串音。
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/JasirVoriya/miaocast-releases/releases">下载最新版 APK</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/miaocast-releases">访问 GitHub 仓库</a>
+            <a class="btn btn-secondary" href="architecture.html">浏览交互式架构图</a>
+          </div>
+          <ul class="hero-meta" aria-label="核心特性摘要">
+            <li class="chip">不限 Android 品牌（API 29+）</li>
+            <li class="chip">最多 63 台音箱同频</li>
+            <li class="chip">单 App 隔离不串杂音</li>
+            <li class="chip">150ms–1000ms 四档热切</li>
+            <li class="chip">Android 13+ 免 Root 无感采集</li>
+          </ul>
+        </div>
+
+        <figure class="hero-shot">
+          <img
+            src="assets/screenshots/01-main-casting-dark-vs-light.png"
+            alt="妙投 MiaoCast 主界面深浅双主题截图：多音箱毫秒级同频投送、专辑氛围背景、独立音量调节与实时延迟显示"
+            width="1440"
+            height="1568"
+            fetchpriority="high">
+          <figcaption>主界面实机渲染：专辑氛围底、房间名同行、实时 ms 延迟与独立音量条</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Pain Points & Comparison -->
+    <section class="block" id="pain-points">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Why MiaoCast</span>
+          <h2>解决家庭小爱音箱听歌的 4 大痛点</h2>
+          <p>对比普通蓝牙、原厂小米妙播与系统整机投屏，妙投在品牌自由度、多房间同步与单 App 隐私隔离上兼得平衡。</p>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
+          <table class="compare-table">
+            <caption id="compare-caption">妙投（MiaoCast）与常见音箱投音方式对比</caption>
+            <thead>
+              <tr>
+                <th scope="col">对比维度</th>
+                <th scope="col">妙投（MiaoCast）</th>
+                <th scope="col">普通蓝牙连接</th>
+                <th scope="col">原厂小米妙播</th>
+                <th scope="col">整机投屏 / 录屏</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">手机品牌限制</th>
+                <td class="highlight">不限品牌（任意 Android 10+；iOS 规划中）</td>
+                <td>不限品牌</td>
+                <td>仅限部分小米 / Redmi 机型</td>
+                <td>不限品牌</td>
+              </tr>
+              <tr>
+                <th scope="row">多音箱全屋同频</th>
+                <td class="highlight">最多 63 台毫秒级同步，播放中随时增减</td>
+                <td>通常仅 1 台，多箱易回声</td>
+                <td>支持多台 MiPlay 设备</td>
+                <td>单台或延迟大</td>
+              </tr>
+              <tr>
+                <th scope="row">单 App 隔离不串音</th>
+                <td class="highlight">只投选定音乐 App，微信语音与通知绝不外放</td>
+                <td>手机全部声音一并外放</td>
+                <td>支持指定媒体源</td>
+                <td>整机音画全广播</td>
+              </tr>
+              <tr>
+                <th scope="row">刷视频不暂停音乐</th>
+                <td class="highlight">Android 13+ 无感模式支持双区音频焦点隔离</td>
+                <td>刷视频立刻抢断音箱音乐</td>
+                <td>视系统版本而定</td>
+                <td>无法隔离</td>
+              </tr>
+              <tr>
+                <th scope="row">延迟调节与响应</th>
+                <td class="highlight">4 档延迟（150–1000ms）+ 自定义 ms 免重连秒切</td>
+                <td>不可调</td>
+                <td>不可调</td>
+                <td>不可调</td>
+              </tr>
+              <tr>
+                <th scope="row">隐私、账号与开源</th>
+                <td class="highlight">零云端、免登录小米账号、AGPL-3.0 开源</td>
+                <td>本地闭源</td>
+                <td>绑定小米账号与系统生态</td>
+                <td>依厂商服务而定</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Features -->
+    <section class="block" id="features">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Core Features</span>
+          <h2>为日常听歌打磨的 6 项核心能力</h2>
+          <p>把复杂的多箱时钟同步与局域网协议藏在幕后，前端只留干净直观的听歌体验。</p>
+        </div>
+
+        <div class="cards-grid">
+          <article class="card">
+            <span class="card-tag">01 · CROSS-BRAND LAN</span>
+            <h3>打破品牌壁垒，局域网开箱直连</h3>
+            <p>华为、三星、OPPO、vivo、一加、Pixel 均可免 Root 接入家庭 Wi-Fi 内的 MiPlay 小米 / 小爱音箱，零云端中转、免登录小米账号。</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">02 · FAIL-CLOSED ISOLATION</span>
+            <h3>只投你选的那一个音乐 App</h3>
+            <p>严格单 App 音频隔离，绝不静默退化为全系统录屏或麦克风收音。客厅放音乐时，微信语音、短视频和来电提醒不再社死外放。</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">03 · SEAMLESS MODE (ANDROID 13+)</span>
+            <h3>内置无线调试无感模式：免 Root 免 Shizuku</h3>
+            <p>按 4 步向导输入一次 6 位配对码即可告别反复投屏弹窗与红点，并解锁真·单 App 本机静音与双区音频焦点隔离（刷视频不暂停音箱音乐）。</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">04 · MULTI-ROOM SYNC</span>
+            <h3>最多 63 台音箱毫秒级同频合唱</h3>
+            <p>支持一次勾选客厅、卧室、书房多台音箱同步播放，独立调节每台音量、实时显示房间名与播放延迟，听歌途中随时加减音箱不中断。</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">05 · LIVE LATENCY TIERS</span>
+            <h3>4 档播放延迟一键热切换</h3>
+            <p>顶栏随时在标准（800/1000ms）、均衡（400ms）、低延迟（250ms）、极速（150ms）与自定义 ms 间实时切换，无需断开重连。</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">06 · AUTO SOURCE &amp; MODERN UI</span>
+            <h3>常用音源自动跟随与双主题界面</h3>
+            <p>自由管理常用音乐 / 播客 App 并独立开启自动识别；专辑封面氛围底色、深浅三态主题与 SHA-256 校验安全更新（支持一键关闭零外网）。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screenshots Showcase -->
+    <section class="block" id="screenshots">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">UI Showcase</span>
+          <h2>深色 / 浅色双主题实机界面</h2>
+          <p>所有界面均由 Android 真实视图代码直接渲染输出，清晰呈现高频日常功能。</p>
+        </div>
+
+        <div class="gallery-grid">
+          <figure class="shot-card">
+            <img src="assets/screenshots/02-latency-tiers-dark-vs-light.png" alt="妙投 4 档播放延迟切换弹窗（深色浅色双主题）" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>4 档播放延迟实时热切换</strong>标准 / 均衡 / 低延迟 / 极速一键切换，投送中不断连。</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="assets/screenshots/03-app-picker-dark-vs-light.png" alt="妙投常用音源管理界面（深色浅色双主题）" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>常用音源管理与单 App 自动识别</strong>自由增删、长按排序，为每个音乐 App 独立开启自动识别。</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="assets/screenshots/04-wireless-guide-dark-vs-light.png" alt="妙投 Android 13+ 内置无线调试 4 步免投屏无感采集向导" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>4 步内置无线调试配对向导</strong>纯手机本机直连，无需 Root、电脑或 Shizuku。</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="assets/screenshots/05-settings-core-dark-vs-light.png" alt="妙投设置页：主题模式、采集引擎与单 App 静音配置" width="1440" height="1568" loading="lazy">
+            <figcaption><strong>设置页 · 采集引擎与本机静音策略</strong>自由切换标准投屏与无感模式，透明展示静音边界。</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3-Step Quick Start -->
+    <section class="block" id="quickstart">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Quick Start</span>
+          <h2>3 步开始局域网无损感听歌</h2>
+        </div>
+
+        <div class="steps-grid">
+          <article class="step-item">
+            <span class="step-num">1</span>
+            <h3>下载安装 Android APK</h3>
+            <p>需要 Android 10（API 29）及以上 <code>arm64-v8a</code> 设备。前往 <a href="https://github.com/JasirVoriya/miaocast-releases/releases">GitHub Releases</a> 获取正式签名安装包。</p>
+          </article>
+          <article class="step-item">
+            <span class="step-num">2</span>
+            <h3>接入同一家庭 Wi-Fi</h3>
+            <p>手机与小米 / 小爱音箱连在同一路由器局域网下，打开妙投即可自动发现支持 MiPlay 的音箱设备。</p>
+          </article>
+          <article class="step-item">
+            <span class="step-num">3</span>
+            <h3>选择音乐 App 与音箱开播</h3>
+            <p>默认标准模式开箱即用；Android 13+ 可在设置中一键配置无感模式，享受免弹窗与双区音频焦点隔离。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Accordion (follows modern-web-guidance accordion) -->
+    <section class="block" id="faq" aria-labelledby="faq-heading">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">FAQ</span>
+          <h2 id="faq-heading">常见问题解答</h2>
+          <p>覆盖设备兼容、隐私边界、无线调试与平台支持的高频疑问。</p>
+        </div>
+
+        <div class="accordion">
+          <details open>
+            <summary>非小米手机（华为、三星、OPPO、vivo、一加、Pixel 等）能用妙投投音到小爱音箱吗？</summary>
+            <div class="faq-answer">可以。只要手机系统为 Android 10 及以上且与小米 / 小爱音箱连在同一 Wi-Fi 局域网下，即可通过 MiPlay 协议直接投送音乐，无需小米手机与小米账号。各机型实测状态详见 <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md">设备兼容矩阵</a>。</div>
+          </details>
+
+          <details>
+            <summary>妙投和直接连小爱音箱蓝牙有什么区别？</summary>
+            <div class="faq-answer">蓝牙通常仅限单台音箱、穿墙易断连且会把手机所有声音（微信语音、通知、短视频）全部外放。妙投走家庭 Wi-Fi 局域网，支持最多 63 台音箱毫秒级同频合唱、48kHz 256kbps AAC 高质量直传，并且严格只投你选定的那一个音乐 App。</div>
+          </details>
+
+          <details>
+            <summary>音箱放歌时，手机刷抖音、看 B 站或听微信语音会串音或暂停音箱音乐吗？</summary>
+            <div class="faq-answer">不会串音。妙投只捕获你选定的音乐 App。在 Android 13+ 开启无感模式后，还会启用双区音频焦点隔离与真·单 App 本机静音——音箱继续正常放歌，手机刷短视频或听语音互不暂停、互不抢声。</div>
+          </details>
+
+          <details>
+            <summary>开启无感模式需要 Root 手机、连电脑，或者安装 Shizuku 吗？</summary>
+            <div class="faq-answer">都不需要。妙投内置轻量无线调试客户端，仅需手机本身在开发者选项里开启无线调试并按向导输入一次 6 位配对码即可完成本机直连。若不想开启无线调试，默认标准模式也完全支持 Android 10+ 开箱即用。</div>
+          </details>
+
+          <details>
+            <summary>妙投会上传音频隐私或要求登录小米账号吗？</summary>
+            <div class="faq-answer">不会。音频投送与设备发现 100% 在本地家庭局域网直连运行，零云端、零账号登录、零统计上报。可选的每日版本更新检测仅请求公开只读清单（经 SHA-256 与签名校验），可在设置中一键关闭以保持 100% 零外网请求。</div>
+          </details>
+
+          <details>
+            <summary>支持 iPhone / iPad（iOS）吗？</summary>
+            <div class="faq-answer">底层共享 Rust 核心（<code>miplay_core.h</code> C ABI 与 XCFramework 构建流水线）与跨端视觉规范已经就绪，原生 SwiftUI + ReplayKit iOS 客户端正在规划推进中。</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical Deep-Dive Callout -->
+    <section class="block" id="developers">
+      <div class="container">
+        <div class="tech-banner">
+          <div>
+            <span class="section-eyebrow">For Developers &amp; Researchers</span>
+            <h2>想了解 Rust 同步引擎与 MiPlay 局域网协议架构？</h2>
+            <p>
+              妙投采用「L1 共享纯 Rust 核心（零异步运行时确定性实时线程）+ JNI / C ABI + L2/L3 原生客户端」三层架构，附带只读诊断工具 <code>miplay-cli</code> 与完整源码手册。
+            </p>
+          </div>
+          <div class="cta-row" style="margin-block-end: 0;">
+            <a class="btn btn-primary" href="architecture.html">打开交互式架构浏览器</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/ARCHITECTURE.md">阅读架构深度手册</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/JasirVoriya/miaocast-releases">GitHub 仓库</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/releases">下载 Releases</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md">设备兼容矩阵</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/LIMITATIONS.md">已知限制</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/SECURITY.md">隐私与安全</a>
+        <a href="architecture.html">交互式架构图</a>
+        <a href="llms.txt">llms.txt</a>
+      </div>
+      <p>
+        妙投（MiaoCast）基于 GNU AGPL-3.0-only 协议开源发布。本项目为独立的第三方开源客户端实现，与小米集团（Xiaomi）及其关联公司没有任何隶属、授权或合作关系。
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

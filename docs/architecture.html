@@ -3,8 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
   <link rel="icon" type="image/svg+xml" href="assets/logo-dark.svg">
-  <title>架构与运行时交互视图 | 妙投（MiaoCast）</title>
+  <title>交互式架构与运行时浏览器 | 妙投（MiaoCast）Rust MiPlay 引擎</title>
+  <meta name="description" content="在线交互式探索妙投（MiaoCast）的跨端三层架构（L1 纯 Rust 同步核心 · JNI/C ABI · L2/L3 Android Kotlin 与 iOS SwiftUI）、4 条局域网数据流向、63 台音箱实时线程模型与全仓文件职责字典。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <link rel="alternate" type="text/plain" href="llms.txt" title="MiaoCast LLM-friendly summary">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="妙投 · MiaoCast">
+  <meta property="og:title" content="交互式架构与运行时浏览器 | 妙投（MiaoCast）">
+  <meta property="og:description" content="点击任意模块追踪妙投（MiaoCast）Rust L1 同步引擎与 Android/iOS 跨端架构的上下游数据流、实时线程与生命周期。">
+  <meta property="og:url" content="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <meta property="og:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="交互式架构与运行时浏览器 | 妙投（MiaoCast）">
+  <meta name="twitter:description" content="探索 MiaoCast 纯 Rust 多音箱同步引擎、MiPlay 协议栈与 Android/iOS 三层跨端架构。">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "妙投（MiaoCast）交互式架构与运行时浏览器",
+    "description": "妙投（MiaoCast）基于纯 Rust L1 核心与 JNI/C ABI 实现的跨端 MiPlay 局域网多音箱音频投送三层架构、实时线程模型与模块依赖图。",
+    "url": "https://jasirvoriya.github.io/miaocast-releases/architecture.html",
+    "image": "https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png",
+    "inLanguage": "zh-CN",
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "妙投（MiaoCast）",
+      "url": "https://jasirvoriya.github.io/miaocast-releases/"
+    }
+  }
+  </script>
   <style>
     @layer reset, base, components, utilities;
 
@@ -766,6 +797,7 @@
         </div>
       </div>
       <ul class="kpi-row" aria-label="架构核心指标">
+        <li class="kpi-pill"><a href="./" style="text-decoration: none; font-weight: 600;">← 返回产品官网</a></li>
         <li class="kpi-pill"><strong>L1–L3</strong> 跨端三层架构</li>
         <li class="kpi-pill"><strong>41</strong> 个 Android 主源码</li>
         <li class="kpi-pill"><strong>24</strong> 个 Rust 核心模块</li>

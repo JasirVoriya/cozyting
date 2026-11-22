@@ -113,11 +113,16 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Assemble static site (Architecture Explorer + assets)
+      - name: Assemble static site (Landing Page + Architecture Explorer + SEO/GEO files + assets)
         run: |
           mkdir -p _site/assets
+          cp docs/index.html _site/index.html
           cp docs/architecture.html _site/architecture.html
-          cp docs/architecture.html _site/index.html
+          for seo_file in robots.txt sitemap.xml llms.txt; do
+            if [[ -f "docs/$seo_file" ]]; then
+              cp "docs/$seo_file" "_site/$seo_file"
+            fi
+          done
           cp -r docs/assets/* _site/assets/
           touch _site/.nojekyll
 

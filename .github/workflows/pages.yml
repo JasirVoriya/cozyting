@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
     paths:
+      - "docs/index.html"
       - "docs/architecture.html"
+      - "docs/robots.txt"
+      - "docs/sitemap.xml"
+      - "docs/llms.txt"
       - "docs/assets/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -37,8 +41,13 @@ jobs:
       - name: Assemble static site
         run: |
           mkdir -p _site/assets
+          cp docs/index.html _site/index.html
           cp docs/architecture.html _site/architecture.html
-          cp docs/architecture.html _site/index.html
+          for seo_file in robots.txt sitemap.xml llms.txt; do
+            if [[ -f "docs/$seo_file" ]]; then
+              cp "docs/$seo_file" "_site/$seo_file"
+            fi
+          done
           cp -r docs/assets/* _site/assets/
           touch _site/.nojekyll
 

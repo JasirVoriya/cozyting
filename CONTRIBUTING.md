@@ -71,7 +71,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **L1 公共核心层（`core/`）**：平台无关协议、mDNS 发现、认证、多箱同步、路由与协调状态机、统一延迟状态；通过 `ffi.rs`（Android JNI）与 `ffi_c.rs`（iOS C ABI）对外暴露薄接口。
 - **L2 / L3 平台实现层（`android/` 及规划中的 iOS）**：仅保留 OS 强相关能力（音频捕获、硬件编码、前台服务、原生 UI 与本地持久化）。
 
-如需先摸清全仓模块上下游，推荐浏览 [在线交互式架构浏览器](https://jasirvoriya.github.io/miplay-sender/)（本地源码位于 [docs/architecture.html](docs/architecture.html)）。
+如需先摸清全仓模块上下游，推荐浏览 [在线交互式架构浏览器](https://jasirvoriya.github.io/miaocast-releases/architecture.html)（本地源码位于 [docs/architecture.html](docs/architecture.html)）。
 
 ---
 

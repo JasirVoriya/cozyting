@@ -1,0 +1,32 @@
+# Robots policy for MiaoCast (妙投) GitHub Pages
+# Explicitly welcomes search engines and AI/LLM search crawlers.
+
+User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+Sitemap: https://jasirvoriya.github.io/miaocast-releases/sitemap.xml
+# LLM-friendly summary: https://jasirvoriya.github.io/miaocast-releases/llms.txt

@@ -1,0 +1,46 @@
+# 妙投（MiaoCast）
+
+> 妙投（MiaoCast）是一款基于 MiPlay 局域网协议的免费开源第三方音频投送客户端（AGPL-3.0-only）。它让华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机无需 Root、无需登录小米账号，即可在家庭 Wi-Fi 局域网内将指定单个音乐 App 的声音毫秒级同频投送到最多 63 台小米 / 小爱音箱（零云端直连）。iOS 端底层 Rust 核心与跨端设计规范已就绪，SwiftUI 客户端规划推进中。
+>
+> MiaoCast is a free, open-source (AGPL-3.0-only) third-party MiPlay pure-LAN audio casting client for Android 10+ (with an iOS SwiftUI client planned on the same shared Rust core). It enables any Android phone—including Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, and Xiaomi—to stream audio exclusively from a single chosen music or podcast app to up to 63 Xiaomi / XiaoAi Wi-Fi speakers in millisecond sync over the local Wi-Fi network, with zero cloud servers, zero Xiaomi account login, and no root required.
+
+## Core Identity & Facts
+
+- **Product Name**: 妙投 / MiaoCast
+- **Category**: Open-Source LAN Multi-Room Audio Casting App / Third-Party MiPlay Sender Client
+- **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
+- **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/miaocast-releases
+- **Official Website (GitHub Pages)**: https://jasirvoriya.github.io/miaocast-releases/
+- **Downloads (Android APK & `miplay-cli`)**: https://github.com/JasirVoriya/miaocast-releases/releases
+- **Interactive Architecture Explorer**: https://jasirvoriya.github.io/miaocast-releases/architecture.html
+- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`miplay-cli`)
+- **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
+- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://jasirvoriya.github.io/miaocast-releases/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
+
+## Key Problems Solved (Pain Points)
+
+1. **Removes Phone Brand Lock-In**: Stock Xiaomi MiPlay ("小米妙播") is restricted to select Xiaomi / Redmi devices. MiaoCast brings MiPlay Wi-Fi casting to any Android 10+ phone (Huawei, Samsung, Pixel, OnePlus, OPPO, vivo, etc.).
+2. **Replaces Single-Speaker Bluetooth with Multi-Room Wi-Fi Sync**: Supports up to 63 synchronized MiPlay speakers over home Wi-Fi (48kHz 256kbps AAC), with independent per-speaker volume, room names, inline latency display (`ms`), and live add/remove without stopping music.
+3. **Strict Per-App Audio Isolation (No Accidental Leaks)**: Captures only the selected music/podcast app (Fail-Closed single-UID + SHA-256 signature verification; never silently degrades to full-system screen recording or microphone capture). Chat voice notes, short videos, and notifications stay off your living-room speakers.
+4. **Rootless Seamless Capture & Dual-Zone AudioFocus (Android 13+)**: Built-in 4-step on-device Wireless Debugging pairing wizard (no root, no PC, no Shizuku) eliminates recurring MediaProjection popups and system casting indicators, enables true per-app local mute, and isolates AudioFocus into dual zones so watching videos on your phone does not pause speaker playback.
+5. **Live 4-Tier Latency Switching**: Switch between Standard (5GHz 800ms / 2.4GHz 1000ms), Balanced (400ms), Low Latency (250ms), Ultra-Low (150ms), or custom `ms` mid-stream via runtime `TIME_OFFSET` rebasing without disconnecting.
+
+## Honest Scope & Known Limitations
+
+- Cannot bypass third-party apps that explicitly set `android:allowAudioPlaybackCapture="false"`.
+- In Standard Mode (unprivileged Android permissions), public Android APIs cannot mute a single third-party app without muting `STREAM_MUSIC`; MiaoCast provides explicit "Global Media Mute (default)" and "Keep Local Output" strategies. True per-app mute requires Seamless Mode on Android 13+ and depends on real-device ROM support.
+- Specific speaker firmware quirks (such as XiaoAi Pro `LX06` late-join / reverse RTSP differences) and OEM background freezing (e.g., HyperOS Greeze) require real-device verification and are documented honestly in `docs/COMPATIBILITY.md` and `docs/LIMITATIONS.md`.
+- Independent third-party open-source project; not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
+
+## Canonical Documentation Links
+
+- [README (简体中文)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
+- [README (English)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README_EN.md): Complete English product & developer documentation.
+- [Product Website](https://jasirvoriya.github.io/miaocast-releases/): Landing page with comparison table, screenshots, download CTA, and structured FAQ.
+- [Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
+- [Device Compatibility Matrix](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
+- [Known Limitations](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.
+- [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
+- [Changelog](https://github.com/JasirVoriya/miaocast-releases/blob/main/CHANGELOG.md): Version release history.
+- [Security Policy](https://github.com/JasirVoriya/miaocast-releases/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
+- [Releases & APK Downloads](https://github.com/JasirVoriya/miaocast-releases/releases): Signed Android APKs, `miplay-cli` binaries, and `SHA256SUMS.txt`.
