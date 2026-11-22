@@ -99,6 +99,8 @@ class CastService : Service() {
         private const val MAX_OPS_LOG_BYTES = 64 * 1024L
         private val eventsLock = Any()
         private val recentEvents = ArrayDeque<String>()
+        private val activeReceiversLock = Any()
+        private val activeReceiverIpsSet = linkedSetOf<String>()
 
         @Volatile var handle = 0L
         @Volatile var lastStats: String = ""
@@ -177,7 +179,69 @@ class CastService : Service() {
         fun primeConnectingReceivers(ips: Collection<String>) {
             val clean = ips.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
             if (clean.isEmpty()) return
+            addActiveReceiverIps(clean)
             lastStats = mergeConnectingReceivers(lastStats, clean)
+        }
+
+        fun primeRemovingReceiver(ip: String) {
+            val target = ip.trim()
+            if (target.isEmpty()) return
+            removeActiveReceiverIp(target)
+            lastStats = removeReceiverFromStatsJson(lastStats, target)
+        }
+
+        fun extractReceiverIpsFromStats(statsJson: String): Set<String> {
+            if (statsJson.isBlank()) return emptySet()
+            return runCatching {
+                val root = JSONObject(statsJson)
+                val rs = root.optJSONArray("receivers") ?: return@runCatching emptySet<String>()
+                val out = linkedSetOf<String>()
+                for (i in 0 until rs.length()) {
+                    rs.optJSONObject(i)?.optString("ip")?.trim()?.takeIf { it.isNotEmpty() }?.let(out::add)
+                }
+                out
+            }.getOrDefault(emptySet())
+        }
+
+        /**
+         * 返回当前活跃投送会话的接收端 IP 集合（`CastService` 单一事实来源）：
+         * 仅在 `running == true` 时非空，优先取 L1 `lastStats.receivers`，空时回退内存活跃集合。
+         */
+        fun activeReceiverIps(): Set<String> {
+            if (!running.get()) return emptySet()
+            val fromStats = extractReceiverIpsFromStats(lastStats)
+            if (fromStats.isNotEmpty()) return fromStats
+            return synchronized(activeReceiversLock) { activeReceiverIpsSet.toSet() }
+        }
+
+        internal fun setActiveReceiverIps(ips: Collection<String>) {
+            val clean = ips.map { it.trim() }.filter { it.isNotEmpty() }
+            synchronized(activeReceiversLock) {
+                activeReceiverIpsSet.clear()
+                activeReceiverIpsSet.addAll(clean)
+            }
+        }
+
+        internal fun addActiveReceiverIps(ips: Collection<String>) {
+            val clean = ips.map { it.trim() }.filter { it.isNotEmpty() }
+            if (clean.isEmpty()) return
+            synchronized(activeReceiversLock) {
+                activeReceiverIpsSet.addAll(clean)
+            }
+        }
+
+        internal fun removeActiveReceiverIp(ip: String) {
+            val target = ip.trim()
+            if (target.isEmpty()) return
+            synchronized(activeReceiversLock) {
+                activeReceiverIpsSet.remove(target)
+            }
+        }
+
+        internal fun clearActiveReceiverIps() {
+            synchronized(activeReceiversLock) {
+                activeReceiverIpsSet.clear()
+            }
         }
 
         fun recordOperationEvent(line: String, opsFile: File? = null): String {
@@ -294,6 +358,8 @@ class CastService : Service() {
             ACTION_ADD -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
                 if (ip.isNotEmpty() && running.get() && h != 0L) {
+                    addActiveReceiverIps(listOf(ip))
+                    activeInitialIps = activeReceiverIps().toList()
                     val res = NativeBridge.queueAddReceiver(h, ip)
                     lastStats = NativeBridge.stats(h)
                     event("协调加入 $ip: $res")
@@ -304,6 +370,8 @@ class CastService : Service() {
             ACTION_REMOVE -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
                 if (ip.isNotEmpty() && h != 0L) {
+                    removeActiveReceiverIp(ip)
+                    activeInitialIps = activeReceiverIps().toList()
                     NativeBridge.queueRemoveReceiver(h, ip)
                     lastStats = NativeBridge.stats(h)
                     event("协调移除 $ip")
@@ -367,6 +435,7 @@ class CastService : Service() {
         val initialIps = parseIps(ips)
         if (!running.get()) {
             activeInitialIps = initialIps
+            setActiveReceiverIps(initialIps)
             if (source == "app" && activeScopeMode == CaptureScopeMode.SINGLE_APP) {
                 val earlyPkg = intent?.getStringExtra(EXTRA_TARGET_PACKAGE).orEmpty().trim()
                 val earlyLabel = intent?.getStringExtra(EXTRA_TARGET_LABEL).orEmpty().trim()
@@ -382,6 +451,8 @@ class CastService : Service() {
 
         if (running.getAndSet(true)) {
             if (initialIps.isNotEmpty() && h != 0L) {
+                addActiveReceiverIps(initialIps)
+                activeInitialIps = activeReceiverIps().toList()
                 initialIps.forEach { ip -> NativeBridge.queueAddReceiver(h, ip) }
                 lastStats = NativeBridge.stats(h)
                 event("已在投送中，合并目标音箱: ${initialIps.joinToString(",")}")
@@ -410,9 +481,7 @@ class CastService : Service() {
                 if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
                     lastFailMessage = validation.messageZh
                     event("无感采集前置校验拒绝：${validation.messageZh}")
-                    running.set(false)
-                    releaseLocks()
-                    stopSelf()
+                    abortEarlyStart()
                     return START_NOT_STICKY
                 }
             }
@@ -422,9 +491,7 @@ class CastService : Service() {
                 val cert = intent?.getStringExtra(EXTRA_TARGET_CERT).orEmpty()
                 val resolved = resolveTargetOrFail(pkg, cert)
                 if (resolved == null) {
-                    running.set(false)
-                    releaseLocks()
-                    stopSelf()
+                    abortEarlyStart()
                     return START_NOT_STICKY
                 }
                 targetPackage = resolved.packageName
@@ -458,9 +525,7 @@ class CastService : Service() {
                 ) {
                     event("缺少或无效的 MediaProjection 授权（每次会话需重新授权）")
                     lastFailMessage = "录屏/音频捕获授权无效或被拒绝"
-                    running.set(false)
-                    releaseLocks()
-                    stopSelf()
+                    abortEarlyStart()
                     return START_NOT_STICKY
                 }
                 activeGrantSession = grantSession
@@ -469,9 +534,7 @@ class CastService : Service() {
                 if (projection == null) {
                     event("getMediaProjection 返回 null")
                     lastFailMessage = "系统未能创建 MediaProjection"
-                    running.set(false)
-                    releaseLocks()
-                    stopSelf()
+                    abortEarlyStart()
                     return START_NOT_STICKY
                 }
                 projection?.registerCallback(object : MediaProjection.Callback() {
@@ -978,12 +1041,33 @@ class CastService : Service() {
         enc.encode(buf, len)
     }
 
+    private fun abortEarlyStart() {
+        running.set(false)
+        lastStats = ""
+        activeInitialIps = emptyList()
+        clearActiveReceiverIps()
+        lastNotificationSignature = ""
+        releaseLocks()
+        runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_ID) }
+        stopSelf()
+        main.post { targetChangeListener?.invoke() }
+    }
+
     private fun stopCast() {
         if (!running.getAndSet(false)) return
         event("停止投送并清理资源")
         switchingToPackage = null
         main.post { stopAutoSourceMonitor() }
-        publishMute(localMute.restore())
+        val wasLoopbackMute = activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.ISOLATED_APP_LOOPBACK ||
+            activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK
+        if (wasLoopbackMute) {
+            localMute.skip("stopped")
+            localMuteStatus = LocalOutputMute.Status.IDLE
+            localMuteStatusZh = "本机出声（已停止投送）"
+        } else {
+            publishMute(localMute.restore())
+        }
+        activeMuteHandling = AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE
         synchronized(captureLock) {
             stopCaptureOnlyLocked()
             encoder?.release(); encoder = null
@@ -994,6 +1078,7 @@ class CastService : Service() {
         handle = 0L
         lastStats = ""
         activeInitialIps = emptyList()
+        clearActiveReceiverIps()
         lastNotificationSignature = ""
         if (h != 0L) {
             Thread {
@@ -1008,6 +1093,7 @@ class CastService : Service() {
         releaseLocks()
         // 通知可被用户关掉后仍可通过 App 停止；这里主动取消 ongoing
         runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_ID) }
+        main.post { targetChangeListener?.invoke() }
     }
 
     override fun onDestroy() {

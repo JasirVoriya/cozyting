@@ -271,4 +271,42 @@ class CastRouteSelectionTest {
         val err = CastRouteSelection.parseDiscoverJsonResult("""{"error":"socket failed"}""")!!
         assertEquals("socket failed", err.error)
     }
+
+    @Test
+    fun syncActiveSpeakers_restoresSelectedSpeakersAfterActivityRecreated() {
+        val recreated = seed()
+        assertTrue(recreated.thisDeviceSelected)
+
+        val synced = CastRouteSelection.syncActiveSpeakers(recreated, setOf("s1", "tv"))
+        assertFalse(synced.thisDeviceSelected)
+        assertEquals(setOf("s1", "tv"), synced.selectedSpeakerIds)
+        assertFalse(synced.devices.first { it.kind == Kind.THIS_DEVICE }.selected)
+        assertTrue(synced.devices.first { it.id == "s1" }.selected)
+        assertFalse(synced.devices.first { it.id == "s2" }.selected)
+        assertTrue(synced.devices.first { it.id == "tv" }.selected)
+        // 幂等：再次同步不产生差异
+        assertEquals(synced, CastRouteSelection.syncActiveSpeakers(synced, setOf("s1", "tv")))
+    }
+
+    @Test
+    fun syncActiveSpeakers_synthesizesMissingActiveIpSoCastingSpeakerNeverDisappears() {
+        val recreated = seed()
+        val synced = CastRouteSelection.syncActiveSpeakers(recreated, setOf("s1", "192.0.2.99"))
+        assertFalse(synced.thisDeviceSelected)
+        assertEquals(setOf("s1", "192.0.2.99"), synced.selectedSpeakerIds)
+        val synth = synced.devices.first { it.id == "192.0.2.99" }
+        assertTrue(synth.selected)
+        assertTrue(synth.castable)
+        assertEquals(CastProtocol.MIPLAY, synth.protocol)
+    }
+
+    @Test
+    fun syncActiveSpeakers_emptySetReturnsThisDevice() {
+        val casting = CastRouteSelection.setSpeakerChecked(seed(), "s1", true).state
+        val synced = CastRouteSelection.syncActiveSpeakers(casting, emptySet())
+        assertTrue(synced.thisDeviceSelected)
+        assertTrue(synced.selectedSpeakerIds.isEmpty())
+        assertTrue(synced.devices.first { it.kind == Kind.THIS_DEVICE }.selected)
+        assertTrue(synced.devices.filter { it.isCastSink }.none { it.selected })
+    }
 }

@@ -151,13 +151,9 @@ class MainActivity : Activity() {
     private var nowPlayingTracker: NowPlayingTracker? = null
     private val castTargetChangeCallback: () -> Unit = {
         main.post {
-            syncTargetFromActiveCast()
-            if (CastService.running.get()) {
-                val ev = CastService.lastEvent
-                if (ev.isNotBlank()) setStatusText(ev)
-            } else if (CastService.lastFailMessage.isNotBlank()) {
-                setStatusText(CastService.lastFailMessage)
-            }
+            syncCastStateFromService(forceSyncRoute = false)
+            val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
+            updateLatencyAndSubtitleIndicators(stats)
             updateHeaderStatusPill()
         }
     }
@@ -167,6 +163,8 @@ class MainActivity : Activity() {
     private val speakerSubtitles = linkedMapOf<String, TextView>()
     private val speakerVolumeViews = linkedMapOf<String, Pair<SeekBar, TextView>>()
     private var castRequested: Boolean = false
+    private var stopRequested: Boolean = false
+    private var wasServiceRunning: Boolean = false
     private var discovering: Boolean = false
     private var refreshAnim: ObjectAnimator? = null
     private var lastRenderedDark: Boolean = true
@@ -182,16 +180,7 @@ class MainActivity : Activity() {
 
     private val refreshRunnable = object : Runnable {
         override fun run() {
-            if (CastService.running.get()) {
-                castRequested = false
-                val ev = CastService.lastEvent
-                if (ev.isNotBlank()) setStatusText(ev)
-            } else if (CastService.lastFailMessage.isNotBlank()) {
-                castRequested = false
-                setStatusText(CastService.lastFailMessage)
-                maybePromptWirelessRecovery(CastService.lastFailMessage)
-            }
-            syncTargetFromActiveCast()
+            syncCastStateFromService(forceSyncRoute = false)
             val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
             updateLatencyAndSubtitleIndicators(stats)
             updateHeaderStatusPill()
@@ -211,6 +200,7 @@ class MainActivity : Activity() {
         routeState = CastRouteSelection.initial(
             listOf(CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true)) + cachedDevices,
         )
+        syncCastStateFromService(forceSyncRoute = true)
         buildUi()
         refreshTargetFromStore()
         loadLaunchableAppsAsync()
@@ -280,7 +270,7 @@ class MainActivity : Activity() {
             buildUi()
         }
         refreshTargetFromStore()
-        syncTargetFromActiveCast()
+        syncCastStateFromService(forceSyncRoute = true)
         updateLatencyCapsuleUi()
         renderDevices()
         nowPlayingTracker?.refresh()
@@ -980,12 +970,14 @@ class MainActivity : Activity() {
 
     private fun updateHeaderStatusPill() {
         if (!::headerStatusLabel.isInitialized) return
+        val running = CastService.running.get() && !stopRequested
         val selectedCount = routeState.selectedSpeakerIds.size
-        val running = CastService.running.get()
+        val activeCount = if (running) maxOf(selectedCount, CastService.activeReceiverIps().size) else selectedCount
         val failed = CastService.lastFailMessage.isNotBlank() && !running && !castRequested
         val (dotColor, label) = when {
             failed -> palette.statusError to "投送异常"
-            running && selectedCount > 0 -> palette.statusSuccess to "投送中 · $selectedCount 台"
+            running && activeCount > 0 -> palette.statusSuccess to "投送中 · $activeCount 台"
+            running -> palette.statusWarning to "连接中…"
             castRequested && selectedCount > 0 -> palette.statusWarning to "连接中…"
             settingsStore.sourceMode == "silent" -> palette.textTertiary to "静音测试模式"
             else -> palette.textTertiary to "本机出声"
@@ -1697,7 +1689,15 @@ class MainActivity : Activity() {
     private fun onDeviceClicked(d: CastRouteSelection.Device) {
         if (suppressRoute) return
         val transition = when (d.kind) {
-            Kind.THIS_DEVICE -> CastRouteSelection.selectThisDevice(routeState)
+            Kind.THIS_DEVICE -> {
+                val t = CastRouteSelection.selectThisDevice(routeState)
+                // 防御性兜底：若服务仍在运行但本地路由状态失步，点击「本机播放」依然允许强制停投
+                if (t.effects.isEmpty() && (CastService.running.get() || castRequested)) {
+                    CastRouteSelection.Transition(t.state, listOf(Effect.StopCastToThisDevice))
+                } else {
+                    t
+                }
+            }
             Kind.SPEAKER, Kind.TV -> CastRouteSelection.setSpeakerChecked(routeState, d.id, !d.selected)
         }
         routeState = transition.state
@@ -1710,6 +1710,7 @@ class MainActivity : Activity() {
             when (e) {
                 is Effect.StopCastToThisDevice -> {
                     castRequested = false
+                    stopRequested = true
                     pendingStart = null
                     stopCast()
                     updateLatencyAndSubtitleIndicators(null)
@@ -1718,6 +1719,7 @@ class MainActivity : Activity() {
                 }
                 is Effect.StartCast -> startCastTo(e.speakerIds)
                 is Effect.AddSpeaker -> {
+                    stopRequested = false
                     if (CastService.running.get() || castRequested) {
                         CastService.primeConnectingReceivers(setOf(e.id))
                         updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
@@ -1736,7 +1738,7 @@ class MainActivity : Activity() {
                         val ips = routeState.selectedSpeakerIds.joinToString(",")
                         pendingStart?.putExtra(CastService.EXTRA_IPS, ips)
                     } else {
-                        CastService.lastStats = CastService.removeReceiverFromStatsJson(CastService.lastStats, e.id)
+                        CastService.primeRemovingReceiver(e.id)
                         updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                         service(CastService.ACTION_REMOVE) { putExtra(CastService.EXTRA_IP, e.id) }
                     }
@@ -1751,6 +1753,8 @@ class MainActivity : Activity() {
 
     private fun startCastTo(speakerIds: Set<String>) {
         if (speakerIds.isEmpty()) return
+        stopRequested = false
+        CastService.lastFailMessage = ""
         val appMode = settingsStore.sourceMode != "silent"
         val requestedEngine = settingsStore.captureEngineMode
         val requestedScope = settingsStore.captureScopeMode
@@ -2003,27 +2007,66 @@ class MainActivity : Activity() {
         }.start()
     }
 
-    private fun syncTargetFromActiveCast() {
-        if (!::settingsStore.isInitialized || !::store.isInitialized) return
-        if (CastService.running.get() && CastService.source == "app") {
-            val activePkg = CastService.targetPackage
-            val activeLabel = CastService.targetLabel
-            val activeAuto = CastService.targetAutoDetected
-            if (activePkg.isNotBlank() &&
-                (activePkg != selectedPackage || activeAuto != currentSelectionAutoDetected)
-            ) {
-                selectedPackage = activePkg
-                selectedLabel = activeLabel.ifBlank { activePkg }
-                currentSelectionAutoDetected = activeAuto
-                refreshTargetFromStore()
-                nowPlayingTracker?.refresh()
+    private fun syncCastStateFromService(forceSyncRoute: Boolean = false) {
+        if (!::settingsStore.isInitialized || !::store.isInitialized || !::routeState.isInitialized) return
+        val serviceRunning = CastService.running.get()
+        if (stopRequested) {
+            if (!serviceRunning) {
+                stopRequested = false
+                wasServiceRunning = false
             }
-        } else if (!CastService.running.get() && !castRequested &&
-            routeState.selectedSpeakerIds.isNotEmpty() && CastService.lastFailMessage.isNotBlank()
-        ) {
-            routeState = CastRouteSelection.selectThisDevice(routeState).state
-            renderDevices()
-            updateHeaderStatusPill()
+            return
+        }
+        if (serviceRunning) {
+            wasServiceRunning = true
+            castRequested = false
+            val activeIps = CastService.activeReceiverIps()
+            if (activeIps.isNotEmpty() && (forceSyncRoute || routeState.selectedSpeakerIds.isEmpty())) {
+                val synced = CastRouteSelection.syncActiveSpeakers(routeState, activeIps)
+                if (synced != routeState) {
+                    routeState = synced
+                    if (::deviceList.isInitialized) renderDevices()
+                }
+            }
+            if (CastService.source == "app") {
+                val activePkg = CastService.targetPackage
+                val activeLabel = CastService.targetLabel
+                val activeAuto = CastService.targetAutoDetected
+                if (activePkg.isNotBlank() &&
+                    (activePkg != selectedPackage || activeAuto != currentSelectionAutoDetected)
+                ) {
+                    selectedPackage = activePkg
+                    selectedLabel = activeLabel.ifBlank { activePkg }
+                    currentSelectionAutoDetected = activeAuto
+                    refreshTargetFromStore()
+                    nowPlayingTracker?.refresh()
+                }
+            }
+            val ev = CastService.lastEvent
+            if (ev.isNotBlank()) setStatusText(ev)
+        } else {
+            val stoppedFromRunning = wasServiceRunning
+            wasServiceRunning = false
+            val failMsg = CastService.lastFailMessage
+            if (failMsg.isNotBlank()) {
+                castRequested = false
+                setStatusText(failMsg)
+                maybePromptWirelessRecovery(failMsg)
+                if (pendingStart == null && routeState.selectedSpeakerIds.isNotEmpty()) {
+                    routeState = CastRouteSelection.selectThisDevice(routeState).state
+                    if (::deviceList.isInitialized) renderDevices()
+                }
+            } else if (!castRequested && pendingStart == null &&
+                (stoppedFromRunning || routeState.selectedSpeakerIds.isNotEmpty())
+            ) {
+                if (routeState.selectedSpeakerIds.isNotEmpty()) {
+                    routeState = CastRouteSelection.selectThisDevice(routeState).state
+                    if (::deviceList.isInitialized) renderDevices()
+                }
+                if (stoppedFromRunning) {
+                    setStatusText("已切回本机播放")
+                }
+            }
         }
     }
 
@@ -2225,9 +2268,13 @@ class MainActivity : Activity() {
 
     private fun openAppPicker() {
         if (CastService.running.get() && CastService.source == "app") {
+            castRequested = false
+            stopRequested = true
+            pendingStart = null
             stopCast()
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
+            setStatusText("已切回本机播放")
         }
         startActivityForResult(Intent(this, AppPickerActivity::class.java), REQ_APP_PICKER)
     }
@@ -2242,7 +2289,9 @@ class MainActivity : Activity() {
         if (discovering) return
         discovering = true
         startRefreshSpinner()
-        setStatusText("正在扫描局域网音箱…")
+        if (!CastService.running.get() || stopRequested) {
+            setStatusText("正在扫描局域网音箱…")
+        }
         val cachedJson = deviceStore.loadRawJson()
         Thread {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -2258,7 +2307,9 @@ class MainActivity : Activity() {
                 stopRefreshSpinner()
                 val parsed = CastRouteSelection.parseDiscoverJsonResult(r)
                 if (parsed == null || parsed.error != null) {
-                    setStatusText("扫描失败，请点击刷新重试")
+                    if (!CastService.running.get() || stopRequested) {
+                        setStatusText("扫描失败，请点击刷新重试")
+                    }
                     return@post
                 }
                 parsed.rows.forEach { row ->
@@ -2267,6 +2318,12 @@ class MainActivity : Activity() {
                 val mergedDevices = parsed.merged
                 deviceStore.saveDevices(parsed.cacheable)
                 var next = CastRouteSelection.mergeDiscovered(routeState, mergedDevices)
+                if (CastService.running.get() && !stopRequested) {
+                    val activeIps = CastService.activeReceiverIps()
+                    if (activeIps.isNotEmpty()) {
+                        next = CastRouteSelection.syncActiveSpeakers(next, activeIps)
+                    }
+                }
                 pendingIps?.forEach { ip ->
                     if (next.devices.any { it.id == ip && it.castable }) {
                         next = CastRouteSelection.setSpeakerChecked(next, ip, true).state
@@ -2278,14 +2335,16 @@ class MainActivity : Activity() {
                 val foundCount = parsed.rows.size
                 val castableCount = parsed.castableCount
                 val hiddenCount = parsed.hiddenCount
-                setStatusText(
-                    when {
-                        foundCount == 0 -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
-                        hiddenCount > 0 && !settingsStore.showAllDiscovered ->
-                            "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
-                        else -> "发现 $foundCount 台设备 · 点击音箱即可投送"
-                    },
-                )
+                if (!CastService.running.get() || stopRequested) {
+                    setStatusText(
+                        when {
+                            foundCount == 0 -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
+                            hiddenCount > 0 && !settingsStore.showAllDiscovered ->
+                                "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
+                            else -> "发现 $foundCount 台设备 · 点击音箱即可投送"
+                        },
+                    )
+                }
             }
         }.start()
     }
@@ -2312,10 +2371,12 @@ class MainActivity : Activity() {
         if (i.getBooleanExtra("discover", false)) discover()
         if (i.getBooleanExtra("stop", false)) {
             castRequested = false
+            stopRequested = true
             pendingStart = null
             stopCast()
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
+            setStatusText("已切回本机播放")
         }
         if (i.getBooleanExtra("pause", false)) service(CastService.ACTION_PAUSE)
         if (i.getBooleanExtra("resume", false)) service(CastService.ACTION_RESUME)
@@ -2452,7 +2513,7 @@ class MainActivity : Activity() {
 
     private fun updateLatencyAndSubtitleIndicators(stats: JSONObject?) {
         val failed = CastService.lastFailMessage.isNotBlank()
-        val isCasting = CastService.running.get() || castRequested
+        val isCasting = (CastService.running.get() && !stopRequested) || castRequested
         val receivers = stats?.optJSONArray("receivers")
         latencyIndicators.forEach { (deviceId, views) ->
             val device = routeState.devices.firstOrNull { it.id == deviceId }
@@ -2548,7 +2609,10 @@ class MainActivity : Activity() {
         speakerVolume.clear()
         speakerVolume.putAll(previewSpeakerVolumes)
         castRequested = previewCasting
+        stopRequested = false
+        wasServiceRunning = previewCasting
         CastService.running.set(previewCasting)
+        CastService.setActiveReceiverIps(if (previewCasting) previewSelectedSpeakerIds else emptySet())
         CastService.lastFailMessage = ""
         CastService.lastStats = previewStats?.toString().orEmpty()
         nowPlaying = previewNowPlaying

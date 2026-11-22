@@ -173,6 +173,54 @@ object CastRouteSelection {
         )
     }
 
+    /**
+     * 将 UI 路由状态与后台活跃投送接收端集合对齐（如 Activity 重建/回到前台或外部停止投送后恢复真实选中态）：
+     * - [activeSpeakerIds] 为空：切回「本机播放」；
+     * - [activeSpeakerIds] 非空：选中对应音箱/电视、取消「本机播放」；若某活跃 IP 尚未出现在当前列表中
+     *  （如冷启动缓存缺失或单次 mDNS 丢包），自动补齐一条可投占位设备，避免投送中设备缺失或误显本机出声。
+     */
+    fun syncActiveSpeakers(state: State, activeSpeakerIds: Set<String>): State {
+        val cleanIds = activeSpeakerIds.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        if (cleanIds.isEmpty()) {
+            return selectThisDevice(state).state
+        }
+        val existingIds = state.devices.map { it.id }.toSet()
+        val updated = state.devices.map { d ->
+            when (d.kind) {
+                Kind.THIS_DEVICE -> d.copy(selected = false)
+                Kind.SPEAKER, Kind.TV -> if (d.id in cleanIds) {
+                    d.copy(selected = true, castable = true, protocol = d.protocol ?: CastProtocol.MIPLAY)
+                } else {
+                    d.copy(selected = false)
+                }
+            }
+        }
+        val missing = cleanIds
+            .filter { it !in existingIds }
+            .sorted()
+            .map { ip ->
+                Device(
+                    id = ip,
+                    name = ip,
+                    kind = Kind.SPEAKER,
+                    castable = true,
+                    selected = true,
+                    protocol = CastProtocol.MIPLAY,
+                )
+            }
+        val allDevices = if (updated.any { it.kind == Kind.THIS_DEVICE }) {
+            updated + missing
+        } else {
+            listOf(Device("this", "本机播放", Kind.THIS_DEVICE, castable = true, selected = false)) + updated + missing
+        }
+        val selectedNow = allDevices.filter { it.isCastSink && it.selected }.map { it.id }.toSet()
+        return State(
+            thisDeviceSelected = selectedNow.isEmpty(),
+            selectedSpeakerIds = selectedNow,
+            devices = allDevices,
+        )
+    }
+
     /** 从名称/型号推断 UI 形态（图标）；不影响可投性。 */
     fun looksLikeTv(name: String, model: String = ""): Boolean {
         val s = "$name $model"
