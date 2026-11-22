@@ -1,16 +1,17 @@
 package com.miplay.sender.capture.shell
 
 import android.content.Context
-import android.net.LocalSocket
-import android.net.LocalSocketAddress
 import android.os.Looper
 import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.CaptureScopeMode
+import com.miplay.sender.compat.ShellCaptureCompat
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.system.exitProcess
@@ -33,24 +34,26 @@ object ShellAudioHelperMain {
 
     @Volatile private var activeHandle: AudioPolicyReflector.CaptureHandle? = null
     @Volatile private var captureThread: Thread? = null
-    @Volatile private var controlSocket: LocalSocket? = null
-    @Volatile private var pcmSocket: LocalSocket? = null
+    @Volatile private var controlSocket: Socket? = null
+    @Volatile private var pcmSocket: Socket? = null
     @Volatile private var pcmOut: OutputStream? = null
 
     @JvmStatic
     fun main(args: Array<String>) {
-        var socketPrefix = ""
+        var ctlPort = 0
+        var pcmPort = 0
         var tokenHex = ""
         var i = 0
         while (i < args.size) {
             when (args[i]) {
-                "--socket" -> if (i + 1 < args.size) socketPrefix = args[++i]
+                "--ctl-port" -> if (i + 1 < args.size) ctlPort = args[++i].toIntOrNull() ?: 0
+                "--pcm-port" -> if (i + 1 < args.size) pcmPort = args[++i].toIntOrNull() ?: 0
                 "--token" -> if (i + 1 < args.size) tokenHex = args[++i]
             }
             i++
         }
         val tokenBytes = ShellCaptureProtocol.fromHex(tokenHex)
-        if (socketPrefix.isBlank() || tokenBytes == null) {
+        if (ctlPort !in 1..65535 || pcmPort !in 1..65535 || tokenBytes == null) {
             System.err.println("ShellAudioHelperMain: invalid args")
             exitProcess(2)
         }
@@ -64,7 +67,7 @@ object ShellAudioHelperMain {
         try {
             AudioPolicyReflector.ensureHiddenApiBypass()
             val systemContext = bootstrapSystemContext()
-            connectAndServe(systemContext, socketPrefix, tokenHex, tokenBytes)
+            connectAndServe(systemContext, ctlPort, pcmPort, tokenHex, tokenBytes)
         } catch (t: Throwable) {
             System.err.println("ShellAudioHelperMain fatal: ${t.message}")
             cleanupAndExit(1)
@@ -78,31 +81,27 @@ object ShellAudioHelperMain {
         }
         val atCls = Class.forName("android.app.ActivityThread")
         val systemMain = atCls.getMethod("systemMain").invoke(null)
-        return atCls.getMethod("getSystemContext").invoke(systemMain) as Context
+        val rawSystemCtx = atCls.getMethod("getSystemContext").invoke(systemMain) as Context
+        return ShellCaptureCompat.wrapAsShellContext(rawSystemCtx)
     }
 
     private fun connectAndServe(
         context: Context,
-        socketPrefix: String,
+        ctlPort: Int,
+        pcmPort: Int,
         tokenHex: String,
         tokenBytes: ByteArray,
     ) {
-        val ctl = LocalSocket()
-        ctl.connect(
-            LocalSocketAddress(
-                ShellCaptureProtocol.controlSocketName(socketPrefix),
-                LocalSocketAddress.Namespace.ABSTRACT,
-            ),
-        )
+        val ctl = Socket().apply {
+            tcpNoDelay = true
+            connect(InetSocketAddress(ShellCaptureProtocol.LOOPBACK_HOST, ctlPort), 3_000)
+        }
         controlSocket = ctl
 
-        val pcm = LocalSocket()
-        pcm.connect(
-            LocalSocketAddress(
-                ShellCaptureProtocol.pcmSocketName(socketPrefix),
-                LocalSocketAddress.Namespace.ABSTRACT,
-            ),
-        )
+        val pcm = Socket().apply {
+            tcpNoDelay = true
+            connect(InetSocketAddress(ShellCaptureProtocol.LOOPBACK_HOST, pcmPort), 3_000)
+        }
         pcmSocket = pcm
         pcmOut = pcm.outputStream
 

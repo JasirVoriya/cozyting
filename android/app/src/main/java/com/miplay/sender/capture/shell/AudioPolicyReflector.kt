@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Looper
 import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.CaptureScopeMode
+import com.miplay.sender.compat.ShellCaptureCompat
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /**
@@ -55,10 +56,7 @@ object AudioPolicyReflector {
             if (bypassApplied) return
             runCatching {
                 HiddenApiBypass.addHiddenApiExemptions(
-                    "Landroid/media/audiopolicy/",
-                    "Landroid/media/AudioFormat",
-                    "Landroid/media/AudioRecord",
-                    "Landroid/media/AudioManager",
+                    "Landroid/media/",
                     "Landroid/app/ActivityThread",
                     "Lcom/android/org/conscrypt/",
                 )
@@ -89,7 +87,7 @@ object AudioPolicyReflector {
                         "Android 11–12（API $sdk）不支持 shell 单 App 隔离（Fail-Closed 已拒绝降级）",
                     )
                 } else {
-                    openRemoteSubmixCapture()
+                    openRemoteSubmixCapture(context)
                 }
             }
             else -> OpenResult.Error("Android 10（API $sdk）不支持 shell 音频捕获")
@@ -151,6 +149,7 @@ object AudioPolicyReflector {
             val routeFlags = if (muteLocal) ROUTE_FLAG_LOOP_BACK else ROUTE_FLAG_LOOP_BACK_RENDER
             mixBuilderCls.getMethod("setRouteFlags", Int::class.javaPrimitiveType).invoke(mixBuilder, routeFlags)
             val audioMix = mixBuilderCls.getMethod("build").invoke(mixBuilder)
+                ?: return OpenResult.Error("AudioMix.Builder.build() 返回 null")
 
             val policyBuilderCls = Class.forName("android.media.audiopolicy.AudioPolicy\$Builder")
             val audioMixCls = Class.forName("android.media.audiopolicy.AudioMix")
@@ -172,9 +171,8 @@ object AudioPolicyReflector {
             }
             registeredPolicy = audioPolicy
 
-            val createSink = policyCls.getMethod("createAudioRecordSink", audioMixCls)
-            val record = createSink.invoke(audioPolicy, audioMix) as? AudioRecord
-                ?: return OpenResult.Error("createAudioRecordSink 返回 null").also {
+            val record = buildAudioRecordForMix(context, policyCls, audioPolicy, audioMixCls, audioMix)
+                ?: return OpenResult.Error("无法为 AudioMix 创建 AudioRecord").also {
                     unregisterQuietly(audioManager, audioPolicy)
                 }
 
@@ -210,8 +208,63 @@ object AudioPolicyReflector {
         }
     }
 
+    /**
+     * 优先使用 `AudioRecord.Builder.setContext(shellCtx)` + `addr=<mix.getRegistration()>` 显式构造 AudioRecord：
+     * AOSP 的 `AudioPolicy.createAudioRecordSink(mix)` 内部未传 Context，会回落到 `ActivityThread.currentOpPackageName()`
+     * （在 `app_process` 中为 `"android"`），导致 Android 13–17 `AudioFlinger` 报 `EX_SECURITY (uid=2000, packageName=android)`。
+     * 若反射取 `getRegistration()` 失败再回退 `createAudioRecordSink`。
+     */
+    @Suppress("MissingPermission")
+    private fun buildAudioRecordForMix(
+        context: Context,
+        policyCls: Class<*>,
+        audioPolicy: Any,
+        audioMixCls: Class<*>,
+        audioMix: Any,
+    ): AudioRecord? {
+        val explicit = runCatching {
+            val regAddr = audioMixCls.getMethod("getRegistration").invoke(audioMix) as? String
+            if (regAddr.isNullOrBlank()) return@runCatching null
+
+            val attrBuilder = AudioAttributes.Builder()
+            AudioAttributes.Builder::class.java
+                .getMethod("setInternalCapturePreset", Int::class.javaPrimitiveType)
+                .invoke(attrBuilder, MediaRecorder.AudioSource.REMOTE_SUBMIX)
+            val addTag = AudioAttributes.Builder::class.java.getMethod("addTag", String::class.java)
+            addTag.invoke(attrBuilder, "addr=$regAddr")
+            addTag.invoke(attrBuilder, "fixedVolume")
+            val recAttrs = attrBuilder.build()
+
+            val recFmt = AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(AudioCaptureBackend.SAMPLE_RATE_HZ)
+                .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
+                .build()
+            val chunk = AudioCaptureBackend.BYTES_PER_FRAME
+            val minBuf = AudioRecord.getMinBufferSize(
+                AudioCaptureBackend.SAMPLE_RATE_HZ,
+                AudioFormat.CHANNEL_IN_STEREO,
+                AudioFormat.ENCODING_PCM_16BIT,
+            )
+            val arb = AudioRecord.Builder()
+                .setAudioFormat(recFmt)
+                .setBufferSizeInBytes(maxOf(chunk * 4, minBuf))
+            ShellCaptureCompat.applyRecordContext(arb, context)
+            AudioRecord.Builder::class.java
+                .getMethod("setAudioAttributes", AudioAttributes::class.java)
+                .invoke(arb, recAttrs)
+            arb.build()
+        }.getOrNull()
+        if (explicit != null && explicit.state == AudioRecord.STATE_INITIALIZED) {
+            return explicit
+        }
+        runCatching { explicit?.release() }
+        val createSink = policyCls.getMethod("createAudioRecordSink", audioMixCls)
+        return createSink.invoke(audioPolicy, audioMix) as? AudioRecord
+    }
+
     @Suppress("MissingPermission", "WrongConstant")
-    private fun openRemoteSubmixCapture(): OpenResult {
+    private fun openRemoteSubmixCapture(context: Context): OpenResult {
         return try {
             val fmt = AudioFormat.Builder()
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -224,11 +277,12 @@ object AudioPolicyReflector {
                 AudioFormat.CHANNEL_IN_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT,
             )
-            val record = AudioRecord.Builder()
+            val arb = AudioRecord.Builder()
                 .setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX)
                 .setAudioFormat(fmt)
                 .setBufferSizeInBytes(maxOf(chunk * 4, minBuf))
-                .build()
+            ShellCaptureCompat.applyRecordContext(arb, context)
+            val record = arb.build()
             if (record.state != AudioRecord.STATE_INITIALIZED) {
                 runCatching { record.release() }
                 return OpenResult.Error("REMOTE_SUBMIX AudioRecord 未初始化（state=${record.state}）")

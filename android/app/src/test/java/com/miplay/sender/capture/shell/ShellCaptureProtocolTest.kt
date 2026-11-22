@@ -56,11 +56,13 @@ class ShellCaptureProtocolTest {
     fun launchCommandQuotesApkPathSafely() {
         val cmd = ShellCaptureProtocol.buildAppProcessLaunchCommand(
             apkPath = "/data/app/it's/base.apk",
-            socketPrefix = "miplay_cap_abcd",
+            ctlPort = 41234,
+            pcmPort = 41235,
             tokenHex = "a".repeat(64),
         )
         assertTrue(cmd.contains("CLASSPATH='/data/app/it'\\''s/base.apk'"))
         assertTrue(cmd.contains("com.miplay.sender.capture.shell.ShellAudioHelperMain"))
-        assertTrue(cmd.contains("--socket 'miplay_cap_abcd'"))
+        assertTrue(cmd.contains("--ctl-port 41234"))
+        assertTrue(cmd.contains("--pcm-port 41235"))
     }
 }

@@ -1,8 +1,13 @@
 package com.miplay.sender.compat
 
 import android.app.PendingIntent
+import android.content.AttributionSource
+import android.content.Context
+import android.content.ContextWrapper
+import android.media.AudioRecord
 import android.net.ssl.SSLSockets
 import android.os.Build
+import android.os.Process
 import androidx.annotation.RequiresApi
 import javax.net.ssl.SSLSocket
 
@@ -83,4 +88,50 @@ object ShellCaptureCompat {
 
     fun immutablePendingIntentFlags(baseFlags: Int): Int =
         baseFlags or PendingIntent.FLAG_IMMUTABLE
+
+    /**
+     * 在 `app_process`（`uid=2000`）中构造归属包名为 `com.android.shell` 的 Context。
+     *
+     * Android 13–17 上 `ActivityThread.systemMain().getSystemContext()` 默认 `opPackageName = "android"`
+     * （对应 `uid=1000`），直接传给 `AudioRecord` 会被 `AudioFlinger` 以 `EX_SECURITY (invalid attr uid=2000 packageName=android)` 拒绝。
+     */
+    fun wrapAsShellContext(systemContext: Context): Context {
+        val base = runCatching {
+            systemContext.createPackageContext("com.android.shell", Context.CONTEXT_IGNORE_SECURITY)
+        }.getOrDefault(systemContext)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            wrapAsShellContextApi31(base)
+        } else {
+            object : ContextWrapper(base) {
+                override fun getPackageName(): String = "com.android.shell"
+                override fun getOpPackageName(): String = "com.android.shell"
+                override fun getApplicationContext(): Context = this
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun wrapAsShellContextApi31(base: Context): Context {
+        val shellAttr = AttributionSource.Builder(Process.myUid())
+            .setPackageName("com.android.shell")
+            .build()
+        return object : ContextWrapper(base) {
+            override fun getPackageName(): String = "com.android.shell"
+            override fun getOpPackageName(): String = "com.android.shell"
+            override fun getAttributionSource(): AttributionSource = shellAttr
+            override fun getApplicationContext(): Context = this
+        }
+    }
+
+    /** API 31+ 显式为 `AudioRecord.Builder` 绑定 `com.android.shell` Context（避免回落到 `ActivityThread.currentOpPackageName()`）。 */
+    fun applyRecordContext(builder: AudioRecord.Builder, context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            applyRecordContextApi31(builder, context)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun applyRecordContextApi31(builder: AudioRecord.Builder, context: Context) {
+        builder.setContext(context)
+    }
 }

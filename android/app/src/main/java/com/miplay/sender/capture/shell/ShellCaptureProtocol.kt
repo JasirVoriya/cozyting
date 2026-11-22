@@ -5,15 +5,17 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
- * 主 App 与内置 `uid=2000` `ShellAudioHelperMain` 之间的本地 `LocalSocket` 协议与鉴权工具。
+ * 主 App 与内置 `uid=2000` `ShellAudioHelperMain` 之间的本机环回（`127.0.0.1`）协议与鉴权工具。
  *
- * 安全不变量：
- * 1. 仅监听本机抽象命名空间 `LocalServerSocket`（不暴露任何 TCP 端口）；
+ * 安全不变量与 SELinux 兼容性：
+ * 1. 仅绑定本机环回 `127.0.0.1` 临时随机端口（绝不监听 `0.0.0.0` / 局域网网卡），
+ *    规避 Android 11–17 SELinux MLS 对 `u:r:shell:s0` 连接 `u:r:untrusted_app:s0:c...` 抽象 `LocalSocket` 的拦截；
  * 2. 每次会话随机生成 256-bit（32 字节）一次性 Token，控制口与 PCM 数据口首包均须通过常量时间校验，
- *    防止本机其他未授权进程抢连；
+ *    握手通过后主进程立即关闭监听端口，拒绝任何其他本机进程接入；
  * 3. 控制口走短 JSON 行，PCM 数据口直传连续 4096B（48kHz s16le 2ch）裸帧。
  */
 object ShellCaptureProtocol {
+    const val LOOPBACK_HOST = "127.0.0.1"
     const val TOKEN_BYTES = 32
     const val HEARTBEAT_INTERVAL_MS = 500L
     const val HEARTBEAT_TIMEOUT_MS = 1_500L
@@ -142,15 +144,15 @@ object ShellCaptureProtocol {
      */
     fun buildAppProcessLaunchCommand(
         apkPath: String,
-        socketPrefix: String,
+        ctlPort: Int,
+        pcmPort: Int,
         tokenHex: String,
     ): String {
         val safeApk = shellSingleQuote(apkPath)
-        val safeSocket = shellSingleQuote(socketPrefix)
         val safeToken = shellSingleQuote(tokenHex)
-        return "CLASSPATH=$safeApk nohup /system/bin/app_process /system/bin " +
+        return "CLASSPATH=$safeApk setsid /system/bin/app_process /system/bin " +
             "com.miplay.sender.capture.shell.ShellAudioHelperMain " +
-            "--socket $safeSocket --token $safeToken >/dev/null 2>&1 &"
+            "--ctl-port $ctlPort --pcm-port $pcmPort --token $safeToken </dev/null >/dev/null 2>&1 &"
     }
 
     private fun shellSingleQuote(raw: String): String =

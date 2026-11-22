@@ -1,8 +1,6 @@
 package com.miplay.sender.capture.shell
 
 import android.content.Context
-import android.net.LocalServerSocket
-import android.net.LocalSocket
 import com.miplay.sender.capture.AudioCaptureBackend
 import com.miplay.sender.capture.CaptureScopeMode
 import java.io.BufferedReader
@@ -10,6 +8,9 @@ import java.io.BufferedWriter
 import java.io.DataInputStream
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -19,10 +20,11 @@ import java.util.concurrent.atomic.AtomicReference
  * 内置无线调试音频采集后端（API 30+，零外部 App 依赖）。
  *
  * 生命周期：
- * 1. 打开随机抽象命名空间 `LocalServerSocket`（`.ctl` + `.pcm`）并生成 256-bit 随机 Token；
+ * 1. 仅在本机环回 `127.0.0.1` 打开两个临时随机端口（`.ctl` + `.pcm`）并生成 256-bit 随机 Token
+ *    （规避 Android 11–17 SELinux MLS 对 `shell` 连接 `untrusted_app` 抽象 `LocalSocket` 的拦截）；
  * 2. 发现本机 `_adb-tls-connect._tcp.` 端口，通过已保存的无线调试证书经 `WirelessAdbShellClient` 点火拉起
  *    `uid=2000` 的 `ShellAudioHelperMain`；
- * 3. 双通道完成常量时间 Token 校验后，下发 `start_single_uid` 或 `start_global_media`；
+ * 3. 双通道完成常量时间 Token 校验后立即关闭监听端口，下发 `start_single_uid` 或 `start_global_media`；
  * 4. 启动 `500ms` 心跳线程与 `MAX_PRIORITY` PCM 读取线程，运行期支持 `update_uid` 零弹窗热切源。
  */
 class ShellCaptureBackend(
@@ -33,10 +35,10 @@ class ShellCaptureBackend(
     private val active = AtomicBoolean(false)
     private val controlLock = Any()
 
-    @Volatile private var ctlServer: LocalServerSocket? = null
-    @Volatile private var pcmServer: LocalServerSocket? = null
-    @Volatile private var ctlSocket: LocalSocket? = null
-    @Volatile private var pcmSocket: LocalSocket? = null
+    @Volatile private var ctlServer: ServerSocket? = null
+    @Volatile private var pcmServer: ServerSocket? = null
+    @Volatile private var ctlSocket: Socket? = null
+    @Volatile private var pcmSocket: Socket? = null
     @Volatile private var ctlWriter: BufferedWriter? = null
     @Volatile private var ctlReader: BufferedReader? = null
     @Volatile private var heartbeatThread: Thread? = null
@@ -64,16 +66,18 @@ class ShellCaptureBackend(
 
         val tokenBytes = ShellCaptureProtocol.generateRandomTokenBytes()
         val tokenHex = ShellCaptureProtocol.toHex(tokenBytes)
-        val socketPrefix = ShellCaptureProtocol.generateSocketPrefix()
 
         return try {
-            val ctlSrv = LocalServerSocket(ShellCaptureProtocol.controlSocketName(socketPrefix))
-            val pcmSrv = LocalServerSocket(ShellCaptureProtocol.pcmSocketName(socketPrefix))
+            val loopback = InetAddress.getByName(ShellCaptureProtocol.LOOPBACK_HOST)
+            val ctlSrv = ServerSocket(0, 2, loopback).apply { soTimeout = 7_000 }
+            val pcmSrv = ServerSocket(0, 2, loopback).apply { soTimeout = 7_000 }
+            val ctlPort = ctlSrv.localPort
+            val pcmPort = pcmSrv.localPort
             ctlServer = ctlSrv
             pcmServer = pcmSrv
 
-            val ctlRef = AtomicReference<Pair<LocalSocket, BufferedReader>?>(null)
-            val pcmRef = AtomicReference<LocalSocket?>(null)
+            val ctlRef = AtomicReference<Pair<Socket, BufferedReader>?>(null)
+            val pcmRef = AtomicReference<Socket?>(null)
             val errRef = AtomicReference<String?>(null)
             val readyLatch = CountDownLatch(2)
 
@@ -109,7 +113,7 @@ class ShellCaptureBackend(
 
             // 通过本机无线 ADB 发射一次性 app_process 点火命令
             val apkPath = context.applicationInfo.sourceDir
-            val cmd = ShellCaptureProtocol.buildAppProcessLaunchCommand(apkPath, socketPrefix, tokenHex)
+            val cmd = ShellCaptureProtocol.buildAppProcessLaunchCommand(apkPath, ctlPort, pcmPort, tokenHex)
             val identity = keyStore.getOrCreateIdentity()
             onEvent("正在经内置无线调试（127.0.0.1:${endpoint.port}）启动无感采集引擎…")
             when (val launch = WirelessAdbShellClient.runShellCommand(endpoint.host, endpoint.port, identity, cmd)) {
@@ -300,7 +304,7 @@ class ShellCaptureBackend(
     }
 
     private fun startPcmReaderThread(
-        pcm: LocalSocket,
+        pcm: Socket,
         onPcmFrame: (ByteArray, Int) -> Unit,
         onFatalError: (String) -> Unit,
     ) {
@@ -339,11 +343,12 @@ class ShellCaptureBackend(
         }
 
     private fun acceptVerifiedControlSocket(
-        server: LocalServerSocket,
+        server: ServerSocket,
         expectedToken: ByteArray,
-    ): Pair<LocalSocket, BufferedReader>? {
+    ): Pair<Socket, BufferedReader>? {
         for (attempt in 0 until 4) {
             val sock = server.accept()
+            sock.tcpNoDelay = true
             sock.soTimeout = 3_000
             val reader = BufferedReader(InputStreamReader(sock.inputStream, Charsets.UTF_8))
             val firstLine = runCatching { reader.readLine() }.getOrNull()
@@ -359,11 +364,12 @@ class ShellCaptureBackend(
     }
 
     private fun acceptVerifiedPcmSocket(
-        server: LocalServerSocket,
+        server: ServerSocket,
         expectedToken: ByteArray,
-    ): LocalSocket? {
+    ): Socket? {
         for (attempt in 0 until 4) {
             val sock = server.accept()
+            sock.tcpNoDelay = true
             sock.soTimeout = 3_000
             val buf = ByteArray(ShellCaptureProtocol.TOKEN_BYTES)
             val ok = runCatching {

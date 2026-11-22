@@ -63,11 +63,12 @@
    - 后续只要无线调试处于开启态，App 通过 `NsdManager` 找到 `_adb-tls-connect._tcp.` 端口，出示已保存证书建立 TLS ADB 连接；
    - 执行单条 `shell` 命令拉起内置采集 Helper：
      ```sh
-     CLASSPATH=<our_apk_path> /system/bin/app_process /system/bin \
+     CLASSPATH=<our_apk_path> setsid /system/bin/app_process /system/bin \
        com.miplay.sender.capture.shell.ShellAudioHelperMain \
-       --socket <ephemeral_abstract_socket> --token <random_256bit_hex>
+       --ctl-port <ephemeral_loopback_port> --pcm-port <ephemeral_loopback_port> \
+       --token <random_256bit_hex> </dev/null >/dev/null 2>&1 &
      ```
-   - Helper 启动就绪并连回主 App 后，ADB 仅作为按需点火通道，音频流与播控全走本地 `LocalSocket`，不占 ADB 会话。
+   - Helper 启动就绪并连回主 App 的本机 `127.0.0.1` 临时环回端口后，主进程立即关闭监听端口；ADB 仅作为按需点火通道，音频流与播控全走 `127.0.0.1` 环回套接字（规避 Android 11–17 SELinux MLS 对 `u:r:shell:s0` 连接 `u:r:untrusted_app:s0:c...` 抽象 `LocalSocket` 的拦截），不占 ADB 会话。
    - **开发期附带收益**：由于 `ShellAudioHelperMain` 是标准 `app_process` 入口，开发验证阶段可直接经 `adb shell` 单测采集核心，与无线调试配对层完全解耦、无需在 App 内做任何 USB 产品入口。
 
 ---
