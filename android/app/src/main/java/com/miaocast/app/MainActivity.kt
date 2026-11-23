@@ -989,8 +989,6 @@ class MainActivity : Activity() {
             warningColor = volumeWarningColor(onSelectedRow = false),
             trackColor = palette.trackIdle,
             thumbFillColor = Color.WHITE,
-            tickColor = volumeTickColor(onSelectedRow = false),
-            safeLimit = if (masterPolicy.enabled) masterPolicy.normalizedSafeLimit else null,
             warning = masterWarning,
         ).apply {
             max = 100
@@ -1992,8 +1990,6 @@ class MainActivity : Activity() {
                 warningColor = volumeWarningColor(onSelectedRow = true),
                 trackColor = palette.trackOnSelected,
                 thumbFillColor = Color.WHITE,
-                tickColor = volumeTickColor(onSelectedRow = true),
-                safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
                 warning = warning,
             ).apply {
                 max = 100
@@ -2944,21 +2940,12 @@ class MainActivity : Activity() {
     private fun volumeWarningColor(onSelectedRow: Boolean): Int =
         if (onSelectedRow) Color.rgb(217, 119, 6) else palette.statusWarning
 
-    private fun volumeTickColor(onSelectedRow: Boolean): Int {
-        val base = volumeWarningColor(onSelectedRow)
-        val alpha = if (onSelectedRow) 196 else if (palette.isDark) 210 else 196
-        return Color.argb(alpha, Color.red(base), Color.green(base), Color.blue(base))
-    }
-
     private fun applyMasterVolumeVisual(value: Int) {
         if (!::volumeBar.isInitialized || !::volumePctView.isInitialized) return
         val policy = settingsStore.volumeGuardPolicy()
         val clamped = value.coerceIn(0, 100)
         val warning = VolumeSafetyGuard.isInHighVolumeZone(policy, clamped)
-        volumeBar.updateGuardVisual(
-            safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
-            warning = warning,
-        )
+        volumeBar.updateGuardVisual(warning = warning)
         volumePctView.text = "$clamped%"
         volumePctView.setTextColor(
             if (warning) volumeWarningColor(onSelectedRow = false) else palette.textSecondary,
@@ -2970,10 +2957,7 @@ class MainActivity : Activity() {
         val policy = settingsStore.volumeGuardPolicy()
         val clamped = value.coerceIn(0, 100)
         val warning = VolumeSafetyGuard.isInHighVolumeZone(policy, clamped)
-        views.first.updateGuardVisual(
-            safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
-            warning = warning,
-        )
+        views.first.updateGuardVisual(warning = warning)
         views.second.text = "$clamped%"
         views.second.setTextColor(
             if (warning) volumeWarningColor(onSelectedRow = true) else palette.onSelectedSecondary,
