@@ -11,11 +11,11 @@
 **Open-Source Third-Party MiPlay Audio Casting App: Stream Only Your Chosen Music App to Up to 63 Xiaomi / XiaoAi Speakers Over Pure LAN**
 
 <p>
-  <a href="README.md">简体中文</a> · <strong>English</strong> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/">Website</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/#video">Video Demo</a> ·
+  <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="README_JA.md">日本語</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/en/">Website</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video">Video Demo</a> ·
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases">Download APK</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">Interactive Architecture</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
@@ -43,12 +43,12 @@
 ## 🎬 MiaoCast in 1 Minute
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/miaocast-releases/#video" title="Watch MiaoCast in 1 Minute on the product website">
-    <img src="docs/assets/video/miaocast-promo-poster.jpg" alt="MiaoCast in 1 Minute video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
+  <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video" title="Watch MiaoCast in 1 Minute on the product website">
+    <img src="docs/assets/video/miaocast-promo-en-poster.jpg" alt="MiaoCast in 1 Minute video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/miaocast-releases/#video"><strong>▶ Watch on the Product Website</strong></a> ·
-    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4">Direct MP4 (1280×720)</a>
+    <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video"><strong>▶ Watch on the Product Website</strong></a> ·
+    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en.mp4">Direct MP4 (1280×720)</a>
   </p>
 </div>
 
@@ -119,35 +119,35 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 ### 1. Main Screen · Synchronized Multi-Speaker Casting
 
-![MiaoCast main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
+![MiaoCast main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/en/01-main-casting-dark-vs-light.png)
 
 ### 2. 4-Tier Live Latency Switching (Hot-Switch Without Reconnecting)
 
-![MiaoCast 4-tier latency mode selector showing Standard, Balanced, Low Latency, and Ultra-Low presets](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
+![MiaoCast 4-tier latency mode selector showing Standard, Balanced, Low Latency, and Ultra-Low presets](docs/assets/screenshots/en/02-latency-tiers-dark-vs-light.png)
 
 ### 3. Favorite Audio Sources (Per-App Auto-Detect & Drag Reorder)
 
-![MiaoCast favorite audio source manager with per-app auto-detect toggles and drag reordering](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
+![MiaoCast favorite audio source manager with per-app auto-detect toggles and drag reordering](docs/assets/screenshots/en/03-app-picker-dark-vs-light.png)
 
 ### 4. Built-In Wireless Debugging 4-Step Seamless Capture Wizard
 
-![MiaoCast 4-step built-in wireless debugging setup wizard for rootless zero-popup audio capture on Android 13+](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
+![MiaoCast 4-step built-in wireless debugging setup wizard for rootless zero-popup audio capture on Android 13+](docs/assets/screenshots/en/04-wireless-guide-dark-vs-light.png)
 
 ### 5. Settings · Theme, Capture Engine, Single-App Mute & Permissions
 
-![MiaoCast settings screen for dark/light theme, standard vs seamless capture engine, per-app isolation, and local mute](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
+![MiaoCast settings screen for dark/light theme, standard vs seamless capture engine, per-app isolation, and local mute](docs/assets/screenshots/en/05-settings-core-dark-vs-light.png)
 
 ### 6. Settings · Advanced Connection Tuning & About / Updates Card
 
-![MiaoCast settings screen showing custom latency tuning and verified in-app updates card](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
+![MiaoCast settings screen showing custom latency tuning and verified in-app updates card](docs/assets/screenshots/en/06-settings-update-dark-vs-light.png)
 
 ### 7. Non-Intrusive Update Banner & Badge (Idle State Only)
 
-![MiaoCast non-intrusive update notification banner shown only when not actively casting](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
+![MiaoCast non-intrusive update notification banner shown only when not actively casting](docs/assets/screenshots/en/07-main-update-banner-dark-vs-light.png)
 
 ### 8. Cross-Version Changelog & SHA-256 Verified In-App Update Dialog
 
-![MiaoCast cross-version changelog dialog with SHA-256 and signing certificate verification before installation](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+![MiaoCast cross-version changelog dialog with SHA-256 and signing certificate verification before installation](docs/assets/screenshots/en/08-update-dialog-dark-vs-light.png)
 
 ---
 
@@ -204,7 +204,7 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 ### 2. Visual Architecture Overview
 
 > 🧭 **Explore Deeper**:
-> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/architecture.html)** (local file: [`docs/architecture.html`](docs/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
+> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
 > - **Full Source Dictionary**: Read **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for complete file-by-file responsibility tables (41 Android files, 24 Rust modules, 19 JVM test suites, and 6-stage lifecycle invariants).
 
 #### (1) Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
@@ -258,6 +258,6 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 ## 8. Honest Scope, Links & License
 
 - **Known Boundaries**: See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) and [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Third-party apps opting out via `allowAudioPlaybackCapture="false"` cannot be bypassed; under standard unprivileged Android permissions, muting a single app without affecting `STREAM_MUSIC` is not supported by public APIs (Seamless Mode on Android 13+ requires real-device ROM verification); OEM background freezing and speaker firmware quirks (e.g., [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)) vary by device.
-- **Resources**: [Product Website](https://jasirvoriya.github.io/miaocast-releases/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
+- **Resources**: [Product Website](https://jasirvoriya.github.io/miaocast-releases/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 - **License**: Released under **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)**.
 - **Non-Affiliation Disclaimer**: Independent third-party open-source implementation for LAN interoperability research. Not affiliated with, authorized by, or endorsed by Xiaomi Corporation.

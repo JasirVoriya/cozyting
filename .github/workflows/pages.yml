@@ -6,6 +6,8 @@ on:
     paths:
       - "docs/index.html"
       - "docs/architecture.html"
+      - "docs/en/**"
+      - "docs/ja/**"
       - "docs/robots.txt"
       - "docs/sitemap.xml"
       - "docs/llms.txt"
@@ -43,6 +45,12 @@ jobs:
           mkdir -p _site/assets
           cp docs/index.html _site/index.html
           cp docs/architecture.html _site/architecture.html
+          for locale_dir in en ja; do
+            if [[ -d "docs/$locale_dir" ]]; then
+              mkdir -p "_site/$locale_dir"
+              cp -r "docs/$locale_dir/." "_site/$locale_dir/"
+            fi
+          done
           for seo_file in robots.txt sitemap.xml llms.txt; do
             if [[ -f "docs/$seo_file" ]]; then
               cp "docs/$seo_file" "_site/$seo_file"

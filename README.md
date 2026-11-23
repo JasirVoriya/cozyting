@@ -11,7 +11,7 @@
 **打破手机品牌限制的开源 MiPlay 纯局域网音频投送工具：只投你选的那一个音乐 App，让多台小米 / 小爱音箱毫秒级同频合唱**
 
 <p>
-  <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
+  <strong>简体中文</strong> · <a href="README_EN.md">English</a> · <a href="README_JA.md">日本語</a> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/">产品官网</a> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/#video">演示视频</a> ·
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases">下载安装包</a> ·
