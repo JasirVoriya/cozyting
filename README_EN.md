@@ -13,6 +13,7 @@
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/">Website</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/#video">Promo Video</a> ·
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases">Download APK</a> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
@@ -35,7 +36,23 @@
 > **MiaoCast** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
 > 📦 **Download**: Grab the latest Android APK and cross-platform `miplay-cli` binaries from **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
-> 📑 **Jump to**: [Problems Solved](#1-what-problems-does-miaocast-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
+> 📑 **Jump to**: [66-Second Promo Video](#-66-second-promo-video) · [Problems Solved](#1-what-problems-does-miaocast-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
+
+---
+
+## 🎬 66-Second Promo Video
+
+<div align="center">
+  <a href="https://jasirvoriya.github.io/miaocast-releases/#video" title="Watch the 66-second MiaoCast promo video on the product website">
+    <img src="docs/assets/video/miaocast-promo-poster.jpg" alt="MiaoCast 66-second narration-free promo video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
+  </a>
+  <p>
+    <a href="https://jasirvoriya.github.io/miaocast-releases/#video"><strong>▶ Watch on the Product Website</strong></a> ·
+    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4">Direct MP4 (1280×720 · 66s)</a>
+  </p>
+</div>
+
+> A 66-second narration-free demo highlighting **single-app audio isolation**, **up to 63-speaker multi-room sync**, **4-tier live latency switching**, and **Android 13+ root-free seamless capture**. *(UI scenes are rendered demos using placeholder device names and RFC 5737 addresses.)*
 
 ---
 

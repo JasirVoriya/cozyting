@@ -13,6 +13,7 @@
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/">产品官网</a> ·
+  <a href="https://jasirvoriya.github.io/miaocast-releases/#video">宣传视频</a> ·
   <a href="https://github.com/JasirVoriya/miaocast-releases/releases">下载安装包</a> ·
   <a href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
@@ -35,7 +36,23 @@
 > **妙投（MiaoCast）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
 >
 > 📦 **立即获取**：前往 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `miplay-cli`。
-> 📑 **快速导航**：[解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
+> 📑 **快速导航**：[66 秒宣传视频](#-66-秒宣传视频) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
+
+---
+
+## 🎬 66 秒宣传视频
+
+<div align="center">
+  <a href="https://jasirvoriya.github.io/miaocast-releases/#video" title="点击前往产品官网在线观看妙投（MiaoCast）66 秒宣传视频">
+    <img src="docs/assets/video/miaocast-promo-poster.jpg" alt="妙投（MiaoCast）66 秒无旁白宣传视频封面：演示任意安卓手机投音到多台小米 / 小爱音箱、单 App 音频隔离、最多 63 台同频与 4 档延迟热切换" width="100%">
+  </a>
+  <p>
+    <a href="https://jasirvoriya.github.io/miaocast-releases/#video"><strong>▶ 在产品官网在线观看</strong></a> ·
+    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4">直接播放 / 下载 MP4（1280×720 · 66 秒）</a>
+  </p>
+</div>
+
+> 一段 66 秒无旁白宣传视频，快速演示**单 App 音频隔离**、**最多 63 台小米 / 小爱音箱同频**、**4 档播放延迟热切换**与 **Android 13+ 免 Root 无感采集**。（注：视频中界面为演示渲染，设备名称与局域网 IP 均为占位数据。）
 
 ---
 
