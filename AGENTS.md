@@ -7,11 +7,80 @@
 - 默认仅做只读分析与排查，向用户输出**明确结论与推荐方案**（必要时附影响范围与备选方案），等待用户确认后方可开始实施改动。
 
 ### 0.2 强制基于 `main` 新建分支改动，完成后合并回 `main`
-- 获得允许准备改动时，**每一次独立改动都必须遵循以下闭环**：
-  1. **从主分支拉新分支**：基于最新 `main` 切出独立新分支（如 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`），**严禁直接在 `main` 上做改动**，也不得把不相关改动混入其他正在进行的分支。
-  2. **在新分支完成全部改动与验证**：编辑、测试、自检与 commit 均在该新分支上进行。
-  3. **合并回主分支**：改动验证完成后，将该新分支合并回 `main`（合并前确认遵循提交前自检规范；是否推送远程由用户确认）。
-- 若当前工作区停留在其他分支且有未提交改动，必须先提示用户处理（例如通过 `git worktree` 隔离处理，或待当前工作暂存/提交），严禁强行切分支污染工作区。
+- 获得允许准备改动时，**每一次独立改动都必须遵循以下闭环**（统一通过下方 `0.3` 的独立 Git Worktree 协议执行）：
+  1. **从主分支拉新分支与独立 Worktree**：基于最新 `main` 在 `.worktrees/` 下创建独立 worktree 与新分支（如 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`），**严禁直接在主工作区或 `main` 分支上做改动**，也不得把不相关改动混入其他正在进行的分支。
+  2. **在独立 Worktree 完成全部改动与验证**：编辑、测试、自检与 commit 均在该 worktree 与新分支上进行。
+  3. **变基验证后串行合入主分支**：先在 worktree 内基于最新 `main` 完成 `git rebase main` 并重新验证通过，再在主工作区持锁使用 `git merge --no-ff <branch>` 合入 `main`（合并前确认遵循提交前自检规范；是否推送远程由用户确认）。
+
+### 0.3 多 Agent 并发开发隔离规范（Git Worktree 强制协议）
+
+为支持多个 Agent 会话并发开发并杜绝 Git 状态踩踏、文件覆盖、构建冲突与真机争抢，**所有 Agent 执行任何写入类改动时，无论当前是否存在其他会话，一律遵守以下协议**：
+
+#### 1. 主工作区常驻干净 `main`（禁止在主目录直接改动）
+- 仓库主目录（Main Worktree）**仅用于**：只读调研、创建/移除子 Worktree、以及最终串行合并回 `main`。
+- **严禁**在主目录直接切功能分支、修改业务文件或残留未提交改动，确保任意时刻主目录都处于干净的 `main` 状态，随时可供任意会话安全合并。
+
+#### 2. 隔离目录与命名规范
+- 获得用户允许（满足 `0.1`）准备实施改动后，必须基于最新 `main` 在仓库内 `.worktrees/` 下创建独立工作树（`.worktrees/` 已在 `.gitignore` 中忽略）：
+  - 分支名：`<type>/<topic>`（如 `feat/volume-sync`、`fix/mdns-timeout`、`docs/faq`）
+  - 目录名：`.worktrees/<type>-<topic>`（将分支名中的 `/` 替换为 `-`）
+  - 创建命令：
+    ```bash
+    git worktree add .worktrees/<type>-<topic> -b <type>/<topic> main
+    ```
+- **严格路径边界**：Worktree 创建后，本会话的**全部文件读写、代码检索、构建、测试与 Git 提交操作**，必须严格限定在 `.worktrees/<type>-<topic>/` 目录内；**严禁**修改主目录或其他 `.worktrees/*` 目录下的任何文件。
+
+#### 3. 并发冲突预检与会话声明（一会话一文件）
+- 使用 Git 公共目录下的独立目录存放活跃会话声明，避免声明文件本身发生并发写冲突：
+  - 目录路径：`$(git rev-parse --git-common-dir)/agent-sessions/`
+  - 本会话文件：`<type>-<topic>.txt`（仅由本会话创建、更新和删除）
+- **开工前必检**：
+  1. 执行 `git worktree list` 并只读扫描 `agent-sessions/*.txt`，查看是否存在其他进行中的会话。
+  2. 将本会话信息写入 `agent-sessions/<type>-<topic>.txt`，内容包含：分支名、worktree 路径、创建时间、任务简述、**预计修改的目录/高冲突文件**、**是否需要占用 ADB 真机**。
+  3. **冲突预警（先报后做）**：若发现与其他活跃会话存在以下重叠，必须先暂停并向用户报告、等待确认后再继续：
+     - 共同修改高冲突公共契约文件（如 `AGENTS.md`、`core/src/ffi.rs`、`core/src/ffi_c.rs`、`core/include/miaocast_core.h`、`design/UI_SPEC.md`、`design/tokens.json`、`README.md`、`README_EN.md`）。
+     - 共同需要占用同一台 ADB 真机。
+
+#### 4. 本地忽略文件挂载（项目构建初始化）
+- `.gitignore` 忽略的本地文件不会随 `git worktree add` 自动复制。创建 worktree 后，若主目录存在以下文件/目录，应挂载到新 worktree 对应路径（优先使用软链接 symlink；若目标文件系统不支持软链接，则改为只读拷贝，仅当目标不存在时创建）：
+  - `.local`（读取本地环境约束，并发会话**禁止**同时修改 `.local/` 下同一文件）
+  - `android/local.properties`
+  - `android/keystore.properties`、`android/app/acceptance.keystore`（仅签名构建需要时）
+- 严禁在提交时将软链接或忽略文件加入 Git 跟踪（须通过 `1.2` 提交前自检）。
+
+#### 5. 构建产物与共享硬件隔离
+- **构建产物独立**：每个 worktree 独立使用自身的 `target/`、`android/.gradle/`、`android/build/` 与 `android/app/build/`，禁止跨 worktree 共享可写编译输出目录。
+- **外部临时缓存隔离**：若本地环境将 `CARGO_TARGET_DIR`、Gradle `project-cache-dir` / `buildDir` 等重定向到仓库外临时路径，**必须按 `<type>-<topic>` 追加独立后缀隔离**，严禁多个并发会话共用同一外部构建/缓存目录。
+- **ADB 真机独占**：若已有活跃会话在声明文件中标记占用真机，其他会话**严禁**执行 `adb install`、启停应用或抓取独占日志，仅允许执行离线验证（如 `cargo test`、Android Lint、JVM 单测、离线编译），待对方释放或用户明确指令后再进行真机测试。
+
+#### 6. 串行合入 `main`（原子锁 + 先 Rebase 后 `--no-ff`）
+开发与验证可并行，但**合并回 `main` 必须严格串行**：
+1. 在自己的 worktree 内完成全部改动、测试、双端核对（第 2 节）与隐私自检（第 1.2 节）并 `git commit`。
+2. 获取原子合并锁（利用 `mkdir` 的跨进程原子性）：
+   ```bash
+   LOCK_DIR="$(git rev-parse --git-common-dir)/agent-merge.lock"
+   mkdir "$LOCK_DIR"
+   ```
+   - 若 `mkdir` 失败，说明另一会话正在合入 `main`，必须等待重试或向用户汇报，**严禁强行删除他人的锁目录**。
+   - 加锁成功后，写入 `$LOCK_DIR/owner.txt`（记录分支名与时间戳）。
+3. 持锁期间执行合入：
+   - 确认主目录 `git status --porcelain` 为空且当前位于 `main` 分支。
+   - 在自己的 worktree 内先执行 `git rebase main`：
+     - 若发生冲突，先释放锁、在自己 worktree 内解决冲突并**重新跑完验证**后，再重新申请锁合入。
+     - 若 `main` 在期间有新提交导致 rebase 产生新基底，同样须重新验证通过后再合入。
+   - 在主目录执行非快进合并，保留本次任务的分支合并记录：
+     ```bash
+     git merge --no-ff <type>/<topic>
+     ```
+4. 无论合并成功或中途退出，均须及时清理自己创建的 `$LOCK_DIR`（仅当 `owner.txt` 属于自己时）。
+
+#### 7. 收尾与异常恢复
+- **正常完成**：合入 `main` 后，在本会话内完成清理：
+  1. 移除本会话 worktree：`git worktree remove .worktrees/<type>-<topic>`
+  2. 删除已合入的临时分支：`git branch -d <type>/<topic>`
+  3. 删除本会话声明文件：`$(git rev-parse --git-common-dir)/agent-sessions/<type>-<topic>.txt`
+- **严禁越权清理**：禁止任何会话删除、重置或强制移除其他会话的 worktree、分支或声明文件。
+- **任务中止/失败**：不得使用 `git worktree remove --force` 或 `rm -rf` 擅自丢弃未提交改动；应保留现场，在回复中明确告知 worktree 路径与分支名，交由用户决定继续或清理。
 
 ## 1. 个人开发环境与隐私隔离规范（强制）
 
