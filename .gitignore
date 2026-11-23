@@ -10,6 +10,7 @@ android/app/acceptance.keystore
 *.keystore
 *.jks
 android/testtones/build/
+android/hiddenapi-stubs/build/
 ._*
 .DS_Store
 .local/
