@@ -525,3 +525,72 @@ export const Phone = StagePhone;
 export const Logo: React.FC<{ size: number }> = ({ size }) => (
   <Img src={staticFile("logo.svg")} style={{ width: size, height: size }} />
 );
+
+/** Crisp vector GitHub Octocat mark. */
+export const GitHubIcon: React.FC<{ size?: number; color?: string }> = ({ size = 36, color = "#FFFFFF" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: "block" }}>
+    <path d="M12 0.5C5.37 0.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.05-.02-2.06-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.98-.4 3-.4s2.04.14 3 .4c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.22 0 1.61-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.57 22.3 24 17.8 24 12.5 24 5.87 18.63 0.5 12 0.5z" />
+  </svg>
+);
+
+/** Crisp macOS-style pointer cursor with press bounce + optional click ripple. */
+export const MouseCursor: React.FC<{
+  x: number;
+  y: number;
+  opacity?: number;
+  pressing?: number; // 0..1 press scale
+  rippleT?: number; // 0..1 click ripple progress
+  rippleColor?: string;
+  size?: number;
+}> = ({ x, y, opacity = 1, pressing = 0, rippleT = 0, rippleColor = C.coral, size = 46 }) => {
+  if (opacity <= 0.001) return null;
+  const sc = 1 - pressing * 0.16;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        pointerEvents: "none",
+        opacity,
+        zIndex: 100,
+      }}
+    >
+      {rippleT > 0.001 && rippleT < 1 && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 24 + easeOut(rippleT) * 110,
+            height: 24 + easeOut(rippleT) * 110,
+            borderRadius: 999,
+            border: `3.5px solid ${rippleColor}`,
+            boxShadow: `0 0 24px ${rippleColor}`,
+            opacity: (1 - rippleT) * 0.92,
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+      )}
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 36 36"
+        style={{
+          transform: `translate(-4px, -3px) scale(${sc})`,
+          transformOrigin: "4px 3px",
+          filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.65))",
+          display: "block",
+        }}
+      >
+        <path
+          d="M5 3.5 L5 29.5 L12.2 22.8 L17.3 33 L21.2 31.1 L16.1 21 L25.5 21 Z"
+          fill="#11141B"
+          stroke="#FFFFFF"
+          strokeWidth="2.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+};

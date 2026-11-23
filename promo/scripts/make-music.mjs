@@ -1,12 +1,13 @@
 // Procedurally synthesises the promo soundtrack (no samples, no voice).
-// 120 BPM, 33 bars (66 s) + tail. Bar boundaries line up with scene cuts in src/timeline.ts.
+// 120 BPM, 31 bars (62 s). Bar boundaries line up with scene cuts in src/theme.ts.
 import { writeFileSync, mkdirSync } from "node:fs";
 
 const SR = 48000;
 const BPM = 120;
 const BEAT = 60 / BPM; // 0.5 s
 const BAR = BEAT * 4; // 2 s
-const TOTAL = 66 + 0.0;
+const BARS = 31;
+const TOTAL = BARS * BAR; // 62 s
 const N = Math.ceil(TOTAL * SR);
 const L = new Float32Array(N);
 const R = new Float32Array(N);
@@ -72,24 +73,24 @@ const CHORDS = [
 ];
 const chordAt = (bar) => CHORDS[((bar % 4) + 4) % 4];
 
-// section intensities by bar
-// 0-3 intro, 4-11 groove A, 12-16 full (multi-room), 17-20 latency, 21-23 breakdown, 24-28 full, 29-32 outro
+// section intensities by bar (31 bars total = 62s)
+// 0-3 intro, 4-6 anyPhone, 7-11 oneApp, 12-18 multiRoom+latency, 19-21 lan breakdown, 22-24 uiShowcase, 25-26 search, 27-30 outro
 const has = {
-  kick: (b) => (b >= 4 && b <= 20) || (b >= 24 && b <= 28),
-  hat: (b) => (b >= 8 && b <= 20) || (b >= 24 && b <= 28),
-  clap: (b) => (b >= 12 && b <= 20) || (b >= 24 && b <= 28),
-  bass: (b) => (b >= 4 && b <= 28 && !(b >= 21 && b <= 23)) ,
-  arp: (b) => b >= 4 && b <= 30,
+  kick: (b) => (b >= 4 && b <= 18) || (b >= 22 && b <= 26),
+  hat: (b) => (b >= 7 && b <= 18) || (b >= 22 && b <= 26),
+  clap: (b) => (b >= 12 && b <= 18) || (b >= 22 && b <= 24),
+  bass: (b) => (b >= 4 && b <= 26 && !(b >= 19 && b <= 21)),
+  arp: (b) => b >= 4 && b <= 28,
 };
 
 // ---- PAD
 function renderPad() {
-  for (let bar = 0; bar < 33; bar++) {
+  for (let bar = 0; bar < BARS; bar++) {
     const ch = chordAt(bar);
     const t0 = bar * BAR;
     const dur = BAR + 0.6;
-    const level = bar < 4 ? 0.05 + 0.03 * (bar / 3) : bar >= 21 && bar <= 23 ? 0.085 : bar >= 29 ? 0.09 : 0.075;
-    const notes = bar >= 29 && bar === 32 ? ch.notes : ch.notes;
+    const level = bar < 4 ? 0.05 + 0.03 * (bar / 3) : bar >= 19 && bar <= 21 ? 0.085 : bar >= 27 ? 0.09 : 0.075;
+    const notes = ch.notes;
     notes.forEach((m, ni) => {
       for (let v = 0; v < 3; v++) {
         const det = (v - 1) * 0.09 + (ni % 2 ? 0.02 : -0.02);
@@ -187,7 +188,7 @@ function clapAt(t, gain = 1) {
 
 // ---- BASS
 function renderBass() {
-  for (let bar = 0; bar < 33; bar++) {
+  for (let bar = 0; bar < BARS; bar++) {
     if (!has.bass(bar)) continue;
     const ch = chordAt(bar);
     for (let e = 0; e < 8; e++) {
@@ -235,11 +236,11 @@ function pluck(t, m, gain, pan) {
 
 function renderArp() {
   const pattern = [0, 2, 1, 3, 2, 4, 3, 1];
-  for (let bar = 0; bar < 33; bar++) {
+  for (let bar = 0; bar < BARS; bar++) {
     if (!has.arp(bar)) continue;
     const ch = chordAt(bar);
-    const steps = bar >= 12 && bar <= 20 ? 16 : bar >= 24 && bar <= 28 ? 16 : 8;
-    const g = bar >= 29 ? 0.05 * (1 - (bar - 29) / 2) : bar >= 21 && bar <= 23 ? 0.075 : 0.06;
+    const steps = bar >= 12 && bar <= 18 ? 16 : bar >= 22 && bar <= 24 ? 16 : 8;
+    const g = bar >= 27 ? 0.05 * (1 - (bar - 27) / 2) : bar >= 19 && bar <= 21 ? 0.075 : 0.06;
     for (let st = 0; st < steps; st++) {
       const t = bar * BAR + st * (BAR / steps);
       const idx = pattern[st % pattern.length];
@@ -320,12 +321,12 @@ function tick(t, gain = 0.05) {
 
 // ---- build
 // drums first (they write sidechain)
-for (let bar = 0; bar < 33; bar++) {
+for (let bar = 0; bar < BARS; bar++) {
   for (let b = 0; b < 4; b++) {
     const t = bar * BAR + b * BEAT;
     if (has.kick(bar)) {
-      // groove A: half-time-ish feel bars 4-7
-      if (bar >= 8 || b % 2 === 0) kickAt(t, bar < 8 ? 0.85 : 1);
+      // groove A: half-time-ish feel bars 4-6
+      if (bar >= 7 || b % 2 === 0) kickAt(t, bar < 7 ? 0.85 : 1);
     }
     if (has.clap(bar) && (b === 1 || b === 3)) clapAt(t);
     if (has.hat(bar)) {
@@ -337,32 +338,37 @@ for (let bar = 0; bar < 33; bar++) {
     }
   }
 }
-// breath before big sections: remove nothing, just risers
+// breath before big sections
 riser(4 * BAR, 2.0, 0.8);
 riser(12 * BAR, 2.0, 1.1);
-riser(24 * BAR, 4.0, 1.1);
-riser(29 * BAR, 2.0, 1.0);
+riser(22 * BAR, 3.0, 1.1);
+riser(27 * BAR, 2.0, 1.0);
 impact(4 * BAR, 0.5);
 impact(12 * BAR, 0.8);
-impact(24 * BAR, 0.8);
-impact(29 * BAR, 1.0);
+impact(22 * BAR, 0.8);
+impact(27 * BAR, 1.0);
 
 // logo build chimes in intro (beat-aligned)
 chime(1 * BAR, 76, 0.05, 0.45);
 chime(1 * BAR + BEAT * 1.5, 79, 0.04, 0.55);
 chime(2 * BAR + BEAT * 2, 84, 0.05, 0.5);
-// multi-room: speakers light up one per beat starting bar 13
-[0, 1, 2, 3, 4].forEach((k) => chime(13 * BAR + k * BEAT, [72, 76, 79, 83, 84][k], 0.045, 0.2 + k * 0.15));
-// latency countdown ticks (each tier on a bar start of 17..20, plus 16ths)
-for (let bar = 17; bar <= 20; bar++) {
-  const rate = [4, 8, 8, 16][bar - 17];
+// auto-switch chimes (NetEase -> QQ Music -> Soda Music)
+chime(7 * BAR + 1.9, 79, 0.04, 0.5);
+chime(7 * BAR + 3.55, 84, 0.045, 0.55);
+// multi-room: speakers light up one per beat starting bar 12.5
+[0, 1, 2, 3].forEach((k) => chime(12 * BAR + 0.9 + k * BEAT, [72, 76, 79, 83][k], 0.045, 0.25 + k * 0.16));
+// latency hot-switch ticks across bars 15..18
+for (let bar = 15; bar <= 18; bar++) {
+  const rate = [4, 8, 8, 16][bar - 15];
   for (let i = 0; i < rate; i++) tick(bar * BAR + i * (BAR / rate), 0.03);
 }
-// single app filtering: soft "denied" thuds for blocked sources at bars 9/10
-[9 * BAR + BEAT, 9 * BAR + BEAT * 3, 10 * BAR + BEAT].forEach((t) => chime(t, 52, 0.03, 0.5));
-// final logo chime
-chime(29 * BAR + 0.02, 84, 0.06, 0.5);
-chime(29 * BAR + BEAT, 88, 0.04, 0.6);
+// search click chime
+tick(25 * BAR + 2.77, 0.06);
+chime(25 * BAR + 2.8, 86, 0.045, 0.5);
+// final logo & CTA click chime
+chime(27 * BAR + 0.02, 84, 0.06, 0.5);
+chime(27 * BAR + BEAT, 88, 0.04, 0.6);
+tick(27 * BAR + 4.1, 0.055);
 
 renderPad();
 renderBass();
