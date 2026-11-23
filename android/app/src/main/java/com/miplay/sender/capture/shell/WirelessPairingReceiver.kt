@@ -44,6 +44,7 @@ class WirelessPairingReceiver : BroadcastReceiver() {
                             is WirelessAdbPairingClient.PairResult.Success -> {
                                 store.markPaired()
                                 PairingNotificationGuide.stopPairingWatcher()
+                                PairingFloatingOverlay.dismiss(appCtx)
                                 PairingNotificationGuide.postResultNotification(
                                     appCtx,
                                     success = true,

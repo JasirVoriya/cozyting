@@ -2237,7 +2237,7 @@ class MainActivity : Activity() {
                     palette = palette,
                     title = "首次使用无感模式需配对",
                     message = reasonZh,
-                    footnote = "仅需首次在顶部浮动数字键盘输入一次 6 位配对码；配置完成后即可免投屏弹窗、免「正在投屏」横幅直接投送。",
+                    footnote = "仅需首次按向导自动识别一次 6 位配对码（也支持悬浮键盘与通知栏长按输入）；配置完成后即可免投屏弹窗、免「正在投屏」横幅直接投送。",
                     primaryLabel = "打开 5 步配对引导",
                     onPrimary = {
                         startActivity(Intent(this, WirelessDebugGuideActivity::class.java))

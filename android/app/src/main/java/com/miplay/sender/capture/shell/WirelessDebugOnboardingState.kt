@@ -4,13 +4,21 @@ import com.miplay.sender.capture.CaptureEngineCapabilities
 
 /**
  * 内置无线调试 5 步配对向导的纯状态计算模型（无 Android Framework 依赖，便于 JVM 单测）。
+ *
+ * 步骤顺序：
+ * 1. 允许通知权限（后台播控栏 + 通知栏长按展开输入框保底兜底）
+ * 2. 开启「开发者选项」
+ * 3. 开启「无障碍自动配对」（推荐：无需悬浮窗权限，在系统设置 PIN 码页同屏展示悬浮数字键盘并自动识别 6 位码；支持跳过改走通知栏兜底）
+ * 4. 开启「无线调试」并完成 6 位码配对
+ * 5. 验证本机连通性并启用
  */
 data class WirelessDebugOnboardingState(
     val sdkInt: Int,
     val supported: Boolean,
     val notificationsGranted: Boolean,
-    val overlayGranted: Boolean,
     val developerOptionsEnabled: Boolean,
+    val accessibilityEnabled: Boolean,
+    val accessibilitySkipped: Boolean,
     val paired: Boolean,
     val connectionVerified: Boolean,
     val connectedPort: Int,
@@ -22,8 +30,8 @@ data class WirelessDebugOnboardingState(
 ) {
     enum class StepId(val index: Int) {
         NOTIFICATION(1),
-        OVERLAY_PERMISSION(2),
-        DEVELOPER_OPTIONS(3),
+        DEVELOPER_OPTIONS(2),
+        ACCESSIBILITY_HELPER(3),
         WIRELESS_PAIRING(4),
         VERIFY_CONNECTION(5),
     }
@@ -47,8 +55,9 @@ data class WirelessDebugOnboardingState(
         fun evaluate(
             sdkInt: Int,
             notificationsGranted: Boolean,
-            overlayGranted: Boolean = false,
             developerOptionsEnabled: Boolean,
+            accessibilityEnabled: Boolean = false,
+            accessibilitySkipped: Boolean = false,
             paired: Boolean,
             connectionVerified: Boolean,
             connectedPort: Int = 0,
@@ -59,8 +68,9 @@ data class WirelessDebugOnboardingState(
                     sdkInt = sdkInt,
                     supported = false,
                     notificationsGranted = notificationsGranted,
-                    overlayGranted = overlayGranted,
                     developerOptionsEnabled = developerOptionsEnabled,
+                    accessibilityEnabled = accessibilityEnabled,
+                    accessibilitySkipped = accessibilitySkipped,
                     paired = false,
                     connectionVerified = false,
                     connectedPort = 0,
@@ -72,10 +82,13 @@ data class WirelessDebugOnboardingState(
                 )
             }
 
+            // 已配对或用户主动跳过无障碍时，第 3 步不阻塞后续配对/验证
+            val accessibilityReady = accessibilityEnabled || accessibilitySkipped || paired
+
             val active = when {
                 !notificationsGranted -> StepId.NOTIFICATION
-                !overlayGranted -> StepId.OVERLAY_PERMISSION
                 !developerOptionsEnabled -> StepId.DEVELOPER_OPTIONS
+                !accessibilityReady -> StepId.ACCESSIBILITY_HELPER
                 !paired -> StepId.WIRELESS_PAIRING
                 !connectionVerified -> StepId.VERIFY_CONNECTION
                 else -> null
@@ -91,9 +104,9 @@ data class WirelessDebugOnboardingState(
                 id = StepId.NOTIFICATION,
                 titleZh = "允许通知权限",
                 detailZh = if (notificationsGranted) {
-                    "已允许通知，可用于展示后台投送状态与配对结果提醒"
+                    "已允许通知，可用于展示后台投送播控栏及配对码输入兜底横幅"
                 } else {
-                    "用于展示前台投送播控栏与配对状态提示，请先允许通知权限"
+                    "用于展示前台投送播控栏与通知栏配对码输入兜底横幅，请先允许通知权限"
                 },
                 status = statusFor(StepId.NOTIFICATION, notificationsGranted),
                 statusBadgeZh = if (notificationsGranted) "已完成" else "待开启",
@@ -101,19 +114,6 @@ data class WirelessDebugOnboardingState(
             )
 
             val step2 = StepItem(
-                id = StepId.OVERLAY_PERMISSION,
-                titleZh = "开启「悬浮窗权限」",
-                detailZh = if (overlayGranted) {
-                    "已允许悬浮窗，配对时将在系统设置上方自动弹出 6 位配对码浮动数字键盘"
-                } else {
-                    "首次配对需在系统「无线调试」页面上方悬浮 6 位码浮动输入法（切回 App 会导致系统销毁配对码，且无需再下拉通知栏），请允许妙投显示在其他应用上层"
-                },
-                status = statusFor(StepId.OVERLAY_PERMISSION, overlayGranted),
-                statusBadgeZh = if (overlayGranted) "已完成" else "待开启",
-                primaryActionLabelZh = if (overlayGranted) null else "去开启悬浮窗权限",
-            )
-
-            val step3 = StepItem(
                 id = StepId.DEVELOPER_OPTIONS,
                 titleZh = "开启「开发者选项」",
                 detailZh = if (developerOptionsEnabled) {
@@ -126,19 +126,57 @@ data class WirelessDebugOnboardingState(
                 primaryActionLabelZh = if (developerOptionsEnabled) null else "前往「关于手机」",
             )
 
+            val step3 = StepItem(
+                id = StepId.ACCESSIBILITY_HELPER,
+                titleZh = "开启「无障碍自动配对」（推荐）",
+                detailZh = when {
+                    accessibilityEnabled ->
+                        "已开启无障碍自动配对：无需悬浮窗权限，在系统「无线调试」PIN 码页顶部直接显示悬浮数字键盘，并自动读取 6 位配对码完成秒配"
+                    accessibilitySkipped ->
+                        "已跳过无障碍，将使用「通知栏横幅」手动输入配对码（若未看到输入按钮，请长按通知展开输入框）；也可随时重新开启自动识别"
+                    else ->
+                        "无需开启悬浮窗权限！开启「妙投 · 无线调试自动配对助手」后，可在系统设置 PIN 码页同屏显示悬浮数字键盘（不被系统隐藏）并自动读取 6 位配对码秒配；配对完成后自动休眠"
+                },
+                status = statusFor(StepId.ACCESSIBILITY_HELPER, accessibilityReady),
+                statusBadgeZh = when {
+                    accessibilityEnabled -> "已开启"
+                    accessibilitySkipped -> "已跳过"
+                    paired -> "已完成"
+                    else -> "推荐 · 免手输"
+                },
+                primaryActionLabelZh = when {
+                    accessibilityEnabled -> null
+                    accessibilitySkipped -> "改为开启无障碍"
+                    else -> "去开启无障碍（推荐）"
+                },
+            )
+
             val step4 = StepItem(
                 id = StepId.WIRELESS_PAIRING,
-                titleZh = "开启「无线调试」并在浮动框输入 6 位配对码",
-                detailZh = if (paired) {
-                    "已保存本机 TLS 配对证书；以后无需重复输入配对码（重启手机后只需重新打开无线调试开关）"
+                titleZh = if (accessibilityEnabled) {
+                    "开启「无线调试」并点开配对码弹窗"
                 } else {
-                    "① 点击下方「启动浮动框并前往设置」，顶部将挂出可拖动的妙投配对浮动条\n" +
-                        "② 打开「无线调试」开关并点「使用配对码配对设备」（保持 6 位码弹窗不关闭）\n" +
-                        "③ 顶部浮动框会自动展开紧凑数字键盘，直接点按 6 位配对码即可自动完成配对并跳回本页"
+                    "开启「无线调试」并在通知栏输入 6 位配对码"
+                },
+                detailZh = when {
+                    paired ->
+                        "已保存本机 TLS 配对证书；以后无需重复输入配对码（重启手机后只需重新打开无线调试开关）"
+                    accessibilityEnabled ->
+                        "① 点击下方前往「开发者选项 → 无线调试」并打开开关\n" +
+                            "② 点「使用配对码配对设备」弹出 6 位数字弹窗（保持弹窗不关闭）\n" +
+                            "③ 顶部悬浮框将自动识别 6 位码并秒配跳回本页（也可直接点悬浮数字键盘或长按通知栏输入）"
+                    else ->
+                        "① 点击下方前往「开发者选项 → 无线调试」并打开开关\n" +
+                            "② 点「使用配对码配对设备」保持 6 位码弹窗不关闭\n" +
+                            "③ 下拉通知栏点「输入 6 位配对码」（若未看到输入框，请【长按本条通知】展开）"
                 },
                 status = statusFor(StepId.WIRELESS_PAIRING, paired),
                 statusBadgeZh = if (paired) "已配对" else "待配对",
-                primaryActionLabelZh = if (paired) "重新配对" else "启动浮动框并前往设置",
+                primaryActionLabelZh = when {
+                    paired -> "重新配对"
+                    accessibilityEnabled -> "启动自动配对并前往设置"
+                    else -> "前往无线调试（通知栏输入）"
+                },
             )
 
             val step5 = StepItem(
@@ -176,15 +214,16 @@ data class WirelessDebugOnboardingState(
                 paired ->
                     "已完成配对 · 还差最后一步验证" to "确认系统「无线调试」已开启后点击「测试连接」，验证通过即可零弹窗投送"
                 else ->
-                    "5 步开启免投屏无感采集（仅需首次配置）" to "纯本机内置无线调试直连，无需安装 Shizuku 或连接电脑 · 当前进度 $completed/5"
+                    "5 步开启免投屏无感采集（仅需首次配置）" to "无需悬浮窗权限或电脑 · 开启无障碍即可自动识别 6 位配对码，同时保留通知栏长按输入兜底"
             }
 
             return WirelessDebugOnboardingState(
                 sdkInt = sdkInt,
                 supported = true,
                 notificationsGranted = notificationsGranted,
-                overlayGranted = overlayGranted,
                 developerOptionsEnabled = developerOptionsEnabled,
+                accessibilityEnabled = accessibilityEnabled,
+                accessibilitySkipped = accessibilitySkipped,
                 paired = paired,
                 connectionVerified = connectionVerified,
                 connectedPort = connectedPort,

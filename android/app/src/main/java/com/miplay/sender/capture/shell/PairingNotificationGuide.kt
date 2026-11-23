@@ -14,9 +14,11 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * 无线调试 6 位配对码会话控制器：
- * - 首选路径（已开启悬浮窗权限）：通过 [PairingFloatingOverlay] 在系统设置上方悬浮 Style B 可拖动 2 行紧凑数字键盘，
- *   不抢系统配对码弹窗焦点、不拉起半屏系统软键盘、不依赖下拉通知栏；
- * - 兜底路径（未开启悬浮窗权限时被调用）：回退通知栏 `RemoteInput`。
+ * - 主路径（已开启「无障碍自动配对」）：通过 [WirelessPairingAccessibilityService] 在系统设置上方使用
+ *   `TYPE_ACCESSIBILITY_OVERLAY` 挂载 [PairingFloatingOverlay]（无需悬浮窗权限、不被 Android 12+ Settings 隐藏），
+ *   并在弹出配对码弹窗时自动提取 6 位 PIN 码与端口完成秒配；
+ * - 保底兜底（始终同步开启）：无论是否开启无障碍，均推送带 `RemoteInput` 的通知栏横幅，并在文案中醒目提示
+ *   「若未看到输入按钮，请长按本条通知展开输入框」。
  */
 object PairingNotificationGuide {
     /** 检测到配对端口后使用的高优先级横幅通道（弹出 Heads-Up 直接露出「输入 6 位配对码」按钮）。 */
@@ -29,6 +31,8 @@ object PairingNotificationGuide {
     const val KEY_PAIRING_CODE = "wireless_adb_pairing_code"
 
     private val activeDiscovery = AtomicReference<WirelessAdbDiscovery?>(null)
+    @Volatile var isPairingSessionActive: Boolean = false
+        private set
     @Volatile var lastDiscoveredPairingPort: Int = 0
         private set
     @Volatile private var lastHeadsUpPort: Int = 0
@@ -39,31 +43,39 @@ object PairingNotificationGuide {
     fun startPairingSession(context: Context) {
         val appCtx = context.applicationContext
         stopPairingWatcher()
+        isPairingSessionActive = true
         lastDiscoveredPairingPort = 0
         lastHeadsUpPort = 0
-        val useOverlay = PairingFloatingOverlay.canDrawOverlays(appCtx)
-        if (useOverlay) {
-            appCtx.getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
-        }
 
         val discovery = WirelessAdbDiscovery(appCtx)
         activeDiscovery.set(discovery)
         discovery.startWatching(WirelessAdbDiscovery.SERVICE_PAIRING) { ep ->
             lastDiscoveredPairingPort = ep.port
-            if (PairingFloatingOverlay.canDrawOverlays(appCtx)) {
+            if (PairingFloatingOverlay.canShowAccessibilityOverlay()) {
                 PairingFloatingOverlay.showOrUpdate(appCtx, ep.port)
-            } else {
-                postWaitingForCodeNotification(appCtx, ep.port)
+                WirelessPairingAccessibilityService.requestImmediateScan()
             }
+            // 无论是否开启无障碍，始终保留通知栏 RemoteInput 横幅作为保底兜底
+            postWaitingForCodeNotification(appCtx, ep.port)
         }
-        if (useOverlay) {
+        if (PairingFloatingOverlay.canShowAccessibilityOverlay()) {
             PairingFloatingOverlay.showOrUpdate(appCtx, newDetectedPort = 0)
-        } else {
-            postWaitingForCodeNotification(appCtx, detectedPort = 0)
+            WirelessPairingAccessibilityService.requestImmediateScan()
         }
+        postWaitingForCodeNotification(appCtx, detectedPort = 0)
+    }
+
+    /** 无障碍服务自动识别到系统配对弹窗中的 6 位 PIN 码与端口时回调。 */
+    fun onAutoExtractedPairingInfo(context: Context, pinCode: String, pairingPort: Int) {
+        if (!isPairingSessionActive) return
+        if (pairingPort in 1024..65535) {
+            lastDiscoveredPairingPort = pairingPort
+        }
+        PairingFloatingOverlay.onAutoDetectedPinAndPort(context, pinCode, pairingPort)
     }
 
     fun stopPairingWatcher() {
+        isPairingSessionActive = false
         activeDiscovery.getAndSet(null)?.stopWatching()
     }
 
@@ -121,12 +133,12 @@ object PairingNotificationGuide {
         val title = if (isReady) {
             "无线调试配对就绪（端口 $detectedPort）"
         } else {
-            "等待「使用配对码配对设备」弹窗…"
+            "等待打开「使用配对码配对设备」弹窗…"
         }
         val text = if (isReady) {
-            "点下方「输入 6 位配对码」直接填入（若按钮被折叠，单指下滑或长按本通知展开；勿切回 App）"
+            "请点下方「输入 6 位配对码」填入数字。若未看到输入按钮，请【长按本条通知】（或单指下滑本通知）展开输入框，勿切回 App"
         } else {
-            "进入「无线调试 → 使用配对码配对设备」，检测到 6 位码后顶部将弹出输入框"
+            "进入「无线调试 → 使用配对码配对设备」。若未开启自动识别，下拉通知栏并【长按本条通知】即可展开配对码输入框"
         }
 
         val channelId = if (isReady) CHANNEL_ID else CHANNEL_ID_WAITING

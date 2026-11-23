@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -34,10 +33,11 @@ import com.miplay.sender.ui.UiPalette
  * Android 内置无线调试无感采集 5 步交互式配置向导（仅 Android 端使用，严格沿用 Style B 明暗主题）。
  *
  * 实时检测系统状态并在 `onResume()` 自动刷新进度：
- * 1. 通知权限（用于展示后台投送状态与配对结果提醒）；
- * 2. 悬浮窗权限（`SYSTEM_ALERT_WINDOW`，用于在系统设置上方悬浮 Style B 6 位码浮动数字键盘，无需下拉通知栏）；
- * 3. 系统「开发者选项」（`DEVELOPMENT_SETTINGS_ENABLED`）；
- * 4. 本机 TLS 配对证书（顶部可拖动 `FLAG_NOT_FOCUSABLE` 浮动数字键盘主路径 + 分屏手动填码兜底）；
+ * 1. 通知权限（用于展示后台投送状态与通知栏配对码输入兜底横幅）；
+ * 2. 系统「开发者选项」（`DEVELOPMENT_SETTINGS_ENABLED`）；
+ * 3. 无障碍自动配对服务（无需悬浮窗权限：在系统设置 PIN 码页用 `TYPE_ACCESSIBILITY_OVERLAY` 展示悬浮数字键盘，
+ *    并自动读取弹窗中的 6 位配对码与端口完成秒配；支持跳过直接走通知栏长按输入兜底）；
+ * 4. 本机 TLS 配对证书（无障碍自动识别 / 悬浮数字键盘 / 通知栏长按展开输入 / 手动填码兜底）；
  * 5. 连通性验证（`WirelessAdbShellClient` 执行 `id` 确认 `uid=2000` 可达）+ 一键启用。
  */
 class WirelessDebugGuideActivity : Activity() {
@@ -54,6 +54,7 @@ class WirelessDebugGuideActivity : Activity() {
     private var connectionVerified = false
     private var connectedPort = 0
     private var testingConnection = false
+    private var accessibilitySkipped = false
     private var manualPairExpanded = false
     private var tipsExpanded = false
     private var feedbackText = ""
@@ -103,7 +104,7 @@ class WirelessDebugGuideActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_POST_NOTIF) {
             if (isNotificationsReady()) {
-                feedbackText = "已获得通知权限，请继续开启第 2 步「悬浮窗权限」"
+                feedbackText = "已获得通知权限，请继续完成下一步配置"
                 feedbackIsError = false
             } else {
                 feedbackText = "通知权限未授予，可点击「立即允许通知」前往系统通知设置开启"
@@ -132,8 +133,9 @@ class WirelessDebugGuideActivity : Activity() {
         return WirelessDebugOnboardingState.evaluate(
             sdkInt = Build.VERSION.SDK_INT,
             notificationsGranted = isNotificationsReady(),
-            overlayGranted = isOverlayPermissionGranted(),
             developerOptionsEnabled = isDeveloperOptionsEnabled(),
+            accessibilityEnabled = isAccessibilityHelperEnabled(),
+            accessibilitySkipped = accessibilitySkipped,
             paired = PairingNotificationGuide.keyStore(this).isPaired(),
             connectionVerified = connectionVerified,
             connectedPort = connectedPort,
@@ -421,6 +423,28 @@ class WirelessDebugGuideActivity : Activity() {
             }
             row.addView(primaryBtn)
 
+            if (step.id == WirelessDebugOnboardingState.StepId.ACCESSIBILITY_HELPER &&
+                !state.accessibilityEnabled &&
+                !state.accessibilitySkipped &&
+                !state.paired
+            ) {
+                primaryBtn.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(8)
+                }
+                row.addView(
+                    UiComponents.tonalButton(
+                        this,
+                        palette,
+                        "跳过，用通知栏",
+                    ) {
+                        accessibilitySkipped = true
+                        feedbackText = "已跳过无障碍：配对时将通过通知栏横幅输入 6 位码（若未看到输入框，请长按本条通知展开）"
+                        feedbackIsError = false
+                        renderUi()
+                    },
+                )
+            }
+
             if (step.id == WirelessDebugOnboardingState.StepId.WIRELESS_PAIRING) {
                 primaryBtn.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                     marginEnd = dp(8)
@@ -521,7 +545,8 @@ class WirelessDebugGuideActivity : Activity() {
         card.addView(header)
 
         val tips = listOf(
-            "• 顶部浮动数字键盘：点开系统「无线调试 → 使用配对码配对设备」弹出 6 位码后，顶部妙投浮动框会自动展开紧凑 2 行数字键盘（不抢系统弹窗焦点、不拉起半屏输入法、无需下拉通知栏），可按住顶栏拖动位置，输满 6 位自动完成配对并跳回本页。",
+            "• 为什么推荐无障碍而非悬浮窗：Android 12+ / HyperOS 会在系统「无线调试」与配对码页面自动屏蔽第三方普通悬浮窗；开启「妙投 · 无线调试自动配对助手」无障碍服务后，无需悬浮窗权限即可在 PIN 码页同屏显示顶部数字键盘，并自动读取屏幕上的 6 位配对码完成秒配。",
+            "• 通知栏长按兜底：若未开启无障碍，点开系统「使用配对码配对设备」后，请下拉通知栏找到妙投通知并点「输入 6 位配对码」；若系统折叠了输入按钮，请直接【长按本条通知】（或单指下滑该通知）展开输入框。",
             "• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。",
             "• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。",
             "• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。",
@@ -548,19 +573,19 @@ class WirelessDebugGuideActivity : Activity() {
     ) {
         when (stepId) {
             WirelessDebugOnboardingState.StepId.NOTIFICATION -> requestNotificationPermissionOrOpenSettings()
-            WirelessDebugOnboardingState.StepId.OVERLAY_PERMISSION -> requestOverlayPermission()
             WirelessDebugOnboardingState.StepId.DEVELOPER_OPTIONS -> openAboutPhoneSettings()
+            WirelessDebugOnboardingState.StepId.ACCESSIBILITY_HELPER -> {
+                accessibilitySkipped = false
+                openAccessibilitySettings()
+            }
             WirelessDebugOnboardingState.StepId.WIRELESS_PAIRING -> {
-                if (!state.overlayGranted) {
-                    feedbackText = "请先完成第 2 步开启「悬浮窗权限」，否则无法在系统设置上方弹出浮动 6 位配对码数字键盘"
-                    feedbackIsError = true
-                    renderUi()
-                    requestOverlayPermission()
-                    return
-                }
                 autoCheckPending = true
                 PairingNotificationGuide.startPairingSession(this)
-                feedbackText = "顶部浮动配对框已就绪：点开「无线调试 → 使用配对码配对设备」后将自动展开数字键盘，点按 6 位码即可自动配对"
+                feedbackText = if (state.accessibilityEnabled) {
+                    "无障碍自动配对与顶部悬浮键盘已就绪：点开「无线调试 → 使用配对码配对设备」后将自动识别 6 位码并秒配（也保留通知栏长按输入兜底）"
+                } else {
+                    "已发送配对通知栏横幅：点开「无线调试 → 使用配对码配对设备」后下拉通知栏输入 6 位码（若未看到输入按钮，请长按本条通知展开）"
+                }
                 feedbackIsError = false
                 renderUi()
                 openDeveloperOptions()
@@ -569,19 +594,10 @@ class WirelessDebugGuideActivity : Activity() {
         }
     }
 
-    private fun requestOverlayPermission() {
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:$packageName"),
-        )
+    private fun openAccessibilitySettings() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         runCatching { startActivity(intent) }.onFailure {
-            runCatching {
-                startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")),
-                )
-            }.onFailure {
-                runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) }
-            }
+            runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) }
         }
     }
 
@@ -728,8 +744,8 @@ class WirelessDebugGuideActivity : Activity() {
         return true
     }
 
-    private fun isOverlayPermissionGranted(): Boolean =
-        PairingFloatingOverlay.canDrawOverlays(this)
+    private fun isAccessibilityHelperEnabled(): Boolean =
+        WirelessPairingAccessibilityService.isServiceEnabled(this)
 
     private fun isDeveloperOptionsEnabled(): Boolean = runCatching {
         Settings.Global.getInt(contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1

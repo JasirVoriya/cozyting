@@ -7,7 +7,6 @@ import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -25,18 +24,21 @@ import com.miplay.sender.ui.UiPalette
 import kotlin.math.abs
 
 /**
- * 无线调试 6 位配对码顶部悬浮数字键盘（Style B 明暗自适应 · `TYPE_APPLICATION_OVERLAY` + `FLAG_NOT_FOCUSABLE`）。
+ * 无线调试 6 位配对码顶部悬浮数字键盘（Style B 明暗自适应 · `TYPE_ACCESSIBILITY_OVERLAY` + `FLAG_NOT_FOCUSABLE`）。
  *
  * 设计要点：
- * 1. 全程保持 `FLAG_NOT_FOCUSABLE`，绝不抢夺系统设置「使用配对码配对设备」弹窗的窗口焦点，避免系统因失焦销毁配对码；
- * 2. 内置超紧凑 2 行浮动数字键盘（1–5 + ⌫ / 6–0 + 配对），无需唤起占半屏的系统软键盘（IME），不遮挡屏幕中下方的系统 6 位码弹窗；
- * 3. 进入无线调试前默认为顶部单行紧凑等待条；mDNS 探测到 `_adb-tls-pairing._tcp.` 端口瞬间自动展开 6 位数字槽与数字键盘，
- *    输满 6 位自动触发 SPAKE2 + TLS 1.3 配对并在成功后自动跳回 [WirelessDebugGuideActivity]。
+ * 1. 通过 [WirelessPairingAccessibilityService] 的 `TYPE_ACCESSIBILITY_OVERLAY` 窗口层级挂载，
+ *    无需 `SYSTEM_ALERT_WINDOW` 悬浮窗权限，且在 Android 12+ / HyperOS 系统设置「无线调试 · 6 位码弹窗」
+ *    页面不会被 `HIDE_NON_SYSTEM_OVERLAY_WINDOWS` 隐藏；
+ * 2. 全程保持 `FLAG_NOT_FOCUSABLE`，绝不抢夺系统设置「使用配对码配对设备」弹窗的窗口焦点，避免系统因失焦销毁配对码；
+ * 3. 支持无障碍服务自动识别屏幕上的 6 位配对码与端口并自动填入触发秒配；同时内置超紧凑 2 行浮动数字键盘
+ *    （1–5 + ⌫ / 6–0 + 配对）供同屏手动点按兜底。
  */
 object PairingFloatingOverlay {
     private val main = Handler(Looper.getMainLooper())
 
     private var rootContainer: FrameLayout? = null
+    private var attachedWindowManager: WindowManager? = null
     private var windowParams: WindowManager.LayoutParams? = null
     private var detectedPort: Int = 0
     private var manualPortBuffer: String = ""
@@ -46,6 +48,7 @@ object PairingFloatingOverlay {
     private var editingPort: Boolean = false
     private var pairingInProgress: Boolean = false
     private var pairingSucceeded: Boolean = false
+    private var lastAutoTriedSignature: String = ""
     private var statusTextZh: String = ""
     private var statusTone: StatusTone = StatusTone.NEUTRAL
 
@@ -56,14 +59,15 @@ object PairingFloatingOverlay {
         WARNING,
     }
 
-    fun canDrawOverlays(context: Context): Boolean =
-        runCatching { Settings.canDrawOverlays(context) }.getOrDefault(false)
+    /** 检查无障碍悬浮层是否就绪（无需 `SYSTEM_ALERT_WINDOW`）。 */
+    fun canShowAccessibilityOverlay(): Boolean =
+        WirelessPairingAccessibilityService.activeInstance != null
 
     fun isShowing(): Boolean = rootContainer != null
 
     fun showOrUpdate(context: Context, newDetectedPort: Int): Boolean {
+        val a11yService = WirelessPairingAccessibilityService.activeInstance ?: return false
         val appCtx = context.applicationContext
-        if (!canDrawOverlays(appCtx)) return false
         main.post {
             val portJustDiscovered = newDetectedPort > 0 && newDetectedPort != detectedPort
             if (newDetectedPort > 0) {
@@ -76,17 +80,18 @@ object PairingFloatingOverlay {
                 pairingInProgress = false
                 pairingSucceeded = false
                 userManuallyCollapsed = false
+                lastAutoTriedSignature = ""
                 expanded = detectedPort > 0
                 statusTextZh = ""
                 statusTone = StatusTone.NEUTRAL
-                attachWindow(appCtx)
+                attachWindow(a11yService, appCtx)
             } else if (portJustDiscovered) {
                 if (!userManuallyCollapsed) {
                     expanded = true
                 }
                 editingPort = false
                 if (!pairingInProgress && !pairingSucceeded) {
-                    statusTextZh = "已自动锁定配对端口 $detectedPort · 输满 6 位自动完成配对"
+                    statusTextZh = "已自动锁定配对端口 $detectedPort · 看到弹窗将自动识别 6 位码（也可直接点按输入）"
                     statusTone = StatusTone.ACCENT
                 }
                 rebuildContent(appCtx)
@@ -100,11 +105,44 @@ object PairingFloatingOverlay {
         return true
     }
 
+    /**
+     * 当无障碍服务从系统配对码弹窗自动提取到 6 位 PIN 码与端口时调用：
+     * 自动展开顶部悬浮卡片、填入 6 位数字槽并立即触发配对。
+     */
+    fun onAutoDetectedPinAndPort(context: Context, pinCode: String, pairingPort: Int) {
+        if (pinCode.length != 6 || !pinCode.all { it.isDigit() } || pairingPort !in 1024..65535) return
+        val appCtx = context.applicationContext
+        main.post {
+            if (pairingInProgress || pairingSucceeded) return@post
+            val sig = "$pairingPort:$pinCode"
+            if (sig == lastAutoTriedSignature) return@post
+            lastAutoTriedSignature = sig
+
+            detectedPort = pairingPort
+            pinBuffer = pinCode
+            editingPort = false
+            expanded = true
+            userManuallyCollapsed = false
+            statusTextZh = "✓ 已自动识别配对码 $pinCode（端口 $pairingPort）· 正在自动配对…"
+            statusTone = StatusTone.ACCENT
+
+            val a11yService = WirelessPairingAccessibilityService.activeInstance
+            if (rootContainer == null && a11yService != null) {
+                attachWindow(a11yService, appCtx)
+            } else {
+                rebuildContent(appCtx)
+            }
+            triggerPairing(appCtx)
+        }
+    }
+
     fun dismiss(context: Context) {
         val appCtx = context.applicationContext
         main.post {
             val view = rootContainer
+            val wm = attachedWindowManager ?: appCtx.getSystemService(WindowManager::class.java)
             rootContainer = null
+            attachedWindowManager = null
             windowParams = null
             detectedPort = 0
             pinBuffer = ""
@@ -114,22 +152,22 @@ object PairingFloatingOverlay {
             editingPort = false
             pairingInProgress = false
             pairingSucceeded = false
+            lastAutoTriedSignature = ""
             statusTextZh = ""
             if (view != null) {
-                val wm = appCtx.getSystemService(WindowManager::class.java)
                 runCatching { wm?.removeViewImmediate(view) }
             }
         }
     }
 
-    private fun attachWindow(appCtx: Context) {
-        val wm = appCtx.getSystemService(WindowManager::class.java) ?: return
+    private fun attachWindow(a11yContext: Context, appCtx: Context) {
+        val wm = a11yContext.getSystemService(WindowManager::class.java) ?: return
         val dm = appCtx.resources.displayMetrics
         val cardWidth = (dm.widthPixels * 0.94f).toInt().coerceAtMost(UiComponents.dp(appCtx, 384))
         val lp = WindowManager.LayoutParams(
             cardWidth,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
@@ -139,14 +177,16 @@ object PairingFloatingOverlay {
             x = 0
             y = UiComponents.dp(appCtx, 40)
         }
-        val container = FrameLayout(appCtx)
+        val container = FrameLayout(a11yContext)
         rootContainer = container
+        attachedWindowManager = wm
         windowParams = lp
         rebuildContent(appCtx)
         runCatching {
             wm.addView(container, lp)
         }.onFailure {
             rootContainer = null
+            attachedWindowManager = null
             windowParams = null
         }
     }
@@ -361,7 +401,8 @@ object PairingFloatingOverlay {
         dragTarget.setOnTouchListener { _, ev ->
             val lp = windowParams ?: return@setOnTouchListener false
             val container = rootContainer ?: return@setOnTouchListener false
-            val wm = context.applicationContext.getSystemService(WindowManager::class.java)
+            val wm = attachedWindowManager
+                ?: context.applicationContext.getSystemService(WindowManager::class.java)
                 ?: return@setOnTouchListener false
             when (ev.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -579,7 +620,7 @@ object PairingFloatingOverlay {
         if (!expanded) {
             card.addView(
                 TextView(context).apply {
-                    text = "① 打开下方「无线调试」开关 → ② 点「使用配对码配对设备」（自动展开键盘，可按住此框拖动）"
+                    text = "① 打开下方「无线调试」开关 → ② 点「使用配对码配对设备」（将自动识别 6 位码秒配，也可展开键盘手按）"
                     textSize = 11.5f
                     setTextColor(palette.textSecondary)
                     setPadding(0, dp(6), 0, 0)
