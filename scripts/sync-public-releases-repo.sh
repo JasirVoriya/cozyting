@@ -81,7 +81,7 @@ on:
   push:
     branches: [main]
   release:
-    types: [published, edited, deleted, prereleased, released]
+    types: [published, edited, deleted]
   workflow_dispatch:
 
 permissions:
@@ -101,8 +101,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout repository
+      - name: Checkout main branch
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -110,7 +112,11 @@ jobs:
       - name: Assemble static site (Landing Page + Architecture Explorer + SEO/GEO files + assets)
         run: |
           mkdir -p _site/assets
-          cp docs/index.html _site/index.html
+          if [[ -f docs/index.html ]]; then
+            cp docs/index.html _site/index.html
+          else
+            cp docs/architecture.html _site/index.html
+          fi
           cp docs/architecture.html _site/architecture.html
           for seo_file in robots.txt sitemap.xml llms.txt; do
             if [[ -f "docs/$seo_file" ]]; then
@@ -119,6 +125,10 @@ jobs:
           done
           cp -r docs/assets/* _site/assets/
           touch _site/.nojekyll
+
+      - name: Wait for release assets to settle
+        if: github.event_name == 'release'
+        run: sleep 15
 
       - name: Generate App Update Manifest (update.json)
         env:
