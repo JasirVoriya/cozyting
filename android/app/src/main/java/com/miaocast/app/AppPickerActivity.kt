@@ -24,11 +24,13 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.miaocast.app.capture.AndroidLaunchableApps
 import com.miaocast.app.capture.AndroidPackageIdentityLookup
+import com.miaocast.app.capture.CaptureScopeMode
 import com.miaocast.app.capture.CaptureTargetResolver
 import com.miaocast.app.capture.CaptureTargetResult
 import com.miaocast.app.capture.FavoriteAudioSource
 import com.miaocast.app.capture.LaunchableApp
 import com.miaocast.app.capture.LaunchableAppCatalog
+import com.miaocast.app.capture.ManualSourceSwitchPolicy
 import com.miaocast.app.capture.PrefsTargetAppStore
 import com.miaocast.app.capture.TargetAppSelection
 import com.miaocast.app.compat.CaptureSelectionLayers
@@ -284,7 +286,18 @@ class AppPickerActivity : Activity() {
         favoritesContainer = null
         cardSelectedFlags.clear()
         list.removeAllViews()
-        val currentPkg = store.loadSelection()?.packageName.orEmpty()
+        val activeCastPkg = if (
+            !previewMode &&
+            CastService.running.get() &&
+            CastService.source == "app" &&
+            CastService.activeScopeMode == CaptureScopeMode.SINGLE_APP &&
+            CastService.targetPackage.isNotBlank()
+        ) {
+            CastService.targetPackage
+        } else {
+            null
+        }
+        val currentPkg = activeCastPkg ?: store.loadSelection()?.packageName.orEmpty()
         val favByPkg = favorites.associateBy { it.packageName }
         val q = filter.text?.toString()?.trim().orEmpty().lowercase()
 
@@ -736,13 +749,24 @@ class AppPickerActivity : Activity() {
                     status.text = r.messageZh
                 }
                 is CaptureTargetResult.Ok -> {
-                    store.saveSelection(
-                        TargetAppSelection(
-                            packageName = r.packageName,
-                            label = app.label,
-                            signingCertSha256 = r.signingCertSha256,
+                    val action = ManualSourceSwitchPolicy.decide(
+                        ManualSourceSwitchPolicy.Input(
+                            serviceRunning = CastService.running.get(),
+                            activeServiceSource = CastService.source,
+                            activeScopeMode = CastService.activeScopeMode,
+                            activeTargetPackage = CastService.targetPackage,
+                            pickedPackage = r.packageName,
                         ),
                     )
+                    if (action != ManualSourceSwitchPolicy.Action.HOT_SWITCH_IN_CAST) {
+                        store.saveSelection(
+                            TargetAppSelection(
+                                packageName = r.packageName,
+                                label = app.label,
+                                signingCertSha256 = r.signingCertSha256,
+                            ),
+                        )
+                    }
                     main.post {
                         setResult(
                             RESULT_OK,

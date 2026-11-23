@@ -54,6 +54,7 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * 前台服务：持有 Rust 投送会话（多台同步、暂停恢复、中途加入、心跳断线重连）。
@@ -116,12 +117,17 @@ class CastService : Service() {
         @Volatile var targetAutoDetected: Boolean = false
         @Volatile var targetChangeListener: (() -> Unit)? = null
         @Volatile var lastFailMessage: String = ""
+        private val hotSwitchFeedback = AtomicReference("")
         /** 最近一次捕获 PCM 探针摘要（验收变体用于 A/B 量化；静音时不可证明过滤） */
         @Volatile var lastPcmProbe: String = ""
         /** 本机 STREAM_MUSIC 静音状态文案（估计/回退说明，非听感保证）。 */
         @Volatile var localMuteStatusZh: String = "本机出声（未尝试静音）"
         @Volatile var localMuteStatus: LocalOutputMute.Status = LocalOutputMute.Status.IDLE
         val running = AtomicBoolean(false)
+
+        /** 一次性读取并清空最近一次投送中热切音源反馈（成功或失败回滚原音源）。 */
+        fun consumeHotSwitchFeedback(): String? =
+            hotSwitchFeedback.getAndSet("").takeIf { it.isNotBlank() }
 
         fun autoDelayMs(ctx: Context): Int {
             val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -879,18 +885,22 @@ class CastService : Service() {
             if (!running.get() || source != "app" || activeScopeMode != CaptureScopeMode.SINGLE_APP) return
             if (newPackage.isBlank() || newPackage == targetPackage) return
 
+            val modeLabel = if (autoDetected) "自动" else "手动"
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
             val resolved = when (val r = resolver.resolveForCapture(newPackage)) {
                 is CaptureTargetResult.Ok -> r
                 is CaptureTargetResult.Fail -> {
-                    event("自动切换音源被拒绝[${r.reason}]: ${r.messageZh}")
+                    event("${modeLabel}切换音源被拒绝[${r.reason}]: ${r.messageZh}")
+                    if (!autoDetected) {
+                        hotSwitchFeedback.set("无法切换音源：${r.messageZh}")
+                        main.post { targetChangeListener?.invoke() }
+                    }
                     return
                 }
             }
             val prevPkg = targetPackage
             val prevUid = captureUid
             val prevLabel = targetLabel.ifBlank { prevPkg.substringAfterLast('.') }
-            val modeLabel = if (autoDetected) "自动" else "手动"
             event("正在${modeLabel}热切换音源：$prevLabel -> $newLabel（uid $prevUid -> ${resolved.uid}）")
 
             when (val switched = backend.hotSwitchUid(resolved.uid, activeKeepLocalOutput)) {
@@ -909,6 +919,9 @@ class CastService : Service() {
                             signingCertSha256 = resolved.signingCertSha256,
                         ),
                     )
+                    if (!autoDetected) {
+                        hotSwitchFeedback.set("已切换投送音源为 $newLabel")
+                    }
                     event(
                         if (autoDetected) {
                             "已自动切换音源：$newLabel（uid=${resolved.uid}）"
@@ -925,6 +938,9 @@ class CastService : Service() {
                     if (switched.messageZh.contains("已恢复原音源")) {
                         lastFailMessage = ""
                         event("无法热切换至 $newLabel，已保持当前音源 $prevLabel：${switched.messageZh}")
+                        if (!autoDetected) {
+                            hotSwitchFeedback.set("无法热切换至 $newLabel，已保持当前音源 $prevLabel")
+                        }
                         main.post {
                             updateNotification()
                             targetChangeListener?.invoke()
@@ -1072,6 +1088,7 @@ class CastService : Service() {
         if (!running.getAndSet(false)) return
         event("停止投送并清理资源")
         switchingToPackage = null
+        hotSwitchFeedback.set("")
         main.post { stopAutoSourceMonitor() }
         val wasLoopbackMute = activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.ISOLATED_APP_LOOPBACK ||
             activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK
