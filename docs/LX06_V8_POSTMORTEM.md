@@ -34,7 +34,7 @@ Safety 未选中；仅 Safety；去 poll；INITIAL≡preOpen；state=2⇒故障�
 对 LX06 与 L17A 各跑 **一次**：
 
 ```text
-miplay-cli inspect <IP> --auth legacy
+miaocast-cli inspect <IP> --auth legacy
 ```
 
 对照 JSON：`mirror_mode`/`state`/`group_id*`/`device_type`/`channel_tlv`/`media.source_name`（absent|empty|nonempty）/`tx_commands`（须无 `0x0002`）/`ended_with=tcp_shutdown`。  
