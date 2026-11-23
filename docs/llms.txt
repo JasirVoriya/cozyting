@@ -37,6 +37,7 @@
 - [README (简体中文)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
 - [README (English)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README_EN.md): Complete English product & developer documentation.
 - [Product Website](https://jasirvoriya.github.io/miaocast-releases/): Landing page with comparison table, screenshots, download CTA, and structured FAQ.
+- [Promo Video (MP4, 66s, 1280x720)](https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4): Narration-free demo of single-app audio isolation, up to 63-speaker sync, 4 latency tiers, and Android 13+ root-free capture. Embedded on the landing page at https://jasirvoriya.github.io/miaocast-releases/#video
 - [Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
 - [Device Compatibility Matrix](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
 - [Known Limitations](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.

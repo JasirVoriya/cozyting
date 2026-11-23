@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://jasirvoriya.github.io/miaocast-releases/</loc>
-    <lastmod>2026-11-22</lastmod>
+    <lastmod>2026-11-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <video:video>
+      <video:thumbnail_loc>https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-poster.jpg</video:thumbnail_loc>
+      <video:title>妙投（MiaoCast）宣传视频：任意安卓手机局域网投音到多台小米 / 小爱音箱</video:title>
+      <video:description>66 秒无旁白宣传视频，演示单 App 音频隔离、最多 63 台音箱同频、4 档延迟热切换与 Android 13+ 免 Root 无感采集。</video:description>
+      <video:content_loc>https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4</video:content_loc>
+      <video:duration>66</video:duration>
+    </video:video>
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/miaocast-releases/architecture.html</loc>
