@@ -53,6 +53,7 @@ import com.miaocast.app.capture.CaptureTargetResult
 import com.miaocast.app.capture.FavoriteAudioSource
 import com.miaocast.app.capture.LaunchableApp
 import com.miaocast.app.capture.LaunchableAppCatalog
+import com.miaocast.app.capture.ManualSourceSwitchPolicy
 import com.miaocast.app.capture.PrefsTargetAppStore
 import com.miaocast.app.capture.TargetAppSelection
 import com.miaocast.app.capture.shell.PairingNotificationGuide
@@ -2449,6 +2450,9 @@ class MainActivity : Activity() {
             if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
                 clearStatusBanner()
             }
+            CastService.consumeHotSwitchFeedback()?.let { feedback ->
+                showTransientStatus(feedback, durationMs = 3000L)
+            }
         } else {
             val stoppedFromRunning = wasServiceRunning
             wasServiceRunning = false
@@ -2635,50 +2639,77 @@ class MainActivity : Activity() {
             when (val r = resolver.resolveForCapture(app.packageName)) {
                 is CaptureTargetResult.Fail -> main.post { showAlertStatus(r.messageZh) }
                 is CaptureTargetResult.Ok -> {
-                    store.saveSelection(
-                        TargetAppSelection(
-                            packageName = r.packageName,
-                            label = app.label,
-                            signingCertSha256 = r.signingCertSha256,
-                        ),
+                    val sel = TargetAppSelection(
+                        packageName = r.packageName,
+                        label = app.label,
+                        signingCertSha256 = r.signingCertSha256,
                     )
                     main.post {
-                        selectedPackage = r.packageName
-                        selectedLabel = app.label
-                        selectedCert = r.signingCertSha256
-                        currentSelectionAutoDetected = false
-                        manualOverrideBlockedPkg = nowPlaying.sourcePackage?.takeIf {
-                            it.isNotBlank() && it != r.packageName
-                        }
-                        lastGrantSession = null
-                        settingsStore.sourceMode = "app"
-                        refreshTargetFromStore()
-                        if (CastService.running.get() && CastService.source == "app") {
-                            service(CastService.ACTION_SWITCH_SOURCE) {
-                                putExtra(CastService.EXTRA_TARGET_PACKAGE, r.packageName)
-                                putExtra(CastService.EXTRA_TARGET_LABEL, app.label)
-                                putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
-                            }
-                            showTransientStatus("正在切换投送音源为 ${app.label}…")
-                        } else if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
-                            clearStatusBanner()
-                        }
+                        applyManualTargetSelection(sel)
                     }
                 }
             }
         }.start()
     }
 
-    private fun openAppPicker() {
-        if (CastService.running.get() && CastService.source == "app") {
-            castRequested = false
-            stopRequested = true
-            pendingStart = null
-            stopCast()
-            routeState = CastRouteSelection.selectThisDevice(routeState).state
-            renderDevices()
-            clearStatusBanner()
+    private fun applyManualTargetSelection(selection: TargetAppSelection) {
+        val action = ManualSourceSwitchPolicy.decide(
+            ManualSourceSwitchPolicy.Input(
+                serviceRunning = CastService.running.get(),
+                activeServiceSource = CastService.source,
+                activeScopeMode = CastService.activeScopeMode,
+                activeTargetPackage = CastService.targetPackage,
+                pickedPackage = selection.packageName,
+            ),
+        )
+        manualOverrideBlockedPkg = nowPlaying.sourcePackage?.takeIf {
+            it.isNotBlank() && it != selection.packageName
         }
+        settingsStore.sourceMode = "app"
+        when (action) {
+            ManualSourceSwitchPolicy.Action.HOT_SWITCH_IN_CAST -> {
+                // 单 App 投送中热切源：不提前覆盖 store，待 CastService 热切成功后统一落盘，
+                // 避免系统限制热切失败回滚原音源时主界面与实际捕获不一致。
+                lastGrantSession = null
+                service(CastService.ACTION_SWITCH_SOURCE) {
+                    putExtra(CastService.EXTRA_TARGET_PACKAGE, selection.packageName)
+                    putExtra(CastService.EXTRA_TARGET_LABEL, selection.label)
+                    putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
+                }
+                showTransientStatus("正在切换投送音源为 ${selection.label}…")
+                renderQuickSwitchRow()
+            }
+            ManualSourceSwitchPolicy.Action.KEEP_ACTIVE_TARGET -> {
+                // 点选当前已在投送的同一个 App：不断线、不重复重建采集后端。
+                CastService.targetAutoDetected = false
+                currentSelectionAutoDetected = false
+                selectedPackage = selection.packageName
+                selectedLabel = selection.label
+                selectedCert = selection.signingCertSha256
+                store.saveSelection(selection)
+                refreshTargetFromStore()
+                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                    clearStatusBanner()
+                }
+            }
+            ManualSourceSwitchPolicy.Action.PERSIST_SELECTION_ONLY -> {
+                selectedPackage = selection.packageName
+                selectedLabel = selection.label
+                selectedCert = selection.signingCertSha256
+                currentSelectionAutoDetected = false
+                store.saveSelection(selection)
+                lastGrantSession = null
+                refreshTargetFromStore()
+                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                    clearStatusBanner()
+                }
+            }
+        }
+    }
+
+    private fun openAppPicker() {
+        // 进入「常用音源与选择」页仅管理名单或切换目标，不中断当前投送；
+        // 若用户选定新音源返回，由 onActivityResult(REQ_APP_PICKER) 走不断线热切换。
         startActivityForResult(Intent(this, AppPickerActivity::class.java), REQ_APP_PICKER)
     }
 
@@ -2891,26 +2922,20 @@ class MainActivity : Activity() {
                     maybeAutoSelectFromNowPlaying()
                     return
                 }
-                selectedPackage = data.getStringExtra(AppPickerActivity.EXTRA_PACKAGE).orEmpty()
-                selectedLabel = data.getStringExtra(AppPickerActivity.EXTRA_LABEL).orEmpty()
-                selectedCert = data.getStringExtra(AppPickerActivity.EXTRA_CERT).orEmpty()
-                currentSelectionAutoDetected = false
-                manualOverrideBlockedPkg = nowPlaying.sourcePackage?.takeIf {
-                    it.isNotBlank() && it != selectedPackage
+                val pickedPkg = data.getStringExtra(AppPickerActivity.EXTRA_PACKAGE).orEmpty()
+                val pickedLabel = data.getStringExtra(AppPickerActivity.EXTRA_LABEL).orEmpty()
+                val pickedCert = data.getStringExtra(AppPickerActivity.EXTRA_CERT).orEmpty()
+                if (pickedPkg.isBlank()) {
+                    renderQuickSwitchRow()
+                    return
                 }
-                store.saveSelection(
+                applyManualTargetSelection(
                     TargetAppSelection(
-                        packageName = selectedPackage,
-                        label = selectedLabel,
-                        signingCertSha256 = selectedCert,
+                        packageName = pickedPkg,
+                        label = pickedLabel.ifBlank { pickedPkg },
+                        signingCertSha256 = pickedCert,
                     ),
                 )
-                lastGrantSession = null
-                settingsStore.sourceMode = "app"
-                refreshTargetFromStore()
-                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
-                    clearStatusBanner()
-                }
             }
             REQ_SETTINGS -> {
                 if (data?.getBooleanExtra(SettingsActivity.EXTRA_DEVICES_CHANGED, false) == true) {
