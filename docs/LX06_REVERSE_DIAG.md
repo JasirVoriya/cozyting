@@ -12,5 +12,5 @@
 
 ## 下一步唯一动作
 
-R1：现有 `miplay-cli` 对 LX06/L17A 只读 `probe` + `devinfo` + `channel`（无 cast/Open；不改音箱）。  
+R1：现有 `miaocast-cli` 对 LX06/L17A 只读 `probe` + `devinfo` + `channel`（无 cast/Open；不改音箱）。  
 结果如何区分：见 POSTMORTEM §6。

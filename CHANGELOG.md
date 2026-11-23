@@ -26,7 +26,7 @@
 - **Android JVM 本地 UI 截图预览工作流**：新增基于 Robolectric Native Graphics（Skia）的 `UiPreviewRenderTest` 与一键脚本 `scripts/ui-preview.sh`，无需编译 APK 或连接真机即可在十余秒内渲染主界面、常用音源管理页与设置页深/浅双版 PNG。
 - **L1 Rust 核心下沉与跨端 FFI 解耦（#7）**：新增 `core/src/engine.rs`（句柄表与多箱并发协调器）与 `core/src/device_catalog.rs`（设备发现分类、默认过滤、历史缓存合并、路由互斥状态机与认证模式解析）；新增面向 iOS Swift 的 C ABI (`core/src/ffi_c.rs`、`core/include/miplay_core.h`、`core/include/module.modulemap`) 与 `scripts/build-ios-xcframework.sh`。
 - **原创品牌视觉资产与跨端设计文档**：新增扁平同心音箱原创 Logo（浅/深双色）、Android Adaptive Icon / Android 13+ 单色主题图标 / 通知栏小图标、README 横幅、零依赖 [交互式架构浏览器](docs/architecture.html) 与 iOS 客户端/局域网 AirPlay 2 桥接设计方案。
-- **GitHub 开源工程化与双端治理规范**：新增结构化 YAML Issue 表单、PR 模板、CI 自动测试与 16KB 对齐校验、Tag 自动发布 APK + 多平台 `miplay-cli` 流水线、GitHub Pages 自动部署、Dependabot、`AGENTS.md`（个人 `.local/` 隔离与 Android/iOS 双端同步红线）、`CONTRIBUTING.md`、`SECURITY.md`、`docs/COMPATIBILITY.md` 与 `README_EN.md`。
+- **GitHub 开源工程化与双端治理规范**：新增结构化 YAML Issue 表单、PR 模板、CI 自动测试与 16KB 对齐校验、Tag 自动发布 APK + 多平台 `miaocast-cli` 流水线、GitHub Pages 自动部署、Dependabot、`AGENTS.md`（个人 `.local/` 隔离与 Android/iOS 双端同步红线）、`CONTRIBUTING.md`、`SECURITY.md`、`docs/COMPATIBILITY.md` 与 `README_EN.md`。
 
 ### Changed
 - **正在播放区与顶栏视觉全面打磨**：左侧 `96dp` 稳定圆角封面（`Canvas.clipPath` + `clipToOutline` 双重裁剪）+ 右下角 `26dp` 音源 App 圆形角标（点击直达对应音乐 App）；右侧歌名/歌手/宽间距播控三钮统一沿中轴线与 `96dp` 高度双居中，卡片左/中/右等距 `16dp`；顶栏移除主题快切钮并将设备刷新钮下沉至「输出设备」标题栏右侧，设置图标重绘为标准 6 齿齿轮；锁定 `SeekBar` 细轨道为 `4dp` 垂直居中防止系统拉伸。
