@@ -22,15 +22,18 @@ import android.util.LruCache
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.Window
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import com.miaocast.app.R
 import com.miaocast.app.capture.AndroidLaunchableApps
+import com.miaocast.app.compat.WindowInsetsApplyCompat
 import java.util.concurrent.Executors
 
 /**
@@ -487,8 +490,14 @@ object UiComponents {
 
         val knob = View(context).apply {
             background = roundedDrawable(Color.WHITE, knobSize / 2f)
-            layoutParams = FrameLayout.LayoutParams(knobSize, knobSize, Gravity.CENTER_VERTICAL).apply {
-                marginStart = if (checked) trackW - knobSize - knobMargin else knobMargin
+            val initialMargin = if (checked) trackW - knobSize - knobMargin else knobMargin
+            layoutParams = FrameLayout.LayoutParams(
+                knobSize,
+                knobSize,
+                Gravity.START or Gravity.CENTER_VERTICAL,
+            ).apply {
+                leftMargin = initialMargin
+                marginStart = initialMargin
             }
         }
         val track = FrameLayout(context).apply {
@@ -500,9 +509,15 @@ object UiComponents {
                 fillColor = if (checked) palette.accent else palette.trackIdle,
                 radiusPx = trackH / 2f,
             )
-            (knob.layoutParams as FrameLayout.LayoutParams).marginStart =
-                if (checked) trackW - knobSize - knobMargin else knobMargin
-            knob.requestLayout()
+            val targetMargin = if (checked) trackW - knobSize - knobMargin else knobMargin
+            val lp = (knob.layoutParams as FrameLayout.LayoutParams).apply {
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                leftMargin = targetMargin
+                marginStart = targetMargin
+            }
+            // 重新赋值 layoutParams 触发 resolveLayoutParams() → resolveLayoutDirection()，
+            // 否则仅改 marginStart + requestLayout() 不会更新 FrameLayout 读取的 leftMargin。
+            knob.layoutParams = lp
         }
         syncSwitch()
 
@@ -567,8 +582,14 @@ object UiComponents {
 
         val knob = View(context).apply {
             background = roundedDrawable(Color.WHITE, knobSize / 2f)
-            layoutParams = FrameLayout.LayoutParams(knobSize, knobSize, Gravity.CENTER_VERTICAL).apply {
-                marginStart = if (checked) trackW - knobSize - knobMargin else knobMargin
+            val initialMargin = if (checked) trackW - knobSize - knobMargin else knobMargin
+            layoutParams = FrameLayout.LayoutParams(
+                knobSize,
+                knobSize,
+                Gravity.START or Gravity.CENTER_VERTICAL,
+            ).apply {
+                leftMargin = initialMargin
+                marginStart = initialMargin
             }
         }
         val track = FrameLayout(context).apply {
@@ -582,9 +603,13 @@ object UiComponents {
                 fillColor = if (checked) palette.accent else trackOffColor,
                 radiusPx = trackH / 2f,
             )
-            (knob.layoutParams as FrameLayout.LayoutParams).marginStart =
-                if (checked) trackW - knobSize - knobMargin else knobMargin
-            knob.requestLayout()
+            val targetMargin = if (checked) trackW - knobSize - knobMargin else knobMargin
+            val lp = (knob.layoutParams as FrameLayout.LayoutParams).apply {
+                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                leftMargin = targetMargin
+                marginStart = targetMargin
+            }
+            knob.layoutParams = lp
         }
         sync()
         track.setOnClickListener {
@@ -593,6 +618,89 @@ object UiComponents {
             onCheckedChange(checked)
         }
         return track
+    }
+
+    /**
+     * 复用同一个 ScrollView 容器并在重建内容树时保持原 scrollY（首帧绘制前恢复，避免设置/向导页点击变更后跳回顶部）。
+     */
+    class ScrollContentHost(private val activity: Activity) {
+        var scrollView: ScrollView? = null
+            private set
+        private var pendingScrollY: Int? = null
+        private var preDrawListener: ViewTreeObserver.OnPreDrawListener? = null
+
+        fun setContent(root: View, backgroundColor: Int) {
+            root.isFocusable = true
+            root.isFocusableInTouchMode = true
+            val existing = scrollView
+            if (existing == null) {
+                val created = ScrollView(activity).apply {
+                    descendantFocusability = ViewGroup.FOCUS_BEFORE_DESCENDANTS
+                    setBackgroundColor(backgroundColor)
+                    addView(root)
+                }
+                WindowInsetsApplyCompat.applySystemBarsPadding(created)
+                activity.setContentView(created)
+                scrollView = created
+                return
+            }
+
+            val savedScrollY = pendingScrollY ?: existing.scrollY
+            clearPendingPreDraw(existing)
+            existing.setBackgroundColor(backgroundColor)
+            existing.removeAllViews()
+            existing.addView(root)
+
+            if (savedScrollY <= 0) {
+                pendingScrollY = null
+                return
+            }
+
+            pendingScrollY = savedScrollY
+            root.addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
+                override fun onLayoutChange(
+                    v: View,
+                    left: Int,
+                    top: Int,
+                    right: Int,
+                    bottom: Int,
+                    oldLeft: Int,
+                    oldTop: Int,
+                    oldRight: Int,
+                    oldBottom: Int,
+                ) {
+                    v.removeOnLayoutChangeListener(this)
+                    val target = pendingScrollY ?: return
+                    applyClampedScroll(existing, target)
+                    pendingScrollY = null
+                }
+            })
+            val listener = object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    clearPendingPreDraw(existing)
+                    applyClampedScroll(existing, savedScrollY)
+                    pendingScrollY = null
+                    return true
+                }
+            }
+            preDrawListener = listener
+            existing.viewTreeObserver.addOnPreDrawListener(listener)
+        }
+
+        private fun clearPendingPreDraw(scroll: ScrollView) {
+            val prev = preDrawListener ?: return
+            if (scroll.viewTreeObserver.isAlive) {
+                scroll.viewTreeObserver.removeOnPreDrawListener(prev)
+            }
+            preDrawListener = null
+        }
+
+        private fun applyClampedScroll(scroll: ScrollView, targetY: Int) {
+            val child = scroll.getChildAt(0) ?: return
+            val viewportH = (scroll.height - scroll.paddingTop - scroll.paddingBottom).coerceAtLeast(0)
+            val maxScrollY = (child.height - viewportH).coerceAtLeast(0)
+            scroll.scrollTo(0, targetY.coerceIn(0, maxScrollY))
+        }
     }
 
     /**

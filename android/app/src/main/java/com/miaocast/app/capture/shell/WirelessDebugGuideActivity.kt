@@ -17,7 +17,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import com.miaocast.app.R
 import com.miaocast.app.capture.CaptureEngineCapabilities
@@ -50,6 +49,7 @@ class WirelessDebugGuideActivity : Activity() {
     private lateinit var settingsStore: PrefsCastSettingsStore
     private lateinit var palette: UiPalette
     private val main = Handler(Looper.getMainLooper())
+    private val scrollHost by lazy(LazyThreadSafetyMode.NONE) { UiComponents.ScrollContentHost(this) }
 
     private var connectionVerified = false
     private var connectedPort = 0
@@ -246,12 +246,7 @@ class WirelessDebugGuideActivity : Activity() {
                     finish()
                 },
             )
-            val scroll = ScrollView(this).apply {
-                setBackgroundColor(palette.bgCanvas)
-                addView(root)
-            }
-            WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
-            setContentView(scroll)
+            scrollHost.setContent(root, palette.bgCanvas)
             return
         }
 
@@ -304,12 +299,7 @@ class WirelessDebugGuideActivity : Activity() {
         // —— 常见机型避坑与重启说明（折叠卡片） ——
         root.addView(buildRomTipsCard())
 
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(palette.bgCanvas)
-            addView(root)
-        }
-        WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
-        setContentView(scroll)
+        scrollHost.setContent(root, palette.bgCanvas)
     }
 
     private fun buildStepCard(

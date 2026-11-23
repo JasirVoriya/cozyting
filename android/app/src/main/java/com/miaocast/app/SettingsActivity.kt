@@ -22,7 +22,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
 import com.miaocast.app.capture.CaptureEngineCapabilities
@@ -71,6 +70,7 @@ class SettingsActivity : Activity() {
     private lateinit var palette: UiPalette
 
     private val main = Handler(Looper.getMainLooper())
+    private val scrollHost by lazy(LazyThreadSafetyMode.NONE) { UiComponents.ScrollContentHost(this) }
     private var debugExpanded = false
     private var wirelessFeedbackText: String = ""
     private var wirelessFeedbackIsError: Boolean = false
@@ -373,12 +373,7 @@ class SettingsActivity : Activity() {
         buildAboutAndUpdateCard(updateCard)
         root.addView(updateCard)
 
-        val scroll = ScrollView(this).apply {
-            setBackgroundColor(palette.bgCanvas)
-            addView(root)
-        }
-        WindowInsetsApplyCompat.applySystemBarsPadding(scroll)
-        setContentView(scroll)
+        scrollHost.setContent(root, palette.bgCanvas)
     }
 
     private fun buildDebugBody(body: LinearLayout) {
