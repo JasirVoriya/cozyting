@@ -1,6 +1,7 @@
 package com.miaocast.app.capture.shell
 
 import android.app.Activity
+import android.app.Dialog
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -60,6 +61,7 @@ class WirelessDebugGuideActivity : Activity() {
     private var feedbackText = ""
     private var feedbackIsError = false
     private var autoCheckPending = false
+    private var clearPairingDialog: Dialog? = null
 
     // 供 Robolectric UI 预览单测注入状态
     private var previewStateOverride: WirelessDebugOnboardingState? = null
@@ -71,6 +73,12 @@ class WirelessDebugGuideActivity : Activity() {
         settingsStore = PrefsCastSettingsStore(this)
         autoCheckPending = intent?.getBooleanExtra(EXTRA_AUTO_VERIFY, false) == true
         renderUi()
+    }
+
+    override fun onDestroy() {
+        runCatching { clearPairingDialog?.dismiss() }
+        clearPairingDialog = null
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -299,7 +307,43 @@ class WirelessDebugGuideActivity : Activity() {
         // —— 常见机型避坑与重启说明（折叠卡片） ——
         root.addView(buildRomTipsCard())
 
+        // —— 低频证书重置入口（已配对时收口至向导底部，点击二次确认防误触） ——
+        if (state.paired) {
+            root.addView(spacer(10))
+            root.addView(
+                UiComponents.tonalButton(this, palette, "清除本机配对证书") {
+                    confirmClearPairing()
+                }.apply {
+                    setTextColor(palette.statusError)
+                },
+            )
+        }
+
         scrollHost.setContent(root, palette.bgCanvas)
+    }
+
+    private fun confirmClearPairing() {
+        runCatching { clearPairingDialog?.dismiss() }
+        clearPairingDialog = UiComponents.showStyleBDialog(
+            activity = this,
+            palette = palette,
+            title = "清除本机无线调试配对？",
+            message = "清除后需重新通过本向导完成 6 位配对码握手，才可继续使用无感模式。",
+            primaryLabel = "确认清除",
+            onPrimary = {
+                PairingNotificationGuide.keyStore(this).clearPairing()
+                PairingNotificationGuide.cancelNotification(this)
+                connectionVerified = false
+                connectedPort = 0
+                autoCheckPending = false
+                previewStateOverride = null
+                feedbackText = "已清除本机无线调试配对证书"
+                feedbackIsError = false
+                renderUi()
+            },
+            secondaryLabel = "取消",
+            onDismissed = { clearPairingDialog = null },
+        )
     }
 
     private fun buildStepCard(

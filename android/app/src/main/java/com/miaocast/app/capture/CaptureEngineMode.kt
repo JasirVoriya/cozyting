@@ -60,11 +60,11 @@ data class CaptureEngineCapabilities(
     val tierSummaryZh: String
         get() = when {
             supportsShellSingleAppPolicy ->
-                "Android 13+（API $sdkInt）：免投屏弹窗 · 免「正在投屏」提示 · 支持单 App 隔离与真单 App 本机静音"
+                "Android 13+：免投屏弹窗 · 支持单 App 隔离与独立静音"
             supportsShellGlobalSubmix ->
-                "Android 11–12（API $sdkInt）：免投屏弹窗 · 免「正在投屏」提示 · 仅支持显式全局媒体（不支持单 App 隔离）"
+                "Android 11–12：免投屏弹窗 · 仅支持显式全局媒体（不支持单 App 隔离）"
             else ->
-                "Android 10（API $sdkInt）：系统不支持原生无线调试与 shell 音频捕获，仅可使用标准投屏模式"
+                "Android 10：不支持无线调试采集，请使用标准投屏模式"
         }
 
     sealed class ValidationResult {
