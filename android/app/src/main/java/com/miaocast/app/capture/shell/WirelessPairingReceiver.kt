@@ -4,6 +4,8 @@ import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.miaocast.app.R
+import com.miaocast.app.ui.AppLocaleManager
 
 /**
  * 接收通知栏 `RemoteInput` 提交的 6 位无线调试配对码并在后台线程完成配对。
@@ -30,11 +32,12 @@ class WirelessPairingReceiver : BroadcastReceiver() {
                                 .discoverOnce(WirelessAdbDiscovery.SERVICE_PAIRING, timeoutMs = 2_500L)
                                 ?.port ?: 0
                         }
+                        val locCtx = AppLocaleManager.localizedContext(appCtx)
                         if (port !in 1..65535) {
                             PairingNotificationGuide.postResultNotification(
-                                appCtx,
+                                locCtx,
                                 success = false,
-                                messageZh = "未发现无线调试配对端口，请保持「使用配对码配对设备」弹窗开启后重试",
+                                messageZh = locCtx.getString(R.string.pairing_receiver_no_port),
                             )
                             return@Thread
                         }
@@ -46,14 +49,14 @@ class WirelessPairingReceiver : BroadcastReceiver() {
                                 PairingNotificationGuide.stopPairingWatcher()
                                 PairingFloatingOverlay.dismiss(appCtx)
                                 PairingNotificationGuide.postResultNotification(
-                                    appCtx,
+                                    locCtx,
                                     success = true,
-                                    messageZh = "已保存本机配对证书，返回妙投即可启用无感采集",
+                                    messageZh = locCtx.getString(R.string.pairing_receiver_saved),
                                 )
                             }
                             is WirelessAdbPairingClient.PairResult.Failure -> {
                                 PairingNotificationGuide.postResultNotification(
-                                    appCtx,
+                                    locCtx,
                                     success = false,
                                     messageZh = res.messageZh,
                                 )

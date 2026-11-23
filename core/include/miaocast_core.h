@@ -111,7 +111,8 @@ void miaocast_engine_stop(int64_t handle);
 int32_t miaocast_compare_versions(const char *a, const char *b);
 
 /* 跨端更新裁决引擎：解析 update.json 或 GitHub Releases API JSON，
- * 返回归一化决策 JSON（含 (current_version, target_version] 跨版本区间日志）。 */
+ * 返回归一化决策 JSON（含 (current_version, target_version] 跨版本区间日志、
+ * 结构化 error_code/error_detail 与 notes_is_fallback，供各端按当前语言本地化展示）。 */
 char *miaocast_update_evaluate_json(
     const char *current_version,
     const char *channel,

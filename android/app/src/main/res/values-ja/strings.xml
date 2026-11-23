@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Manifest -->
+    <string name="app_name">MiaoCast</string>
+    <string name="app_brand_name">MiaoCast</string>
+    <string name="notification_listener_label">MiaoCast · 再生中メディア取得</string>
+    <string name="wireless_pairing_accessibility_label">MiaoCast · ワイヤレスデバッグ自動ペアリング補助</string>
+    <string name="wireless_pairing_accessibility_desc">初回のワイヤレスデバッグによるサイレントキャプチャ設定時のみ使用します。システムの「ワイヤレスデバッグ」画面上部に 6 桁ペアリングコード入力パッドを表示し、コードを読み取ってローカルペアリングを完了します。完了後は自動で休止し、個人データは収集しません。</string>
+    <string name="title_app_picker">音源アプリを選択</string>
+    <string name="title_settings">設定</string>
+    <string name="title_wireless_guide">サイレントキャプチャ設定ガイド</string>
+
+    <!-- Common Actions -->
+    <string name="common_back">戻る</string>
+    <string name="common_close">閉じる</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_got_it">了解</string>
+    <string name="common_open">開く</string>
+    <string name="common_loading">読み込み中…</string>
+    <string name="common_auto">自動</string>
+
+    <!-- Language & Theme -->
+    <string name="lang_system">自動</string>
+    <string name="settings_language_title">表示言語</string>
+    <string name="theme_system">システム</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+
+    <!-- Latency Presets -->
+    <string name="latency_standard_name">標準</string>
+    <string name="latency_standard_short">自動</string>
+    <string name="latency_standard_full">5GHz 800ms / 2.4GHz 1000ms</string>
+    <string name="latency_standard_runway">14 AU（約299ms）</string>
+    <string name="latency_standard_detail">安定性重視の基準設定。2.4GHz 環境や壁越し、長時間のマルチルーム再生に最適です。</string>
+
+    <string name="latency_balanced_name">バランス</string>
+    <string name="latency_balanced_short">400ms</string>
+    <string name="latency_balanced_full">400ms</string>
+    <string name="latency_balanced_runway">8 AU（約171ms）</string>
+    <string name="latency_balanced_detail">普段使いに最適：複数スピーカーの同期を安定させたまま、曲送りや一時停止の応答を約 2 倍高速化します。</string>
+
+    <string name="latency_low_name">低遅延</string>
+    <string name="latency_low_short">250ms</string>
+    <string name="latency_low_full">250ms</string>
+    <string name="latency_low_runway">5 AU（約107ms）</string>
+    <string name="latency_low_detail">安定した 5GHz 単体スピーカー向け。曲送りやシーク操作に軽快に追従します。</string>
+
+    <string name="latency_ultra_name">超低遅延</string>
+    <string name="latency_ultra_short">150ms</string>
+    <string name="latency_ultra_full">150ms</string>
+    <string name="latency_ultra_runway">3 AU（約64ms）</string>
+    <string name="latency_ultra_detail">実験的な極小バッファ：同室の 5GHz 単体スピーカー専用。電波が弱い環境や複数台では途切れる場合があります。</string>
+
+    <string name="latency_custom">カスタム</string>
+    <string name="latency_switch_desc">再生遅延モードを切替</string>
+    <string name="latency_tiers_info">遅延モードの説明</string>
+    <string name="latency_details_title">再生遅延モードの説明</string>
+    <string name="latency_details_subtitle">キャスト中に切り替えると TIME_OFFSET を再基準化し、再接続なしで即座に反映されます。</string>
+    <string name="latency_preset_current">%1$s · 現在</string>
+    <string name="latency_runway_prefix">起動バッファ：%1$s</string>
+    <string name="latency_go_custom">設定で ms 指定</string>
+    <string name="latency_switched_live">「%1$s · %2$s」に切替（再接続なしで即時反映）</string>
+    <string name="latency_switched_live_ultra_multi">「%1$s · %2$s」に切替（複数台で途切れる場合はバランス推奨）</string>
+    <string name="latency_switched_saved">「%1$s · %2$s」を保存しました（次回接続時に適用）</string>
+
+    <!-- Main Activity -->
+    <string name="main_status_this_device">本機再生</string>
+    <string name="main_status_casting_count">キャスト中 · %1$d 台</string>
+    <string name="main_status_connecting">接続中…</string>
+    <string name="main_status_failed">キャストエラー</string>
+    <string name="main_status_silent_mode">無音テスト</string>
+    <string name="main_update_banner">新しいバージョン %1$s</string>
+    <string name="main_update_banner_multi">新バージョン %1$s（%2$d 件の更新）</string>
+    <string name="main_update_banner_view">詳細</string>
+    <string name="main_update_banner_close_desc">更新バナーを閉じる</string>
+
+    <string name="main_open_music_app_desc">再生中の音楽アプリを開く</string>
+    <string name="main_unknown_title">タイトル不明</string>
+    <string name="main_unknown_artist">アーティスト不明</string>
+    <string name="main_no_now_playing_sub">再生中の曲はありません</string>
+    <string name="main_prev_track_desc">前の曲</string>
+    <string name="main_play_pause_desc">再生または一時停止</string>
+    <string name="main_next_track_desc">次の曲</string>
+    <string name="main_notif_access_hint">通知へのアクセスを許可して曲情報と自動検出を有効化</string>
+    <string name="main_idle_playing_with_app">待機中 · %1$s</string>
+    <string name="main_idle_playing_none">再生中なし</string>
+    <string name="main_idle_hint_with_app">ジャケットまたは再生をタップして %1$s を起動</string>
+    <string name="main_idle_hint_none">音楽アプリで再生すると曲情報と操作が同期されます</string>
+
+    <string name="main_source_unselected">音源アプリ：未選択</string>
+    <string name="main_source_unselected_sub">タップしてキャストする音楽・音声アプリを選択</string>
+    <string name="main_source_unselected_sub_manage">タップしてよく使う音源を管理・自動検出を設定</string>
+    <string name="main_source_selected">音源 · %1$s</string>
+    <string name="main_source_global_title">全体メディア（サイレントキャプチャ）</string>
+    <string name="main_source_global_sub">端末の全メディア音声をキャプチャ中 · 設定で単一アプリに戻せます</string>
+    <string name="main_source_auto_badge">自動検出</string>
+    <string name="main_source_manage">管理</string>
+
+    <string name="main_output_devices">出力デバイス</string>
+    <string name="main_multiroom_support">マルチルーム同期に対応</string>
+    <string name="main_found_castable_count">%1$d 台の対応機器を検出</string>
+    <string name="main_refresh_devices_desc">出力デバイスを再スキャン</string>
+    <string name="main_this_device_name">本機再生</string>
+    <string name="main_this_device_active_sub">スマホスピーカー · 出力中</string>
+    <string name="main_this_device_idle_sub">スマホスピーカー</string>
+    <string name="main_device_reconnecting">%1$s · 再接続中…</string>
+    <string name="main_device_error">%1$s · 接続エラー</string>
+    <string name="main_device_streaming">%1$s · キャスト中</string>
+    <string name="main_device_connecting">%1$s · 接続中…</string>
+
+    <string name="main_err_record_audio_denied">RECORD_AUDIO が未許可のため再生キャプチャを開始できません（マイク録音は行いません）</string>
+    <string name="main_err_record_audio_needed">音声キャプチャ権限が必要です（再生音のみ、マイクは不使用）</string>
+    <string name="main_err_select_app_first">先にキャストする音源アプリを選択してください</string>
+    <string name="main_err_cannot_cast">キャストできません：%1$s</string>
+    <string name="main_err_discover_failed">スキャンに失敗しました。更新をタップして再試行してください。</string>
+    <string name="main_err_no_speakers_found">オンラインのスピーカーが見つかりません（更新または設定で IP を手動追加）</string>
+    <string name="main_status_projection_cancelled">キャプチャ許可がキャンセルされました · 本機再生に戻しました</string>
+    <string name="main_status_switching_source">音源を %1$s に切り替えています…</string>
+    <string name="main_status_switched_standard">標準キャストモードに切り替えました。スピーカーをタップして開始できます。</string>
+
+    <!-- Volume Safety Guard Dialog -->
+    <string name="volume_guard_title">安全音量の上限（%1$d%%）を超過</string>
+    <string name="volume_guard_msg_master">マスター音量を %1$d%% から %2$d%% に上げますか？</string>
+    <string name="volume_guard_msg_speaker">「%1$s」の音量を %2$d%% から %3$d%% に上げますか？</string>
+    <string name="volume_guard_keep">元の音量（%1$d%%）</string>
+    <string name="volume_guard_confirm">%1$d%% に変更</string>
+
+    <!-- Wireless Precheck & Recovery Dialogs -->
+    <string name="wireless_dialog_unsupported_title">サイレントキャプチャ非対応</string>
+    <string name="wireless_dialog_switch_standard_cast">標準キャストで開始</string>
+    <string name="wireless_dialog_need_pair_title">初回ワイヤレスペアリングが必要です</string>
+    <string name="wireless_dialog_need_pair_footnote">初回のみガイドに沿って 6 桁のペアリングコードを設定します（自動読取・パッド入力・通知欄入力に対応）。完了後は画面共有ダイアログなしで直接キャストできます。</string>
+    <string name="wireless_dialog_open_5step_guide">5 ステップ設定ガイドを開く</string>
+    <string name="wireless_dialog_use_standard_first">ひとまず標準キャストを使う</string>
+    <string name="wireless_dialog_api30_title">Android 11–12 は全体メディアのみ対応</string>
+    <string name="wireless_dialog_switch_global">全体メディアに切替</string>
+    <string name="wireless_dialog_use_standard_instead">標準キャストを使う</string>
+    <string name="wireless_dialog_not_ready_title">サイレントキャプチャ未準備</string>
+    <string name="wireless_dialog_open_guide">設定ガイドを開く</string>
+    <string name="wireless_dialog_recovery_title">ワイヤレスデバッグを確認してください</string>
+    <string name="wireless_dialog_recovery_footnote">ヒント：端末を再起動すると Android の仕様で「ワイヤレスデバッグ」がオフになります。スイッチを再度オンにするだけで復旧し、再ペアリングは不要です。</string>
+    <string name="wireless_dialog_open_wireless_debug">ワイヤレスデバッグを開く</string>
+    <string name="wireless_dialog_switch_standard">標準モードに切替</string>
+
+    <!-- Protocol & Capture Engine -->
+    <string name="protocol_desc_supported">%1$s プロトコル</string>
+    <string name="protocol_desc_unsupported">%1$s プロトコル（キャスト未実装）</string>
+    <string name="engine_standard">標準キャスト</string>
+    <string name="engine_wireless_debug">サイレント (無線)</string>
+    <string name="scope_single_app">単一アプリ</string>
+    <string name="scope_global_media">全体メディア</string>
+    <string name="engine_tier_api33">Android 13+：確認ダイアログなし · 単一アプリ分離と個別ミュート対応</string>
+    <string name="engine_tier_api30">Android 11–12：確認ダイアログなし · 明示的な全体メディアのみ対応（単一アプリ分離は非対応）</string>
+    <string name="engine_tier_api29">Android 10：ワイヤレスキャプチャ非対応のため標準キャストをご利用ください</string>
+    <string name="engine_reject_api29">Android 10（API %1$d）は内蔵ワイヤレスデバッグ収集に非対応です。設定で「標準キャスト」に切り替えてください。</string>
+    <string name="engine_reject_unpaired">内蔵ワイヤレスデバッグの初回ペアリングが未完了です。5 ステップガイドで自動ペアリングまたは通知欄入力を行ってください。</string>
+    <string name="engine_reject_single_app_api30">Android 11–12（API %1$d）は shell 単一アプリ分離に非対応です（Fail-Closed）。設定で「全体メディア」または「標準キャスト」を選択してください。</string>
+    <string name="capture_layers_hint">選択したアプリが UID フィルタを決定します。システムの録画・共有許可ダイアログは認可専用であり、UID フィルタを上書きしません。</string>
+
+    <!-- Settings Activity -->
+    <string name="settings_section_appearance">外観と検出</string>
+    <string name="settings_theme_title">テーマ</string>
+    <string name="settings_show_all_title">すべての検出ノードを表示</string>
+    <string name="settings_show_all_sub">MiPlay 非対応の LAN 機器も表示します（トラブルシューティング用）</string>
+    <string name="settings_rediscover_btn">LAN 機器を今すぐ再スキャン</string>
+
+    <string name="settings_section_cast">キャストとシステム権限</string>
+    <string name="settings_capture_engine_title">キャプチャエンジン</string>
+    <string name="settings_wireless_unsupported_hint">この Android バージョンはワイヤレスデバッグ収集に非対応です。「標準キャスト」に切り替えてください。</string>
+    <string name="settings_capture_scope_title">キャプチャ範囲</string>
+    <string name="settings_scope_api30_hint">注意：Android 11–12 は shell 単一アプリ分離に非対応です（Fail-Closed）。「全体メディア」または「標準キャスト」を選択してください。</string>
+    <string name="settings_wireless_pair_title">ワイヤレスペアリング</string>
+    <string name="settings_wireless_pair_sub_done">ガイド表示・接続テスト・証明書リセット</string>
+    <string name="settings_wireless_pair_sub_todo">初回 5 ステップ設定（PC 不要）</string>
+    <string name="settings_wireless_paired">ペアリング済</string>
+    <string name="settings_wireless_unpaired">未ペアリング</string>
+
+    <string name="settings_local_mute_title">キャスト中はスマホをミュート</string>
+    <string name="settings_local_mute_sub_single">キャスト中の音楽アプリのみ消音し、他アプリは通常どおり再生（ROM 依存）</string>
+    <string name="settings_local_mute_sub_standard">スマホのメディア音量を消音します（標準モードは単一アプリ消音に非対応）</string>
+    <string name="settings_current_status">現在の状態：%1$s</string>
+
+    <string name="settings_volume_guard_title">大音量ガード</string>
+    <string name="settings_volume_guard_sub">安全上限を超えて音量を上げる際に確認ダイアログを表示します</string>
+    <string name="settings_volume_limit_title">安全音量の上限</string>
+    <string name="settings_volume_limit_hint">%1$d%% 以下から %1$d%% 超へ上げる際に確認します（下げると再保護）</string>
+
+    <string name="settings_auto_detect_title">再生中の音源を自動検出</string>
+    <string name="settings_auto_detect_sub">「よく使う音源」で自動検出オンの再生アプリへ追従（通知アクセス必要・キャスト中もシームレス切替）</string>
+    <string name="settings_notif_access_title">通知へのアクセス（再生中情報と自動検出）</string>
+    <string name="settings_notif_access_sub">曲情報・再生操作・音源自動検出のみに使用し、通知内容は外部送信しません</string>
+    <string name="settings_status_enabled">許可済</string>
+    <string name="settings_status_disabled">未許可</string>
+    <string name="settings_battery_title">バッテリー最適化の除外</string>
+    <string name="settings_battery_sub">バックグラウンド再生の中断を軽減します（端末メーカーにより挙動が異なります）</string>
+    <string name="settings_battery_exempt">除外済</string>
+    <string name="settings_battery_not_exempt">制限あり</string>
+
+    <string name="settings_section_debug">詳細とデバッグ</string>
+    <string name="settings_debug_header">接続パラメータ・手動 IP・デバッグ</string>
+    <string name="settings_debug_sub">通常は自動設定で動作します。問題調査時のみ開いてください</string>
+    <string name="settings_manual_ip_label">スピーカー IP を手動追加（カンマ区切り）</string>
+    <string name="settings_manual_ip_hint">例：192.168.1.100</string>
+    <string name="settings_manual_ip_add">追加</string>
+    <string name="settings_manual_ip_invalid">有効な IPv4 アドレスを入力してください（例：192.168.1.100）</string>
+    <string name="settings_manual_ip_prefix">手動 %1$s</string>
+    <string name="settings_manual_ip_added">%1$s を追加しました。メイン画面に戻って選択できます。</string>
+    <string name="settings_source_mode_label">キャプチャ音源モード</string>
+    <string name="settings_source_mode_app">選択アプリ (UID)</string>
+    <string name="settings_source_mode_silent">無音テスト</string>
+    <string name="settings_delay_label">再生バッファ遅延 ms（空欄/0=自動 %1$d ms；50–5000）</string>
+    <string name="settings_delay_hint">自動 (%1$d)</string>
+    <string name="settings_delay_apply">適用</string>
+    <string name="settings_delay_invalid">50–5000 ms の数値を入力してください（空欄または 0 で自動 %1$d ms）</string>
+    <string name="settings_delay_auto_suffix">（自動）</string>
+    <string name="settings_delay_low_hint">；250ms 未満は弱電波や複数台で音切れする場合があります</string>
+    <string name="settings_delay_applied_live">即時適用：%1$dms%2$s（再接続不要）%3$s</string>
+    <string name="settings_delay_saved">保存済み：%1$dms%2$s（次回接続時に適用）%3$s</string>
+    <string name="settings_ref_label">グループ参照モード（ref_function）</string>
+    <string name="settings_ref_auto">自動</string>
+    <string name="settings_ref_single">単体</string>
+    <string name="settings_ref_multi">マルチ</string>
+    <string name="settings_ref_stereo">ステレオ</string>
+    <string name="settings_auth_label">8899 認証モード</string>
+    <string name="settings_auth_auto">自動</string>
+    <string name="settings_auth_legacy">Legacy</string>
+    <string name="settings_auth_safety">Safety</string>
+    <string name="settings_acceptance_hint">検証版デフォルト音量=0（無音テスト）；停止時に端末の STREAM_MUSIC は自動復元しません。</string>
+    <string name="settings_local_probe_idle">ローカルフィルタ検証：停止中</string>
+    <string name="settings_local_probe_stop">ローカル検証を停止</string>
+    <string name="settings_local_probe_start">ローカル音声フィルタ検証を開始</string>
+    <string name="settings_local_probe_stop_cast_first">先にスピーカーへのキャストを停止してください</string>
+    <string name="settings_local_probe_waiting">ローカルフィルタ検証：許可待ち…</string>
+    <string name="settings_local_probe_stopped">ローカルプローブを停止しました</string>
+    <string name="settings_local_probe_denied">ローカルフィルタ検証：許可が拒否されました</string>
+    <string name="settings_local_probe_started">ローカルフィルタ検証を開始しました</string>
+
+    <string name="settings_section_about">アプリ情報とアップデート</string>
+    <string name="settings_ver_acceptance">検証版</string>
+    <string name="settings_ver_preview">プレビュー</string>
+    <string name="settings_update_checking">公開アップデート情報を確認中…</string>
+    <string name="settings_update_avail_single">新バージョン %1$s があります</string>
+    <string name="settings_update_avail_multi">新バージョン %1$s（%2$d 件の更新）</string>
+    <string name="settings_update_ignored">新バージョン %1$s（スキップ済）</string>
+    <string name="settings_update_unsupported_os">バージョン %1$s は新しい Android OS が必要です</string>
+    <string name="settings_update_up_to_date">最新バージョンです · 最終確認 %1$s</string>
+    <string name="settings_update_parse_err">更新データの解析に失敗しました</string>
+    <string name="settings_update_last_checked">最終確認：%1$s</string>
+    <string name="settings_update_never_checked">未確認 · 静的マニフェストのみ、テレメトリなし</string>
+    <string name="settings_update_pill_checking">確認中…</string>
+    <string name="settings_update_pill_failed">確認失敗</string>
+    <string name="settings_update_pill_new">更新あり</string>
+    <string name="settings_update_pill_latest">最新</string>
+    <string name="settings_update_btn_checking">アップデート確認中…</string>
+    <string name="settings_update_btn_view">新バージョン %1$s を確認</string>
+    <string name="settings_update_btn_retry">再試行</string>
+    <string name="settings_update_btn_check">アップデートを確認</string>
+    <string name="settings_update_auto_title">起動時に自動で更新を確認</string>
+    <string name="settings_update_auto_sub">24 時間ごとに公開マニフェストへ読み取り専用の HTTPS リクエストを 1 回送信（端末や LAN 情報は送信しません）</string>
+    <string name="settings_update_channel_title">更新チャネル</string>
+    <string name="update_channel_stable">安定版</string>
+    <string name="update_channel_prerelease">プレビュー (RC)</string>
+    <string name="settings_release_page_title">公開リリースページと変更履歴</string>
+    <string name="time_just_now">たった今</string>
+    <string name="time_minutes_ago">%1$d 分前</string>
+    <string name="time_hours_ago">%1$d 時間前</string>
+
+    <!-- App Picker Activity -->
+    <string name="picker_title">よく使う音源と選択</string>
+    <string name="picker_info_desc">よく使う音源と自動検出の説明</string>
+    <string name="picker_info_title">よく使う音源と自動検出について</string>
+    <string name="picker_info_message">1. 「よく使う音源」は自由に追加・削除でき、長押しドラッグで並び替えるとメイン画面のクイック切替バーへ即時反映されます。\n\n2. 自動検出は「よく使う音源」に登録され、かつ自動検出スイッチがオンのアプリのみ対象です。キャスト中に別の登録済み音楽アプリを再生するとシームレスに切り替わります。\n\n3. 自動・手動のいずれでも、開始や切替前に単独 UID と署名証明書を検証し、端末全体キャプチャへのサイレントフォールバックは行いません。</string>
+    <string name="picker_search_hint">アプリ名またはパッケージ名を検索…</string>
+    <string name="picker_clear_search_desc">検索をクリア</string>
+    <string name="picker_loading_apps">起動可能なアプリを読み込み中…</string>
+    <string name="picker_status_summary">よく使う音源 %1$d 件（自動検出 %2$d 件）· タップで選択</string>
+    <string name="picker_search_empty">一致するアプリが見つかりません</string>
+    <string name="picker_search_results">検索結果 (%1$d)</string>
+    <string name="picker_favorites_header">よく使う音源 (%1$d)</string>
+    <string name="picker_drag_hint">長押しドラッグで並替</string>
+    <string name="picker_favorites_empty">よく使う音源が未登録です · 下の「+ 登録」から自動検出対象のアプリを追加してください</string>
+    <string name="picker_all_launchable">起動可能なアプリ (%1$d)</string>
+    <string name="picker_collapse_others">その他のアプリを閉じる (%1$d)</string>
+    <string name="picker_expand_others">他のアプリをよく使う音源に追加 (%1$d)</string>
+    <string name="picker_auto_detect_on">自動検出：許可</string>
+    <string name="picker_auto_detect_off">自動検出：オフ</string>
+    <string name="picker_remove_favorite">登録解除</string>
+    <string name="picker_add_favorite">+ 登録</string>
+    <string name="picker_verifying">%1$s を検証中…</string>
+
+    <!-- Update Dialog & Errors -->
+    <string name="update_dialog_title">新しいバージョン</string>
+    <string name="update_dialog_preview_badge">プレビュー</string>
+    <string name="update_dialog_published_at">公開日 %1$s</string>
+    <string name="update_dialog_apk_size">サイズ %1$s</string>
+    <string name="update_dialog_versions_behind">%1$d 件分のアップデート</string>
+    <string name="update_dialog_unsupported_os">お使いの Android バージョンはこのリリースの最小要件を満たしていません。</string>
+    <string name="update_dialog_acceptance_notice">現在は検証版（%1$s）です。通常版 APK はブラウザから個別にインストールしてください。</string>
+    <string name="update_dialog_changelog_header">v%1$s 以降の %2$d 件の変更点</string>
+    <string name="update_dialog_changelog_truncated">… それ以前の変更は省略されています。「ブラウザで開く」から全履歴を確認できます。</string>
+    <string name="update_fallback_empty_notes">機能改善と安定性向上を含みます。詳細はリリースページをご確認ください。</string>
+    <string name="update_dialog_need_install_perm">システム設定で MiaoCast からの提供元不明アプリインストールを許可し、戻ってから「今すぐインストール」をタップしてください。</string>
+    <string name="update_dialog_btn_install_after_perm">許可済・今すぐインストール</string>
+    <string name="update_dialog_err_open_installer">システムインストーラーを起動できませんでした。下の「ブラウザでダウンロード」をご利用ください。</string>
+    <string name="update_dialog_btn_download_install">ダウンロードしてインストール</string>
+    <string name="update_dialog_btn_cancel_download">ダウンロードを中止</string>
+    <string name="update_dialog_btn_install_now">今すぐインストール</string>
+    <string name="update_dialog_btn_retry_download">再ダウンロード</string>
+    <string name="update_dialog_progress_connecting">接続中…</string>
+    <string name="update_dialog_progress_checksum">公式 SHA-256 チェックサムを取得中…</string>
+    <string name="update_dialog_progress_downloading_pct">APK をダウンロード中… %1$d%%（%2$s / %3$s）</string>
+    <string name="update_dialog_progress_downloading_bytes">APK をダウンロード中… %1$s</string>
+    <string name="update_dialog_progress_verifying">SHA-256 と署名証明書を検証中…</string>
+    <string name="update_dialog_progress_verified">SHA-256 と署名の検証に成功しました。インストールを開始します…</string>
+    <string name="update_dialog_btn_browser_download">ブラウザでダウンロード</string>
+    <string name="update_dialog_btn_release_page">リリースページを開く</string>
+    <string name="update_dialog_remind_later">あとで</string>
+    <string name="update_dialog_skip_version">このバージョンをスキップ</string>
+    <string name="update_err_invalid_version">現在のバージョン形式が不正です</string>
+    <string name="update_err_invalid_json">更新レスポンスの JSON が不正です</string>
+    <string name="update_err_remote">リモートエラー：%1$s</string>
+    <string name="update_err_unrecognized_schema">不明な更新レスポンス形式です</string>
+    <string name="update_err_check_failed">更新確認に失敗しました：%1$s</string>
+    <string name="update_err_network">ネットワークエラー</string>
+    <string name="update_err_network_connect">ネットワーク接続に失敗しました</string>
+    <string name="update_err_github_rate_limit">GitHub API の回数制限に達しました。しばらくしてから再試行してください。</string>
+    <string name="update_err_http_unavailable">サービスを利用できません（HTTP %1$d）</string>
+    <string name="update_err_feed_unreachable">公開更新フィードに接続できません</string>
+
+    <!-- Wireless Debug Guide & Onboarding -->
+    <string name="guide_title">サイレントキャプチャ設定ガイド</string>
+    <string name="guide_badge_unsupported">Android %1$d 非対応</string>
+    <string name="guide_badge_all_done">全 %1$d ステップ完了</string>
+    <string name="guide_badge_progress">進捗 %1$d / %2$d</string>
+    <string name="guide_btn_back_standard">標準キャストへ戻る</string>
+    <string name="guide_section_steps">設定ステップ</string>
+    <string name="guide_btn_enable_done">完了してサイレントモードを有効化</string>
+    <string name="guide_btn_enable_paired">ペアリング済 · サイレントモードを有効化</string>
+    <string name="guide_btn_clear_cert">ローカルペアリング証明書を削除</string>
+    <string name="guide_clear_dialog_title">ペアリング証明書を削除しますか？</string>
+    <string name="guide_clear_dialog_msg">削除すると、再度このガイドで 6 桁コードのペアリングを行うまでサイレントモードは利用できません。</string>
+    <string name="guide_clear_dialog_confirm">削除する</string>
+    <string name="guide_feedback_cert_cleared">ローカルのワイヤレスデバッグ証明書を削除しました</string>
+    <string name="guide_feedback_notif_granted">通知権限が許可されました。次のステップへ進んでください。</string>
+    <string name="guide_feedback_notif_denied">通知権限が未許可です。「通知を許可」から設定を開いてください。</string>
+    <string name="guide_testing_conn">接続テスト中…</string>
+    <string name="guide_skip_a11y">スキップ（通知欄を使う）</string>
+    <string name="guide_feedback_a11y_skipped">ユーザー補助をスキップしました：通知バナーから 6 桁コードを入力してください（ボタンが隠れている場合は通知を長押し）</string>
+    <string name="guide_manual_collapse">手動入力を閉じる</string>
+    <string name="guide_manual_expand">手動入力</string>
+    <string name="guide_manual_hint">ヒント：本アプリを分割画面やフローティング表示にして、ポートと 6 桁コードを直接入力できます：</string>
+    <string name="guide_manual_port_hint">ポート</string>
+    <string name="guide_manual_pin_hint">6 桁コード</string>
+    <string name="guide_manual_pair_btn">ペアリング</string>
+    <string name="guide_tips_title">よくある質問と再起動後の復旧</string>
+    <string name="guide_tip_1">• オーバーレイではなくユーザー補助を推奨する理由：Android 12+ / HyperOS ではワイヤレスデバッグ画面上で通常のオーバーレイがブロックされます。「MiaoCast · 自動ペアリング補助」を有効にするとオーバーレイ権限なしで入力パッドを表示し、6 桁コードを自動読取できます。</string>
+    <string name="guide_tip_2">• 通知欄からのフォールバック入力：ユーザー補助がオフでも、「ペア設定コードによるデバイスのペア設定」を開いた後、通知シェードから「6 桁コードを入力」で入力できます（折り畳まれている場合は通知を長押し）。</string>
+    <string name="guide_tip_3">• 端末再起動後：Android によりワイヤレスデバッグは自動オフになります。スイッチを再度オンにするだけで復旧し、再ペアリングは不要です。</string>
+    <string name="guide_tip_4">• 音楽と動画視聴を両立：Android 13+ の単一アプリ・サイレントキャストでは再生中のみデュアルゾーン・オーディオフォーカス分離が有効になり、スマホで動画を再生してもスピーカーの音楽が止まりません。</string>
+    <string name="guide_tip_5">• Wi-Fi 接続が必要：ワイヤレスデバッグと Xiaomi スピーカーへの LAN キャストは同じ Wi-Fi 接続が必要です。</string>
+    <string name="guide_tip_6">• ステータスバーの緑点：サイレントモードでは録画確認ダイアログとバナーが消えますが、Android 12+ のプライバシー仕様で小さな緑点が表示される場合があります。</string>
+    <string name="guide_feedback_a11y_ready">自動ペアリングと上部キーパッドの準備完了：「ワイヤレスデバッグ → ペア設定コードによるデバイスのペア設定」を開くと自動読取します</string>
+    <string name="guide_feedback_notif_banner_sent">ペアリング通知を送信しました：「ワイヤレスデバッグ → ペア設定コードによるデバイスのペア設定」を開き、通知欄から 6 桁コードを入力してください</string>
+    <string name="guide_feedback_invalid_port">有効なペアリングポート（1–65535）を入力してください</string>
+    <string name="guide_feedback_pairing_start">127.0.0.1:%1$d へ TLS + SPAKE2 ペアリング中…</string>
+    <string name="guide_feedback_pair_success">ペアリング成功！接続を自動検証しています…</string>
+    <string name="guide_feedback_need_pair_first">先にステップ 4 の 6 桁コードペアリングを完了してください</string>
+    <string name="guide_feedback_probing">ローカルのワイヤレスデバッグポートと uid=2000 権限を確認中…</string>
+    <string name="guide_feedback_no_service">ワイヤレスデバッグが検出されません：Wi-Fi 接続と「開発者向けオプション → ワイヤレスデバッグ」がオンか確認してください</string>
+    <string name="guide_feedback_conn_ok">接続確認完了（127.0.0.1:%1$d · %2$s）</string>
+
+    <!-- Onboarding State Steps -->
+    <string name="onboard_unsupported_headline">この OS はサイレントキャプチャ非対応です</string>
+    <string name="onboard_unsupported_sub">Android 10（API %1$d）はワイヤレスデバッグ・ペアリングと shell 音声収集に非対応のため「標準キャスト」をご利用ください。</string>
+    <string name="onboard_step1_title">通知権限を許可</string>
+    <string name="onboard_step1_detail_done">通知が許可されています（キャスト操作通知およびペアリング入力バナーに使用）</string>
+    <string name="onboard_step1_detail_todo">バックグラウンドのキャスト操作通知とペアリング入力バナーの表示に必要です</string>
+    <string name="onboard_step1_action">通知を許可</string>
+    <string name="onboard_step2_title">「開発者向けオプション」を有効化</string>
+    <string name="onboard_step2_detail_done">「開発者向けオプション」が有効になっていることを確認しました</string>
+    <string name="onboard_step2_detail_todo">「デバイス情報」で「ビルド番号」（Xiaomi / HyperOS は「OS バージョン」）を 7 回タップし、この画面に戻ってください</string>
+    <string name="onboard_step2_action">「デバイス情報」を開く</string>
+    <string name="onboard_step3_title">「自動ペアリング補助」を有効化（推奨）</string>
+    <string name="onboard_step3_detail_enabled">有効化済：オーバーレイ権限なしでワイヤレスデバッグ画面上部にパッドを表示し、6 桁コードを自動読取します</string>
+    <string name="onboard_step3_detail_skipped">スキップ済：通知バナーから手動で 6 桁コードを入力します（いつでも有効化可能）</string>
+    <string name="onboard_step3_detail_todo">オーバーレイ権限不要！「MiaoCast · 自動ペアリング補助」を有効にすると PIN 画面にパッドを重ねて 6 桁コードを自動読取し、完了後は自動で休止します</string>
+    <string name="onboard_step3_badge_recommended">推奨 · 自動読取</string>
+    <string name="onboard_step3_badge_skipped">スキップ済</string>
+    <string name="onboard_step3_action_enable">ユーザー補助を有効化</string>
+    <string name="onboard_step3_action_reenable">自動ペアリングを有効化</string>
+    <string name="onboard_step4_title_a11y">「ワイヤレスデバッグ」をオンにしてコードを表示</string>
+    <string name="onboard_step4_title_notif">「ワイヤレスデバッグ」をオンにして通知欄で入力</string>
+    <string name="onboard_step4_detail_done">ローカル TLS 証明書を保存済です（再起動後はワイヤレスデバッグをオンにするだけで復旧します）</string>
+    <string name="onboard_step4_detail_a11y">① 下から「開発者向けオプション → ワイヤレスデバッグ」をオンにする\n② 「ペア設定コードによるデバイスのペア設定」をタップしてダイアログを開いたままにする\n③ 上部パネルが 6 桁コードを自動読取して戻ります（パッド入力も可能）</string>
+    <string name="onboard_step4_detail_notif">① 下から「開発者向けオプション → ワイヤレスデバッグ」をオンにする\n② 「ペア設定コードによるデバイスのペア設定」をタップして開いたままにする\n③ 通知欄から「6 桁コードを入力」をタップ（隠れている場合は通知を長押し）</string>
+    <string name="onboard_step4_action_repair">再ペアリング</string>
+    <string name="onboard_step4_action_a11y">自動ペアリング開始・設定を開く</string>
+    <string name="onboard_step4_action_notif">ワイヤレスデバッグを開く</string>
+    <string name="onboard_step5_title">ローカル接続を確認して有効化</string>
+    <string name="onboard_step5_detail_verified_port">ローカル接続確認済（127.0.0.1:%1$d · uid=2000）。ダイアログなしでキャストできます</string>
+    <string name="onboard_step5_detail_verified">ローカル接続確認済。ダイアログなしでキャストできます</string>
+    <string name="onboard_step5_detail_paired">「ワイヤレスデバッグ」がオンであることを確認し、接続テストをタップしてください</string>
+    <string name="onboard_step5_detail_todo">ステップ 4 のペアリング完了後、自動でローカル接続を検証します</string>
+    <string name="onboard_step5_action_retest">再テスト</string>
+    <string name="onboard_step5_action_test">接続テスト</string>
+    <string name="onboard_badge_done">完了</string>
+    <string name="onboard_badge_todo">未設定</string>
+    <string name="onboard_badge_enabled">有効</string>
+    <string name="onboard_badge_paired">済</string>
+    <string name="onboard_badge_unpaired">未完了</string>
+    <string name="onboard_badge_ready">準備完了</string>
+    <string name="onboard_badge_verify">要確認</string>
+    <string name="onboard_badge_pending">待機中</string>
+    <string name="onboard_headline_ready">サイレントキャプチャの準備完了</string>
+    <string name="onboard_sub_ready">下のボタンで有効化すると、画面録画の確認ダイアログなしでキャストできます</string>
+    <string name="onboard_headline_paired">ペアリング済 · あと 1 ステップ</string>
+    <string name="onboard_sub_paired">「ワイヤレスデバッグ」がオンの状態で「接続テスト」をタップしてください</string>
+    <string name="onboard_headline_default">5 ステップでサイレントキャプチャを設定（初回のみ）</string>
+    <string name="onboard_sub_default">オーバーレイ権限・PC 不要 · 6 桁コード自動読取と通知欄フォールバックに対応</string>
+
+    <!-- Pairing Overlay & Notifications -->
+    <string name="overlay_title_expanded">6 桁のペアリングコードを入力</string>
+    <string name="overlay_title_collapsed">MiaoCast · コード表示待ち</string>
+    <string name="overlay_port_done">ポート確定</string>
+    <string name="overlay_port_locked">ポート %1$d</string>
+    <string name="overlay_port_manual">ポート手動</string>
+    <string name="overlay_collapse">閉じる</string>
+    <string name="overlay_expand">キーパッド</string>
+    <string name="overlay_close_desc">ペアリングパネルを閉じる</string>
+    <string name="overlay_collapsed_hint">① 下の「ワイヤレスデバッグ」をオン → ② 「ペア設定コードによるデバイスのペア設定」をタップ（自動読取またはキーパッド入力）</string>
+    <string name="overlay_port_field_label">ポート：</string>
+    <string name="overlay_port_field_placeholder">5 桁のポート番号を入力</string>
+    <string name="overlay_status_port_discovered">ポート %1$d を検出 · ダイアログ表示で 6 桁コードを自動読取（手動入力も可）</string>
+    <string name="overlay_status_auto_detected">✓ コード %1$s（ポート %2$d）を自動読取 · ペアリング中…</string>
+    <string name="overlay_status_editing_port">ダイアログ内の IP コロン後ろの 5 桁ポート番号を入力してください</string>
+    <string name="overlay_status_port_ready">ポート %1$d 確定 · 6 桁コードを入力すると自動ペアリング</string>
+    <string name="overlay_status_wait_popup">6 桁コード表示後に数字をタップ（ポート未検出時は右上から手動入力）</string>
+    <string name="overlay_status_port_set">ポート %1$d を設定済。続けて 6 桁コードを入力してください。</string>
+    <string name="overlay_status_pin_incomplete">6 桁すべて入力してください（現在 %1$d/6 桁）</string>
+    <string name="overlay_status_probing_port">ペアリングポートを検出中…</string>
+    <string name="overlay_status_no_port">ポートを自動検出できませんでした：5 桁のポート番号を入力し「完了」をタップ</string>
+    <string name="overlay_status_success">✓ ペアリング成功！証明書を保存し MiaoCast へ戻ります…</string>
+    <string name="overlay_status_fail_retry">%1$s（数字タップで再入力）</string>
+    <string name="overlay_key_done">完了</string>
+    <string name="overlay_key_pair">実行</string>
+
+    <string name="pairing_notif_input_label">6 桁ペアリングコードを入力</string>
+    <string name="pairing_notif_action_input">6 桁コードを入力</string>
+    <string name="pairing_notif_title_ready">ワイヤレスペアリング準備完了（ポート %1$d）</string>
+    <string name="pairing_notif_title_waiting">「ペア設定コードによるデバイスのペア設定」を待機中…</string>
+    <string name="pairing_notif_text_ready">下の「6 桁コードを入力」から入力してください。ボタンが見えない場合はこの通知を長押し（または下スワイプ）して展開してください。</string>
+    <string name="pairing_notif_text_waiting">「ワイヤレスデバッグ → ペア設定コードによるデバイスのペア設定」を開いてください。自動読取オフの場合は通知を長押しして入力できます。</string>
+    <string name="pairing_notif_result_ok_title">ワイヤレスデバッグ・ペアリング成功</string>
+    <string name="pairing_notif_result_fail_title">ワイヤレスペアリング失敗</string>
+    <string name="pairing_notif_channel_waiting">ワイヤレスペアリング待機（サイレント）</string>
+    <string name="pairing_notif_channel_waiting_desc">開発者向けオプションを開く前のサイレント通知</string>
+    <string name="pairing_notif_channel_active">ワイヤレスペアリング入力バナー</string>
+    <string name="pairing_notif_channel_active_desc">ペアリング画面検出時に 6 桁コード入力バナーを表示</string>
+    <string name="pairing_receiver_no_port">ペアリングポートが見つかりません。コード表示ダイアログを開いたまま再試行してください。</string>
+    <string name="pairing_receiver_saved">証明書を保存しました。MiaoCast に戻ってサイレントキャプチャを有効化できます。</string>
+
+    <!-- Cast Service & Foreground Notification -->
+    <string name="cast_channel_name">MiaoCast · キャスト状態</string>
+    <string name="cast_action_pause">一時停止</string>
+    <string name="cast_action_resume">再開</string>
+    <string name="cast_action_stop">停止</string>
+    <string name="cast_notif_silent_paused">一時停止 · 無音テスト</string>
+    <string name="cast_notif_silent_connecting">接続中 · 無音テスト</string>
+    <string name="cast_notif_silent_playing">無音テスト中</string>
+    <string name="cast_notif_global_media">全体メディア</string>
+    <string name="cast_notif_fallback_audio">音声</string>
+    <string name="cast_notif_title_paused">一時停止中 · %1$s</string>
+    <string name="cast_notif_title_connecting">接続中 · %1$s</string>
+    <string name="cast_notif_title_casting">キャスト中 · %1$s</string>
+    <string name="cast_notif_preparing">準備中…</string>
+    <string name="cast_notif_single_error">%1$s · 切断</string>
+    <string name="cast_notif_single_reconnecting">%1$s · 再接続中</string>
+    <string name="cast_notif_single_connecting">%1$s · 接続中</string>
+    <string name="cast_notif_multi_connecting">%1$d 台へ接続中</string>
+    <string name="cast_notif_multi_paused">%1$d 台の機器</string>
+    <string name="cast_notif_multi_synced">%1$d 台で同期再生中</string>
+    <string name="cast_notif_multi_abnormal">%1$d 台 · %2$s</string>
+    <string name="cast_notif_part_reconnecting">%1$d 台再接続中</string>
+    <string name="cast_notif_part_error">%1$d 台切断</string>
+    <string name="cast_notif_part_connecting">%1$d 台接続中</string>
+    <string name="cast_notif_status_error">切断</string>
+    <string name="cast_notif_status_reconnecting">再接続中</string>
+    <string name="cast_notif_status_connecting">接続中</string>
+    <string name="cast_notif_status_paused">一時停止</string>
+    <string name="cast_notif_status_playing">再生中</string>
+    <string name="cast_notif_more_devices">…ほか計 %1$d 台</string>
+    <string name="cast_mute_status_idle">本機出力中（ミュート未適用）</string>
+    <string name="cast_mute_status_stopped">本機出力中（キャスト停止済）</string>
+    <string name="cast_mute_status_single_app">単一アプリ消音が有効（サイレントループバック・他アプリ再生可）</string>
+    <string name="cast_mute_status_global">全体メディア消音が有効（サイレントループバック）</string>
+    <string name="cast_err_projection_invalid">画面・音声キャプチャ権限が無効または拒否されました</string>
+    <string name="cast_err_projection_null">システムが MediaProjection を作成できませんでした</string>
+    <string name="cast_err_projection_revoked">キャプチャ権限が取り消されたかシステムに停止されました</string>
+    <string name="cast_err_projection_unavailable">MediaProjection が利用できません</string>
+    <string name="cast_hotswitch_ok">音源を %1$s に切り替えました</string>
+    <string name="cast_hotswitch_rejected">音源を切り替えできません：%1$s</string>
+    <string name="cast_hotswitch_reverted">%1$s へ切り替えできませんでした（%2$s を維持）</string>
+    <string name="cast_hotswitch_stopped">%1$s への切替に失敗しキャストを停止しました：%2$s</string>
+</resources>

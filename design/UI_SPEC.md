@@ -2,7 +2,8 @@
 
 本目录是 **第 3 层（UI 表现层）** 的唯一视觉事实来源：Android（Kotlin 原生 View）与后续 iOS（SwiftUI）分别按原生方式实现界面，但严格共用本目录的 `tokens.json`、`icons/*.svg` 与页面信息架构。
 
-- **品牌名与协议名解耦约定**：C 端产品名称统一为 **妙投**（英文 locale 为 **MiaoCast**）；底层协议与引擎标识统一保留 **MiPlay**（如设备行协议徽标 `MiPlay`、设置项中的「未声明 MiPlay 能力的节点」、L1 Rust 核心 `miplay-core`）。
+- **品牌名与协议名解耦约定**：C 端产品名称在简体中文 locale 为 **妙投**，在英文与日文等非中文 locale 统一为 **MiaoCast**；底层协议与引擎标识统一保留 **MiPlay**（如设备行协议徽标 `MiPlay`、设置项中的「未声明 MiPlay 能力的节点」、L1 Rust 核心 `miaocast-core`）。
+- **全链路多语言（i18n）基线**：双端原生支持至少 **简体中文（`zh-CN`）**、**英文（`en`）**、**日文（`ja`）** 三语且可扩展至更多语种。Android 端所有用户可见文案统一收敛至 `res/values/`、`res/values-en/`、`res/values-ja/` 的 `strings.xml`，并在 API 29–36 提供零外部依赖的应用内语言切换（API 33+ 经 `compat/LocaleCompat` 同步系统分应用语言 `LocaleManager`）；iOS 端同步维护 `Localizable.xcstrings`（支持在系统「设置 → MiaoCast → 语言」及应用内入口切换），L1 `core/` 通过结构化 `error_code` / `notes_is_fallback` 与文案解耦，严禁硬编码单语种句子。
 
 ## 1. 视觉风格（第一版样式 B · 克制低饱和 + 高对比选中卡）
 
@@ -47,7 +48,7 @@
 
 ## 3. 独立设置页（4 张卡片分组）
 
-1. **外观与发现**：三段式主题选择 `[跟随系统 | 浅色 | 深色]`、显示全部发现设备开关、重新发现设备入口。
+1. **外观与发现**：三段式主题选择 `[跟随系统 | 浅色 | 深色]`、四段式显示语言选择 `[跟随系统 | 简体中文 | English | 日本語]`（具体语种固定以母语名称展示防止误切后无法辨认；Android 通过 `AppLocaleManager` + `LocaleCompat` 即时生效并重建页面，iOS 通过 `Localizable.xcstrings` / 系统分应用语言同步生效）、显示全部发现设备开关、重新发现设备入口。
 2. **投送与系统权限**：
    - **采集引擎（Android 专属；iOS 受沙箱模型限制由 `ReplayKit` 固定承载，不展示此分段）**：两段式切换 `[标准投屏模式 | 无感模式（无线调试）]` + 精简系统版本能力摘要（未手动选择时按系统版本自动决定默认项：**Android 13+ 默认无感模式**；Android 10–12 默认标准投屏模式以守住单 App Fail-Closed 红线）；选择无感模式且 Android 11+ 时依次展示 **捕获范围** 分段 `[单 App 隔离 | 全局媒体（显式）]`（Android 11–12 选单 App 时保留 Fail-Closed 提示）与单行 **无线调试配对** 状态入口（`已配对` / `未配对`，无需 Shizuku 等外部 App；点击直达 5 步配置向导页统一完成配对、自动/手动测试连接与低频证书重置，避免设置页入口重合与大按钮堆叠）。
    - **5 步交互式配置向导页（`WirelessDebugGuideActivity`，Android 专属）**：严格沿用 Style B 明暗主题与顶部进度胶囊，实时自动检测并打勾 `1. 允许通知权限` → `2. 开启开发者选项` → `3. 开启「无障碍自动配对」（推荐；支持跳过改走通知栏兜底）` → `4. 开启无线调试并完成 6 位码配对` → `5. 测试本机连通性并一键启用`；已配对时在底部常见问题折叠卡下方提供低频 `清除本机配对证书` 入口（点击弹出 Style B 二次确认弹窗防误触）。为避开 Android 12+ / HyperOS 系统设置页对普通 `TYPE_APPLICATION_OVERLAY` 悬浮窗的 `HIDE_NON_SYSTEM_OVERLAY_WINDOWS` 屏蔽且减少权限步骤，彻底移除 `SYSTEM_ALERT_WINDOW` 悬浮窗权限，改由 `WirelessPairingAccessibilityService` 提供：

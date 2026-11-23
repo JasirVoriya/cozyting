@@ -105,6 +105,9 @@ android {
                 System.getProperty("miaocast.uiPreviewDir")
                     ?: layout.buildDirectory.dir("ui-previews").get().asFile.absolutePath,
             )
+            System.getProperty("miaocast.uiPreviewLocale")?.let { loc ->
+                it.systemProperty("miaocast.uiPreviewLocale", loc)
+            }
             // Robolectric Native Graphics 在 JDK 17+ 需要开放部分模块访问
             it.jvmArgs("-Xmx2g")
         }

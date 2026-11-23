@@ -86,7 +86,7 @@ object UpdateDialogController {
         }
         titleRow.addView(
             TextView(activity).apply {
-                text = "发现新版本"
+                text = activity.getString(R.string.update_dialog_title)
                 textSize = 17f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -109,7 +109,7 @@ object UpdateDialogController {
         if (decision.isPrerelease) {
             titleRow.addView(
                 TextView(activity).apply {
-                    text = "预览版"
+                    text = activity.getString(R.string.update_dialog_preview_badge)
                     textSize = 10.5f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(palette.statusWarning)
@@ -128,9 +128,9 @@ object UpdateDialogController {
         titleCol.addView(titleRow)
 
         val metaParts = mutableListOf<String>()
-        if (decision.shortDate.isNotBlank()) metaParts += "发布于 ${decision.shortDate}"
-        if (decision.assetSizeBytes > 0L) metaParts += "安装包 ${formatBytes(decision.assetSizeBytes)}"
-        if (decision.versionsBehind > 1) metaParts += "跨 ${decision.versionsBehind} 个版本更新"
+        if (decision.shortDate.isNotBlank()) metaParts += activity.getString(R.string.update_dialog_published_at, decision.shortDate)
+        if (decision.assetSizeBytes > 0L) metaParts += activity.getString(R.string.update_dialog_apk_size, formatBytes(decision.assetSizeBytes))
+        if (decision.versionsBehind > 1) metaParts += activity.getString(R.string.update_dialog_versions_behind, decision.versionsBehind)
         if (metaParts.isNotEmpty()) {
             titleCol.addView(
                 TextView(activity).apply {
@@ -143,7 +143,7 @@ object UpdateDialogController {
         }
         header.addView(titleCol)
         header.addView(
-            UiComponents.iconCircleButton(activity, palette, R.drawable.ic_ui_close, "关闭", sizeDp = 32) {
+            UiComponents.iconCircleButton(activity, palette, R.drawable.ic_ui_close, activity.getString(R.string.common_close), sizeDp = 32) {
                 cancelled.set(true)
                 dialog.dismiss()
             },
@@ -152,9 +152,9 @@ object UpdateDialogController {
 
         // —— 跨版本提示胶囊 / 验收包或系统不兼容提示 ——
         if (decision.status == UpdateDecisionStatus.UNSUPPORTED_OS) {
-            card.addView(noticeBanner(activity, palette, "当前系统版本低于该新版本最低要求，暂无法直接安装。", warning = true))
+            card.addView(noticeBanner(activity, palette, activity.getString(R.string.update_dialog_unsupported_os), warning = true))
         } else if (BuildConfig.IS_ACCEPTANCE) {
-            card.addView(noticeBanner(activity, palette, "当前为验收包（${activity.packageName}），正式版安装包请通过浏览器独立安装。", warning = true))
+            card.addView(noticeBanner(activity, palette, activity.getString(R.string.update_dialog_acceptance_notice, activity.packageName), warning = true))
         }
 
         // —— 中部：可滚动更新日志（单版直出 / 跨多版按版本分节） ——
@@ -166,7 +166,7 @@ object UpdateDialogController {
         if (entries.size > 1) {
             notesContainer.addView(
                 TextView(activity).apply {
-                    text = "自 v${decision.currentVersion} 以来共 ${decision.versionsBehind} 个版本变更"
+                    text = activity.getString(R.string.update_dialog_changelog_header, decision.currentVersion, decision.versionsBehind)
                     textSize = 11.5f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(palette.accentBright)
@@ -191,7 +191,7 @@ object UpdateDialogController {
                 val verHeader = buildString {
                     append(entry.tag)
                     if (entry.shortDate.isNotBlank()) append(" · ${entry.shortDate}")
-                    if (entry.prerelease) append(" · 预览版")
+                    if (entry.prerelease) append(" · ").append(activity.getString(R.string.update_dialog_preview_badge))
                 }
                 notesContainer.addView(
                     TextView(activity).apply {
@@ -204,7 +204,7 @@ object UpdateDialogController {
                 )
                 notesContainer.addView(
                     TextView(activity).apply {
-                        text = entry.notes
+                        text = entry.displayNotes(activity)
                         textSize = 12.5f
                         setTextColor(palette.textSecondary)
                         setLineSpacing(dpf(2f), 1f)
@@ -214,7 +214,7 @@ object UpdateDialogController {
             if (decision.changelogTruncated) {
                 notesContainer.addView(
                     TextView(activity).apply {
-                        text = "… 更早版本变更已省略，可点击「前往浏览器下载」查看完整历史"
+                        text = activity.getString(R.string.update_dialog_changelog_truncated)
                         textSize = 11f
                         setTextColor(palette.textTertiary)
                         setPadding(0, dp(8), 0, 0)
@@ -222,8 +222,8 @@ object UpdateDialogController {
                 )
             }
         } else {
-            val singleText = entries.firstOrNull()?.notes?.ifBlank { decision.releaseNotes }
-                ?: decision.releaseNotes.ifBlank { "本版本包含功能改进与稳定性修复。" }
+            val singleText = entries.firstOrNull()?.displayNotes(activity)
+                ?: decision.localizedReleaseNotes(activity)
             notesContainer.addView(
                 TextView(activity).apply {
                     text = singleText
@@ -302,10 +302,10 @@ object UpdateDialogController {
         var primaryBtn: TextView? = null
         fun launchInstall(apk: File) {
             if (!ApkInstallerCompat.canRequestPackageInstalls(activity)) {
-                statusMsg.text = "请在系统设置中允许「妙投」安装未知应用，授权后返回再点「立即安装」。"
+                statusMsg.text = activity.getString(R.string.update_dialog_need_install_perm)
                 statusMsg.setTextColor(palette.statusWarning)
                 statusMsg.visibility = View.VISIBLE
-                primaryBtn?.text = "已授权，立即安装"
+                primaryBtn?.text = activity.getString(R.string.update_dialog_btn_install_after_perm)
                 runCatching {
                     activity.startActivity(ApkInstallerCompat.buildUnknownSourcesSettingsIntent(activity.packageName))
                 }
@@ -317,14 +317,14 @@ object UpdateDialogController {
             if (started) {
                 dialog.dismiss()
             } else {
-                statusMsg.text = "无法调起系统安装器，请点击下方「前往浏览器下载」。"
+                statusMsg.text = activity.getString(R.string.update_dialog_err_open_installer)
                 statusMsg.setTextColor(palette.statusError)
                 statusMsg.visibility = View.VISIBLE
             }
         }
 
         if (canInAppInstall) {
-            val btn = UiComponents.tonalButton(activity, palette, "立即下载并安装", primary = true) {
+            val btn = UiComponents.tonalButton(activity, palette, activity.getString(R.string.update_dialog_btn_download_install), primary = true) {
                 val readyFile = verifiedApk
                 if (readyFile != null && readyFile.isFile) {
                     launchInstall(readyFile)
@@ -338,8 +338,8 @@ object UpdateDialogController {
                 cancelled.set(false)
                 statusMsg.visibility = View.GONE
                 progressBox.visibility = View.VISIBLE
-                progressLabel.text = "正在连接下载…"
-                primaryBtn?.text = "取消下载"
+                progressLabel.text = activity.getString(R.string.update_dialog_progress_connecting)
+                primaryBtn?.text = activity.getString(R.string.update_dialog_btn_cancel_download)
 
                 downloadExecutor.execute {
                     val result = ApkUpdateDownloader.downloadAndVerify(
@@ -357,15 +357,15 @@ object UpdateDialogController {
                                 }
                             }
                             progressLabel.text = when (p.stage) {
-                                ApkDownloadProgress.Stage.FETCHING_CHECKSUM -> "正在获取官方 SHA-256 校验值…"
+                                ApkDownloadProgress.Stage.FETCHING_CHECKSUM -> activity.getString(R.string.update_dialog_progress_checksum)
                                 ApkDownloadProgress.Stage.DOWNLOADING -> {
                                     if (pct >= 0) {
-                                        "正在下载安装包… $pct%（${formatBytes(p.bytesRead)} / ${formatBytes(p.totalBytes)}）"
+                                        activity.getString(R.string.update_dialog_progress_downloading_pct, pct, formatBytes(p.bytesRead), formatBytes(p.totalBytes))
                                     } else {
-                                        "正在下载安装包… ${formatBytes(p.bytesRead)}"
+                                        activity.getString(R.string.update_dialog_progress_downloading_bytes, formatBytes(p.bytesRead))
                                     }
                                 }
-                                ApkDownloadProgress.Stage.VERIFYING -> "正在校验 SHA-256 与签名证书…"
+                                ApkDownloadProgress.Stage.VERIFYING -> activity.getString(R.string.update_dialog_progress_verifying)
                             }
                         }
                     }
@@ -379,20 +379,20 @@ object UpdateDialogController {
                                 if (tw > 0) {
                                     trackFill.layoutParams = (trackFill.layoutParams as FrameLayout.LayoutParams).apply { width = tw }
                                 }
-                                progressLabel.text = "SHA-256 与签名校验通过，准备安装…"
-                                primaryBtn?.text = "立即安装"
+                                progressLabel.text = activity.getString(R.string.update_dialog_progress_verified)
+                                primaryBtn?.text = activity.getString(R.string.update_dialog_btn_install_now)
                                 launchInstall(result.apkFile)
                             }
                             is ApkUpdateDownloader.DownloadResult.Cancelled -> {
                                 progressBox.visibility = View.GONE
-                                primaryBtn?.text = "立即下载并安装"
+                                primaryBtn?.text = activity.getString(R.string.update_dialog_btn_download_install)
                             }
                             is ApkUpdateDownloader.DownloadResult.Failed -> {
                                 progressBox.visibility = View.GONE
                                 statusMsg.text = result.reasonZh
                                 statusMsg.setTextColor(palette.statusError)
                                 statusMsg.visibility = View.VISIBLE
-                                primaryBtn?.text = "重试下载"
+                                primaryBtn?.text = activity.getString(R.string.update_dialog_btn_retry_download)
                             }
                         }
                     }
@@ -405,7 +405,11 @@ object UpdateDialogController {
         val browserBtn = UiComponents.tonalButton(
             context = activity,
             palette = palette,
-            label = if (canInAppInstall) "前往浏览器下载" else "前往发布页查看",
+            label = if (canInAppInstall) {
+                activity.getString(R.string.update_dialog_btn_browser_download)
+            } else {
+                activity.getString(R.string.update_dialog_btn_release_page)
+            },
             primary = !canInAppInstall,
         ) {
             val targetUrl = decision.releaseUrl.takeIf { UpdateConfig.isAllowedHttpsUrl(it) }
@@ -431,7 +435,7 @@ object UpdateDialogController {
         }
         footerRow.addView(
             TextView(activity).apply {
-                text = "稍后提醒"
+                text = activity.getString(R.string.update_dialog_remind_later)
                 textSize = 12.5f
                 setTextColor(palette.textSecondary)
                 setPadding(dp(12), dp(6), dp(12), dp(4))
@@ -452,7 +456,7 @@ object UpdateDialogController {
         )
         footerRow.addView(
             TextView(activity).apply {
-                text = "跳过此版本"
+                text = activity.getString(R.string.update_dialog_skip_version)
                 textSize = 12.5f
                 setTextColor(palette.textSecondary)
                 setPadding(dp(12), dp(6), dp(12), dp(4))

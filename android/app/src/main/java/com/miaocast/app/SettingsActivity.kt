@@ -3,6 +3,7 @@ package com.miaocast.app
 import android.app.Activity
 import android.app.Dialog
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
@@ -35,7 +36,10 @@ import com.miaocast.app.cast.CastProtocol
 import com.miaocast.app.cast.CastRouteSelection
 import com.miaocast.app.cast.PrefsDiscoveredDeviceStore
 import com.miaocast.app.compat.CaptureSelectionLayers
+import com.miaocast.app.compat.LocaleCompat
 import com.miaocast.app.compat.WindowInsetsApplyCompat
+import com.miaocast.app.ui.AppLanguage
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.ThemeMode
 import com.miaocast.app.ui.UiComponents
@@ -102,6 +106,10 @@ class SettingsActivity : Activity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
@@ -154,13 +162,13 @@ class SettingsActivity : Activity() {
             setPadding(0, 0, 0, dp(14))
         }
         topBar.addView(
-            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, "返回") {
+            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, getString(R.string.common_back)) {
                 finish()
             },
         )
         topBar.addView(
             TextView(this).apply {
-                text = "设置"
+                text = getString(R.string.title_settings)
                 textSize = 19f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -171,11 +179,11 @@ class SettingsActivity : Activity() {
         root.addView(topBar)
 
         // —— 卡片 1：外观与发现 ——
-        root.addView(UiComponents.sectionTitle(this, palette, "外观与发现"))
+        root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.settings_section_appearance)))
         val appearanceCard = UiComponents.panelCard(this, palette, padDp = 14)
         appearanceCard.addView(
             TextView(this).apply {
-                text = "主题模式"
+                text = getString(R.string.settings_theme_title)
                 textSize = 13.5f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -188,7 +196,7 @@ class SettingsActivity : Activity() {
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = modes.map { it.labelZh },
+                labels = modes.map { it.label(this) },
                 initialIndex = modeIdx,
             ) { idx ->
                 settingsStore.themeMode = modes[idx]
@@ -197,11 +205,39 @@ class SettingsActivity : Activity() {
         )
         appearanceCard.addView(spacer(10))
         appearanceCard.addView(
+            TextView(this).apply {
+                text = getString(R.string.settings_language_title)
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                setPadding(dp(2), 0, 0, dp(8))
+            },
+        )
+        val languages = listOf(AppLanguage.SYSTEM, AppLanguage.ZH_CN, AppLanguage.EN, AppLanguage.JA)
+        val currentLang = AppLocaleManager.readSelectedLanguage(this)
+        val langIdx = languages.indexOf(currentLang).coerceAtLeast(0)
+        appearanceCard.addView(
+            UiComponents.segmentedControl(
+                context = this,
+                palette = palette,
+                labels = languages.map { it.displayLabel(this) },
+                initialIndex = langIdx,
+            ) { idx ->
+                val chosen = languages[idx]
+                if (chosen != AppLocaleManager.readSelectedLanguage(this)) {
+                    AppLocaleManager.saveSelectedLanguage(this, chosen)
+                    LocaleCompat.syncSystemAppLocales(this, chosen)
+                    recreate()
+                }
+            },
+        )
+        appearanceCard.addView(spacer(10))
+        appearanceCard.addView(
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
-                title = "显示全部发现设备",
-                subtitle = "包含未声明 MiPlay 能力的局域网节点（兜底排查用）",
+                title = getString(R.string.settings_show_all_title),
+                subtitle = getString(R.string.settings_show_all_sub),
                 initialChecked = settingsStore.showAllDiscovered,
             ) { checked ->
                 settingsStore.showAllDiscovered = checked
@@ -210,7 +246,7 @@ class SettingsActivity : Activity() {
         )
         appearanceCard.addView(spacer(10))
         appearanceCard.addView(
-            UiComponents.tonalButton(this, palette, "立即重新发现局域网设备") {
+            UiComponents.tonalButton(this, palette, getString(R.string.settings_rediscover_btn)) {
                 triggerDiscover = true
                 finish()
             },
@@ -218,7 +254,7 @@ class SettingsActivity : Activity() {
         root.addView(appearanceCard)
 
         // —— 卡片 2：投送与系统权限 ——
-        root.addView(UiComponents.sectionTitle(this, palette, "投送与系统权限"))
+        root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.settings_section_cast)))
         val castCard = UiComponents.panelCard(this, palette, padDp = 14)
         buildCaptureEngineSection(castCard)
         castCard.addView(spacer(10))
@@ -231,11 +267,11 @@ class SettingsActivity : Activity() {
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
-                title = "投送时手机静音",
+                title = getString(R.string.settings_local_mute_title),
                 subtitle = if (trueSingleAppMuteActive) {
-                    "仅静音当前投送的音乐 App，其他 App 照常发声（实际效果以 ROM 为准）"
+                    getString(R.string.settings_local_mute_sub_single)
                 } else {
-                    "静音手机媒体音量，关闭后保留本机出声（标准模式无法单 App 静音）"
+                    getString(R.string.settings_local_mute_sub_standard)
                 },
                 initialChecked = !settingsStore.keepLocalOutput,
             ) { checked ->
@@ -244,7 +280,7 @@ class SettingsActivity : Activity() {
         )
         castCard.addView(
             TextView(this).apply {
-                text = "当前状态：${CastService.localMuteStatusZh}"
+                text = getString(R.string.settings_current_status, CastService.localizedLocalMuteStatus(this@SettingsActivity))
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
                 setPadding(dp(4), dp(6), dp(4), dp(10))
@@ -259,8 +295,8 @@ class SettingsActivity : Activity() {
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
-                title = "自动识别正在播放的音源",
-                subtitle = "自动跟随「常用音源」中开启自动识别且正在播放的 App（需通知使用权，投送中切歌自动热切换）",
+                title = getString(R.string.settings_auto_detect_title),
+                subtitle = getString(R.string.settings_auto_detect_sub),
                 initialChecked = settingsStore.autoDetectAudioSource,
             ) { checked ->
                 settingsStore.autoDetectAudioSource = checked
@@ -270,11 +306,11 @@ class SettingsActivity : Activity() {
 
         castCard.addView(
             permissionRow(
-                title = "通知使用权（正在播放与自动识别）",
-                subtitle = "用于读取正在播放曲目、播控及自动识别常用音源，不上传通知内容",
+                title = getString(R.string.settings_notif_access_title),
+                subtitle = getString(R.string.settings_notif_access_sub),
                 granted = notifGranted,
-                grantedLabel = "已开启",
-                missingLabel = "未开启",
+                grantedLabel = getString(R.string.settings_status_enabled),
+                missingLabel = getString(R.string.settings_status_disabled),
             ) {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             },
@@ -284,11 +320,11 @@ class SettingsActivity : Activity() {
         val batteryExempt = isBatteryOptimizationIgnored()
         castCard.addView(
             permissionRow(
-                title = "电池优化豁免",
-                subtitle = "减少后台投送被系统休眠中断的概率（不构成跨品牌保活保证）",
+                title = getString(R.string.settings_battery_title),
+                subtitle = getString(R.string.settings_battery_sub),
                 granted = batteryExempt,
-                grantedLabel = "已豁免",
-                missingLabel = "未豁免",
+                grantedLabel = getString(R.string.settings_battery_exempt),
+                missingLabel = getString(R.string.settings_battery_not_exempt),
             ) {
                 try {
                     startActivity(
@@ -305,7 +341,7 @@ class SettingsActivity : Activity() {
         root.addView(castCard)
 
         // —— 卡片 3：连接与调试（默认折叠） ——
-        root.addView(UiComponents.sectionTitle(this, palette, "高级与调试"))
+        root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.settings_section_debug)))
         val debugCard = UiComponents.panelCard(this, palette, padDp = 14)
         val debugBody = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -336,7 +372,7 @@ class SettingsActivity : Activity() {
         }
         debugMeta.addView(
             TextView(this).apply {
-                text = "连接参数、手动 IP 与调试选项"
+                text = getString(R.string.settings_debug_header)
                 textSize = 14f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -344,7 +380,7 @@ class SettingsActivity : Activity() {
         )
         debugMeta.addView(
             TextView(this).apply {
-                text = "默认自动配置即可；排查网络或特殊音箱时再展开"
+                text = getString(R.string.settings_debug_sub)
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
                 setPadding(0, dp(2), 0, 0)
@@ -359,7 +395,7 @@ class SettingsActivity : Activity() {
         root.addView(debugCard)
 
         // —— 卡片 4：关于与更新 ——
-        root.addView(UiComponents.sectionTitle(this, palette, "关于与更新"))
+        root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.settings_section_about)))
         val updateCard = UiComponents.panelCard(this, palette, padDp = 14)
         buildAboutAndUpdateCard(updateCard)
         root.addView(updateCard)
@@ -369,7 +405,7 @@ class SettingsActivity : Activity() {
 
     private fun buildDebugBody(body: LinearLayout) {
         // 手动添加音箱 IP
-        body.addView(fieldLabel("手动添加设备 IP（逗号分隔）"))
+        body.addView(fieldLabel(getString(R.string.settings_manual_ip_label)))
         val manualRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -380,19 +416,19 @@ class SettingsActivity : Activity() {
             setPadding(dp(2), dp(4), 0, dp(8))
             visibility = View.GONE
         }
-        val manualIps = UiComponents.styledEditText(this, palette, "例如 192.168.1.100").apply {
+        val manualIps = UiComponents.styledEditText(this, palette, getString(R.string.settings_manual_ip_hint)).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginEnd = dp(8)
             }
         }
         manualRow.addView(manualIps)
         manualRow.addView(
-            UiComponents.tonalButton(this, palette, "加入", primary = true) {
+            UiComponents.tonalButton(this, palette, getString(R.string.settings_manual_ip_add), primary = true) {
                 val ips = manualIps.text.toString().split(',')
                     .map { it.trim() }
                     .filter { it.matches(Regex("""\d+\.\d+\.\d+\.\d+""")) }
                 if (ips.isEmpty()) {
-                    manualFeedback.text = "请输入合法 IPv4 地址（如 192.168.1.100）"
+                    manualFeedback.text = getString(R.string.settings_manual_ip_invalid)
                     manualFeedback.setTextColor(palette.statusWarning)
                     manualFeedback.visibility = View.VISIBLE
                     return@tonalButton
@@ -401,7 +437,7 @@ class SettingsActivity : Activity() {
                 val extra = ips.map { ip ->
                     CastRouteSelection.Device(
                         id = ip,
-                        name = "手动 $ip",
+                        name = getString(R.string.settings_manual_ip_prefix, ip),
                         kind = CastRouteSelection.Kind.SPEAKER,
                         castable = true,
                         protocol = CastProtocol.MIPLAY,
@@ -411,7 +447,7 @@ class SettingsActivity : Activity() {
                 deviceStore.saveDevices(merged)
                 devicesChanged = true
                 manualIps.setText("")
-                manualFeedback.text = "已加入 ${ips.joinToString(", ")}，返回主界面即可勾选投送"
+                manualFeedback.text = getString(R.string.settings_manual_ip_added, ips.joinToString(", "))
                 manualFeedback.setTextColor(palette.statusSuccess)
                 manualFeedback.visibility = View.VISIBLE
             },
@@ -420,12 +456,15 @@ class SettingsActivity : Activity() {
         body.addView(manualFeedback)
 
         // 音源模式
-        body.addView(fieldLabel("捕获音源模式"))
+        body.addView(fieldLabel(getString(R.string.settings_source_mode_label)))
         body.addView(
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = listOf("选定 App（UID 过滤）", "测试静音"),
+                labels = listOf(
+                    getString(R.string.settings_source_mode_app),
+                    getString(R.string.settings_source_mode_silent),
+                ),
                 initialIndex = if (settingsStore.sourceMode == "silent") 1 else 0,
             ) { idx ->
                 settingsStore.sourceMode = if (idx == 1) "silent" else "app"
@@ -435,7 +474,7 @@ class SettingsActivity : Activity() {
 
         // 播放缓冲延迟（输入框 + 生效按钮：投送中直接热重锚 TIME_OFFSET 生效，待机时保存并下次连接生效）
         val autoMs = CastService.autoDelayMs(this)
-        body.addView(fieldLabel("播放缓冲延迟 ms（留空或 0 为自动：$autoMs ms；范围 50–5000）"))
+        body.addView(fieldLabel(getString(R.string.settings_delay_label, autoMs)))
         val delayRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -449,7 +488,7 @@ class SettingsActivity : Activity() {
         val delayEdit = UiComponents.styledEditText(
             context = this,
             palette = palette,
-            hintText = "自动 ($autoMs)",
+            hintText = getString(R.string.settings_delay_hint, autoMs),
             inputTypeFlags = InputType.TYPE_CLASS_NUMBER,
         ).apply {
             imeOptions = EditorInfo.IME_ACTION_DONE
@@ -462,14 +501,14 @@ class SettingsActivity : Activity() {
             val raw = delayEdit.text.toString().trim()
             val parsed = if (raw.isEmpty()) 0 else raw.toIntOrNull()
             if (parsed == null || (parsed != 0 && parsed !in 50..5000)) {
-                delayFeedback.text = "请输入 50–5000 之间的毫秒数（留空或填 0 恢复自动 $autoMs ms）"
+                delayFeedback.text = getString(R.string.settings_delay_invalid, autoMs)
                 delayFeedback.setTextColor(palette.statusWarning)
                 delayFeedback.visibility = View.VISIBLE
             } else {
                 settingsStore.delayMs = parsed
                 val effectiveMs = if (parsed > 0) parsed else autoMs
-                val autoSuffix = if (parsed == 0) "（自动）" else ""
-                val lowHint = if (effectiveMs < 250) "；低于 250ms 在弱网或多箱场景可能卡顿" else ""
+                val autoSuffix = if (parsed == 0) getString(R.string.settings_delay_auto_suffix) else ""
+                val lowHint = if (effectiveMs < 250) getString(R.string.settings_delay_low_hint) else ""
                 runCatching {
                     getSystemService(InputMethodManager::class.java)
                         ?.hideSoftInputFromWindow(delayEdit.windowToken, 0)
@@ -481,10 +520,10 @@ class SettingsActivity : Activity() {
                             .setAction(CastService.ACTION_SET_DELAY)
                             .putExtra(CastService.EXTRA_DELAY, effectiveMs),
                     )
-                    delayFeedback.text = "已生效：当前投送已热更新为 ${effectiveMs}ms$autoSuffix（无需重连）$lowHint"
+                    delayFeedback.text = getString(R.string.settings_delay_applied_live, effectiveMs, autoSuffix, lowHint)
                     delayFeedback.setTextColor(if (effectiveMs < 250) palette.statusWarning else palette.statusSuccess)
                 } else {
-                    delayFeedback.text = "已保存：${effectiveMs}ms$autoSuffix，下次连接音箱时生效$lowHint"
+                    delayFeedback.text = getString(R.string.settings_delay_saved, effectiveMs, autoSuffix, lowHint)
                     delayFeedback.setTextColor(if (effectiveMs < 250) palette.statusWarning else palette.statusSuccess)
                 }
                 delayFeedback.visibility = View.VISIBLE
@@ -500,7 +539,7 @@ class SettingsActivity : Activity() {
         }
         delayRow.addView(delayEdit)
         delayRow.addView(
-            UiComponents.tonalButton(this, palette, "生效", primary = true) {
+            UiComponents.tonalButton(this, palette, getString(R.string.settings_delay_apply), primary = true) {
                 applyDelayAction()
             },
         )
@@ -509,9 +548,14 @@ class SettingsActivity : Activity() {
         body.addView(spacer(10))
 
         // 房间参考模式
-        body.addView(fieldLabel("组网参考模式（ref_function）"))
+        body.addView(fieldLabel(getString(R.string.settings_ref_label)))
         val refValues = listOf("", "single_room", "multi_room", "stereo")
-        val refLabels = listOf("自动", "单箱", "多箱", "立体声")
+        val refLabels = listOf(
+            getString(R.string.settings_ref_auto),
+            getString(R.string.settings_ref_single),
+            getString(R.string.settings_ref_multi),
+            getString(R.string.settings_ref_stereo),
+        )
         body.addView(
             UiComponents.segmentedControl(
                 context = this,
@@ -525,12 +569,16 @@ class SettingsActivity : Activity() {
         body.addView(spacer(10))
 
         // 认证模式
-        body.addView(fieldLabel("8899 认证链路"))
+        body.addView(fieldLabel(getString(R.string.settings_auth_label)))
         body.addView(
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = listOf("自动", "明文 Legacy", "Safety 加密"),
+                labels = listOf(
+                    getString(R.string.settings_auth_auto),
+                    getString(R.string.settings_auth_legacy),
+                    getString(R.string.settings_auth_safety),
+                ),
                 initialIndex = settingsStore.authMode,
             ) { idx ->
                 settingsStore.authMode = idx
@@ -538,7 +586,7 @@ class SettingsActivity : Activity() {
         )
         body.addView(
             TextView(this).apply {
-                text = CaptureSelectionLayers.settingsHintZh()
+                text = CaptureSelectionLayers.settingsHint(this@SettingsActivity)
                 textSize = 11f
                 setTextColor(palette.textTertiary)
                 setPadding(dp(2), dp(10), dp(2), 0)
@@ -548,7 +596,7 @@ class SettingsActivity : Activity() {
         if (BuildConfig.IS_ACCEPTANCE) {
             body.addView(
                 TextView(this).apply {
-                    text = "验收默认音箱音量=0（静音测试）；停止投送后不恢复本机 STREAM_MUSIC 索引。"
+                    text = getString(R.string.settings_acceptance_hint)
                     textSize = 11f
                     setTextColor(palette.statusWarning)
                     setPadding(dp(2), dp(8), dp(2), 0)
@@ -561,7 +609,7 @@ class SettingsActivity : Activity() {
                 text = if (LocalFilterProbeService.running.get()) {
                     LocalFilterProbeService.lastProbe.ifBlank { LocalFilterProbeService.lastEvent }
                 } else {
-                    "本地过滤验收：未运行"
+                    getString(R.string.settings_local_probe_idle)
                 }
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
@@ -571,7 +619,11 @@ class SettingsActivity : Activity() {
             localProbeBtn = UiComponents.tonalButton(
                 context = this,
                 palette = palette,
-                label = if (LocalFilterProbeService.running.get()) "停止本地过滤验收" else "启动本地音频过滤验收",
+                label = if (LocalFilterProbeService.running.get()) {
+                    getString(R.string.settings_local_probe_stop)
+                } else {
+                    getString(R.string.settings_local_probe_start)
+                },
             ) {
                 if (LocalFilterProbeService.running.get()) stopLocalProbe() else startLocalFilterAcceptance()
             }
@@ -669,7 +721,7 @@ class SettingsActivity : Activity() {
             return
         }
         if (CastService.running.get()) {
-            localProbeStatus?.text = "请先停止音箱投送"
+            localProbeStatus?.text = getString(R.string.settings_local_probe_stop_cast_first)
             return
         }
         pendingLocalProbe = Intent(this, LocalFilterProbeService::class.java)
@@ -681,13 +733,13 @@ class SettingsActivity : Activity() {
             getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
             REQ_LOCAL_PROBE,
         )
-        localProbeStatus?.text = "本地过滤验收：等待投影授权…"
+        localProbeStatus?.text = getString(R.string.settings_local_probe_waiting)
     }
 
     private fun stopLocalProbe() {
         startService(Intent(this, LocalFilterProbeService::class.java).setAction(LocalFilterProbeService.ACTION_STOP))
-        localProbeBtn?.text = "启动本地音频过滤验收"
-        localProbeStatus?.text = "已停止本地探针"
+        localProbeBtn?.text = getString(R.string.settings_local_probe_start)
+        localProbeStatus?.text = getString(R.string.settings_local_probe_stopped)
     }
 
     @Deprecated("Deprecated in Java")
@@ -697,15 +749,15 @@ class SettingsActivity : Activity() {
         val p = pendingLocalProbe ?: return
         pendingLocalProbe = null
         if (resultCode != RESULT_OK || data == null) {
-            localProbeStatus?.text = "本地过滤验收：授权被拒绝"
+            localProbeStatus?.text = getString(R.string.settings_local_probe_denied)
             return
         }
         startForegroundService(
             p.putExtra(LocalFilterProbeService.EXTRA_PROJ_CODE, resultCode)
                 .putExtra(LocalFilterProbeService.EXTRA_PROJ_DATA, data),
         )
-        localProbeBtn?.text = "停止本地过滤验收"
-        localProbeStatus?.text = "本地过滤验收已启动"
+        localProbeBtn?.text = getString(R.string.settings_local_probe_stop)
+        localProbeStatus?.text = getString(R.string.settings_local_probe_started)
     }
 
     private fun buildVolumeGuardSection(card: LinearLayout) {
@@ -714,8 +766,8 @@ class SettingsActivity : Activity() {
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
-                title = "高音量保护",
-                subtitle = "从安全区调高音量跨过上限时弹窗二次确认，防止误触过吵",
+                title = getString(R.string.settings_volume_guard_title),
+                subtitle = getString(R.string.settings_volume_guard_sub),
                 initialChecked = enabled,
             ) { checked ->
                 settingsStore.volumeGuardEnabled = checked
@@ -753,7 +805,7 @@ class SettingsActivity : Activity() {
         }
         header.addView(
             TextView(this).apply {
-                text = "安全音量上限"
+                text = getString(R.string.settings_volume_limit_title)
                 textSize = 13.5f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -764,7 +816,7 @@ class SettingsActivity : Activity() {
         limitBox.addView(header)
 
         val hintView = TextView(this).apply {
-            text = "从 ≤ $initialLimit% 调高超过 $initialLimit% 时将弹窗确认，降回安全区后自动重新保护"
+            text = getString(R.string.settings_volume_limit_hint, initialLimit)
             textSize = 11.5f
             setTextColor(palette.textSecondary)
             setPadding(0, dp(4), 0, dp(4))
@@ -788,7 +840,7 @@ class SettingsActivity : Activity() {
                     val v = (VolumeSafetyGuard.MIN_SAFE_LIMIT + p * VolumeSafetyGuard.STEP)
                         .coerceIn(VolumeSafetyGuard.MIN_SAFE_LIMIT, VolumeSafetyGuard.MAX_SAFE_LIMIT)
                     limitValueView.text = "$v%"
-                    hintView.text = "从 ≤ $v% 调高超过 $v% 时将弹窗确认，降回安全区后自动重新保护"
+                    hintView.text = getString(R.string.settings_volume_limit_hint, v)
                     if (fromUser) {
                         settingsStore.volumeGuardSafeLimit = v
                         VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
@@ -812,7 +864,7 @@ class SettingsActivity : Activity() {
         val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
         card.addView(
             TextView(this).apply {
-                text = "采集引擎"
+                text = getString(R.string.settings_capture_engine_title)
                 textSize = 13.5f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -825,7 +877,7 @@ class SettingsActivity : Activity() {
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = engines.map { it.labelZh },
+                labels = engines.map { it.label(this) },
                 initialIndex = engineIdx,
             ) { idx ->
                 settingsStore.captureEngineMode = engines[idx]
@@ -834,7 +886,7 @@ class SettingsActivity : Activity() {
         )
         card.addView(
             TextView(this).apply {
-                text = caps.tierSummaryZh
+                text = caps.tierSummary(this@SettingsActivity)
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
                 setPadding(dp(4), dp(6), dp(4), dp(4))
@@ -846,7 +898,7 @@ class SettingsActivity : Activity() {
         if (!caps.supportsWirelessDebugEngine) {
             card.addView(
                 TextView(this).apply {
-                    text = "当前系统不支持内置无线调试免投屏采集，请切换回「标准投屏模式」。"
+                    text = getString(R.string.settings_wireless_unsupported_hint)
                     textSize = 11.5f
                     setTextColor(palette.statusWarning)
                     setPadding(dp(4), dp(2), dp(4), dp(4))
@@ -856,14 +908,14 @@ class SettingsActivity : Activity() {
         }
 
         card.addView(spacer(6))
-        card.addView(fieldLabel("捕获范围"))
+        card.addView(fieldLabel(getString(R.string.settings_capture_scope_title)))
         val scopes = listOf(CaptureScopeMode.SINGLE_APP, CaptureScopeMode.GLOBAL_MEDIA)
         val scopeIdx = scopes.indexOf(settingsStore.captureScopeMode).coerceAtLeast(0)
         card.addView(
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = scopes.map { it.labelZh },
+                labels = scopes.map { it.label(this) },
                 initialIndex = scopeIdx,
             ) { idx ->
                 settingsStore.captureScopeMode = scopes[idx]
@@ -873,7 +925,7 @@ class SettingsActivity : Activity() {
         if (settingsStore.captureScopeMode == CaptureScopeMode.SINGLE_APP && !caps.supportsShellSingleAppPolicy) {
             card.addView(
                 TextView(this).apply {
-                    text = "提示：Android 11–12 不支持 shell 单 App 隔离（Fail-Closed 会拒绝启动），请选择「全局媒体（显式）」或切回「标准投屏模式」。"
+                    text = getString(R.string.settings_scope_api30_hint)
                     textSize = 11.5f
                     setTextColor(palette.statusWarning)
                     setPadding(dp(4), dp(6), dp(4), dp(2))
@@ -885,15 +937,15 @@ class SettingsActivity : Activity() {
         card.addView(spacer(8))
         card.addView(
             permissionRow(
-                title = "无线调试配对",
+                title = getString(R.string.settings_wireless_pair_title),
                 subtitle = if (paired) {
-                    "点此查看向导、测试连接或清除配对"
+                    getString(R.string.settings_wireless_pair_sub_done)
                 } else {
-                    "首次需 5 步配对，无需连接电脑"
+                    getString(R.string.settings_wireless_pair_sub_todo)
                 },
                 granted = paired,
-                grantedLabel = "已配对",
-                missingLabel = "未配对",
+                grantedLabel = getString(R.string.settings_wireless_paired),
+                missingLabel = getString(R.string.settings_wireless_unpaired),
             ) {
                 openWirelessDebugGuide(autoVerify = paired)
             },
@@ -930,9 +982,9 @@ class SettingsActivity : Activity() {
             append(getString(R.string.app_brand_name))
             append(" v").append(displayVer)
             if (BuildConfig.IS_ACCEPTANCE) {
-                append(" · 验收版")
+                append(" · ").append(getString(R.string.settings_ver_acceptance))
             } else if (isPre) {
-                append(" · 预览版")
+                append(" · ").append(getString(R.string.settings_ver_preview))
             }
         }
         verMeta.addView(
@@ -944,25 +996,28 @@ class SettingsActivity : Activity() {
             },
         )
         val subLine = when (state) {
-            is UpdateCheckState.Checking -> "正在检查公开更新清单…"
+            is UpdateCheckState.Checking -> getString(R.string.settings_update_checking)
             is UpdateCheckState.Failed -> state.message
             is UpdateCheckState.Ready -> when (state.decision.status) {
                 UpdateDecisionStatus.UPDATE_AVAILABLE -> {
-                    val behind = if (state.decision.versionsBehind > 1) {
-                        "（含 ${state.decision.versionsBehind} 个版本变更）"
+                    if (state.decision.versionsBehind > 1) {
+                        getString(R.string.settings_update_avail_multi, state.decision.latestTag, state.decision.versionsBehind)
                     } else {
-                        ""
+                        getString(R.string.settings_update_avail_single, state.decision.latestTag)
                     }
-                    "发现新版本 ${state.decision.latestTag}$behind"
                 }
-                UpdateDecisionStatus.IGNORED -> "发现新版本 ${state.decision.latestTag}（已跳过提醒）"
-                UpdateDecisionStatus.UNSUPPORTED_OS -> "新版本 ${state.decision.latestTag} 需要更高系统版本"
-                UpdateDecisionStatus.UP_TO_DATE -> "当前已是最新版本 · 上次检查 ${formatCheckTime(state.checkedAtMs)}"
-                UpdateDecisionStatus.ERROR -> state.decision.error.ifBlank { "更新解析异常" }
+                UpdateDecisionStatus.IGNORED -> getString(R.string.settings_update_ignored, state.decision.latestTag)
+                UpdateDecisionStatus.UNSUPPORTED_OS -> getString(R.string.settings_update_unsupported_os, state.decision.latestTag)
+                UpdateDecisionStatus.UP_TO_DATE -> getString(R.string.settings_update_up_to_date, formatCheckTime(state.checkedAtMs))
+                UpdateDecisionStatus.ERROR -> state.decision.localizedError(this)
             }
             UpdateCheckState.Idle -> {
                 val last = settingsStore.lastUpdateCheckMs
-                if (last > 0L) "上次检查：${formatCheckTime(last)}" else "尚未检查更新 · 只读静态清单、零遥测"
+                if (last > 0L) {
+                    getString(R.string.settings_update_last_checked, formatCheckTime(last))
+                } else {
+                    getString(R.string.settings_update_never_checked)
+                }
             }
         }
         verMeta.addView(
@@ -982,15 +1037,15 @@ class SettingsActivity : Activity() {
         versionRow.addView(verMeta)
 
         val (pillText, pillFg, pillBg) = when {
-            state is UpdateCheckState.Checking -> Triple("检测中…", palette.accentBright, palette.accentSoftBg)
+            state is UpdateCheckState.Checking -> Triple(getString(R.string.settings_update_pill_checking), palette.accentBright, palette.accentSoftBg)
             state is UpdateCheckState.Failed -> Triple(
-                "检查失败",
+                getString(R.string.settings_update_pill_failed),
                 palette.statusWarning,
                 Color.argb(30, Color.red(palette.statusWarning), Color.green(palette.statusWarning), Color.blue(palette.statusWarning)),
             )
-            hasNew -> Triple("有新版本", palette.accentBright, palette.accentSoftBg)
+            hasNew -> Triple(getString(R.string.settings_update_pill_new), palette.accentBright, palette.accentSoftBg)
             state is UpdateCheckState.Ready && state.decision.status == UpdateDecisionStatus.UP_TO_DATE -> Triple(
-                "已是最新",
+                getString(R.string.settings_update_pill_latest),
                 palette.statusSuccess,
                 Color.argb(28, Color.red(palette.statusSuccess), Color.green(palette.statusSuccess), Color.blue(palette.statusSuccess)),
             )
@@ -1011,10 +1066,10 @@ class SettingsActivity : Activity() {
         // 主操作按钮：检查更新 / 查看新版本
         val isChecking = state is UpdateCheckState.Checking
         val actionLabel = when {
-            isChecking -> "正在检查更新…"
-            hasNew -> "查看新版本 ${readyDecision!!.latestTag}"
-            state is UpdateCheckState.Failed -> "重试检查更新"
-            else -> "立即检查更新"
+            isChecking -> getString(R.string.settings_update_btn_checking)
+            hasNew -> getString(R.string.settings_update_btn_view, readyDecision!!.latestTag)
+            state is UpdateCheckState.Failed -> getString(R.string.settings_update_btn_retry)
+            else -> getString(R.string.settings_update_btn_check)
         }
         val actionBtn = UiComponents.tonalButton(
             context = this,
@@ -1041,8 +1096,8 @@ class SettingsActivity : Activity() {
             UiComponents.switchRow(
                 context = this,
                 palette = palette,
-                title = "启动时自动检查更新",
-                subtitle = "每 24 小时仅向公开更新清单发起一次只读 HTTPS 请求，不上传任何设备或局域网数据",
+                title = getString(R.string.settings_update_auto_title),
+                subtitle = getString(R.string.settings_update_auto_sub),
                 initialChecked = settingsStore.autoCheckUpdates,
             ) { checked ->
                 settingsStore.autoCheckUpdates = checked
@@ -1051,7 +1106,7 @@ class SettingsActivity : Activity() {
         card.addView(spacer(10))
 
         // 更新通道分段选择：[稳定版 | 预览版 (RC)]
-        card.addView(fieldLabel("更新通道"))
+        card.addView(fieldLabel(getString(R.string.settings_update_channel_title)))
         val channels = listOf(UpdateChannel.STABLE, UpdateChannel.PRERELEASE)
         val currentCh = settingsStore.resolvedUpdateChannel(BuildConfig.VERSION_NAME)
         val chIdx = channels.indexOf(currentCh).coerceAtLeast(0)
@@ -1059,7 +1114,7 @@ class SettingsActivity : Activity() {
             UiComponents.segmentedControl(
                 context = this,
                 palette = palette,
-                labels = channels.map { it.labelZh },
+                labels = channels.map { it.label(this) },
                 initialIndex = chIdx,
             ) { idx ->
                 settingsStore.updateChannelRaw = channels[idx].id
@@ -1097,7 +1152,7 @@ class SettingsActivity : Activity() {
                 }
                 meta.addView(
                     TextView(this@SettingsActivity).apply {
-                        text = "公开版本发布页与完整更新日志"
+                        text = getString(R.string.settings_release_page_title)
                         textSize = 14f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(palette.textPrimary)
@@ -1114,7 +1169,7 @@ class SettingsActivity : Activity() {
                 addView(meta)
                 addView(
                     TextView(this@SettingsActivity).apply {
-                        text = "打开"
+                        text = getString(R.string.common_open)
                         textSize = 11.5f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(palette.textSecondary)
@@ -1141,13 +1196,13 @@ class SettingsActivity : Activity() {
     }
 
     private fun formatCheckTime(tsMs: Long): String {
-        if (tsMs <= 0L) return "刚刚"
+        if (tsMs <= 0L) return getString(R.string.time_just_now)
         val diff = (System.currentTimeMillis() - tsMs).coerceAtLeast(0L)
         return when {
-            diff < 60_000L -> "刚刚"
-            diff < 3_600_000L -> "${diff / 60_000L} 分钟前"
-            diff < 86_400_000L -> "${diff / 3_600_000L} 小时前"
-            else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(tsMs))
+            diff < 60_000L -> getString(R.string.time_just_now)
+            diff < 3_600_000L -> getString(R.string.time_minutes_ago, diff / 60_000L)
+            diff < 86_400_000L -> getString(R.string.time_hours_ago, diff / 3_600_000L)
+            else -> SimpleDateFormat("MM-dd HH:mm", AppLocaleManager.activeLocale(this)).format(Date(tsMs))
         }
     }
 

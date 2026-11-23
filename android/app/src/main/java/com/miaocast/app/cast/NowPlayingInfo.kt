@@ -1,6 +1,8 @@
 package com.miaocast.app.cast
 
+import android.content.Context
 import android.graphics.Bitmap
+import com.miaocast.app.R
 
 /**
  * 正在播放信息。字段为 null/空 = 未从 MediaSession 取得，UI 必须诚实占位，禁止伪造曲名封面。
@@ -32,9 +34,16 @@ data class NowPlayingInfo(
         fun displayTitle(info: NowPlayingInfo): String =
             info.title?.takeIf { it.isNotBlank() } ?: "未知标题"
 
+        fun displayTitle(context: Context, info: NowPlayingInfo): String =
+            info.title?.takeIf { it.isNotBlank() } ?: context.getString(R.string.main_unknown_title)
+
         fun displayArtist(info: NowPlayingInfo): String =
             info.artist?.takeIf { it.isNotBlank() }
                 ?: if (info.available) "未知艺人" else info.placeholderReasonZh
+
+        fun displayArtist(context: Context, info: NowPlayingInfo): String =
+            info.artist?.takeIf { it.isNotBlank() }
+                ?: if (info.available) context.getString(R.string.main_unknown_artist) else info.placeholderReasonZh
 
         fun formatTime(ms: Long?): String {
             if (ms == null || ms < 0) return "—:—"

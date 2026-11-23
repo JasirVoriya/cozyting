@@ -3,6 +3,7 @@ package com.miaocast.app.capture.shell
 import android.app.Activity
 import android.app.Dialog
 import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -25,6 +26,7 @@ import com.miaocast.app.capture.CaptureEngineMode
 import com.miaocast.app.capture.CaptureScopeMode
 import com.miaocast.app.compat.NotificationPermissionCompat
 import com.miaocast.app.compat.WindowInsetsApplyCompat
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.UiComponents
 import com.miaocast.app.ui.UiPalette
@@ -66,6 +68,10 @@ class WirelessDebugGuideActivity : Activity() {
     // 供 Robolectric UI 预览单测注入状态
     private var previewStateOverride: WirelessDebugOnboardingState? = null
     private var previewDarkOverride: Boolean? = null
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,10 +118,10 @@ class WirelessDebugGuideActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_POST_NOTIF) {
             if (isNotificationsReady()) {
-                feedbackText = "已获得通知权限，请继续完成下一步配置"
+                feedbackText = getString(R.string.guide_feedback_notif_granted)
                 feedbackIsError = false
             } else {
-                feedbackText = "通知权限未授予，可点击「立即允许通知」前往系统通知设置开启"
+                feedbackText = getString(R.string.guide_feedback_notif_denied)
                 feedbackIsError = true
             }
             renderUi()
@@ -147,6 +153,7 @@ class WirelessDebugGuideActivity : Activity() {
             paired = PairingNotificationGuide.keyStore(this).isPaired(),
             connectionVerified = connectionVerified,
             connectedPort = connectedPort,
+            strings = WirelessDebugOnboardingState.Strings.fromContext(this),
         )
     }
 
@@ -169,13 +176,13 @@ class WirelessDebugGuideActivity : Activity() {
             setPadding(0, 0, 0, dp(14))
         }
         topBar.addView(
-            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, "返回") {
+            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, getString(R.string.common_back)) {
                 finish()
             },
         )
         topBar.addView(
             TextView(this).apply {
-                text = "无感采集配置向导"
+                text = getString(R.string.guide_title)
                 textSize = 19f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -194,9 +201,9 @@ class WirelessDebugGuideActivity : Activity() {
         }
         val totalSteps = state.steps.size.coerceAtLeast(5)
         val badgeText = when {
-            !state.supported -> "Android ${state.sdkInt} 不支持"
-            state.connectionVerified -> "全部 $totalSteps 步已完成"
-            else -> "配置进度 ${state.completedCount} / $totalSteps"
+            !state.supported -> getString(R.string.guide_badge_unsupported, state.sdkInt)
+            state.connectionVerified -> getString(R.string.guide_badge_all_done, totalSteps)
+            else -> getString(R.string.guide_badge_progress, state.completedCount, totalSteps)
         }
         heroCard.addView(
             TextView(this).apply {
@@ -237,7 +244,7 @@ class WirelessDebugGuideActivity : Activity() {
         if (state.supported) {
             heroCard.addView(
                 TextView(this).apply {
-                    text = CaptureEngineCapabilities.forSdkInt(state.sdkInt).tierSummaryZh
+                    text = CaptureEngineCapabilities.forSdkInt(state.sdkInt).tierSummary(this@WirelessDebugGuideActivity)
                     textSize = 11.5f
                     setTextColor(palette.textTertiary)
                     setPadding(0, dp(8), 0, 0)
@@ -249,7 +256,7 @@ class WirelessDebugGuideActivity : Activity() {
         if (!state.supported) {
             root.addView(spacer(14))
             root.addView(
-                UiComponents.tonalButton(this, palette, "返回使用标准投屏模式", primary = true) {
+                UiComponents.tonalButton(this, palette, getString(R.string.guide_btn_back_standard), primary = true) {
                     settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                     finish()
                 },
@@ -259,7 +266,7 @@ class WirelessDebugGuideActivity : Activity() {
         }
 
         // —— 4 步交互清单 ——
-        root.addView(UiComponents.sectionTitle(this, palette, "配置步骤"))
+        root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.guide_section_steps)))
         state.steps.forEach { step ->
             root.addView(buildStepCard(step, state))
             root.addView(spacer(10))
@@ -292,9 +299,9 @@ class WirelessDebugGuideActivity : Activity() {
         // —— 底部主操作：完成并启用无感模式 ——
         if (state.paired) {
             val enableLabel = if (state.connectionVerified) {
-                "完成并启用无感模式"
+                getString(R.string.guide_btn_enable_done)
             } else {
-                "已配对 · 直接启用无感模式"
+                getString(R.string.guide_btn_enable_paired)
             }
             root.addView(
                 UiComponents.tonalButton(this, palette, enableLabel, primary = true) {
@@ -311,7 +318,7 @@ class WirelessDebugGuideActivity : Activity() {
         if (state.paired) {
             root.addView(spacer(10))
             root.addView(
-                UiComponents.tonalButton(this, palette, "清除本机配对证书") {
+                UiComponents.tonalButton(this, palette, getString(R.string.guide_btn_clear_cert)) {
                     confirmClearPairing()
                 }.apply {
                     setTextColor(palette.statusError)
@@ -327,9 +334,9 @@ class WirelessDebugGuideActivity : Activity() {
         clearPairingDialog = UiComponents.showStyleBDialog(
             activity = this,
             palette = palette,
-            title = "清除本机无线调试配对？",
-            message = "清除后需重新通过本向导完成 6 位配对码握手，才可继续使用无感模式。",
-            primaryLabel = "确认清除",
+            title = getString(R.string.guide_clear_dialog_title),
+            message = getString(R.string.guide_clear_dialog_msg),
+            primaryLabel = getString(R.string.guide_clear_dialog_confirm),
             onPrimary = {
                 PairingNotificationGuide.keyStore(this).clearPairing()
                 PairingNotificationGuide.cancelNotification(this)
@@ -337,11 +344,11 @@ class WirelessDebugGuideActivity : Activity() {
                 connectedPort = 0
                 autoCheckPending = false
                 previewStateOverride = null
-                feedbackText = "已清除本机无线调试配对证书"
+                feedbackText = getString(R.string.guide_feedback_cert_cleared)
                 feedbackIsError = false
                 renderUi()
             },
-            secondaryLabel = "取消",
+            secondaryLabel = getString(R.string.common_cancel),
             onDismissed = { clearPairingDialog = null },
         )
     }
@@ -445,7 +452,7 @@ class WirelessDebugGuideActivity : Activity() {
                 context = this,
                 palette = palette,
                 label = if (step.id == WirelessDebugOnboardingState.StepId.VERIFY_CONNECTION && testingConnection) {
-                    "正在检测连接…"
+                    getString(R.string.guide_testing_conn)
                 } else {
                     actionLabel
                 },
@@ -469,10 +476,10 @@ class WirelessDebugGuideActivity : Activity() {
                     UiComponents.tonalButton(
                         this,
                         palette,
-                        "跳过，用通知栏",
+                        getString(R.string.guide_skip_a11y),
                     ) {
                         accessibilitySkipped = true
-                        feedbackText = "已跳过无障碍：配对时将通过通知栏横幅输入 6 位码（若未看到输入框，请长按本条通知展开）"
+                        feedbackText = getString(R.string.guide_feedback_a11y_skipped)
                         feedbackIsError = false
                         renderUi()
                     },
@@ -487,7 +494,7 @@ class WirelessDebugGuideActivity : Activity() {
                     UiComponents.tonalButton(
                         this,
                         palette,
-                        if (manualPairExpanded) "收起手动" else "手动填码",
+                        if (manualPairExpanded) getString(R.string.guide_manual_collapse) else getString(R.string.guide_manual_expand),
                     ) {
                         manualPairExpanded = !manualPairExpanded
                         renderUi()
@@ -501,7 +508,7 @@ class WirelessDebugGuideActivity : Activity() {
                 actionBox.addView(spacer(8))
                 actionBox.addView(
                     TextView(this).apply {
-                        text = "提示：可将本 App 挂为「小窗」或与系统设置「分屏」，直接对照弹窗填入端口与 6 位配对码，无需操作通知栏："
+                        text = getString(R.string.guide_manual_hint)
                         textSize = 11f
                         setTextColor(palette.textTertiary)
                         setPadding(0, 0, 0, dp(6))
@@ -511,7 +518,7 @@ class WirelessDebugGuideActivity : Activity() {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
                 }
-                val portEdit = UiComponents.styledEditText(this, palette, "配对端口", InputType.TYPE_CLASS_NUMBER).apply {
+                val portEdit = UiComponents.styledEditText(this, palette, getString(R.string.guide_manual_port_hint), InputType.TYPE_CLASS_NUMBER).apply {
                     if (PairingNotificationGuide.lastDiscoveredPairingPort > 0) {
                         setText(PairingNotificationGuide.lastDiscoveredPairingPort.toString())
                     }
@@ -519,7 +526,7 @@ class WirelessDebugGuideActivity : Activity() {
                         marginEnd = dp(6)
                     }
                 }
-                val pinEdit = UiComponents.styledEditText(this, palette, "6位配对码", InputType.TYPE_CLASS_NUMBER).apply {
+                val pinEdit = UiComponents.styledEditText(this, palette, getString(R.string.guide_manual_pin_hint), InputType.TYPE_CLASS_NUMBER).apply {
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                         marginEnd = dp(6)
                     }
@@ -527,7 +534,7 @@ class WirelessDebugGuideActivity : Activity() {
                 inputs.addView(portEdit)
                 inputs.addView(pinEdit)
                 inputs.addView(
-                    UiComponents.tonalButton(this, palette, "配对", primary = true) {
+                    UiComponents.tonalButton(this, palette, getString(R.string.guide_manual_pair_btn), primary = true) {
                         val port = portEdit.text.toString().trim().toIntOrNull() ?: 0
                         val pin = pinEdit.text.toString().trim()
                         runManualPair(port, pin)
@@ -568,7 +575,7 @@ class WirelessDebugGuideActivity : Activity() {
         }
         header.addView(
             TextView(this).apply {
-                text = "常见问题与重启恢复说明"
+                text = getString(R.string.guide_tips_title)
                 textSize = 13.5f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -579,12 +586,12 @@ class WirelessDebugGuideActivity : Activity() {
         card.addView(header)
 
         val tips = listOf(
-            "• 为什么推荐无障碍而非悬浮窗：Android 12+ / HyperOS 会在系统「无线调试」与配对码页面自动屏蔽第三方普通悬浮窗；开启「妙投 · 无线调试自动配对助手」无障碍服务后，无需悬浮窗权限即可在 PIN 码页同屏显示顶部数字键盘，并自动读取屏幕上的 6 位配对码完成秒配。",
-            "• 通知栏长按兜底：若未开启无障碍，点开系统「使用配对码配对设备」后，请下拉通知栏找到妙投通知并点「输入 6 位配对码」；若系统折叠了输入按钮，请直接【长按本条通知】（或单指下滑该通知）展开输入框。",
-            "• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。",
-            "• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。",
-            "• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。",
-            "• 状态栏小绿点：无感模式会彻底消除投屏弹窗与「正在投屏」横幅；部分 Android 12+ 机型右上角仍可能显示极小的系统录音隐私绿点，属系统隐私机制。",
+            getString(R.string.guide_tip_1),
+            getString(R.string.guide_tip_2),
+            getString(R.string.guide_tip_3),
+            getString(R.string.guide_tip_4),
+            getString(R.string.guide_tip_5),
+            getString(R.string.guide_tip_6),
         )
         tips.forEach { tip ->
             body.addView(
@@ -616,9 +623,9 @@ class WirelessDebugGuideActivity : Activity() {
                 autoCheckPending = true
                 PairingNotificationGuide.startPairingSession(this)
                 feedbackText = if (state.accessibilityEnabled) {
-                    "无障碍自动配对与顶部悬浮键盘已就绪：点开「无线调试 → 使用配对码配对设备」后将自动识别 6 位码并秒配（也保留通知栏长按输入兜底）"
+                    getString(R.string.guide_feedback_a11y_ready)
                 } else {
-                    "已发送配对通知栏横幅：点开「无线调试 → 使用配对码配对设备」后下拉通知栏输入 6 位码（若未看到输入按钮，请长按本条通知展开）"
+                    getString(R.string.guide_feedback_notif_banner_sent)
                 }
                 feedbackIsError = false
                 renderUi()
@@ -669,12 +676,12 @@ class WirelessDebugGuideActivity : Activity() {
 
     private fun runManualPair(port: Int, pin: String) {
         if (port !in 1..65535) {
-            feedbackText = "请输入合法配对端口（1–65535）"
+            feedbackText = getString(R.string.guide_feedback_invalid_port)
             feedbackIsError = true
             renderUi()
             return
         }
-        feedbackText = "正在向 127.0.0.1:$port 发起 TLS + SPAKE2 配对…"
+        feedbackText = getString(R.string.guide_feedback_pairing_start, port)
         feedbackIsError = false
         renderUi()
         val appCtx = applicationContext
@@ -688,7 +695,7 @@ class WirelessDebugGuideActivity : Activity() {
                         store.markPaired()
                         PairingNotificationGuide.cancelNotification(appCtx)
                         manualPairExpanded = false
-                        feedbackText = "配对成功，正在自动验证连接…"
+                        feedbackText = getString(R.string.guide_feedback_pair_success)
                         feedbackIsError = false
                         renderUi()
                         testConnection(silent = false)
@@ -708,7 +715,7 @@ class WirelessDebugGuideActivity : Activity() {
         val store = PairingNotificationGuide.keyStore(this)
         if (!store.isPaired()) {
             if (!silent) {
-                feedbackText = "尚未完成第 4 步配对，请先在浮动框输入 6 位配对码"
+                feedbackText = getString(R.string.guide_feedback_need_pair_first)
                 feedbackIsError = true
                 renderUi()
             }
@@ -716,7 +723,7 @@ class WirelessDebugGuideActivity : Activity() {
         }
         testingConnection = true
         if (!silent) {
-            feedbackText = "正在探测本机无线调试端口并校验 uid=2000 权限…"
+            feedbackText = getString(R.string.guide_feedback_probing)
             feedbackIsError = false
             renderUi()
         }
@@ -728,7 +735,7 @@ class WirelessDebugGuideActivity : Activity() {
                     testingConnection = false
                     connectionVerified = false
                     connectedPort = 0
-                    feedbackText = "未检测到本机无线调试服务：请确认 Wi-Fi 已连接且「开发者选项 → 无线调试」开关已打开"
+                    feedbackText = getString(R.string.guide_feedback_no_service)
                     feedbackIsError = true
                     renderUi()
                 }
@@ -742,7 +749,7 @@ class WirelessDebugGuideActivity : Activity() {
                     is WirelessAdbShellClient.ShellResult.Ok -> {
                         connectionVerified = true
                         connectedPort = ep.port
-                        feedbackText = "连通验证通过（127.0.0.1:${ep.port} · ${res.output.take(44)}）"
+                        feedbackText = getString(R.string.guide_feedback_conn_ok, ep.port, res.output.take(44))
                         feedbackIsError = false
                     }
                     is WirelessAdbShellClient.ShellResult.Error -> {

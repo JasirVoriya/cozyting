@@ -1,8 +1,504 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App & Manifest -->
     <string name="app_name">MiaoCast</string>
     <string name="app_brand_name">MiaoCast</string>
     <string name="notification_listener_label">MiaoCast · Now Playing</string>
-    <string name="wireless_pairing_accessibility_label">MiaoCast · Wireless Debugging Auto-Pairing</string>
-    <string name="wireless_pairing_accessibility_desc">Used only during one-time Wireless Debugging pairing to show the top PIN keypad overlay and auto-detect the 6-digit pairing code dialog. Automatically sleeps after pairing and collects no personal data.</string>
+    <string name="wireless_pairing_accessibility_label">MiaoCast · Wireless Pairing Helper</string>
+    <string name="wireless_pairing_accessibility_desc">Used only during first-time Wireless Debugging pairing: shows a floating 6-digit keypad over the system Wireless Debugging screen and automatically reads the pairing code dialog to complete local pairing. Sleeps automatically once paired and collects no personal data.</string>
+    <string name="title_app_picker">Audio Sources</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_wireless_guide">Silent Capture Setup</string>
+
+    <!-- Common Actions -->
+    <string name="common_back">Back</string>
+    <string name="common_close">Close</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_got_it">Got it</string>
+    <string name="common_open">Open</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_auto">Auto</string>
+
+    <!-- Language & Theme -->
+    <string name="lang_system">System</string>
+    <string name="settings_language_title">Language</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- Latency Presets -->
+    <string name="latency_standard_name">Standard</string>
+    <string name="latency_standard_short">Auto</string>
+    <string name="latency_standard_full">5GHz 800ms / 2.4GHz 1000ms</string>
+    <string name="latency_standard_runway">14 AU (≈299ms)</string>
+    <string name="latency_standard_detail">Default baseline with maximum jitter tolerance. Best for 2.4GHz, weak Wi-Fi, or long multi-room sessions.</string>
+
+    <string name="latency_balanced_name">Balanced</string>
+    <string name="latency_balanced_short">400ms</string>
+    <string name="latency_balanced_full">400ms</string>
+    <string name="latency_balanced_runway">8 AU (≈171ms)</string>
+    <string name="latency_balanced_detail">Recommended daily driver: stable dual-speaker sync with ~2× faster track-switch and pause response.</string>
+
+    <string name="latency_low_name">Low</string>
+    <string name="latency_low_short">250ms</string>
+    <string name="latency_low_full">250ms</string>
+    <string name="latency_low_runway">5 AU (≈107ms)</string>
+    <string name="latency_low_detail">Snappy track changes and seek scrubbing for a single speaker on strong 5GHz Wi-Fi.</string>
+
+    <string name="latency_ultra_name">Ultra</string>
+    <string name="latency_ultra_short">150ms</string>
+    <string name="latency_ultra_full">150ms</string>
+    <string name="latency_ultra_runway">3 AU (≈64ms)</string>
+    <string name="latency_ultra_detail">Experimental minimal buffer: best for a single same-room 5GHz speaker; weak networks or multi-room may stutter.</string>
+
+    <string name="latency_custom">Custom</string>
+    <string name="latency_switch_desc">Switch playback latency mode</string>
+    <string name="latency_tiers_info">Latency Guide</string>
+    <string name="latency_details_title">Playback Latency Tiers</string>
+    <string name="latency_details_subtitle">Switching tiers while casting live-reanchors TIME_OFFSET immediately without reconnecting.</string>
+    <string name="latency_preset_current">%1$s · Current</string>
+    <string name="latency_runway_prefix">Startup buffer: %1$s</string>
+    <string name="latency_go_custom">Custom ms in Settings</string>
+    <string name="latency_switched_live">Switched to %1$s · %2$s (live, no reconnect)</string>
+    <string name="latency_switched_live_ultra_multi">Switched to %1$s · %2$s (use Balanced if multi-room stutters)</string>
+    <string name="latency_switched_saved">Set to %1$s · %2$s for next cast session</string>
+
+    <!-- Main Activity -->
+    <string name="main_status_this_device">This device</string>
+    <string name="main_status_casting_count">Casting · %1$d</string>
+    <string name="main_status_connecting">Connecting…</string>
+    <string name="main_status_failed">Cast error</string>
+    <string name="main_status_silent_mode">Silent test</string>
+    <string name="main_update_banner">Update available %1$s</string>
+    <string name="main_update_banner_multi">Update %1$s (%2$d releases)</string>
+    <string name="main_update_banner_view">View</string>
+    <string name="main_update_banner_close_desc">Dismiss update banner</string>
+
+    <string name="main_open_music_app_desc">Open playing music app</string>
+    <string name="main_unknown_title">Unknown title</string>
+    <string name="main_unknown_artist">Unknown artist</string>
+    <string name="main_no_now_playing_sub">Nothing playing</string>
+    <string name="main_prev_track_desc">Previous track</string>
+    <string name="main_play_pause_desc">Play or pause</string>
+    <string name="main_next_track_desc">Next track</string>
+    <string name="main_notif_access_hint">Enable Notification Access for Now Playing &amp; auto-detect</string>
+    <string name="main_idle_playing_with_app">Idle · %1$s</string>
+    <string name="main_idle_playing_none">Nothing playing</string>
+    <string name="main_idle_hint_with_app">Tap cover or Play to launch %1$s</string>
+    <string name="main_idle_hint_none">Play audio in a music app to sync controls</string>
+
+    <string name="main_source_unselected">Audio source: None</string>
+    <string name="main_source_unselected_sub">Tap to choose a music or audio app</string>
+    <string name="main_source_unselected_sub_manage">Tap to manage favorite sources or auto-detect</string>
+    <string name="main_source_selected">Source · %1$s</string>
+    <string name="main_source_global_title">Global Media (Silent Capture)</string>
+    <string name="main_source_global_sub">Captures all device media · Switch back to Single App in Settings</string>
+    <string name="main_source_auto_badge">Auto</string>
+    <string name="main_source_manage">Manage</string>
+
+    <string name="main_output_devices">Output Devices</string>
+    <string name="main_multiroom_support">Multi-room sync ready</string>
+    <string name="main_found_castable_count">%1$d castable found</string>
+    <string name="main_refresh_devices_desc">Rescan output devices</string>
+    <string name="main_this_device_name">This device</string>
+    <string name="main_this_device_active_sub">Phone speaker · Active</string>
+    <string name="main_this_device_idle_sub">Phone speaker</string>
+    <string name="main_device_reconnecting">%1$s · Reconnecting…</string>
+    <string name="main_device_error">%1$s · Connection error</string>
+    <string name="main_device_streaming">%1$s · Casting</string>
+    <string name="main_device_connecting">%1$s · Connecting…</string>
+
+    <string name="main_err_record_audio_denied">RECORD_AUDIO denied: playback capture unavailable (microphone is never recorded)</string>
+    <string name="main_err_record_audio_needed">Audio capture permission required (playback only, never microphone)</string>
+    <string name="main_err_select_app_first">Please choose an audio app to cast first</string>
+    <string name="main_err_cannot_cast">Cannot cast: %1$s</string>
+    <string name="main_err_discover_failed">Scan failed. Tap refresh to retry.</string>
+    <string name="main_err_no_speakers_found">No online speakers found (refresh or add IP manually in Settings)</string>
+    <string name="main_status_projection_cancelled">Capture permission cancelled · Switched to This device</string>
+    <string name="main_status_switching_source">Switching audio source to %1$s…</string>
+    <string name="main_status_switched_standard">Switched to Standard Cast mode. Tap a speaker to cast.</string>
+
+    <!-- Volume Safety Guard Dialog -->
+    <string name="volume_guard_title">Volume Above Safe Limit (%1$d%%)</string>
+    <string name="volume_guard_msg_master">Raise master volume from %1$d%% to %2$d%%?</string>
+    <string name="volume_guard_msg_speaker">Raise \"%1$s\" volume from %2$d%% to %3$d%%?</string>
+    <string name="volume_guard_keep">Keep %1$d%%</string>
+    <string name="volume_guard_confirm">Set to %1$d%%</string>
+
+    <!-- Wireless Precheck & Recovery Dialogs -->
+    <string name="wireless_dialog_unsupported_title">Silent Capture Unsupported</string>
+    <string name="wireless_dialog_switch_standard_cast">Use Standard Cast</string>
+    <string name="wireless_dialog_need_pair_title">First-Time Wireless Pairing Required</string>
+    <string name="wireless_dialog_need_pair_footnote">Complete a one-time 6-digit pairing code setup (auto-read, floating keypad, or notification input). Once paired, cast directly with no screen-cast prompts.</string>
+    <string name="wireless_dialog_open_5step_guide">Open 5-Step Setup Guide</string>
+    <string name="wireless_dialog_use_standard_first">Use Standard Cast for Now</string>
+    <string name="wireless_dialog_api30_title">Android 11–12 Supports Global Media Only</string>
+    <string name="wireless_dialog_switch_global">Switch to Global Media</string>
+    <string name="wireless_dialog_use_standard_instead">Use Standard Cast Instead</string>
+    <string name="wireless_dialog_not_ready_title">Silent Capture Not Ready</string>
+    <string name="wireless_dialog_open_guide">Open Setup Guide</string>
+    <string name="wireless_dialog_recovery_title">Check Wireless Debugging</string>
+    <string name="wireless_dialog_recovery_footnote">Tip: Android turns off Wireless Debugging after a reboot. Simply toggle it back on—no need to re-pair the 6-digit code.</string>
+    <string name="wireless_dialog_open_wireless_debug">Open Wireless Debugging</string>
+    <string name="wireless_dialog_switch_standard">Switch to Standard Mode</string>
+
+    <!-- Protocol & Capture Engine -->
+    <string name="protocol_desc_supported">%1$s protocol</string>
+    <string name="protocol_desc_unsupported">%1$s protocol (casting not yet implemented)</string>
+    <string name="engine_standard">Standard Cast</string>
+    <string name="engine_wireless_debug">Silent (Wireless)</string>
+    <string name="scope_single_app">Single App</string>
+    <string name="scope_global_media">Global Media</string>
+    <string name="engine_tier_api33">Android 13+: Zero cast prompt · Single-app isolation &amp; per-app mute</string>
+    <string name="engine_tier_api30">Android 11–12: Zero cast prompt · Explicit global media only (no single-app isolation)</string>
+    <string name="engine_tier_api29">Android 10: Wireless capture unsupported; use Standard Cast</string>
+    <string name="engine_reject_api29">Android 10 (API %1$d) does not support built-in Wireless Debugging capture. Switch to Standard Cast in Settings.</string>
+    <string name="engine_reject_unpaired">Built-in Wireless Debugging is not paired yet. Follow the 5-step guide to enable auto-pairing and pair once (notification reply fallback included).</string>
+    <string name="engine_reject_single_app_api30">Android 11–12 (API %1$d) does not support shell single-app isolation (Fail-Closed). Switch to Global Media or Standard Cast in Settings.</string>
+    <string name="capture_layers_hint">The selected app controls UID filtering. The system cast dialog only grants permission and cannot override the app UID filter.</string>
+
+    <!-- Settings Activity -->
+    <string name="settings_section_appearance">Appearance &amp; Discovery</string>
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_show_all_title">Show All Discovered Nodes</string>
+    <string name="settings_show_all_sub">Include LAN devices without MiPlay capability (troubleshooting)</string>
+    <string name="settings_rediscover_btn">Rescan LAN Devices Now</string>
+
+    <string name="settings_section_cast">Casting &amp; Permissions</string>
+    <string name="settings_capture_engine_title">Capture Engine</string>
+    <string name="settings_wireless_unsupported_hint">Wireless Debugging capture is not supported on this Android version. Please switch to Standard Cast.</string>
+    <string name="settings_capture_scope_title">Capture Scope</string>
+    <string name="settings_scope_api30_hint">Note: Android 11–12 does not support shell single-app isolation (Fail-Closed). Choose Global Media or switch back to Standard Cast.</string>
+    <string name="settings_wireless_pair_title">Wireless Debugging Pairing</string>
+    <string name="settings_wireless_pair_sub_done">Open setup guide, test connection, or clear certificate</string>
+    <string name="settings_wireless_pair_sub_todo">One-time 5-step setup on device, no PC needed</string>
+    <string name="settings_wireless_paired">Paired</string>
+    <string name="settings_wireless_unpaired">Unpaired</string>
+
+    <string name="settings_local_mute_title">Mute Phone While Casting</string>
+    <string name="settings_local_mute_sub_single">Mutes only the cast music app while other apps play normally (ROM dependent)</string>
+    <string name="settings_local_mute_sub_standard">Mutes phone media volume; turn off to keep local playback (Standard mode cannot mute a single app)</string>
+    <string name="settings_current_status">Status: %1$s</string>
+
+    <string name="settings_volume_guard_title">High-Volume Guard</string>
+    <string name="settings_volume_guard_sub">Ask confirmation when raising volume past the safe limit</string>
+    <string name="settings_volume_limit_title">Safe Volume Limit</string>
+    <string name="settings_volume_limit_hint">Confirms when raising from ≤ %1$d%% above %1$d%%; re-arms once lowered back</string>
+
+    <string name="settings_auto_detect_title">Auto-Detect Playing Source</string>
+    <string name="settings_auto_detect_sub">Follows playing apps enabled in Favorite Sources (requires Notification Access; hot-switches while casting)</string>
+    <string name="settings_notif_access_title">Notification Access (Now Playing &amp; Auto-Detect)</string>
+    <string name="settings_notif_access_sub">Reads playback metadata &amp; media controls locally; never uploads notifications</string>
+    <string name="settings_status_enabled">Enabled</string>
+    <string name="settings_status_disabled">Disabled</string>
+    <string name="settings_battery_title">Battery Optimization Exemption</string>
+    <string name="settings_battery_sub">Helps reduce background casting interruptions (behavior varies by OEM)</string>
+    <string name="settings_battery_exempt">Exempt</string>
+    <string name="settings_battery_not_exempt">Restricted</string>
+
+    <string name="settings_section_debug">Advanced &amp; Debug</string>
+    <string name="settings_debug_header">Connection Parameters, Manual IP &amp; Debug</string>
+    <string name="settings_debug_sub">Defaults work automatically; expand for troubleshooting</string>
+    <string name="settings_manual_ip_label">Add Speaker IP Manually (comma-separated)</string>
+    <string name="settings_manual_ip_hint">e.g. 192.168.1.100</string>
+    <string name="settings_manual_ip_add">Add</string>
+    <string name="settings_manual_ip_invalid">Enter a valid IPv4 address (e.g. 192.168.1.100)</string>
+    <string name="settings_manual_ip_prefix">Manual %1$s</string>
+    <string name="settings_manual_ip_added">Added %1$s. Return to the main screen to select and cast.</string>
+    <string name="settings_source_mode_label">Capture Source Mode</string>
+    <string name="settings_source_mode_app">Selected App (UID)</string>
+    <string name="settings_source_mode_silent">Silent Test</string>
+    <string name="settings_delay_label">Playback Buffer Delay ms (blank/0 = Auto %1$d ms; 50–5000)</string>
+    <string name="settings_delay_hint">Auto (%1$d)</string>
+    <string name="settings_delay_apply">Apply</string>
+    <string name="settings_delay_invalid">Enter 50–5000 ms (or leave blank/0 for Auto %1$d ms)</string>
+    <string name="settings_delay_auto_suffix"> (Auto)</string>
+    <string name="settings_delay_low_hint">; below 250ms may stutter on weak Wi-Fi or multi-room</string>
+    <string name="settings_delay_applied_live">Applied live: %1$dms%2$s (no reconnect)%3$s</string>
+    <string name="settings_delay_saved">Saved: %1$dms%2$s for next session%3$s</string>
+    <string name="settings_ref_label">Group Reference Mode (ref_function)</string>
+    <string name="settings_ref_auto">Auto</string>
+    <string name="settings_ref_single">Single</string>
+    <string name="settings_ref_multi">Multi</string>
+    <string name="settings_ref_stereo">Stereo</string>
+    <string name="settings_auth_label">Port 8899 Auth Mode</string>
+    <string name="settings_auth_auto">Auto</string>
+    <string name="settings_auth_legacy">Legacy</string>
+    <string name="settings_auth_safety">Safety</string>
+    <string name="settings_acceptance_hint">Acceptance default speaker volume = 0 (silent test); phone STREAM_MUSIC is not restored on stop.</string>
+    <string name="settings_local_probe_idle">Local filter probe: Idle</string>
+    <string name="settings_local_probe_stop">Stop Local Filter Probe</string>
+    <string name="settings_local_probe_start">Start Local Filter Probe</string>
+    <string name="settings_local_probe_stop_cast_first">Stop speaker casting first</string>
+    <string name="settings_local_probe_waiting">Local filter probe: Waiting for capture permission…</string>
+    <string name="settings_local_probe_stopped">Local probe stopped</string>
+    <string name="settings_local_probe_denied">Local filter probe: Permission denied</string>
+    <string name="settings_local_probe_started">Local filter probe started</string>
+
+    <string name="settings_section_about">About &amp; Updates</string>
+    <string name="settings_ver_acceptance">QA</string>
+    <string name="settings_ver_preview">Preview</string>
+    <string name="settings_update_checking">Checking public update manifest…</string>
+    <string name="settings_update_avail_single">New version %1$s available</string>
+    <string name="settings_update_avail_multi">New version %1$s (%2$d releases)</string>
+    <string name="settings_update_ignored">New version %1$s (skipped)</string>
+    <string name="settings_update_unsupported_os">Version %1$s requires a newer Android OS</string>
+    <string name="settings_update_up_to_date">Up to date · Checked %1$s</string>
+    <string name="settings_update_parse_err">Update parse error</string>
+    <string name="settings_update_last_checked">Last checked: %1$s</string>
+    <string name="settings_update_never_checked">Not checked yet · Static manifest, zero telemetry</string>
+    <string name="settings_update_pill_checking">Checking…</string>
+    <string name="settings_update_pill_failed">Failed</string>
+    <string name="settings_update_pill_new">Update</string>
+    <string name="settings_update_pill_latest">Latest</string>
+    <string name="settings_update_btn_checking">Checking for Updates…</string>
+    <string name="settings_update_btn_view">View Update %1$s</string>
+    <string name="settings_update_btn_retry">Retry Update Check</string>
+    <string name="settings_update_btn_check">Check for Updates</string>
+    <string name="settings_update_auto_title">Auto-Check Updates on Launch</string>
+    <string name="settings_update_auto_sub">One read-only HTTPS manifest check every 24h; never uploads device or LAN data</string>
+    <string name="settings_update_channel_title">Update Channel</string>
+    <string name="update_channel_stable">Stable</string>
+    <string name="update_channel_prerelease">Preview (RC)</string>
+    <string name="settings_release_page_title">Public Releases &amp; Full Changelog</string>
+    <string name="time_just_now">just now</string>
+    <string name="time_minutes_ago">%1$dm ago</string>
+    <string name="time_hours_ago">%1$dh ago</string>
+
+    <!-- App Picker Activity -->
+    <string name="picker_title">Favorite Sources</string>
+    <string name="picker_info_desc">About favorite sources and auto-detect</string>
+    <string name="picker_info_title">Favorite Sources &amp; Auto-Detect</string>
+    <string name="picker_info_message">1. Add, remove, or long-press drag to reorder Favorite Sources. Your order syncs immediately to the main quick-switch bar.\n\n2. Auto-detect only follows apps in Favorite Sources with their Auto-Detect switch enabled. Playing another favorite music app while casting triggers seamless hot-switching.\n\n3. Both auto-detect and manual selection verify the target app\'s UID and signing certificate before capturing—never falling back to full-system capture.</string>
+    <string name="picker_search_hint">Search app name or package…</string>
+    <string name="picker_clear_search_desc">Clear search</string>
+    <string name="picker_loading_apps">Loading launchable apps…</string>
+    <string name="picker_status_summary">%1$d favorites (%2$d auto-detect) · Tap a row to select</string>
+    <string name="picker_search_empty">No matching launchable apps</string>
+    <string name="picker_search_results">Search Results (%1$d)</string>
+    <string name="picker_favorites_header">Favorite Sources (%1$d)</string>
+    <string name="picker_drag_hint">Long-press to reorder</string>
+    <string name="picker_favorites_empty">No favorite sources yet · Tap \"+ Fav\" below to add apps eligible for auto-detect</string>
+    <string name="picker_all_launchable">All Launchable Apps (%1$d)</string>
+    <string name="picker_collapse_others">Hide Other Apps (%1$d)</string>
+    <string name="picker_expand_others">Add More Apps to Favorites (%1$d)</string>
+    <string name="picker_auto_detect_on">Auto-detect: On</string>
+    <string name="picker_auto_detect_off">Auto-detect: Off</string>
+    <string name="picker_remove_favorite">Remove</string>
+    <string name="picker_add_favorite">+ Fav</string>
+    <string name="picker_verifying">Verifying %1$s…</string>
+
+    <!-- Update Dialog & Errors -->
+    <string name="update_dialog_title">New Version</string>
+    <string name="update_dialog_preview_badge">Preview</string>
+    <string name="update_dialog_published_at">Released %1$s</string>
+    <string name="update_dialog_apk_size">APK %1$s</string>
+    <string name="update_dialog_versions_behind">%1$d releases ahead</string>
+    <string name="update_dialog_unsupported_os">Your Android version is below the minimum required by this release.</string>
+    <string name="update_dialog_acceptance_notice">QA build (%1$s). Install the standard release APK via your browser.</string>
+    <string name="update_dialog_changelog_header">%2$d releases since v%1$s</string>
+    <string name="update_dialog_changelog_truncated">… Older entries omitted. Open in browser to view the full changelog.</string>
+    <string name="update_fallback_empty_notes">This release includes improvements and stability fixes. Visit the Release page for full details.</string>
+    <string name="update_dialog_need_install_perm">Allow MiaoCast to install unknown apps in system settings, then return and tap Install Now.</string>
+    <string name="update_dialog_btn_install_after_perm">Allowed, Install Now</string>
+    <string name="update_dialog_err_open_installer">Could not open system installer. Please download via browser below.</string>
+    <string name="update_dialog_btn_download_install">Download &amp; Install</string>
+    <string name="update_dialog_btn_cancel_download">Cancel Download</string>
+    <string name="update_dialog_btn_install_now">Install Now</string>
+    <string name="update_dialog_btn_retry_download">Retry Download</string>
+    <string name="update_dialog_progress_connecting">Connecting…</string>
+    <string name="update_dialog_progress_checksum">Fetching official SHA-256 checksum…</string>
+    <string name="update_dialog_progress_downloading_pct">Downloading APK… %1$d%% (%2$s / %3$s)</string>
+    <string name="update_dialog_progress_downloading_bytes">Downloading APK… %1$s</string>
+    <string name="update_dialog_progress_verifying">Verifying SHA-256 &amp; signing certificate…</string>
+    <string name="update_dialog_progress_verified">SHA-256 &amp; signature verified. Starting installer…</string>
+    <string name="update_dialog_btn_browser_download">Download in Browser</string>
+    <string name="update_dialog_btn_release_page">View Release Page</string>
+    <string name="update_dialog_remind_later">Later</string>
+    <string name="update_dialog_skip_version">Skip This Version</string>
+    <string name="update_err_invalid_version">Invalid current version format</string>
+    <string name="update_err_invalid_json">Invalid update manifest JSON</string>
+    <string name="update_err_remote">Remote error: %1$s</string>
+    <string name="update_err_unrecognized_schema">Unrecognized update manifest format</string>
+    <string name="update_err_check_failed">Update check failed: %1$s</string>
+    <string name="update_err_network">Network error</string>
+    <string name="update_err_network_connect">Connection failed</string>
+    <string name="update_err_github_rate_limit">GitHub API rate limit reached. Try again later.</string>
+    <string name="update_err_http_unavailable">Service unavailable (HTTP %1$d)</string>
+    <string name="update_err_feed_unreachable">Cannot reach public update feed</string>
+
+    <!-- Wireless Debug Guide & Onboarding -->
+    <string name="guide_title">Silent Capture Setup</string>
+    <string name="guide_badge_unsupported">Unsupported on Android %1$d</string>
+    <string name="guide_badge_all_done">All %1$d Steps Complete</string>
+    <string name="guide_badge_progress">Progress %1$d / %2$d</string>
+    <string name="guide_btn_back_standard">Back to Standard Cast</string>
+    <string name="guide_section_steps">Setup Steps</string>
+    <string name="guide_btn_enable_done">Finish &amp; Enable Silent Mode</string>
+    <string name="guide_btn_enable_paired">Paired · Enable Silent Mode</string>
+    <string name="guide_btn_clear_cert">Clear Local Pairing Certificate</string>
+    <string name="guide_clear_dialog_title">Clear Local Pairing?</string>
+    <string name="guide_clear_dialog_msg">You will need to pair again with a 6-digit code via this guide to use Silent Mode.</string>
+    <string name="guide_clear_dialog_confirm">Clear</string>
+    <string name="guide_feedback_cert_cleared">Local Wireless Debugging certificate cleared</string>
+    <string name="guide_feedback_notif_granted">Notification permission granted. Continue to the next step.</string>
+    <string name="guide_feedback_notif_denied">Notification permission denied. Tap Allow Notifications to open settings.</string>
+    <string name="guide_testing_conn">Testing connection…</string>
+    <string name="guide_skip_a11y">Skip (Use Notification)</string>
+    <string name="guide_feedback_a11y_skipped">Accessibility skipped: enter the 6-digit code via the notification banner (long-press notification if collapsed)</string>
+    <string name="guide_manual_collapse">Hide Manual</string>
+    <string name="guide_manual_expand">Manual Entry</string>
+    <string name="guide_manual_hint">Tip: Open MiaoCast in split-screen or floating window beside Settings to type the port and 6-digit code directly:</string>
+    <string name="guide_manual_port_hint">Port</string>
+    <string name="guide_manual_pin_hint">6-digit code</string>
+    <string name="guide_manual_pair_btn">Pair</string>
+    <string name="guide_tips_title">FAQ &amp; Reboot Recovery</string>
+    <string name="guide_tip_1">• Why Accessibility instead of Overlay: Android 12+ / HyperOS hides regular overlays on Wireless Debugging screens. Enabling the MiaoCast Pairing Helper shows a top keypad without overlay permission and auto-reads the 6-digit code.</string>
+    <string name="guide_tip_2">• Notification Fallback: Without Accessibility, open \"Pair device with pairing code\", pull down the shade, and tap \"Enter 6-digit code\" (long-press or swipe down the notification if collapsed).</string>
+    <string name="guide_tip_3">• After Reboot: Android turns off Wireless Debugging automatically. Just toggle Wireless Debugging back on—no re-pairing required.</string>
+    <string name="guide_tip_4">• Watch Videos Without Interrupting Music: Android 13+ Single-App Silent Cast enables dual-zone audio focus isolation during casting, so short videos will not pause your speaker music.</string>
+    <string name="guide_tip_5">• Wi-Fi Required: Both Wireless Debugging and LAN speaker casting require the same Wi-Fi network.</string>
+    <string name="guide_tip_6">• Privacy Dot: Silent Mode removes cast prompts and banners; Android 12+ may still show a tiny system green audio privacy dot.</string>
+    <string name="guide_feedback_a11y_ready">Auto-pairing &amp; floating keypad ready: open Wireless Debugging → Pair device with pairing code (notification fallback also active)</string>
+    <string name="guide_feedback_notif_banner_sent">Pairing notification sent: open Wireless Debugging → Pair device with pairing code, then enter the 6-digit code in the notification</string>
+    <string name="guide_feedback_invalid_port">Enter a valid pairing port (1–65535)</string>
+    <string name="guide_feedback_pairing_start">Pairing via TLS + SPAKE2 at 127.0.0.1:%1$d…</string>
+    <string name="guide_feedback_pair_success">Paired! Verifying local connection…</string>
+    <string name="guide_feedback_need_pair_first">Complete Step 4 pairing first using the 6-digit pairing code</string>
+    <string name="guide_feedback_probing">Probing local Wireless Debugging port &amp; uid=2000…</string>
+    <string name="guide_feedback_no_service">Local Wireless Debugging not found: ensure Wi-Fi is connected and Developer Options → Wireless Debugging is ON</string>
+    <string name="guide_feedback_conn_ok">Connection verified (127.0.0.1:%1$d · %2$s)</string>
+
+    <!-- Onboarding State Steps -->
+    <string name="onboard_unsupported_headline">Silent Capture Unsupported on This OS</string>
+    <string name="onboard_unsupported_sub">Android 10 (API %1$d) lacks native Wireless Debugging pairing and shell audio capture. Continue using Standard Cast.</string>
+    <string name="onboard_step1_title">Allow Notifications</string>
+    <string name="onboard_step1_detail_done">Notifications enabled for casting controls and pairing-code fallback banner</string>
+    <string name="onboard_step1_detail_todo">Required for foreground casting controls and the notification pairing-code banner</string>
+    <string name="onboard_step1_action">Allow Notifications</string>
+    <string name="onboard_step2_title">Enable Developer Options</string>
+    <string name="onboard_step2_detail_done">System Developer Options detected as enabled</string>
+    <string name="onboard_step2_detail_todo">Open About Phone and tap Build Number 7 times (OS Version on Xiaomi / HyperOS), then return here</string>
+    <string name="onboard_step2_action">Open About Phone</string>
+    <string name="onboard_step3_title">Enable Auto-Pairing Helper (Recommended)</string>
+    <string name="onboard_step3_detail_enabled">Enabled: displays a floating keypad on the Wireless Debugging screen without overlay permission and auto-reads the 6-digit code</string>
+    <string name="onboard_step3_detail_skipped">Skipped: you will enter the code via the notification banner (long-press notification if collapsed); you can re-enable anytime</string>
+    <string name="onboard_step3_detail_todo">No overlay permission needed! Enabling MiaoCast Wireless Pairing Helper shows a keypad on the PIN screen and auto-reads the 6-digit code, then sleeps automatically</string>
+    <string name="onboard_step3_badge_recommended">Recommended</string>
+    <string name="onboard_step3_badge_skipped">Skipped</string>
+    <string name="onboard_step3_action_enable">Enable Accessibility</string>
+    <string name="onboard_step3_action_reenable">Enable Auto-Pairing</string>
+    <string name="onboard_step4_title_a11y">Turn On Wireless Debugging &amp; Open Code Dialog</string>
+    <string name="onboard_step4_title_notif">Turn On Wireless Debugging &amp; Enter 6-Digit Code</string>
+    <string name="onboard_step4_detail_done">Local TLS certificate saved. No re-pairing needed (after reboot, just toggle Wireless Debugging on)</string>
+    <string name="onboard_step4_detail_a11y">1. Open Developer Options → Wireless Debugging and turn it ON\n2. Tap \"Pair device with pairing code\" and keep the dialog open\n3. The top helper auto-reads the 6-digit code and returns here (or tap the keypad)</string>
+    <string name="onboard_step4_detail_notif">1. Open Developer Options → Wireless Debugging and turn it ON\n2. Tap \"Pair device with pairing code\" and keep the dialog open\n3. Pull down notifications and tap \"Enter 6-digit code\" (long-press if collapsed)</string>
+    <string name="onboard_step4_action_repair">Pair Again</string>
+    <string name="onboard_step4_action_a11y">Start Auto-Pair &amp; Open Settings</string>
+    <string name="onboard_step4_action_notif">Open Wireless Debugging</string>
+    <string name="onboard_step5_title">Verify Local Connection &amp; Enable</string>
+    <string name="onboard_step5_detail_verified_port">Connected to local Wireless Debugging (127.0.0.1:%1$d · uid=2000). Ready for prompt-free casting</string>
+    <string name="onboard_step5_detail_verified">Local Wireless Debugging verified. Ready for prompt-free casting</string>
+    <string name="onboard_step5_detail_paired">Make sure Wireless Debugging is ON, then tap Test Connection to finish</string>
+    <string name="onboard_step5_detail_todo">Local connectivity will be verified automatically after Step 4 pairing</string>
+    <string name="onboard_step5_action_retest">Retest Connection</string>
+    <string name="onboard_step5_action_test">Test Connection</string>
+    <string name="onboard_badge_done">Done</string>
+    <string name="onboard_badge_todo">Pending</string>
+    <string name="onboard_badge_enabled">Enabled</string>
+    <string name="onboard_badge_paired">Paired</string>
+    <string name="onboard_badge_unpaired">Unpaired</string>
+    <string name="onboard_badge_ready">Ready</string>
+    <string name="onboard_badge_verify">Verify</string>
+    <string name="onboard_badge_pending">Locked</string>
+    <string name="onboard_headline_ready">Silent Capture Is Ready</string>
+    <string name="onboard_sub_ready">Tap below to enable Silent Mode and cast without screen-capture prompts or banners</string>
+    <string name="onboard_headline_paired">Paired · One Last Step</string>
+    <string name="onboard_sub_paired">Confirm Wireless Debugging is ON and tap Test Connection to start prompt-free casting</string>
+    <string name="onboard_headline_default">5-Step Silent Capture Setup (One-Time)</string>
+    <string name="onboard_sub_default">No overlay permission or PC required · Auto-reads the 6-digit pairing code with notification fallback</string>
+
+    <!-- Pairing Overlay & Notifications -->
+    <string name="overlay_title_expanded">Enter 6-Digit Pairing Code</string>
+    <string name="overlay_title_collapsed">MiaoCast · Waiting for Code Dialog</string>
+    <string name="overlay_port_done">Done Port</string>
+    <string name="overlay_port_locked">Port %1$d</string>
+    <string name="overlay_port_manual">Manual Port</string>
+    <string name="overlay_collapse">Hide</string>
+    <string name="overlay_expand">Keypad</string>
+    <string name="overlay_close_desc">Close pairing overlay</string>
+    <string name="overlay_collapsed_hint">1. Turn ON Wireless Debugging below → 2. Tap \"Pair device with pairing code\" (auto-pairs or tap Keypad)</string>
+    <string name="overlay_port_field_label">Port:</string>
+    <string name="overlay_port_field_placeholder">Tap digits to enter 5-digit port</string>
+    <string name="overlay_status_port_discovered">Port %1$d locked · Auto-reads 6-digit code when dialog appears (or tap keys)</string>
+    <string name="overlay_status_auto_detected">✓ Auto-read code %1$s (port %2$d) · Pairing…</string>
+    <string name="overlay_status_editing_port">Enter the 5-digit port shown after the IP colon in the system dialog</string>
+    <string name="overlay_status_port_ready">Port %1$d locked · Tap the 6-digit code to pair</string>
+    <string name="overlay_status_wait_popup">Tap the 6-digit code once the dialog appears (or tap Manual Port if needed)</string>
+    <string name="overlay_status_port_set">Port %1$d set. Now enter the 6-digit pairing code.</string>
+    <string name="overlay_status_pin_incomplete">Enter all 6 digits (%1$d/6 entered)</string>
+    <string name="overlay_status_probing_port">Detecting local Wireless Debugging pairing port…</string>
+    <string name="overlay_status_no_port">Port not detected: enter the 5-digit port from the system dialog, then tap Done</string>
+    <string name="overlay_status_success">✓ Paired! Certificate saved, returning to MiaoCast…</string>
+    <string name="overlay_status_fail_retry">%1$s (tap digits to retry)</string>
+    <string name="overlay_key_done">Done</string>
+    <string name="overlay_key_pair">Pair</string>
+
+    <string name="pairing_notif_input_label">Enter 6-digit pairing code</string>
+    <string name="pairing_notif_action_input">Enter 6-digit code</string>
+    <string name="pairing_notif_title_ready">Wireless Pairing Ready (Port %1$d)</string>
+    <string name="pairing_notif_title_waiting">Waiting for \"Pair device with pairing code\"…</string>
+    <string name="pairing_notif_text_ready">Tap \"Enter 6-digit code\" below. If the button is hidden, long-press (or swipe down) this notification without leaving Settings.</string>
+    <string name="pairing_notif_text_waiting">Open Wireless Debugging → Pair device with pairing code. If auto-read is off, pull down notifications and long-press this banner.</string>
+    <string name="pairing_notif_result_ok_title">Wireless Debugging Paired</string>
+    <string name="pairing_notif_result_fail_title">Wireless Pairing Failed</string>
+    <string name="pairing_notif_channel_waiting">Wireless Pairing Status (Silent)</string>
+    <string name="pairing_notif_channel_waiting_desc">Silent status before entering Developer Options</string>
+    <string name="pairing_notif_channel_active">Wireless Pairing Input Banner</string>
+    <string name="pairing_notif_channel_active_desc">Heads-up 6-digit pairing code input when pairing dialog opens</string>
+    <string name="pairing_receiver_no_port">Pairing port not found. Keep \"Pair device with pairing code\" open and retry.</string>
+    <string name="pairing_receiver_saved">Local certificate saved. Return to MiaoCast to enable Silent Capture.</string>
+
+    <!-- Cast Service & Foreground Notification -->
+    <string name="cast_channel_name">MiaoCast · Casting Status</string>
+    <string name="cast_action_pause">Pause</string>
+    <string name="cast_action_resume">Resume</string>
+    <string name="cast_action_stop">Stop</string>
+    <string name="cast_notif_silent_paused">Paused · Silent Test</string>
+    <string name="cast_notif_silent_connecting">Connecting · Silent Test</string>
+    <string name="cast_notif_silent_playing">Silent Test Active</string>
+    <string name="cast_notif_global_media">Global Media</string>
+    <string name="cast_notif_fallback_audio">Audio</string>
+    <string name="cast_notif_title_paused">Cast Paused · %1$s</string>
+    <string name="cast_notif_title_connecting">Connecting · %1$s</string>
+    <string name="cast_notif_title_casting">Casting · %1$s</string>
+    <string name="cast_notif_preparing">Preparing…</string>
+    <string name="cast_notif_single_error">%1$s · Disconnected</string>
+    <string name="cast_notif_single_reconnecting">%1$s · Reconnecting</string>
+    <string name="cast_notif_single_connecting">%1$s · Connecting</string>
+    <string name="cast_notif_multi_connecting">Connecting to %1$d devices</string>
+    <string name="cast_notif_multi_paused">%1$d devices</string>
+    <string name="cast_notif_multi_synced">%1$d devices synced</string>
+    <string name="cast_notif_multi_abnormal">%1$d devices · %2$s</string>
+    <string name="cast_notif_part_reconnecting">%1$d reconnecting</string>
+    <string name="cast_notif_part_error">%1$d disconnected</string>
+    <string name="cast_notif_part_connecting">%1$d connecting</string>
+    <string name="cast_notif_status_error">Disconnected</string>
+    <string name="cast_notif_status_reconnecting">Reconnecting</string>
+    <string name="cast_notif_status_connecting">Connecting</string>
+    <string name="cast_notif_status_paused">Paused</string>
+    <string name="cast_notif_status_playing">Playing</string>
+    <string name="cast_notif_more_devices">… %1$d devices total</string>
+    <string name="cast_mute_status_idle">Phone audio active (mute not applied)</string>
+    <string name="cast_mute_status_stopped">Phone audio active (casting stopped)</string>
+    <string name="cast_mute_status_single_app">Single-app mute active (silent loopback, other apps unaffected)</string>
+    <string name="cast_mute_status_global">Global media mute active (silent loopback)</string>
+    <string name="cast_err_projection_invalid">Screen/audio capture permission invalid or denied</string>
+    <string name="cast_err_projection_null">System failed to create MediaProjection</string>
+    <string name="cast_err_projection_revoked">Capture permission revoked or stopped by system</string>
+    <string name="cast_err_projection_unavailable">MediaProjection unavailable</string>
+    <string name="cast_hotswitch_ok">Switched audio source to %1$s</string>
+    <string name="cast_hotswitch_rejected">Cannot switch source: %1$s</string>
+    <string name="cast_hotswitch_reverted">Could not hot-switch to %1$s; kept %2$s</string>
+    <string name="cast_hotswitch_stopped">Failed to hot-switch to %1$s, casting stopped: %2$s</string>
 </resources>

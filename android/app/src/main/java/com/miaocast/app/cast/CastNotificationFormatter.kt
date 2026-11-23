@@ -1,5 +1,7 @@
 package com.miaocast.app.cast
 
+import android.content.Context
+import com.miaocast.app.R
 import com.miaocast.app.capture.CaptureScopeMode
 import org.json.JSONObject
 
@@ -23,6 +25,88 @@ object CastNotificationFormatter {
         PLAYING(4, "播放中"),
     }
 
+    data class Strings(
+        val silentPaused: String,
+        val silentConnecting: String,
+        val silentPlaying: String,
+        val globalMedia: String,
+        val fallbackAudio: String,
+        val titlePaused: (String) -> String,
+        val titleConnecting: (String) -> String,
+        val titleCasting: (String) -> String,
+        val preparing: String,
+        val singleError: (String) -> String,
+        val singleReconnecting: (String) -> String,
+        val singleConnecting: (String) -> String,
+        val multiConnecting: (Int) -> String,
+        val multiPaused: (Int) -> String,
+        val multiSynced: (Int) -> String,
+        val multiAbnormal: (Int, String) -> String,
+        val partReconnecting: (Int) -> String,
+        val partError: (Int) -> String,
+        val partConnecting: (Int) -> String,
+        val statusLabel: (ReceiverStatus) -> String,
+        val moreDevices: (Int) -> String,
+    ) {
+        companion object {
+            val DEFAULT_ZH = Strings(
+                silentPaused = "已暂停 · 静音测试",
+                silentConnecting = "正在连接 · 静音测试",
+                silentPlaying = "静音测试中",
+                globalMedia = "全局媒体",
+                fallbackAudio = "音频",
+                titlePaused = { "已暂停投送 · $it" },
+                titleConnecting = { "正在连接 · $it" },
+                titleCasting = { "正在投送 · $it" },
+                preparing = "准备中…",
+                singleError = { "$it · 已断开" },
+                singleReconnecting = { "$it · 重连中" },
+                singleConnecting = { "$it · 连接中" },
+                multiConnecting = { "正在连接 $it 台设备" },
+                multiPaused = { "$it 台设备" },
+                multiSynced = { "$it 台设备同步播放" },
+                multiAbnormal = { total, parts -> "$total 台设备 · $parts" },
+                partReconnecting = { "${it} 台重连中" },
+                partError = { "${it} 台已断开" },
+                partConnecting = { "${it} 台连接中" },
+                statusLabel = { it.labelZh },
+                moreDevices = { "…等共 $it 台设备" },
+            )
+
+            fun fromContext(context: Context): Strings = Strings(
+                silentPaused = context.getString(R.string.cast_notif_silent_paused),
+                silentConnecting = context.getString(R.string.cast_notif_silent_connecting),
+                silentPlaying = context.getString(R.string.cast_notif_silent_playing),
+                globalMedia = context.getString(R.string.cast_notif_global_media),
+                fallbackAudio = context.getString(R.string.cast_notif_fallback_audio),
+                titlePaused = { context.getString(R.string.cast_notif_title_paused, it) },
+                titleConnecting = { context.getString(R.string.cast_notif_title_connecting, it) },
+                titleCasting = { context.getString(R.string.cast_notif_title_casting, it) },
+                preparing = context.getString(R.string.cast_notif_preparing),
+                singleError = { context.getString(R.string.cast_notif_single_error, it) },
+                singleReconnecting = { context.getString(R.string.cast_notif_single_reconnecting, it) },
+                singleConnecting = { context.getString(R.string.cast_notif_single_connecting, it) },
+                multiConnecting = { context.getString(R.string.cast_notif_multi_connecting, it) },
+                multiPaused = { context.getString(R.string.cast_notif_multi_paused, it) },
+                multiSynced = { context.getString(R.string.cast_notif_multi_synced, it) },
+                multiAbnormal = { total, parts -> context.getString(R.string.cast_notif_multi_abnormal, total, parts) },
+                partReconnecting = { context.getString(R.string.cast_notif_part_reconnecting, it) },
+                partError = { context.getString(R.string.cast_notif_part_error, it) },
+                partConnecting = { context.getString(R.string.cast_notif_part_connecting, it) },
+                statusLabel = { st ->
+                    when (st) {
+                        ReceiverStatus.ERROR -> context.getString(R.string.cast_notif_status_error)
+                        ReceiverStatus.RECONNECTING -> context.getString(R.string.cast_notif_status_reconnecting)
+                        ReceiverStatus.CONNECTING -> context.getString(R.string.cast_notif_status_connecting)
+                        ReceiverStatus.PAUSED -> context.getString(R.string.cast_notif_status_paused)
+                        ReceiverStatus.PLAYING -> context.getString(R.string.cast_notif_status_playing)
+                    }
+                },
+                moreDevices = { context.getString(R.string.cast_notif_more_devices, it) },
+            )
+        }
+    }
+
     data class ReceiverSnapshot(
         val ip: String,
         val displayName: String,
@@ -44,6 +128,7 @@ object CastNotificationFormatter {
         statsJson: String,
         fallbackIps: List<String> = emptyList(),
         deviceNamesByIp: Map<String, String> = emptyMap(),
+        strings: Strings = Strings.DEFAULT_ZH,
     ): NotificationCopy {
         val receivers = parseReceivers(statsJson, fallbackIps, deviceNamesByIp, paused)
         val allConnecting = receivers.isNotEmpty() && receivers.all { it.status == ReceiverStatus.CONNECTING }
@@ -55,9 +140,10 @@ object CastNotificationFormatter {
             targetPackage = targetPackage,
             paused = paused,
             allConnecting = allConnecting,
+            strings = strings,
         )
-        val collapsed = formatCollapsed(receivers, paused, allConnecting)
-        val expanded = formatExpanded(receivers)
+        val collapsed = formatCollapsed(receivers, paused, allConnecting, strings)
+        val expanded = formatExpanded(receivers, strings)
         return NotificationCopy(
             title = title,
             collapsedText = collapsed,
@@ -72,24 +158,25 @@ object CastNotificationFormatter {
         targetPackage: String,
         paused: Boolean,
         allConnecting: Boolean,
+        strings: Strings,
     ): String {
         if (source != "app") {
             return when {
-                paused -> "已暂停 · 静音测试"
-                allConnecting -> "正在连接 · 静音测试"
-                else -> "静音测试中"
+                paused -> strings.silentPaused
+                allConnecting -> strings.silentConnecting
+                else -> strings.silentPlaying
             }
         }
         val sourceName = when {
-            scopeMode == CaptureScopeMode.GLOBAL_MEDIA -> "全局媒体"
+            scopeMode == CaptureScopeMode.GLOBAL_MEDIA -> strings.globalMedia
             targetLabel.isNotBlank() -> targetLabel.trim()
             targetPackage.isNotBlank() -> targetPackage.substringAfterLast('.').ifBlank { targetPackage }
-            else -> "音频"
+            else -> strings.fallbackAudio
         }
         return when {
-            paused -> "已暂停投送 · $sourceName"
-            allConnecting -> "正在连接 · $sourceName"
-            else -> "正在投送 · $sourceName"
+            paused -> strings.titlePaused(sourceName)
+            allConnecting -> strings.titleConnecting(sourceName)
+            else -> strings.titleCasting(sourceName)
         }
     }
 
@@ -97,14 +184,15 @@ object CastNotificationFormatter {
         receivers: List<ReceiverSnapshot>,
         paused: Boolean,
         allConnecting: Boolean,
+        strings: Strings,
     ): String {
-        if (receivers.isEmpty()) return "准备中…"
+        if (receivers.isEmpty()) return strings.preparing
         if (receivers.size == 1) {
             val only = receivers.first()
             return when (only.status) {
-                ReceiverStatus.ERROR -> "${only.displayName} · 已断开"
-                ReceiverStatus.RECONNECTING -> "${only.displayName} · 重连中"
-                ReceiverStatus.CONNECTING -> "${only.displayName} · 连接中"
+                ReceiverStatus.ERROR -> strings.singleError(only.displayName)
+                ReceiverStatus.RECONNECTING -> strings.singleReconnecting(only.displayName)
+                ReceiverStatus.CONNECTING -> strings.singleConnecting(only.displayName)
                 ReceiverStatus.PAUSED, ReceiverStatus.PLAYING -> only.displayName
             }
         }
@@ -114,26 +202,26 @@ object CastNotificationFormatter {
         val connectingCount = receivers.count { it.status == ReceiverStatus.CONNECTING }
 
         val abnormalParts = buildList {
-            if (reconnectingCount > 0) add("${reconnectingCount} 台重连中")
-            if (errorCount > 0) add("${errorCount} 台已断开")
+            if (reconnectingCount > 0) add(strings.partReconnecting(reconnectingCount))
+            if (errorCount > 0) add(strings.partError(errorCount))
         }
         return when {
-            allConnecting -> "正在连接 $total 台设备"
-            abnormalParts.isNotEmpty() -> "$total 台设备 · ${abnormalParts.joinToString(" · ")}"
-            paused -> "$total 台设备"
-            connectingCount > 0 -> "$total 台设备 · ${connectingCount} 台连接中"
-            else -> "$total 台设备同步播放"
+            allConnecting -> strings.multiConnecting(total)
+            abnormalParts.isNotEmpty() -> strings.multiAbnormal(total, abnormalParts.joinToString(" · "))
+            paused -> strings.multiPaused(total)
+            connectingCount > 0 -> strings.multiAbnormal(total, strings.partConnecting(connectingCount))
+            else -> strings.multiSynced(total)
         }
     }
 
-    private fun formatExpanded(receivers: List<ReceiverSnapshot>): String? {
+    private fun formatExpanded(receivers: List<ReceiverSnapshot>, strings: Strings): String? {
         if (receivers.size < 2) return null
         val ordered = receivers.sortedBy { it.status.sortPriority }
         val lines = ordered.take(MAX_EXPANDED_DEVICES).map { item ->
-            "• ${item.displayName} · ${item.status.labelZh}"
+            "• ${item.displayName} · ${strings.statusLabel(item.status)}"
         }
         return if (ordered.size > MAX_EXPANDED_DEVICES) {
-            (lines + "…等共 ${ordered.size} 台设备").joinToString("\n")
+            (lines + strings.moreDevices(ordered.size)).joinToString("\n")
         } else {
             lines.joinToString("\n")
         }

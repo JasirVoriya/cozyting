@@ -1,15 +1,20 @@
 package com.miaocast.app.capture
 
+import android.content.Context
+import com.miaocast.app.R
+
 /**
  * Android 音频采集引擎模式（仅 Android 端生效；iOS 端由 ReplayKit 承载）。
  */
-enum class CaptureEngineMode(val id: String, val labelZh: String) {
+enum class CaptureEngineMode(val id: String, val labelZh: String, val labelRes: Int) {
     /** 默认标准模式：MediaProjection + AudioPlaybackCapture（API 29–36，零前置配置）。 */
-    STANDARD("standard", "标准投屏模式"),
+    STANDARD("standard", "标准投屏模式", R.string.engine_standard),
 
     /** 内置无线调试无感模式：App 内置无线 ADB 点火 uid=2000 采集进程（API 30+，零外部 App 依赖）。 */
-    WIRELESS_DEBUG("wireless_debug", "无感模式（无线调试）"),
+    WIRELESS_DEBUG("wireless_debug", "无感模式（无线调试）", R.string.engine_wireless_debug),
     ;
+
+    fun label(context: Context): String = context.getString(labelRes)
 
     companion object {
         fun fromId(raw: String?): CaptureEngineMode =
@@ -33,13 +38,15 @@ enum class CaptureEngineMode(val id: String, val labelZh: String) {
 /**
  * 无感采集作用域模式（遵守 Fail-Closed 红线：绝不将单 App 请求静默降级为全局媒体）。
  */
-enum class CaptureScopeMode(val id: String, val labelZh: String) {
+enum class CaptureScopeMode(val id: String, val labelZh: String, val labelRes: Int) {
     /** 严格单 App UID 隔离（Android 13+ AudioPolicy RULE_MATCH_UID）。 */
-    SINGLE_APP("single_app", "单 App 隔离"),
+    SINGLE_APP("single_app", "单 App 隔离", R.string.scope_single_app),
 
     /** 显式全局媒体捕获（Android 13+ 媒体 USAGE 路由 / Android 11–12 REMOTE_SUBMIX）。 */
-    GLOBAL_MEDIA("global_media", "全局媒体（显式）"),
+    GLOBAL_MEDIA("global_media", "全局媒体（显式）", R.string.scope_global_media),
     ;
+
+    fun label(context: Context): String = context.getString(labelRes)
 
     companion object {
         fun fromId(raw: String?): CaptureScopeMode =
@@ -57,6 +64,12 @@ data class CaptureEngineCapabilities(
     val supportsShellGlobalSubmix: Boolean,
     val supportsTrueSingleAppLocalMute: Boolean,
 ) {
+    enum class RejectionCode {
+        API29_UNSUPPORTED,
+        UNPAIRED,
+        SINGLE_APP_API30_UNSUPPORTED,
+    }
+
     val tierSummaryZh: String
         get() = when {
             supportsShellSingleAppPolicy ->
@@ -67,6 +80,12 @@ data class CaptureEngineCapabilities(
                 "Android 10：不支持无线调试采集，请使用标准投屏模式"
         }
 
+    fun tierSummary(context: Context): String = when {
+        supportsShellSingleAppPolicy -> context.getString(R.string.engine_tier_api33)
+        supportsShellGlobalSubmix -> context.getString(R.string.engine_tier_api30)
+        else -> context.getString(R.string.engine_tier_api29)
+    }
+
     sealed class ValidationResult {
         data class Allowed(
             val effectiveEngine: CaptureEngineMode,
@@ -74,7 +93,18 @@ data class CaptureEngineCapabilities(
             val usesTrueSingleAppMute: Boolean,
         ) : ValidationResult()
 
-        data class Rejected(val messageZh: String) : ValidationResult()
+        data class Rejected(
+            val messageZh: String,
+            val code: RejectionCode = RejectionCode.UNPAIRED,
+            val sdkInt: Int = 0,
+        ) : ValidationResult() {
+            fun message(context: Context): String = when (code) {
+                RejectionCode.API29_UNSUPPORTED -> context.getString(R.string.engine_reject_api29, sdkInt)
+                RejectionCode.UNPAIRED -> context.getString(R.string.engine_reject_unpaired)
+                RejectionCode.SINGLE_APP_API30_UNSUPPORTED ->
+                    context.getString(R.string.engine_reject_single_app_api30, sdkInt)
+            }
+        }
     }
 
     /**
@@ -95,17 +125,23 @@ data class CaptureEngineCapabilities(
         }
         if (!supportsWirelessDebugEngine) {
             return ValidationResult.Rejected(
-                "当前系统为 Android 10（API $sdkInt），不支持内置无线调试无感采集，请在设置中切回「标准投屏模式」",
+                messageZh = "当前系统为 Android 10（API $sdkInt），不支持内置无线调试无感采集，请在设置中切回「标准投屏模式」",
+                code = RejectionCode.API29_UNSUPPORTED,
+                sdkInt = sdkInt,
             )
         }
         if (!hasPairedCertificate) {
             return ValidationResult.Rejected(
-                "内置无线调试尚未完成首次配对，请按 5 步向导开启悬浮窗与无线调试，并在顶部浮动数字键盘输入 6 位配对码",
+                messageZh = "内置无线调试尚未完成首次配对，请按 5 步向导开启悬浮窗与无线调试，并在顶部浮动数字键盘输入 6 位配对码",
+                code = RejectionCode.UNPAIRED,
+                sdkInt = sdkInt,
             )
         }
         if (requestedScope == CaptureScopeMode.SINGLE_APP && !supportsShellSingleAppPolicy) {
             return ValidationResult.Rejected(
-                "Android 11–12（API $sdkInt）不支持 shell 单 App 隔离（Fail-Closed 已拒绝静默退化）；请在设置中显式切换为「全局媒体」或改用「标准投屏模式」",
+                messageZh = "Android 11–12（API $sdkInt）不支持 shell 单 App 隔离（Fail-Closed 已拒绝静默退化）；请在设置中显式切换为「全局媒体」或改用「标准投屏模式」",
+                code = RejectionCode.SINGLE_APP_API30_UNSUPPORTED,
+                sdkInt = sdkInt,
             )
         }
         val trueSingleAppMute = requestedScope == CaptureScopeMode.SINGLE_APP &&
