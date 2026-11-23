@@ -1,0 +1,22 @@
+{
+  "name": "miaocast-promo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MiaoCast promo film (no narration) built with Remotion",
+  "scripts": {
+    "music": "node scripts/make-music.mjs",
+    "assets": "node scripts/prepare-assets.mjs",
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.tsx MiaoCastPromo out/miaocast-promo.mp4 --codec h264 --crf 16"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.545",
+    "remotion": "4.0.545",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.0",
+    "typescript": "5.8.3"
+  }
+}
