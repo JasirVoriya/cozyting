@@ -56,8 +56,8 @@
    - 配对期监听 `_adb-tls-pairing._tcp.`（获取本机临时配对端口）；
    - 连接期监听 `_adb-tls-connect._tcp.`（获取本机当前无线调试连接端口）。
 2. **首次 6 位配对码握手（一次性）**：
-   - 设置页提供一键跳转「开发者选项 → 无线调试」并挂出带 `RemoteInput` 输入框的常驻引导通知；
-   - 用户点击系统「使用配对码配对设备」后，直接在通知栏填入 6 位数字；
+   - 5 步配置向导页引导开启「悬浮窗权限（`SYSTEM_ALERT_WINDOW`）」与「开发者选项 → 无线调试」，并在系统设置上方挂出 `TYPE_APPLICATION_OVERLAY` + `FLAG_NOT_FOCUSABLE` 的 Style B 顶部可拖动浮动数字键盘（`PairingFloatingOverlay`）；
+   - 用户点击系统「使用配对码配对设备」后，mDNS 探测到配对端口即自动展开 6 位数字槽与 2 行紧凑浮动数字键盘（不抢系统配对弹窗焦点、不拉起系统软键盘、不依赖下拉通知栏），点按 6 位数字即自动完成配对；
    - App 使用 **SPAKE2 + TLS 1.3** 与本机 `adbd` 完成双向证书交换，并将生成的客户端私钥/证书持久化在 App 私有目录（不落明文日志、不云端备份，`android:allowBackup="false"`）。
 3. **日常自动点火（无需再次输码）**：
    - 后续只要无线调试处于开启态，App 通过 `NsdManager` 找到 `_adb-tls-connect._tcp.` 端口，出示已保存证书建立 TLS ADB 连接；

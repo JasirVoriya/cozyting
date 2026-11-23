@@ -1,5 +1,7 @@
 package com.miplay.sender.ui
 
+import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Canvas
@@ -8,6 +10,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.ClipDrawable
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
@@ -19,6 +22,7 @@ import android.util.LruCache
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -502,6 +506,174 @@ object UiComponents {
             onCheckedChange(checked)
         }
         return track
+    }
+
+    /**
+     * 统一 Style B 圆角面板弹窗（彻底替代系统原生 AlertDialog，保证深/浅主题一致的高对比卡片视觉）。
+     */
+    fun showStyleBDialog(
+        activity: Activity,
+        palette: UiPalette,
+        title: String,
+        message: String,
+        footnote: String? = null,
+        primaryLabel: String,
+        onPrimary: () -> Unit = {},
+        secondaryLabel: String? = null,
+        onSecondary: (() -> Unit)? = null,
+        tertiaryLabel: String? = null,
+        onTertiary: (() -> Unit)? = null,
+        onDismissed: () -> Unit = {},
+    ): Dialog {
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(true)
+
+        val dialogSolidBg = if (palette.isDark) Color.rgb(21, 26, 35) else Color.WHITE
+        val card = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedDrawable(
+                fillColor = dialogSolidBg,
+                radiusPx = dpf(activity, UiPalette.RADIUS_PANEL_DP.toFloat()),
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(activity, 1).coerceAtLeast(1),
+            )
+            setPadding(dp(activity, 18), dp(activity, 16), dp(activity, 18), dp(activity, 16))
+        }
+
+        // —— 顶栏：标题 + 右上角关闭圆钮 ——
+        val header = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(
+            TextView(activity).apply {
+                text = title
+                textSize = 16.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(activity, 8)
+                }
+            },
+        )
+        header.addView(
+            iconCircleButton(
+                context = activity,
+                palette = palette,
+                iconRes = R.drawable.ic_ui_close,
+                contentDesc = "关闭",
+                sizeDp = 30,
+                iconDp = 15,
+            ) {
+                dialog.dismiss()
+            },
+        )
+        card.addView(header)
+
+        // —— 正文说明 ——
+        card.addView(
+            TextView(activity).apply {
+                text = message
+                textSize = 13f
+                setTextColor(palette.textSecondary)
+                setLineSpacing(dpf(activity, 2.5f), 1f)
+                setPadding(0, dp(activity, 10), 0, 0)
+            },
+        )
+
+        // —— 可选内嵌附注/提示框 ——
+        if (!footnote.isNullOrBlank()) {
+            card.addView(
+                TextView(activity).apply {
+                    text = footnote
+                    textSize = 11.5f
+                    setTextColor(palette.textSecondary)
+                    setLineSpacing(dpf(activity, 2f), 1f)
+                    background = roundedDrawable(
+                        fillColor = palette.rowIdleBg,
+                        radiusPx = dpf(activity, UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                        strokeColor = palette.rowIdleBorder,
+                        strokeWidthPx = dp(activity, 1).coerceAtLeast(1),
+                    )
+                    setPadding(dp(activity, 12), dp(activity, 10), dp(activity, 12), dp(activity, 10))
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = dp(activity, 10) }
+                },
+            )
+        }
+
+        // —— 底部操作按钮区 ——
+        val primaryBtn = tonalButton(activity, palette, primaryLabel, primary = true) {
+            dialog.dismiss()
+            onPrimary()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(activity, 16) }
+        }
+        card.addView(primaryBtn)
+
+        if (!secondaryLabel.isNullOrBlank()) {
+            val secondaryBtn = tonalButton(activity, palette, secondaryLabel, primary = false) {
+                dialog.dismiss()
+                onSecondary?.invoke()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(activity, 8) }
+            }
+            card.addView(secondaryBtn)
+        }
+
+        if (!tertiaryLabel.isNullOrBlank()) {
+            val footerRow = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding(0, dp(activity, 8), 0, 0)
+            }
+            footerRow.addView(
+                TextView(activity).apply {
+                    text = tertiaryLabel
+                    textSize = 12.5f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(palette.textSecondary)
+                    background = rippleSurface(Color.TRANSPARENT, dpf(activity, 999f), palette.ripple)
+                    setPadding(dp(activity, 18), dp(activity, 6), dp(activity, 18), dp(activity, 4))
+                    isClickable = true
+                    isFocusable = true
+                    setOnClickListener {
+                        dialog.dismiss()
+                        onTertiary?.invoke()
+                    }
+                },
+            )
+            card.addView(footerRow)
+        }
+
+        val outer = FrameLayout(activity).apply {
+            setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16))
+            addView(
+                card,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+        }
+        dialog.setContentView(outer)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        dialog.setOnDismissListener { onDismissed() }
+        dialog.show()
+        return dialog
     }
 }
 

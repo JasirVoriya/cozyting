@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 仅用于在首次无线调试 6 位码配对时在系统设置页面上方悬浮配对码浮动数字输入面板，配对完成后立即关闭 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- 可选电池优化入口：不等于跨品牌保活保证；不依赖 OEM 私有权限/root/adb -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- 仅用于应用内下载并完成 SHA-256 + 签名证书双重校验后调起系统安装器升级 -->

@@ -774,7 +774,7 @@ class SettingsActivity : Activity() {
                 subtitle = if (paired) {
                     "已保存本机 TLS 配对证书；投送前确保系统「无线调试」开启即可自动直连（点击查看向导）"
                 } else {
-                    "仅需首次按 4 步向导完成 6 位码配对，无需安装 Shizuku 或连接电脑"
+                    "仅需首次按 5 步向导在顶部浮动框完成 6 位码配对，无需安装 Shizuku 或连接电脑"
                 },
                 granted = paired,
                 grantedLabel = "已配对",
@@ -819,7 +819,7 @@ class SettingsActivity : Activity() {
             UiComponents.tonalButton(
                 this,
                 palette,
-                if (paired) "查看向导 / 重新配对" else "打开 4 步配对引导",
+                if (paired) "查看向导 / 重新配对" else "打开 5 步配对引导",
                 primary = !paired,
             ) {
                 openWirelessDebugGuide(autoVerify = paired)

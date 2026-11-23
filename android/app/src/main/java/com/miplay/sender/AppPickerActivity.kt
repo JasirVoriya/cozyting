@@ -1,7 +1,7 @@
 package com.miplay.sender
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -70,6 +70,7 @@ class AppPickerActivity : Activity() {
     private var favorites = emptyList<FavoriteAudioSource>()
     private var expandOthers = false
     private var previewMode = false
+    private var infoDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,6 +96,8 @@ class AppPickerActivity : Activity() {
     }
 
     override fun onDestroy() {
+        runCatching { infoDialog?.dismiss() }
+        infoDialog = null
         dragController?.cancel()
         super.onDestroy()
     }
@@ -138,16 +141,19 @@ class AppPickerActivity : Activity() {
         )
         headerRow.addView(
             UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_info, "音源与自动识别说明") {
-                AlertDialog.Builder(this)
-                    .setTitle("常用音源与自动识别说明")
-                    .setMessage(
-                        "1. 「常用音源」支持自由添加、移除以及长按拖动排序，排序结果会实时同步至主界面快捷切换栏。\n" +
-                            "2. 自动识别仅会从「常用音源」且已开启「自动识别」开关的 App 中跟随；即使旧软件未关闭，投送途中切到另一个常用音乐 App 播放也会自动热切换，名单外或关闭开关的应用不会被自动切入。\n" +
-                            "3. 无论自动识别还是手动点选，开始投送与热切换前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。\n\n" +
-                            CaptureSelectionLayers.settingsHintZh(),
-                    )
-                    .setPositiveButton("知道了", null)
-                    .show()
+                runCatching { infoDialog?.dismiss() }
+                infoDialog = UiComponents.showStyleBDialog(
+                    activity = this,
+                    palette = palette,
+                    title = "常用音源与自动识别说明",
+                    message = "1. 「常用音源」支持自由添加、移除以及长按拖动排序，排序结果会实时同步至主界面快捷切换栏。\n\n" +
+                        "2. 自动识别仅会从「常用音源」且已开启「自动识别」开关的 App 中跟随；即使旧软件未关闭，投送途中切到另一个常用音乐 App 播放也会自动热切换，名单外或关闭开关的应用不会被自动切入。\n\n" +
+                        "3. 无论自动识别还是手动点选，开始投送与热切换前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。",
+                    footnote = CaptureSelectionLayers.settingsHintZh(),
+                    primaryLabel = "知道了",
+                ) {
+                    infoDialog = null
+                }
             },
         )
         root.addView(headerRow)

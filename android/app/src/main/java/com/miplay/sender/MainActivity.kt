@@ -3,7 +3,6 @@ package com.miplay.sender
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
@@ -115,6 +114,7 @@ class MainActivity : Activity() {
     private var latencyPopup: PopupWindow? = null
     private var latencyDetailsDialog: Dialog? = null
     private var updateDialog: Dialog? = null
+    private var wirelessPromptDialog: Dialog? = null
     private var settingsUpdateBadge: View? = null
     private var updateBanner: LinearLayout? = null
     private var updateBannerText: TextView? = null
@@ -271,6 +271,8 @@ class MainActivity : Activity() {
         latencyDetailsDialog = null
         runCatching { updateDialog?.dismiss() }
         updateDialog = null
+        runCatching { wirelessPromptDialog?.dismiss() }
+        wirelessPromptDialog = null
         quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
@@ -355,6 +357,8 @@ class MainActivity : Activity() {
         latencyDetailsDialog = null
         runCatching { updateDialog?.dismiss() }
         updateDialog = null
+        runCatching { wirelessPromptDialog?.dismiss() }
+        wirelessPromptDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -2039,59 +2043,102 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun showWirelessPrecheckGuideDialog(speakerIds: Set<String>, reasonZh: String) {
-        if (isFinishing || isDestroyed || intent?.getBooleanExtra("ui_preview", false) == true) return
+    private fun showWirelessPrecheckGuideDialog(
+        speakerIds: Set<String>,
+        reasonZh: String,
+        allowInPreview: Boolean = false,
+    ) {
+        if (isFinishing || isDestroyed) return
+        if (!allowInPreview && intent?.getBooleanExtra("ui_preview", false) == true) return
+        runCatching { wirelessPromptDialog?.dismiss() }
         val caps = CaptureEngineCapabilities.forSdkInt(Build.VERSION.SDK_INT)
         val paired = PairingNotificationGuide.keyStore(this).isPaired()
-        val builder = AlertDialog.Builder(this)
-            .setMessage(reasonZh)
-            .setNegativeButton("取消", null)
 
-        when {
+        wirelessPromptDialog = when {
             !caps.supportsWirelessDebugEngine -> {
-                builder.setTitle("当前系统不支持无感采集")
-                    .setPositiveButton("切回标准模式投送") { _, _ ->
+                UiComponents.showStyleBDialog(
+                    activity = this,
+                    palette = palette,
+                    title = "当前系统不支持无感采集",
+                    message = reasonZh,
+                    primaryLabel = "切回标准模式投送",
+                    onPrimary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
-                    }
+                    },
+                    tertiaryLabel = "取消",
+                    onDismissed = { wirelessPromptDialog = null },
+                )
             }
             !paired -> {
-                builder.setTitle("首次使用无感模式需配对")
-                    .setPositiveButton("打开 4 步配对引导") { _, _ ->
+                UiComponents.showStyleBDialog(
+                    activity = this,
+                    palette = palette,
+                    title = "首次使用无感模式需配对",
+                    message = reasonZh,
+                    footnote = "仅需首次在顶部浮动数字键盘输入一次 6 位配对码；配置完成后即可免投屏弹窗、免「正在投屏」横幅直接投送。",
+                    primaryLabel = "打开 5 步配对引导",
+                    onPrimary = {
                         startActivity(Intent(this, WirelessDebugGuideActivity::class.java))
-                    }
-                    .setNeutralButton("先用标准模式投送") { _, _ ->
+                    },
+                    secondaryLabel = "先用标准模式投送",
+                    onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
-                    }
+                    },
+                    tertiaryLabel = "取消",
+                    onDismissed = { wirelessPromptDialog = null },
+                )
             }
             !caps.supportsShellSingleAppPolicy -> {
-                builder.setTitle("Android 11–12 仅支持全局媒体")
-                    .setPositiveButton("切换显式全局媒体") { _, _ ->
+                UiComponents.showStyleBDialog(
+                    activity = this,
+                    palette = palette,
+                    title = "Android 11–12 仅支持全局媒体",
+                    message = reasonZh,
+                    primaryLabel = "切换显式全局媒体",
+                    onPrimary = {
                         settingsStore.captureScopeMode = CaptureScopeMode.GLOBAL_MEDIA
                         refreshTargetFromStore()
                         retrySpeakersAfterModeChange(speakerIds)
-                    }
-                    .setNeutralButton("改用标准模式投送") { _, _ ->
+                    },
+                    secondaryLabel = "改用标准模式投送",
+                    onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
-                    }
+                    },
+                    tertiaryLabel = "取消",
+                    onDismissed = { wirelessPromptDialog = null },
+                )
             }
             else -> {
-                builder.setTitle("无感采集未就绪")
-                    .setPositiveButton("打开配置向导") { _, _ ->
+                UiComponents.showStyleBDialog(
+                    activity = this,
+                    palette = palette,
+                    title = "无感采集未就绪",
+                    message = reasonZh,
+                    primaryLabel = "打开配置向导",
+                    onPrimary = {
                         startActivity(
                             Intent(this, WirelessDebugGuideActivity::class.java)
                                 .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
                         )
-                    }
-                    .setNeutralButton("先用标准模式投送") { _, _ ->
+                    },
+                    secondaryLabel = "先用标准模式投送",
+                    onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
-                    }
+                    },
+                    tertiaryLabel = "取消",
+                    onDismissed = { wirelessPromptDialog = null },
+                )
             }
         }
-        builder.show()
+    }
+
+    internal fun openWirelessPrecheckDialogForTest(reasonZh: String): Dialog {
+        showWirelessPrecheckGuideDialog(setOf("192.0.2.10"), reasonZh, allowInPreview = true)
+        return requireNotNull(wirelessPromptDialog)
     }
 
     private fun retrySpeakersAfterModeChange(speakerIds: Set<String>) {
@@ -2112,29 +2159,36 @@ class MainActivity : Activity() {
         if (!isWirelessError) return
         lastPromptedWirelessError = failMessage
 
-        val body = "$failMessage\n\n提示：手机重启后 Android 会自动关闭「无线调试」，只需重新点开开关即可恢复，无需重新输入 6 位配对码。"
-        AlertDialog.Builder(this)
-            .setTitle("无感采集需要检查无线调试")
-            .setMessage(body)
-            .setPositiveButton("去开启无线调试") { _, _ ->
+        runCatching { wirelessPromptDialog?.dismiss() }
+        wirelessPromptDialog = UiComponents.showStyleBDialog(
+            activity = this,
+            palette = palette,
+            title = "无感采集需要检查无线调试",
+            message = failMessage,
+            footnote = "提示：手机重启后 Android 会自动关闭「无线调试」，只需重新点开开关即可恢复，无需重新输入 6 位配对码。",
+            primaryLabel = "去开启无线调试",
+            onPrimary = {
                 CastService.lastFailMessage = ""
                 runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
                     .onFailure { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } }
-            }
-            .setNeutralButton("打开配置向导") { _, _ ->
+            },
+            secondaryLabel = "打开配置向导",
+            onSecondary = {
                 CastService.lastFailMessage = ""
                 startActivity(
                     Intent(this, WirelessDebugGuideActivity::class.java)
                         .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
                 )
-            }
-            .setNegativeButton("切回标准模式") { _, _ ->
+            },
+            tertiaryLabel = "切回标准模式",
+            onTertiary = {
                 CastService.lastFailMessage = ""
                 settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                 refreshTargetFromStore()
                 setStatusText("已切回标准投屏模式，点击音箱即可投送")
-            }
-            .show()
+            },
+            onDismissed = { wirelessPromptDialog = null },
+        )
     }
 
     private fun refreshTargetFromStore() {

@@ -100,7 +100,7 @@ data class CaptureEngineCapabilities(
         }
         if (!hasPairedCertificate) {
             return ValidationResult.Rejected(
-                "内置无线调试尚未完成首次配对，请前往「设置 → 采集引擎」开启无线调试并输入 6 位配对码",
+                "内置无线调试尚未完成首次配对，请按 5 步向导开启悬浮窗与无线调试，并在顶部浮动数字键盘输入 6 位配对码",
             )
         }
         if (requestedScope == CaptureScopeMode.SINGLE_APP && !supportsShellSingleAppPolicy) {

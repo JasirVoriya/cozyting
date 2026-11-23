@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -30,13 +31,14 @@ import com.miplay.sender.ui.UiComponents
 import com.miplay.sender.ui.UiPalette
 
 /**
- * Android 内置无线调试无感采集 4 步交互式配置向导（仅 Android 端使用，严格沿用 Style B 明暗主题）。
+ * Android 内置无线调试无感采集 5 步交互式配置向导（仅 Android 端使用，严格沿用 Style B 明暗主题）。
  *
  * 实时检测系统状态并在 `onResume()` 自动刷新进度：
- * 1. 通知权限（确保通知栏 6 位码输入框可正常弹出）；
- * 2. 系统「开发者选项」（`DEVELOPMENT_SETTINGS_ENABLED`）；
- * 3. 本机 TLS 配对证书（通知栏 `RemoteInput` 主路径 + 分屏手动填码兜底）；
- * 4. 连通性验证（`WirelessAdbShellClient` 执行 `id` 确认 `uid=2000` 可达）+ 一键启用。
+ * 1. 通知权限（用于展示后台投送状态与配对结果提醒）；
+ * 2. 悬浮窗权限（`SYSTEM_ALERT_WINDOW`，用于在系统设置上方悬浮 Style B 6 位码浮动数字键盘，无需下拉通知栏）；
+ * 3. 系统「开发者选项」（`DEVELOPMENT_SETTINGS_ENABLED`）；
+ * 4. 本机 TLS 配对证书（顶部可拖动 `FLAG_NOT_FOCUSABLE` 浮动数字键盘主路径 + 分屏手动填码兜底）；
+ * 5. 连通性验证（`WirelessAdbShellClient` 执行 `id` 确认 `uid=2000` 可达）+ 一键启用。
  */
 class WirelessDebugGuideActivity : Activity() {
     companion object {
@@ -70,13 +72,24 @@ class WirelessDebugGuideActivity : Activity() {
         renderUi()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_AUTO_VERIFY, false)) {
+            autoCheckPending = true
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         if (!::settingsStore.isInitialized || previewStateOverride != null) return
         val paired = PairingNotificationGuide.keyStore(this).isPaired()
+        if (paired) {
+            PairingNotificationGuide.cancelNotification(this)
+        }
         renderUi()
-        // 从配对流程或系统设置返回后，若已配对且尚未验证，自动静默验证一次连接
-        if (paired && !connectionVerified && !testingConnection && (autoCheckPending || feedbackText.contains("配对"))) {
+        // 从浮动框配对成功自动返回或从系统设置返回后，若已配对且尚未验证，自动静默验证一次连接
+        if (paired && !connectionVerified && !testingConnection && (autoCheckPending || feedbackText.contains("配对") || feedbackText.contains("浮动"))) {
             autoCheckPending = false
             testConnection(silent = false)
         }
@@ -90,10 +103,10 @@ class WirelessDebugGuideActivity : Activity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_POST_NOTIF) {
             if (isNotificationsReady()) {
-                feedbackText = "已获得通知权限，请继续下一步"
+                feedbackText = "已获得通知权限，请继续开启第 2 步「悬浮窗权限」"
                 feedbackIsError = false
             } else {
-                feedbackText = "通知权限未授予，请点击「前往通知设置」开启，否则配对码通知无法弹出"
+                feedbackText = "通知权限未授予，可点击「立即允许通知」前往系统通知设置开启"
                 feedbackIsError = true
             }
             renderUi()
@@ -119,6 +132,7 @@ class WirelessDebugGuideActivity : Activity() {
         return WirelessDebugOnboardingState.evaluate(
             sdkInt = Build.VERSION.SDK_INT,
             notificationsGranted = isNotificationsReady(),
+            overlayGranted = isOverlayPermissionGranted(),
             developerOptionsEnabled = isDeveloperOptionsEnabled(),
             paired = PairingNotificationGuide.keyStore(this).isPaired(),
             connectionVerified = connectionVerified,
@@ -168,10 +182,11 @@ class WirelessDebugGuideActivity : Activity() {
             state.connectionVerified -> palette.statusSuccess
             else -> palette.accent
         }
+        val totalSteps = state.steps.size.coerceAtLeast(5)
         val badgeText = when {
             !state.supported -> "Android ${state.sdkInt} 不支持"
-            state.connectionVerified -> "全部 4 步已完成"
-            else -> "配置进度 ${state.completedCount} / 4"
+            state.connectionVerified -> "全部 $totalSteps 步已完成"
+            else -> "配置进度 ${state.completedCount} / $totalSteps"
         }
         heroCard.addView(
             TextView(this).apply {
@@ -506,7 +521,7 @@ class WirelessDebugGuideActivity : Activity() {
         card.addView(header)
 
         val tips = listOf(
-            "• 通知栏配对码输入框：弹出系统 6 位码后，顶部横幅会直接露出「输入 6 位配对码」；若开启了免打扰或小米/HyperOS 折叠通知按钮，请下拉通知栏后单指下滑或长按本通知展开，或将本 App 挂为小窗/分屏使用「手动填码」。",
+            "• 顶部浮动数字键盘：点开系统「无线调试 → 使用配对码配对设备」弹出 6 位码后，顶部妙投浮动框会自动展开紧凑 2 行数字键盘（不抢系统弹窗焦点、不拉起半屏输入法、无需下拉通知栏），可按住顶栏拖动位置，输满 6 位自动完成配对并跳回本页。",
             "• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。",
             "• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。",
             "• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。",
@@ -533,22 +548,40 @@ class WirelessDebugGuideActivity : Activity() {
     ) {
         when (stepId) {
             WirelessDebugOnboardingState.StepId.NOTIFICATION -> requestNotificationPermissionOrOpenSettings()
+            WirelessDebugOnboardingState.StepId.OVERLAY_PERMISSION -> requestOverlayPermission()
             WirelessDebugOnboardingState.StepId.DEVELOPER_OPTIONS -> openAboutPhoneSettings()
             WirelessDebugOnboardingState.StepId.WIRELESS_PAIRING -> {
-                if (!state.notificationsGranted) {
-                    feedbackText = "请先完成第 1 步允许通知，否则无法弹出 6 位配对码输入框"
+                if (!state.overlayGranted) {
+                    feedbackText = "请先完成第 2 步开启「悬浮窗权限」，否则无法在系统设置上方弹出浮动 6 位配对码数字键盘"
                     feedbackIsError = true
                     renderUi()
+                    requestOverlayPermission()
                     return
                 }
                 autoCheckPending = true
                 PairingNotificationGuide.startPairingSession(this)
-                feedbackText = "配对监听已就绪：点「使用配对码配对设备」后，顶部将弹出横幅直接填 6 位码（若被折叠，单指下滑/长按通知展开）"
+                feedbackText = "顶部浮动配对框已就绪：点开「无线调试 → 使用配对码配对设备」后将自动展开数字键盘，点按 6 位码即可自动配对"
                 feedbackIsError = false
                 renderUi()
                 openDeveloperOptions()
             }
             WirelessDebugOnboardingState.StepId.VERIFY_CONNECTION -> testConnection(silent = false)
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName"),
+        )
+        runCatching { startActivity(intent) }.onFailure {
+            runCatching {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")),
+                )
+            }.onFailure {
+                runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+            }
         }
     }
 
@@ -625,7 +658,7 @@ class WirelessDebugGuideActivity : Activity() {
         val store = PairingNotificationGuide.keyStore(this)
         if (!store.isPaired()) {
             if (!silent) {
-                feedbackText = "尚未完成第 3 步配对，请先输入 6 位配对码"
+                feedbackText = "尚未完成第 4 步配对，请先在浮动框输入 6 位配对码"
                 feedbackIsError = true
                 renderUi()
             }
@@ -694,6 +727,9 @@ class WirelessDebugGuideActivity : Activity() {
         }
         return true
     }
+
+    private fun isOverlayPermissionGranted(): Boolean =
+        PairingFloatingOverlay.canDrawOverlays(this)
 
     private fun isDeveloperOptionsEnabled(): Boolean = runCatching {
         Settings.Global.getInt(contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1

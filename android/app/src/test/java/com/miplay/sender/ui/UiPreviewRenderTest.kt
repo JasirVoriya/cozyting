@@ -18,6 +18,7 @@ import com.miplay.sender.MainActivity
 import com.miplay.sender.SettingsActivity
 import com.miplay.sender.capture.FavoriteAudioSource
 import com.miplay.sender.capture.LaunchableApp
+import com.miplay.sender.capture.shell.PairingFloatingOverlay
 import com.miplay.sender.capture.shell.WirelessDebugGuideActivity
 import com.miplay.sender.capture.shell.WirelessDebugOnboardingState
 import com.miplay.sender.cast.CastProtocol
@@ -151,7 +152,19 @@ class UiPreviewRenderTest {
         )
         savePng(updateDialogOverview, "16_update_dialog_dark_vs_light.png")
 
-        println("[UiPreviewRenderTest] Saved 17 preview PNGs to: ${outDir.absolutePath}")
+        val wirelessPrecheckDialogOverview = composeSideBySide(
+            renderWirelessPrecheckDialogOverlay(isDark = true),
+            renderWirelessPrecheckDialogOverlay(isDark = false),
+        )
+        savePng(wirelessPrecheckDialogOverview, "17_wireless_precheck_dialog_dark_vs_light.png")
+
+        val floatingKeypadOverview = composeSideBySide(
+            renderWirelessGuideWithFloatingKeypad(isDark = true),
+            renderWirelessGuideWithFloatingKeypad(isDark = false),
+        )
+        savePng(floatingKeypadOverview, "18_floating_pairing_keypad_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 19 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -459,6 +472,7 @@ class UiPreviewRenderTest {
         val state = WirelessDebugOnboardingState.evaluate(
             sdkInt = 34,
             notificationsGranted = true,
+            overlayGranted = true,
             developerOptionsEnabled = true,
             paired = false,
             connectionVerified = false,
@@ -472,6 +486,53 @@ class UiPreviewRenderTest {
         controller.pause().stop().destroy()
         shadowOf(Looper.getMainLooper()).idle()
         return bitmap
+    }
+
+    private fun renderWirelessPrecheckDialogOverlay(isDark: Boolean): Bitmap {
+        val controller = Robolectric.buildActivity(
+            MainActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+        seedCastingStateOnMain(activity, isDark = isDark)
+        val dialog = activity.openWirelessPrecheckDialogForTest(
+            "内置无线调试尚未完成首次配对，请按 5 步向导开启悬浮窗与无线调试，并在顶部浮动数字键盘输入 6 位配对码",
+        )
+        val bitmap = captureActivityWithDialogOverlay(activity, dialog, maxWidthFraction = 0.94f)
+        runCatching { dialog.dismiss() }
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return bitmap
+    }
+
+    private fun renderWirelessGuideWithFloatingKeypad(isDark: Boolean): Bitmap {
+        val base = renderWirelessGuide(isDark = isDark)
+        val ctx = RuntimeEnvironment.getApplication()
+        val overlayCard = PairingFloatingOverlay.buildOverlayCardForTest(
+            context = ctx,
+            isDark = isDark,
+            expanded = true,
+            detectedPort = 39481,
+            pinText = "482",
+        )
+        val canvas = Canvas(base)
+        canvas.drawColor(Color.argb(110, 4, 7, 12))
+        val maxW = (base.width * 0.94f).toInt()
+        val maxH = (base.height * 0.60f).toInt()
+        overlayCard.measure(
+            View.MeasureSpec.makeMeasureSpec(maxW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(maxH, View.MeasureSpec.AT_MOST),
+        )
+        val ow = overlayCard.measuredWidth
+        val oh = overlayCard.measuredHeight
+        overlayCard.layout(0, 0, ow, oh)
+        val dx = (base.width - ow) / 2f
+        val dy = UiComponents.dp(ctx, 42).toFloat()
+        canvas.save()
+        canvas.translate(dx, dy)
+        overlayCard.draw(canvas)
+        canvas.restore()
+        return base
     }
 
     private fun captureActivityBitmap(activity: Activity): Bitmap {

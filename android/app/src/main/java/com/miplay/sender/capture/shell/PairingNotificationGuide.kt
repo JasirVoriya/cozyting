@@ -13,10 +13,10 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * 无线调试通知栏 `RemoteInput` 6 位配对码引导器。
- *
- * 用户在「开发者选项 → 无线调试 → 使用配对码配对设备」看到 6 位数字时，
- * 无需切回本 App（切回会导致系统关闭配对弹窗并销毁临时端口），直接下拉通知栏输入 6 位码即可完成配对。
+ * 无线调试 6 位配对码会话控制器：
+ * - 首选路径（已开启悬浮窗权限）：通过 [PairingFloatingOverlay] 在系统设置上方悬浮 Style B 可拖动 2 行紧凑数字键盘，
+ *   不抢系统配对码弹窗焦点、不拉起半屏系统软键盘、不依赖下拉通知栏；
+ * - 兜底路径（未开启悬浮窗权限时被调用）：回退通知栏 `RemoteInput`。
  */
 object PairingNotificationGuide {
     /** 检测到配对端口后使用的高优先级横幅通道（弹出 Heads-Up 直接露出「输入 6 位配对码」按钮）。 */
@@ -41,14 +41,26 @@ object PairingNotificationGuide {
         stopPairingWatcher()
         lastDiscoveredPairingPort = 0
         lastHeadsUpPort = 0
+        val useOverlay = PairingFloatingOverlay.canDrawOverlays(appCtx)
+        if (useOverlay) {
+            appCtx.getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
+        }
 
         val discovery = WirelessAdbDiscovery(appCtx)
         activeDiscovery.set(discovery)
         discovery.startWatching(WirelessAdbDiscovery.SERVICE_PAIRING) { ep ->
             lastDiscoveredPairingPort = ep.port
-            postWaitingForCodeNotification(appCtx, ep.port)
+            if (PairingFloatingOverlay.canDrawOverlays(appCtx)) {
+                PairingFloatingOverlay.showOrUpdate(appCtx, ep.port)
+            } else {
+                postWaitingForCodeNotification(appCtx, ep.port)
+            }
         }
-        postWaitingForCodeNotification(appCtx, detectedPort = 0)
+        if (useOverlay) {
+            PairingFloatingOverlay.showOrUpdate(appCtx, newDetectedPort = 0)
+        } else {
+            postWaitingForCodeNotification(appCtx, detectedPort = 0)
+        }
     }
 
     fun stopPairingWatcher() {
@@ -59,6 +71,7 @@ object PairingNotificationGuide {
         stopPairingWatcher()
         lastDiscoveredPairingPort = 0
         lastHeadsUpPort = 0
+        PairingFloatingOverlay.dismiss(context)
         context.applicationContext
             .getSystemService(NotificationManager::class.java)
             ?.cancel(NOTIF_ID)

@@ -3,12 +3,13 @@ package com.miplay.sender.capture.shell
 import com.miplay.sender.capture.CaptureEngineCapabilities
 
 /**
- * 内置无线调试 4 步配对向导的纯状态计算模型（无 Android Framework 依赖，便于 JVM 单测）。
+ * 内置无线调试 5 步配对向导的纯状态计算模型（无 Android Framework 依赖，便于 JVM 单测）。
  */
 data class WirelessDebugOnboardingState(
     val sdkInt: Int,
     val supported: Boolean,
     val notificationsGranted: Boolean,
+    val overlayGranted: Boolean,
     val developerOptionsEnabled: Boolean,
     val paired: Boolean,
     val connectionVerified: Boolean,
@@ -21,9 +22,10 @@ data class WirelessDebugOnboardingState(
 ) {
     enum class StepId(val index: Int) {
         NOTIFICATION(1),
-        DEVELOPER_OPTIONS(2),
-        WIRELESS_PAIRING(3),
-        VERIFY_CONNECTION(4),
+        OVERLAY_PERMISSION(2),
+        DEVELOPER_OPTIONS(3),
+        WIRELESS_PAIRING(4),
+        VERIFY_CONNECTION(5),
     }
 
     enum class StepStatus {
@@ -45,6 +47,7 @@ data class WirelessDebugOnboardingState(
         fun evaluate(
             sdkInt: Int,
             notificationsGranted: Boolean,
+            overlayGranted: Boolean = false,
             developerOptionsEnabled: Boolean,
             paired: Boolean,
             connectionVerified: Boolean,
@@ -56,6 +59,7 @@ data class WirelessDebugOnboardingState(
                     sdkInt = sdkInt,
                     supported = false,
                     notificationsGranted = notificationsGranted,
+                    overlayGranted = overlayGranted,
                     developerOptionsEnabled = developerOptionsEnabled,
                     paired = false,
                     connectionVerified = false,
@@ -70,6 +74,7 @@ data class WirelessDebugOnboardingState(
 
             val active = when {
                 !notificationsGranted -> StepId.NOTIFICATION
+                !overlayGranted -> StepId.OVERLAY_PERMISSION
                 !developerOptionsEnabled -> StepId.DEVELOPER_OPTIONS
                 !paired -> StepId.WIRELESS_PAIRING
                 !connectionVerified -> StepId.VERIFY_CONNECTION
@@ -86,9 +91,9 @@ data class WirelessDebugOnboardingState(
                 id = StepId.NOTIFICATION,
                 titleZh = "允许通知权限",
                 detailZh = if (notificationsGranted) {
-                    "已允许通知，可在配对时直接下拉通知栏输入 6 位配对码"
+                    "已允许通知，可用于展示后台投送状态与配对结果提醒"
                 } else {
-                    "首次配对需通过通知栏输入框填入 6 位数字（切回 App 会导致系统关闭配对码弹窗），请先允许通知"
+                    "用于展示前台投送播控栏与配对状态提示，请先允许通知权限"
                 },
                 status = statusFor(StepId.NOTIFICATION, notificationsGranted),
                 statusBadgeZh = if (notificationsGranted) "已完成" else "待开启",
@@ -96,6 +101,19 @@ data class WirelessDebugOnboardingState(
             )
 
             val step2 = StepItem(
+                id = StepId.OVERLAY_PERMISSION,
+                titleZh = "开启「悬浮窗权限」",
+                detailZh = if (overlayGranted) {
+                    "已允许悬浮窗，配对时将在系统设置上方自动弹出 6 位配对码浮动数字键盘"
+                } else {
+                    "首次配对需在系统「无线调试」页面上方悬浮 6 位码浮动输入法（切回 App 会导致系统销毁配对码，且无需再下拉通知栏），请允许妙投显示在其他应用上层"
+                },
+                status = statusFor(StepId.OVERLAY_PERMISSION, overlayGranted),
+                statusBadgeZh = if (overlayGranted) "已完成" else "待开启",
+                primaryActionLabelZh = if (overlayGranted) null else "去开启悬浮窗权限",
+            )
+
+            val step3 = StepItem(
                 id = StepId.DEVELOPER_OPTIONS,
                 titleZh = "开启「开发者选项」",
                 detailZh = if (developerOptionsEnabled) {
@@ -108,22 +126,22 @@ data class WirelessDebugOnboardingState(
                 primaryActionLabelZh = if (developerOptionsEnabled) null else "前往「关于手机」",
             )
 
-            val step3 = StepItem(
+            val step4 = StepItem(
                 id = StepId.WIRELESS_PAIRING,
-                titleZh = "开启「无线调试」并输入 6 位配对码",
+                titleZh = "开启「无线调试」并在浮动框输入 6 位配对码",
                 detailZh = if (paired) {
                     "已保存本机 TLS 配对证书；以后无需重复输入配对码（重启手机后只需重新打开无线调试开关）"
                 } else {
-                    "① 打开「无线调试」开关并点「使用配对码配对设备」\n" +
-                        "② 保持 6 位数字弹窗不关闭（切回本 App 会导致系统销毁配对码）\n" +
-                        "③ 等顶部横幅弹出直接点「输入 6 位配对码」；若横幅未弹出或按钮被折叠，下拉通知栏后单指下滑/长按本通知展开即可（也可用小窗/分屏点右侧「手动填码」）"
+                    "① 点击下方「启动浮动框并前往设置」，顶部将挂出可拖动的妙投配对浮动条\n" +
+                        "② 打开「无线调试」开关并点「使用配对码配对设备」（保持 6 位码弹窗不关闭）\n" +
+                        "③ 顶部浮动框会自动展开紧凑数字键盘，直接点按 6 位配对码即可自动完成配对并跳回本页"
                 },
                 status = statusFor(StepId.WIRELESS_PAIRING, paired),
                 statusBadgeZh = if (paired) "已配对" else "待配对",
-                primaryActionLabelZh = if (paired) "重新配对" else "开始配对并前往设置",
+                primaryActionLabelZh = if (paired) "重新配对" else "启动浮动框并前往设置",
             )
 
-            val step4 = StepItem(
+            val step5 = StepItem(
                 id = StepId.VERIFY_CONNECTION,
                 titleZh = "验证本机连通性并启用",
                 detailZh = when {
@@ -134,7 +152,7 @@ data class WirelessDebugOnboardingState(
                     paired ->
                         "请确保「无线调试」开关处于开启状态，点击测试连接完成最后一步验证"
                     else ->
-                        "完成第 3 步配对后，将自动检测本机无线调试连通性"
+                        "完成第 4 步配对后，将自动检测本机无线调试连通性"
                 },
                 status = statusFor(StepId.VERIFY_CONNECTION, connectionVerified),
                 statusBadgeZh = when {
@@ -149,7 +167,7 @@ data class WirelessDebugOnboardingState(
                 },
             )
 
-            val steps = listOf(step1, step2, step3, step4)
+            val steps = listOf(step1, step2, step3, step4, step5)
             val completed = steps.count { it.status == StepStatus.DONE }
 
             val (headline, sub) = when {
@@ -158,13 +176,14 @@ data class WirelessDebugOnboardingState(
                 paired ->
                     "已完成配对 · 还差最后一步验证" to "确认系统「无线调试」已开启后点击「测试连接」，验证通过即可零弹窗投送"
                 else ->
-                    "4 步开启免投屏无感采集（仅需首次配置）" to "纯本机内置无线调试直连，无需安装 Shizuku 或连接电脑 · 当前进度 $completed/4"
+                    "5 步开启免投屏无感采集（仅需首次配置）" to "纯本机内置无线调试直连，无需安装 Shizuku 或连接电脑 · 当前进度 $completed/5"
             }
 
             return WirelessDebugOnboardingState(
                 sdkInt = sdkInt,
                 supported = true,
                 notificationsGranted = notificationsGranted,
+                overlayGranted = overlayGranted,
                 developerOptionsEnabled = developerOptionsEnabled,
                 paired = paired,
                 connectionVerified = connectionVerified,
