@@ -13,4 +13,5 @@ android/testtones/build/
 ._*
 .DS_Store
 .local/
+.worktrees/
 
