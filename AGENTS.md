@@ -124,12 +124,38 @@
 
 ## 4. 对外公开内容的 SEO 与 GEO 优化（强制）
 
-凡涉及**对外公开发布**的信息内容（`README.md` / `README_EN.md`、GitHub Pages `docs/*.html`、`docs/llms.txt`、`sitemap.xml` / `robots.txt`、`CHANGELOG.md`、Release Notes、`promo/` 物料、仓库 Description / Topics 等），新增或修改时必须同时考虑 **SEO（搜索引擎优化）** 与 **GEO（生成式引擎优化，面向 ChatGPT / Gemini / Perplexity 等 AI 检索与引用）**：
+凡涉及**对外公开发布**的信息内容（`README.md` / `README_EN.md` / `README_JA.md` 等多语言文档、GitHub Pages `docs/*.html`、`docs/llms.txt`、`sitemap.xml` / `robots.txt`、`CHANGELOG.md`、Release Notes、`promo/` 物料、仓库 Description / Topics 等），新增或修改时必须同时考虑 **SEO（搜索引擎优化）** 与 **GEO（生成式引擎优化，面向 ChatGPT / Gemini / Perplexity 等 AI 检索与引用）**：
 
-1. **关键词与定位一致**：首屏/首段用一句话讲清「是什么、解决什么问题、适用于谁」，自然覆盖核心关键词（如 MiPlay、小爱音箱、Android 音频投送、局域网、单 App 捕获），中英文版本语义对齐，禁止关键词堆砌。
+1. **关键词与定位一致**：首屏/首段用一句话讲清「是什么、解决什么问题、适用于谁」，自然覆盖核心关键词（如 MiPlay、小爱音箱、Android 音频投送、局域网、单 App 捕获），多语言版本（至少中/英/日）语义对齐，禁止关键词堆砌。
 2. **结构化、可被 AI 引用**：使用清晰的层级标题、短段落、列表与表格；关键事实（支持机型、系统要求、限制、延迟数据）以可独立摘录的陈述句给出，并注明测试边界，遵守「诚实测试边界」红线。
 3. **FAQ 与对比**：面向常见提问（"如何把安卓手机声音投到小爱音箱"等）提供问答式内容，便于搜索摘要与 AI 答案直接引用。
 4. **Pages 技术 SEO**：每个页面须有唯一 `<title>`、`meta description`、`canonical`、`lang`/`hreflang`、Open Graph / Twitter Card、合适的 JSON-LD（如 `SoftwareApplication`、`FAQPage`）；图片带有描述性 `alt`；新增页面同步更新 `sitemap.xml`，必要时更新 `robots.txt`。
 5. **GEO 入口同步**：公开内容的核心事实变化时，同步更新 `docs/llms.txt`，确保 AI 抓取到的是最新、准确、带链接的摘要。
 6. **链接与权威性**：内部互链（README ↔ Pages ↔ docs），使用稳定的绝对链接；附 License、版本号、更新日期等可信信号。
 7. **隐私红线优先**：SEO/GEO 优化不得违反第 1 节隐私隔离规范，示例数据仍须使用占位值。
+
+## 5. 全链路多语言（i18n）规范（强制）
+
+凡面向用户展示的**客户端 App、GitHub Pages 官网/文档、以及宣传视频与对外视觉物料**，均须原生支持多语言，严禁新增仅支持单一语言的硬编码实现：
+
+1. **基线语言与可扩展架构**：
+   - 默认基线至少同步维护 **简体中文（`zh-CN`）**、**英文（`en`）** 与 **日文（`ja`）** 三种语言，且数据结构与目录组织须便于后续无痛扩展其他语种。
+   - 任何新增或变更功能、页面或分镜时，必须**同步补全全部已支持语言（至少中/英/日）的文案与资源**，禁止仅更新单一语言导致多语种漂移。
+   - 品牌与协议专有名词（如 `MiaoCast`、`MiPlay`、`AGPL-3.0`）保持统一规范，其余面向用户的文本禁止跨语种混杂或残留未翻译占位符。
+
+2. **App 双端（Android & iOS + `design/`）**：
+   - **禁止硬编码文案**：Android 端所有用户可见文本统一放入 `res/values/`、`res/values-en/`、`res/values-ja/` 等 `strings.xml`（正确处理格式化占位符与复数）；iOS 端同步使用 `Localizable.xcstrings`（或 `.lproj`），并与 `design/UI_SPEC.md` 保持文案键与交互一致。
+   - **核心层与文案解耦**：L1 Rust 核心（`core/`）对外输出结构化状态/错误码而非硬编码自然语言句子，由各端按当前语言本地化展示。
+   - **语言切换与排版适配**：支持跟随系统语言（及按需应用内切换）；UI 布局须同时兼容中文、英文长词与日文断行/字宽特性，避免按钮、标签、弹窗文本截断或重叠；UI 预览/截图脚本应支持按语种输出校验。
+
+3. **GitHub Pages 与公开文档（`docs/` & `README`）**：
+   - **完整多语言与切换入口**：GitHub Pages（`docs/index.html`、`docs/architecture.html` 及后续新增页面）须提供至少中/英/日三语完整版本与显式语言切换入口，同步维护对应多语言 README（`README.md`、`README_EN.md`、`README_JA.md` 等）。
+   - **与 SEO / GEO 协同**：各语言页面具备对应的 `<html lang>`（`zh-CN` / `en` / `ja`）、唯一 `<title>`、`meta description`、`canonical`、`hreflang`（含 `x-default`）、`og:locale` 与 JSON-LD；同步更新 `docs/sitemap.xml` 与 `docs/llms.txt`。
+   - **媒体资源联动**：Pages 中嵌入的界面截图、社交预览图与宣传视频，须按页面语种自动匹配对应语言版本资源。
+
+4. **宣传视频与视觉物料（`promo/`）**：
+   - **文案字典化**：`promo/`（Remotion 工程）中所有大字标题、功能标签、对比卡片、搜索演示与片尾文案须抽离至独立多语言字典（至少包含 `zh-CN` / `en` / `ja`），禁止在 `scenes/` 中硬编码单语种字符串。
+   - **实机素材与成片按语种独立产出**：`<UiSlice>` / 实机界面截图素材按语种隔离管理，支持按语言参数或独立 Composition 分别渲染对应语种完整成片（如 `miaocast-promo-zh.mp4`、`miaocast-promo-en.mp4`、`miaocast-promo-ja.mp4`），并校验中/英/日字体回退（避免缺字或异体字混用）与画面留白；若后续引入字幕或配音，须按语种同步提供（如 `.vtt`/`.srt` 或独立音轨）。
+
+5. **提交前多语言自检**：
+   - 涉及 App UI、Pages 或 `promo/` 的改动，提交前须核对中/英/日及所有已支持语言的文案键完整、无硬编码遗漏、无排版溢出，且所有示例数据仍遵守第 1 节隐私红线。
