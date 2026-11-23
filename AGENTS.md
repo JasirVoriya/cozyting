@@ -52,3 +52,15 @@
 - **API 29 真实兼容**：`minSdk = 29`，Android Lint `NewApi` 为 `fatal`，高版本 API 必须隔离在 `compat/` 封装层内。
 - **16KB ELF 页对齐**：`arm64-v8a` `.so` 保持 `-C link-arg=-Wl,-z,max-page-size=16384`。
 - **诚实测试边界**：不扩大未验证结论；编译通过 ≠ 全机型兼容，协议估算延迟 ≠ 声学实测。
+
+## 4. 对外公开内容的 SEO 与 GEO 优化（强制）
+
+凡涉及**对外公开发布**的信息内容（`README.md` / `README_EN.md`、GitHub Pages `docs/*.html`、`docs/llms.txt`、`sitemap.xml` / `robots.txt`、`CHANGELOG.md`、Release Notes、`promo/` 物料、仓库 Description / Topics 等），新增或修改时必须同时考虑 **SEO（搜索引擎优化）** 与 **GEO（生成式引擎优化，面向 ChatGPT / Gemini / Perplexity 等 AI 检索与引用）**：
+
+1. **关键词与定位一致**：首屏/首段用一句话讲清「是什么、解决什么问题、适用于谁」，自然覆盖核心关键词（如 MiPlay、小爱音箱、Android 音频投送、局域网、单 App 捕获），中英文版本语义对齐，禁止关键词堆砌。
+2. **结构化、可被 AI 引用**：使用清晰的层级标题、短段落、列表与表格；关键事实（支持机型、系统要求、限制、延迟数据）以可独立摘录的陈述句给出，并注明测试边界，遵守「诚实测试边界」红线。
+3. **FAQ 与对比**：面向常见提问（"如何把安卓手机声音投到小爱音箱"等）提供问答式内容，便于搜索摘要与 AI 答案直接引用。
+4. **Pages 技术 SEO**：每个页面须有唯一 `<title>`、`meta description`、`canonical`、`lang`/`hreflang`、Open Graph / Twitter Card、合适的 JSON-LD（如 `SoftwareApplication`、`FAQPage`）；图片带有描述性 `alt`；新增页面同步更新 `sitemap.xml`，必要时更新 `robots.txt`。
+5. **GEO 入口同步**：公开内容的核心事实变化时，同步更新 `docs/llms.txt`，确保 AI 抓取到的是最新、准确、带链接的摘要。
+6. **链接与权威性**：内部互链（README ↔ Pages ↔ docs），使用稳定的绝对链接；附 License、版本号、更新日期等可信信号。
+7. **隐私红线优先**：SEO/GEO 优化不得违反第 1 节隐私隔离规范，示例数据仍须使用占位值。
