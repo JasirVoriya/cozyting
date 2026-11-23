@@ -3,4 +3,6 @@
     <string name="app_name">妙投</string>
     <string name="app_brand_name">妙投</string>
     <string name="notification_listener_label">妙投 · 正在播放读取</string>
+    <string name="wireless_pairing_accessibility_label">妙投 · 无线调试自动配对助手</string>
+    <string name="wireless_pairing_accessibility_desc">仅在首次开启无线调试无感采集配对期间使用：用于在系统「无线调试」页面顶部展示 6 位配对码浮动数字键盘，并自动读取配对码弹窗完成本机配对；配对完成后自动休眠，不收集任何个人数据。</string>
 </resources>

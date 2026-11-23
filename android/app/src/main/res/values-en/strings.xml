@@ -3,4 +3,6 @@
     <string name="app_name">MiaoCast</string>
     <string name="app_brand_name">MiaoCast</string>
     <string name="notification_listener_label">MiaoCast · Now Playing</string>
+    <string name="wireless_pairing_accessibility_label">MiaoCast · Wireless Debugging Auto-Pairing</string>
+    <string name="wireless_pairing_accessibility_desc">Used only during one-time Wireless Debugging pairing to show the top PIN keypad overlay and auto-detect the 6-digit pairing code dialog. Automatically sleeps after pairing and collects no personal data.</string>
 </resources>

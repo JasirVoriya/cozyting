@@ -472,8 +472,8 @@ class UiPreviewRenderTest {
         val state = WirelessDebugOnboardingState.evaluate(
             sdkInt = 34,
             notificationsGranted = true,
-            overlayGranted = true,
             developerOptionsEnabled = true,
+            accessibilityEnabled = false,
             paired = false,
             connectionVerified = false,
         )
@@ -496,7 +496,7 @@ class UiPreviewRenderTest {
         val activity = controller.get()
         seedCastingStateOnMain(activity, isDark = isDark)
         val dialog = activity.openWirelessPrecheckDialogForTest(
-            "内置无线调试尚未完成首次配对，请按 5 步向导开启悬浮窗与无线调试，并在顶部浮动数字键盘输入 6 位配对码",
+            "内置无线调试尚未完成首次配对，请按 5 步向导开启无障碍自动配对并打开无线调试（也支持通知栏长按输入兜底）",
         )
         val bitmap = captureActivityWithDialogOverlay(activity, dialog, maxWidthFraction = 0.94f)
         runCatching { dialog.dismiss() }
