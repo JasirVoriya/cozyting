@@ -6,10 +6,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ColorFilter
-import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PixelFormat
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.ClipDrawable
@@ -308,9 +305,9 @@ object UiComponents {
     }
 
     /**
-     * 带安全音量上限刻度线与高音量警告着色的定制细轨道音量滑块：
-     * - 刻度线位于 progressDrawable 顶层、thumb 底层，不遮挡圆形滑块；
-     * - 超过安全上限时将高亮轨道与滑块描边切为琥珀警告色，未超限时保持主题蓝。
+     * 带高音量警告着色的定制细轨道音量滑块：
+     * - 安全区内保持纯净细胶囊轨道（不绘制额外刻度块）；
+     * - 仅在实际音量超过安全上限时，将高亮轨道与滑块描边切为琥珀警告色。
      */
     class VolumeGuardSeekBar(
         context: Context,
@@ -319,19 +316,11 @@ object UiComponents {
         private val fgTrack: GradientDrawable,
         private val thumbDrawable: GradientDrawable,
         private val thumbStrokePx: Int,
-        private val tickDrawable: SafeLimitTickDrawable,
     ) : SeekBar(context) {
-        var currentSafeLimitMark: Int?
-            get() = tickDrawable.safeLimit
-            private set(value) {
-                tickDrawable.safeLimit = value
-            }
-
         var isWarningVisual: Boolean = false
             private set
 
-        fun updateGuardVisual(safeLimit: Int?, warning: Boolean) {
-            currentSafeLimitMark = safeLimit?.coerceIn(0, 100)
+        fun updateGuardVisual(warning: Boolean) {
             isWarningVisual = warning
             val active = if (warning) warningActiveColor else normalActiveColor
             fgTrack.setColor(active)
@@ -340,51 +329,15 @@ object UiComponents {
         }
     }
 
-    class SafeLimitTickDrawable(
-        private val tickWidthPx: Float,
-        private val tickColor: Int,
-    ) : Drawable() {
-        var safeLimit: Int? = null
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            color = tickColor
-        }
-        private val rect = RectF()
-
-        override fun draw(canvas: Canvas) {
-            val limit = safeLimit ?: return
-            val b = bounds
-            if (b.width() <= 0 || b.height() <= 0) return
-            val x = b.left + b.width() * (limit.coerceIn(0, 100) / 100f)
-            val halfW = tickWidthPx / 2f
-            rect.set(x - halfW, b.top.toFloat(), x + halfW, b.bottom.toFloat())
-            canvas.drawRoundRect(rect, halfW, halfW, paint)
-        }
-
-        override fun setAlpha(alpha: Int) {
-            paint.alpha = alpha
-        }
-
-        override fun setColorFilter(colorFilter: ColorFilter?) {
-            paint.colorFilter = colorFilter
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
-    }
-
     fun styledVolumeSeekBar(
         context: Context,
         activeColor: Int,
         warningColor: Int,
         trackColor: Int,
         thumbFillColor: Int,
-        tickColor: Int,
-        safeLimit: Int?,
         warning: Boolean,
     ): VolumeGuardSeekBar {
         val trackHeight = dp(context, 4).coerceAtLeast(3)
-        val tickHeight = dp(context, 10).coerceAtLeast(8)
         val radius = trackHeight / 2f
         val bgTrack = GradientDrawable().apply {
             setColor(trackColor)
@@ -396,17 +349,10 @@ object UiComponents {
             cornerRadius = radius
             setSize(-1, trackHeight)
         }
-        val tickDrawable = SafeLimitTickDrawable(
-            tickWidthPx = dpf(context, 2f).coerceAtLeast(2f),
-            tickColor = tickColor,
-        ).apply {
-            this.safeLimit = safeLimit?.coerceIn(0, 100)
-        }
         val progressLayer = LayerDrawable(
             arrayOf(
                 bgTrack,
                 ClipDrawable(fgTrack, Gravity.START, ClipDrawable.HORIZONTAL),
-                tickDrawable,
             ),
         ).apply {
             setId(0, android.R.id.background)
@@ -415,8 +361,6 @@ object UiComponents {
             setLayerGravity(0, Gravity.CENTER_VERTICAL or Gravity.FILL_HORIZONTAL)
             setLayerHeight(1, trackHeight)
             setLayerGravity(1, Gravity.CENTER_VERTICAL or Gravity.FILL_HORIZONTAL)
-            setLayerHeight(2, tickHeight)
-            setLayerGravity(2, Gravity.CENTER_VERTICAL or Gravity.FILL_HORIZONTAL)
         }
         val thumbSize = dp(context, 14)
         val thumbStrokePx = dp(context, 2).coerceAtLeast(2)
@@ -435,7 +379,6 @@ object UiComponents {
             fgTrack = fgTrack,
             thumbDrawable = thumb,
             thumbStrokePx = thumbStrokePx,
-            tickDrawable = tickDrawable,
         ).apply {
             progressDrawable = progressLayer
             setThumb(thumb)
@@ -444,7 +387,7 @@ object UiComponents {
             setPadding(hPad, vPad, hPad, vPad)
             minHeight = thumbSize
             maxHeight = thumbSize
-            updateGuardVisual(safeLimit = safeLimit, warning = warning)
+            updateGuardVisual(warning = warning)
         }
     }
 
