@@ -14,7 +14,7 @@
 | --- | --- | --- | --- | --- |
 | **L3 · 原生表现与共享设计层** | 双端共用 `design/` + 各自原生 UI | Kotlin 原生 UI（`MainActivity` / `AppPickerActivity` / `SettingsActivity` / `ui/*`） | SwiftUI 原生 UI（`CastMainView` / `SourceSlot` / `SettingsView`） | 共用仓库 `design/`（`tokens.json` 明暗双主题、`icons/*.svg`、`UI_SPEC.md`）保证双端视觉统一 |
 | **L2 · 平台系统接口层** | 各自原生实现 | `AudioPlaybackCapture`（单 UID）+ `MediaCodec` AAC + `CastService` FGS + `cast/*` + `compat/*` | `ReplayKit` 广播扩展 + `AudioToolbox` AAC + `AVAudioSession` | 强依赖 OS 媒体、权限与后台能力；对外统一向 L1 喂入 48kHz 裸 AAC 帧 |
-| **FFI · 跨语言桥接插头** | 薄类型与句柄转发 | `NativeBridge.kt` ⇄ `core/src/ffi.rs`（JNI，16KB 对齐 `.so`） | `core/include/miplay_core.h` ⇄ `core/src/ffi_c.rs`（C ABI，`.xcframework`） | 无业务逻辑，统一委托给 `core/src/engine.rs` 与 `core/src/device_catalog.rs` |
+| **FFI · 跨语言桥接插头** | 薄类型与句柄转发 | `NativeBridge.kt` ⇄ `core/src/ffi.rs`（JNI，16KB 对齐 `.so`） | `core/include/miaocast_core.h` ⇄ `core/src/ffi_c.rs`（C ABI，`.xcframework`） | 无业务逻辑，统一委托给 `core/src/engine.rs` 与 `core/src/device_catalog.rs` |
 | **L1 · 公共核心层** | **全平台 100% 共享** | 共用 `core/`（编译为 `cdylib`） | 共用 `core/`（编译为 `staticlib`） | 纯 Rust 零平台依赖：mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步、流媒体打包、多箱并发协调器（`engine`）与路由/延迟状态归一化（`device_catalog` / `latency`） |
 
 ---
@@ -26,7 +26,7 @@
 | 数据流 | 颜色 / 标识 | 端到端上下游路径 | 协议与关键特征 |
 | --- | --- | --- | --- |
 | **音频媒体主链路** | 青色实线 | 目标音频 App → L2 `PlaybackCaptureFactory` (`AudioRecord` 48kHz s16le) → `AacEncoder` (`MediaCodec` 256kbps 裸 AU) → FFI `pushAac` / `sync_channel(96)` → L1 `session::media-clock` (`SharedTimeline` PTS/PCR) → Per-Receiver `media/*` (`Packetizer`) → 音箱反向 Audio TCP | 48kHz 立体声，21.333ms/AU；`7B ADTS → PES(0xC0) → 188B MPEG-TS → RTP(PT=33) → $+24bit` 线帧 |
-| **控制与认证流** | 琥珀虚线 | L3 `MainActivity` / `miplay-cli` / `DevMain` → L2 `CastService` → FFI → L1 `engine`（串行 reconcile 协调器）→ `control` + `auth/*` (`Legacy` / `Safety`) → 音箱正向 TCP `8899` | 支持旧式明文（MD5+HMAC-SHA1）与现代 Safety（OPack + 双向 HMAC + 双向链式 AES-128-CBC）；5s 心跳 / 15s 看门狗 |
+| **控制与认证流** | 琥珀虚线 | L3 `MainActivity` / `miaocast-cli` / `DevMain` → L2 `CastService` → FFI → L1 `engine`（串行 reconcile 协调器）→ `control` + `auth/*` (`Legacy` / `Safety`) → 音箱正向 TCP `8899` | 支持旧式明文（MD5+HMAC-SHA1）与现代 Safety（OPack + 双向 HMAC + 双向链式 AES-128-CBC）；5s 心跳 / 15s 看门狗 |
 | **时钟与组同步流** | 翡翠点虚线 | L1 `EPOCH` (`CLOCK_MONOTONIC`) + `TimerServer` (UDP 40B) + `SourceRtsp` (反向 WFD TCP) ⇄ 局域网音箱集群 → 汇合 `OffsetBarrier` | 建连期先 `flush()` 积压再预读 14 AU 定共享 `TIME_OFFSET`；Timer / `TIME_OFFSET` / PCR 严格同源 |
 | **发现与遥测反馈流** | 紫色短虚线 | mDNS (`224.0.0.251:5353`) + 8899 `NOTIFY` + L1 `device_catalog` / `stats_json_with_overlay` + L2 `PcmProbe` / `NowPlayingTracker` → `CastService` (1Hz 轮询) → L3 `MainActivity` 原位刷新 | 合并 `_mi-connect` (`apps=[5]` 优先) 与 `_lyra-mdns`；按设备原位更新归一化 `ui_state`、整数延迟 `ms`、静音锁定态与播放信息 |
 
@@ -41,13 +41,13 @@
 | `design/tokens.json` | 跨端共享设计令牌（明暗双主题语义色板、圆角 `24/16/12/999`、字号层级与间距规范），供 Android 与 iOS 共用 |
 | `design/UI_SPEC.md` | 跨端 UI 结构与交互规范（顶栏、正在播放、平台音源槽位、输出设备列表 4 段式布局） |
 | `design/icons/*.svg` | 20 枚 `24×24` 统一线宽跨端矢量图标源文件（播控、音箱/手机/电视、明暗主题、搜索、导航等） |
-| `android/app/src/main/java/com/miplay/sender/MainActivity.kt` | Android 主界面面板：顶栏状态胶囊与明暗快切、NowPlaying 进度平滑走字、音源槽位、1Hz 原位增量刷新设备行内延迟与转圈、音量百分比及 MediaProjection 授权发起 |
-| `android/app/src/main/java/com/miplay/sender/AppPickerActivity.kt` | 音源 App 选择器：最近使用与推荐音乐分组、带清空按钮的搜索栏、`LruCache` 异步图标加载，校验保存目标包名与签名摘要 |
-| `android/app/src/main/java/com/miplay/sender/SettingsActivity.kt` | 独立设置页：外观主题三段切换（跟随系统/浅色/深色）、权限实时状态与本机静音策略开关、折叠式连接与调试参数 |
-| `android/app/src/main/java/com/miplay/sender/ui/ThemeMode.kt` | 主题模式枚举（`SYSTEM` / `LIGHT` / `DARK`）、持久化读写与当前夜间模式判定 |
-| `android/app/src/main/java/com/miplay/sender/ui/UiPalette.kt` | 对齐 `design/tokens.json` 的 Android 明暗双主题语义调色板 |
-| `android/app/src/main/java/com/miplay/sender/ui/UiComponents.kt` | 纯代码通用 UI 组件库：圆角卡片、按压 Ripple、细轨道定制滑块、分段选择器与自适应输入框 |
-| `android/app/src/main/java/com/miplay/sender/NowPlayingNotificationListener.kt` | 声明 `NotificationListenerService` 以合法获取 `MediaSessionManager` 活跃会话（仅用于读取正在播放信息与播控，不读取上传通知正文） |
+| `android/app/src/main/java/com/miaocast/app/MainActivity.kt` | Android 主界面面板：顶栏状态胶囊与明暗快切、NowPlaying 进度平滑走字、音源槽位、1Hz 原位增量刷新设备行内延迟与转圈、音量百分比及 MediaProjection 授权发起 |
+| `android/app/src/main/java/com/miaocast/app/AppPickerActivity.kt` | 音源 App 选择器：最近使用与推荐音乐分组、带清空按钮的搜索栏、`LruCache` 异步图标加载，校验保存目标包名与签名摘要 |
+| `android/app/src/main/java/com/miaocast/app/SettingsActivity.kt` | 独立设置页：外观主题三段切换（跟随系统/浅色/深色）、权限实时状态与本机静音策略开关、折叠式连接与调试参数 |
+| `android/app/src/main/java/com/miaocast/app/ui/ThemeMode.kt` | 主题模式枚举（`SYSTEM` / `LIGHT` / `DARK`）、持久化读写与当前夜间模式判定 |
+| `android/app/src/main/java/com/miaocast/app/ui/UiPalette.kt` | 对齐 `design/tokens.json` 的 Android 明暗双主题语义调色板 |
+| `android/app/src/main/java/com/miaocast/app/ui/UiComponents.kt` | 纯代码通用 UI 组件库：圆角卡片、按压 Ripple、细轨道定制滑块、分段选择器与自适应输入框 |
+| `android/app/src/main/java/com/miaocast/app/NowPlayingNotificationListener.kt` | 声明 `NotificationListenerService` 以合法获取 `MediaSessionManager` 活跃会话（仅用于读取正在播放信息与播控，不读取上传通知正文） |
 | `android/app/src/main/AndroidManifest.xml` | 主应用清单：权限最小化（不申请 `QUERY_ALL_PACKAGES`）、`<queries>` 声明 `MAIN/LAUNCHER`、FGS 类型 `mediaProjection\|mediaPlayback` |
 | `android/app/src/acceptance/AndroidManifest.xml` | `acceptance` 变体叠加清单：仅在独立验收包中注册 `LocalFilterProbeService` |
 | `android/app/src/main/res/values(-night)/themes.xml` | DayNight 无 ActionBar 基础主题与状态栏/导航栏底色配置 |
@@ -59,56 +59,56 @@
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `android/app/src/main/java/com/miplay/sender/CastService.kt` | 核心前台服务：管理 FGS 与 `WakeLock`/`WifiLock`、运行单 UID 捕获编码循环、委托 L1 Rust `Engine` 串行协调目标与活跃音箱、1Hz 统计轮询及 64KB 轮转 `cast_ops.log` |
-| `android/app/src/main/java/com/miplay/sender/AacEncoder.kt` | 封装 Android `MediaCodec` 硬件 AAC-LC 编码（48kHz 立体声 256kbps，产出不含 ADTS 头的裸 AU） |
-| `android/app/src/main/java/com/miplay/sender/LatencyDisplay.kt` | 优先消费 L1 Rust 归一化的 `ui_state` / `display_latency_ms`（保留旧格式回退），驱动每台设备行内指示器（`Value` 整数 ms / `Loading` 转圈 / `Hidden`） |
-| `android/app/src/main/java/com/miplay/sender/AuthModeResolve.kt` | 将 UI 选项与调试 Intent 映射为认证模式整数（`0=auto` / `1=legacy` / `2=safety`，底层逻辑已同步下沉至 `device_catalog.rs`） |
-| `android/app/src/main/java/com/miplay/sender/cast/CastRouteSelection.kt` | 路由与设备发现 Kotlin 模型封装（与 L1 `device_catalog.rs` 对齐）：处理 `This device` 与多选音箱/电视互斥、6 列 mDNS TSV 解析、默认过滤与缓存合并 |
-| `android/app/src/main/java/com/miplay/sender/cast/CastProtocol.kt` | 协议枚举定义与 `castImplemented` 门禁，阻止未实现协议（DLNA/AirPlay/Cast）假装投送成功 |
-| `android/app/src/main/java/com/miplay/sender/cast/ProtocolBadge.kt` | 将协议枚举映射为矢量图标、主题自适应配色与无障碍标签 |
-| `android/app/src/main/java/com/miplay/sender/cast/LocalOutputMute.kt` | 本机 `STREAM_MUSIC` 静音与探针状态机：支持 `GLOBAL_STREAM_MUTE` / `KEEP_LOCAL_OUTPUT` 双策略、6 拍有声验证锁定（修复切歌短暂双出声）与外部解除检测 |
-| `android/app/src/main/java/com/miplay/sender/cast/AndroidStreamMusicVolume.kt` | `AudioManager` 读写与 mute 适配层（要求通过已附加 Context 延迟构造，防止 Service 构造期 NPE） |
-| `android/app/src/main/java/com/miplay/sender/cast/NowPlayingTracker.kt` | 订阅选中源 App 的 `MediaController` 回调，提取曲目/艺人/专辑图/播放进度并转发播控命令 |
-| `android/app/src/main/java/com/miplay/sender/cast/NowPlayingInfo.kt` | 正在播放不可变数据模型与诚实占位格式化（无元数据时不伪造曲目） |
-| `android/app/src/main/java/com/miplay/sender/cast/PrefsDiscoveredDeviceStore.kt` | `SharedPreferences` 持久化最近发现的合法 MiPlay 设备（最多 16 台），防止单次 mDNS 丢包引起列表闪烁 |
+| `android/app/src/main/java/com/miaocast/app/CastService.kt` | 核心前台服务：管理 FGS 与 `WakeLock`/`WifiLock`、运行单 UID 捕获编码循环、委托 L1 Rust `Engine` 串行协调目标与活跃音箱、1Hz 统计轮询及 64KB 轮转 `cast_ops.log` |
+| `android/app/src/main/java/com/miaocast/app/AacEncoder.kt` | 封装 Android `MediaCodec` 硬件 AAC-LC 编码（48kHz 立体声 256kbps，产出不含 ADTS 头的裸 AU） |
+| `android/app/src/main/java/com/miaocast/app/LatencyDisplay.kt` | 优先消费 L1 Rust 归一化的 `ui_state` / `display_latency_ms`（保留旧格式回退），驱动每台设备行内指示器（`Value` 整数 ms / `Loading` 转圈 / `Hidden`） |
+| `android/app/src/main/java/com/miaocast/app/AuthModeResolve.kt` | 将 UI 选项与调试 Intent 映射为认证模式整数（`0=auto` / `1=legacy` / `2=safety`，底层逻辑已同步下沉至 `device_catalog.rs`） |
+| `android/app/src/main/java/com/miaocast/app/cast/CastRouteSelection.kt` | 路由与设备发现 Kotlin 模型封装（与 L1 `device_catalog.rs` 对齐）：处理 `This device` 与多选音箱/电视互斥、6 列 mDNS TSV 解析、默认过滤与缓存合并 |
+| `android/app/src/main/java/com/miaocast/app/cast/CastProtocol.kt` | 协议枚举定义与 `castImplemented` 门禁，阻止未实现协议（DLNA/AirPlay/Cast）假装投送成功 |
+| `android/app/src/main/java/com/miaocast/app/cast/ProtocolBadge.kt` | 将协议枚举映射为矢量图标、主题自适应配色与无障碍标签 |
+| `android/app/src/main/java/com/miaocast/app/cast/LocalOutputMute.kt` | 本机 `STREAM_MUSIC` 静音与探针状态机：支持 `GLOBAL_STREAM_MUTE` / `KEEP_LOCAL_OUTPUT` 双策略、6 拍有声验证锁定（修复切歌短暂双出声）与外部解除检测 |
+| `android/app/src/main/java/com/miaocast/app/cast/AndroidStreamMusicVolume.kt` | `AudioManager` 读写与 mute 适配层（要求通过已附加 Context 延迟构造，防止 Service 构造期 NPE） |
+| `android/app/src/main/java/com/miaocast/app/cast/NowPlayingTracker.kt` | 订阅选中源 App 的 `MediaController` 回调，提取曲目/艺人/专辑图/播放进度并转发播控命令 |
+| `android/app/src/main/java/com/miaocast/app/cast/NowPlayingInfo.kt` | 正在播放不可变数据模型与诚实占位格式化（无元数据时不伪造曲目） |
+| `android/app/src/main/java/com/miaocast/app/cast/PrefsDiscoveredDeviceStore.kt` | `SharedPreferences` 持久化最近发现的合法 MiPlay 设备（最多 16 台），防止单次 mDNS 丢包引起列表闪烁 |
 
 ### 3.3 L2 · 严格单 App 捕获与数字域探针层（`capture/`）
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `android/app/src/main/java/com/miplay/sender/capture/CaptureModels.kt` | 目标应用身份快照、解析结果（`Ok` / `Fail` 原因枚举）与存储接口定义 |
-| `android/app/src/main/java/com/miplay/sender/capture/CaptureTargetResolver.kt` | 启动前实时校验目标包卸载/不可见/跨用户/共享 UID/签名变更，任一不满足均 **fail-closed** 拒绝捕获 |
-| `android/app/src/main/java/com/miplay/sender/capture/AndroidPackageIdentityLookup.kt` | 调用 `PackageManager` 实时查询目标包 UID、同用户边界、`sharedUserId` 与 SHA-256 签名摘要 |
-| `android/app/src/main/java/com/miplay/sender/capture/CaptureConfigSpec.kt` | 捕获配置前置规格校验：强制单一合法非负 UID 与 `USAGE_MEDIA` / `USAGE_GAME` / `USAGE_UNKNOWN` 白名单 |
-| `android/app/src/main/java/com/miplay/sender/capture/PlaybackCaptureFactory.kt` | 唯一合法 `AudioPlaybackCaptureConfiguration` 构建入口，强制绑定 `addMatchingUid(uid)`，杜绝静默退化为全系统捕获 |
-| `android/app/src/main/java/com/miplay/sender/capture/ProjectionSessionPolicy.kt` | 约束 Android 14+ `MediaProjection` 每次会话重新授权、切换目标立即停旧会话与标准停止清理顺序 |
-| `android/app/src/main/java/com/miplay/sender/capture/LaunchableAppCatalog.kt` | 可启动应用排序、主流音乐应用推荐标注与主面板快捷音源芯片生成 |
-| `android/app/src/main/java/com/miplay/sender/capture/AndroidLaunchableApps.kt` | 通过 `ACTION_MAIN` / `CATEGORY_LAUNCHER` 枚举同用户可见应用并加载应用图标 |
-| `android/app/src/main/java/com/miplay/sender/capture/PrefsTargetAppStore.kt` | 持久化目标包名、标签、签名摘要与最近使用列表（**绝不持久化易漂移的 UID**） |
-| `android/app/src/main/java/com/miplay/sender/capture/InMemoryTargetAppStore.kt` | JVM 单元测试用内存实现 |
-| `android/app/src/main/java/com/miplay/sender/capture/PcmProbe.kt` | 16-bit 立体声数字域探针：计算 RMS / 峰值（驱动静音锁定）及 Goertzel 1kHz/2kHz 目标频点能量（驱动本地隔离验收） |
-| `android/app/src/main/java/com/miplay/sender/capture/LocalFilterAcceptanceGate.kt` | 验收本地过滤门禁：确保无音箱即可跑本地 UID 过滤探针且绝不触发任何 MiPlay 网络路径 |
+| `android/app/src/main/java/com/miaocast/app/capture/CaptureModels.kt` | 目标应用身份快照、解析结果（`Ok` / `Fail` 原因枚举）与存储接口定义 |
+| `android/app/src/main/java/com/miaocast/app/capture/CaptureTargetResolver.kt` | 启动前实时校验目标包卸载/不可见/跨用户/共享 UID/签名变更，任一不满足均 **fail-closed** 拒绝捕获 |
+| `android/app/src/main/java/com/miaocast/app/capture/AndroidPackageIdentityLookup.kt` | 调用 `PackageManager` 实时查询目标包 UID、同用户边界、`sharedUserId` 与 SHA-256 签名摘要 |
+| `android/app/src/main/java/com/miaocast/app/capture/CaptureConfigSpec.kt` | 捕获配置前置规格校验：强制单一合法非负 UID 与 `USAGE_MEDIA` / `USAGE_GAME` / `USAGE_UNKNOWN` 白名单 |
+| `android/app/src/main/java/com/miaocast/app/capture/PlaybackCaptureFactory.kt` | 唯一合法 `AudioPlaybackCaptureConfiguration` 构建入口，强制绑定 `addMatchingUid(uid)`，杜绝静默退化为全系统捕获 |
+| `android/app/src/main/java/com/miaocast/app/capture/ProjectionSessionPolicy.kt` | 约束 Android 14+ `MediaProjection` 每次会话重新授权、切换目标立即停旧会话与标准停止清理顺序 |
+| `android/app/src/main/java/com/miaocast/app/capture/LaunchableAppCatalog.kt` | 可启动应用排序、主流音乐应用推荐标注与主面板快捷音源芯片生成 |
+| `android/app/src/main/java/com/miaocast/app/capture/AndroidLaunchableApps.kt` | 通过 `ACTION_MAIN` / `CATEGORY_LAUNCHER` 枚举同用户可见应用并加载应用图标 |
+| `android/app/src/main/java/com/miaocast/app/capture/PrefsTargetAppStore.kt` | 持久化目标包名、标签、签名摘要与最近使用列表（**绝不持久化易漂移的 UID**） |
+| `android/app/src/main/java/com/miaocast/app/capture/InMemoryTargetAppStore.kt` | JVM 单元测试用内存实现 |
+| `android/app/src/main/java/com/miaocast/app/capture/PcmProbe.kt` | 16-bit 立体声数字域探针：计算 RMS / 峰值（驱动静音锁定）及 Goertzel 1kHz/2kHz 目标频点能量（驱动本地隔离验收） |
+| `android/app/src/main/java/com/miaocast/app/capture/LocalFilterAcceptanceGate.kt` | 验收本地过滤门禁：确保无音箱即可跑本地 UID 过滤探针且绝不触发任何 MiPlay 网络路径 |
 
 ### 3.4 L2 · Android API 29–36 兼容与变体隔离层（`compat/`）
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `android/app/src/main/java/com/miplay/sender/compat/BlurCompat.kt` | 背景毛玻璃兼容调度：API 31+ 走 `RenderEffect`，API 29–30 自动降级为明暗主题自适应叠色 |
-| `android/app/src/main/java/com/miplay/sender/compat/BlurEffectApi31.kt` | 隔离 API 31 `RenderEffect` 类引用，避免 Android 10 ART 类校验异常 |
-| `android/app/src/main/java/com/miplay/sender/compat/WindowInsetsApplyCompat.kt` | 统一基于 AndroidX `WindowInsetsCompat` 与 `WindowInsetsControllerCompat` 适配 Edge-to-Edge 状态栏/导航栏与图标明暗反色 |
-| `android/app/src/main/java/com/miplay/sender/compat/NotificationPermissionCompat.kt` | 隔离 API 33+ `POST_NOTIFICATIONS` 运行时请求，确保 API 29–32 冷启动零权限弹窗 |
-| `android/app/src/main/java/com/miplay/sender/compat/PackageSigningCompat.kt` | 使用 API 28+ `GET_SIGNING_CERTIFICATES` 兼容读取 APK 签名证书链 |
-| `android/app/src/main/java/com/miplay/sender/compat/CaptureSelectionLayers.kt` | 统一“App 选择器 UID 权威 vs 系统 MediaProjection 授权框”两层边界文案与日志规范 |
-| `android/app/src/main/java/com/miplay/sender/compat/AcceptanceAudioDefaults.kt` | 区分正式包与 `acceptance` 变体的默认音箱初始音量（30% vs 0%）与停止后本机音量恢复策略 |
+| `android/app/src/main/java/com/miaocast/app/compat/BlurCompat.kt` | 背景毛玻璃兼容调度：API 31+ 走 `RenderEffect`，API 29–30 自动降级为明暗主题自适应叠色 |
+| `android/app/src/main/java/com/miaocast/app/compat/BlurEffectApi31.kt` | 隔离 API 31 `RenderEffect` 类引用，避免 Android 10 ART 类校验异常 |
+| `android/app/src/main/java/com/miaocast/app/compat/WindowInsetsApplyCompat.kt` | 统一基于 AndroidX `WindowInsetsCompat` 与 `WindowInsetsControllerCompat` 适配 Edge-to-Edge 状态栏/导航栏与图标明暗反色 |
+| `android/app/src/main/java/com/miaocast/app/compat/NotificationPermissionCompat.kt` | 隔离 API 33+ `POST_NOTIFICATIONS` 运行时请求，确保 API 29–32 冷启动零权限弹窗 |
+| `android/app/src/main/java/com/miaocast/app/compat/PackageSigningCompat.kt` | 使用 API 28+ `GET_SIGNING_CERTIFICATES` 兼容读取 APK 签名证书链 |
+| `android/app/src/main/java/com/miaocast/app/compat/CaptureSelectionLayers.kt` | 统一“App 选择器 UID 权威 vs 系统 MediaProjection 授权框”两层边界文案与日志规范 |
+| `android/app/src/main/java/com/miaocast/app/compat/AcceptanceAudioDefaults.kt` | 区分正式包与 `acceptance` 变体的默认音箱初始音量（30% vs 0%）与停止后本机音量恢复策略 |
 
 ### 3.5 FFI · 跨语言原生桥接层（Android JNI + iOS C ABI）
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `android/app/src/main/java/com/miplay/sender/NativeBridge.kt` | Kotlin 侧 `external` 接口声明与 `libmiaocast_core.so` 加载器（支持 `-Dmiplay.lib` 供 `app_process` 直接调试） |
+| `android/app/src/main/java/com/miaocast/app/NativeBridge.kt` | Kotlin 侧 `external` 接口声明与 `libmiaocast_core.so` 加载器（支持 `-Dmiaocast.lib` 供 `app_process` 直接调试） |
 | `core/src/ffi.rs` | Android JNI 薄导出层：仅做 JVM 字符串/字节数组转换，全部会话、协调与设备目录逻辑委托给 `core/src/engine.rs` 与 `device_catalog.rs` |
-| `core/src/ffi_c.rs` | iOS / 跨平台 C ABI 薄导出层：导出 18 个 `miplay_*` C 函数与 `miplay_string_free` 内存释放入口，供 Swift / Objective-C 直接调用 |
-| `core/include/miplay_core.h` / `module.modulemap` | 标准 C11 头文件与 Clang Module 映射定义（可直接打包进 `MiPlayCore.xcframework` 供 Xcode `import MiPlayCore`） |
+| `core/src/ffi_c.rs` | iOS / 跨平台 C ABI 薄导出层：导出 18 个 `miaocast_*` C 函数与 `miaocast_string_free` 内存释放入口，供 Swift / Objective-C 直接调用 |
+| `core/include/miaocast_core.h` / `module.modulemap` | 标准 C11 头文件与 Clang Module 映射定义（可直接打包进 `MiaoCastCore.xcframework` 供 Xcode `import MiaoCastCore`） |
 
 ### 3.6 L1 · Rust 协议、并发协调、媒体打包与多音箱同步核心层（`core/src/`）
 
@@ -142,13 +142,13 @@
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `cli/src/main.rs` | 独立桌面/终端 CLI `miplay-cli`：提供 `discover` / `inspect`（只读不发 CLOSE）/ `probe` / `safety` / `mute` / `cast` 及故障注入调试子命令 |
-| `android/app/src/main/java/com/miplay/sender/DevMain.kt` | 免安装 APK 的 `adb shell app_process` 真机直连调试入口（验证静音、编码、晚加入扩组与断网重连） |
-| `android/app/src/main/java/com/miplay/sender/LocalFilterProbeService.kt` | 仅 `acceptance` 变体启用：纯本地 UID 捕获 + `PcmProbe` 量化验收服务，严禁触碰任何局域网音箱 |
+| `cli/src/main.rs` | 独立桌面/终端 CLI `miaocast-cli`：提供 `discover` / `inspect`（只读不发 CLOSE）/ `probe` / `safety` / `mute` / `cast` 及故障注入调试子命令 |
+| `android/app/src/main/java/com/miaocast/app/DevMain.kt` | 免安装 APK 的 `adb shell app_process` 真机直连调试入口（验证静音、编码、晚加入扩组与断网重连） |
+| `android/app/src/main/java/com/miaocast/app/LocalFilterProbeService.kt` | 仅 `acceptance` 变体启用：纯本地 UID 捕获 + `PcmProbe` 量化验收服务，严禁触碰任何局域网音箱 |
 | `android/testtones/src/main/java/com/miplay/testtone/ToneActivity.kt` | 受控测试音源控制界面（独立构建为 `A=1kHz`、`B=2kHz`、`deny=allowAudioPlaybackCapture=false` 三枚不同 UID APK） |
 | `android/testtones/src/main/java/com/miplay/testtone/ToneService.kt` | 前台服务持续输出固定频率立体声正弦波，用于量化验证单 App 音频隔离与泄漏抑制 |
 
-#### JVM 单元与契约测试完整清单（`android/app/src/test/java/com/miplay/sender/`，共 19 个测试文件）
+#### JVM 单元与契约测试完整清单（`android/app/src/test/java/com/miaocast/app/`，共 19 个测试文件）
 
 | 测试文件 | 覆盖契约与回归点 |
 | --- | --- |
@@ -181,7 +181,7 @@
 | `android/app/build.gradle.kts` / `android/app/proguard-rules.pro` | `standard`/`acceptance` 变体、环境变量/`keystore.properties` 签名注入、`NewApi` fatal Lint 与 JNI/`DevMain` R8 keep 规则 |
 | `scripts/build-debug.sh` | 一键串联 `cargo test` + 16KB 页对齐 `cargo-ndk(--platform 29)` 编译 `.so` + Gradle debug 构建与单元测试 |
 | `scripts/build-release.sh` | 正式 release 签名构建流水线（校验签名注入、编译 release `.so` 与 APK、执行 16KB 与证书校验） |
-| `scripts/build-ios-xcframework.sh` | 编译 `aarch64-apple-ios` 与模拟器静态库并组装 `MiPlayCore.xcframework` |
+| `scripts/build-ios-xcframework.sh` | 编译 `aarch64-apple-ios` 与模拟器静态库并组装 `MiaoCastCore.xcframework` |
 | `scripts/verify-acceptance-apk.sh` | 校验 APK 的 `zipalign` 4KB/16KB 页对齐、`llvm-readelf` `0x4000` LOAD 对齐与 `apksigner` 签名证书指纹 |
 
 ---

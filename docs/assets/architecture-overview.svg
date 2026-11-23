@@ -389,7 +389,7 @@
     <rect x="1014" y="824" width="292" height="82" rx="10" class="card"/>
     <text x="1028" y="845" class="sans card-title">独立诊断与受控验收栈</text>
     <text x="1028" y="862" class="mono card-file">cli/main.rs · DevMain · FilterProbe</text>
-    <text x="1028" y="880" class="sans card-body">miplay-cli inspect · testtones A/B/deny</text>
+    <text x="1028" y="880" class="sans card-body">miaocast-cli inspect · testtones A/B/deny</text>
     <text x="1028" y="896" class="mono card-meta">scripts/build-{debug,release}.sh (16KB)</text>
   </g>
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# 为 iOS（真机 arm64 + 模拟器 arm64）编译第 1 层 Rust 公共核心并打包 MiPlayCore.xcframework。
+# 为 iOS（真机 arm64 + 模拟器 arm64）编译第 1 层 Rust 公共核心并打包 MiaoCastCore.xcframework。
 # 依赖：macOS + Xcode (xcodebuild) + rustup iOS targets：
 #   rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT_DIR="${1:-$ROOT/ios/Frameworks}"
-XCFRAMEWORK="$OUT_DIR/MiPlayCore.xcframework"
+XCFRAMEWORK="$OUT_DIR/MiaoCastCore.xcframework"
 TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/target}"
 
 for t in aarch64-apple-ios aarch64-apple-ios-sim; do

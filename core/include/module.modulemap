@@ -1,4 +1,4 @@
-module MiPlayCore {
-    header "miplay_core.h"
+module MiaoCastCore {
+    header "miaocast_core.h"
     export *
 }

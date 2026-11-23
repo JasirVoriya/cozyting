@@ -35,7 +35,7 @@
 > **What is MiaoCast (妙投)?**
 > **MiaoCast** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
-> 📦 **Download**: Grab the latest Android APK and cross-platform `miplay-cli` binaries from **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
+> 📦 **Download**: Grab the latest Android APK and cross-platform `miaocast-cli` binaries from **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
 > 📑 **Jump to**: [MiaoCast in 1 Minute](#-miaocast-in-1-minute) · [Problems Solved](#1-what-problems-does-miaocast-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
 
 ---
@@ -182,7 +182,7 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 **Never.** Discovery and audio streaming happen 100% inside your local LAN with zero cloud APIs, zero accounts, and zero telemetry. The only optional internet request is a read-only daily check against the public `update.json` release feed (verified via HTTPS + SHA-256 + APK signature), which you can disable in Settings for 100% zero outbound traffic.
 
 ### Is iOS / iPhone supported?
-**The shared Rust core (`miplay_core.h` C ABI + `XCFramework` build pipeline) and cross-platform UI design spec are ready; the native SwiftUI + ReplayKit iOS client is planned.** See [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md) for the roadmap.
+**The shared Rust core (`miaocast_core.h` C ABI + `XCFramework` build pipeline) and cross-platform UI design spec are ready; the native SwiftUI + ReplayKit iOS client is planned.** See [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md) for the roadmap.
 
 ---
 ---
@@ -199,7 +199,7 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 - **Rootless Wireless Debugging `AudioPolicy` Engine (Android 13+)**: Launches an internal `uid=2000` helper via built-in mDNS + SPAKE2/TLS 1.3 wireless ADB over an ephemeral `127.0.0.1` loopback channel authenticated with a one-time 256-bit token, combining single-app `AudioMix` capture with `AudioPolicyFocusListener` dual-zone AudioFocus isolation.
 - **63-Speaker Deterministic Rust Sync Engine**: Pure-Rust L1 core (`miplay-core`) built on `std::thread` and bounded `sync_channel` (**zero async runtime**), with monotonic `EPOCH`, UDP 40B `TimerServer` clock master, `OffsetBarrier` 14-AU preroll alignment, runtime `TIME_OFFSET` hot rebasing, and per-sink slow-consumer eviction.
 - **Isolated Legacy & Safety Auth Channels**: Strictly separates Legacy (`MD5 + HMAC-SHA1`) and Safety (`OPack + mutual HMAC + chained AES-128-CBC`) TCP `8899` control sessions.
-- **Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog` / `update`) across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`miplay_core.h` C ABI + `.xcframework` script), and `miplay-cli inspect` (read-only diagnostics exiting via `TCP shutdown` without sending `CLOSE`).
+- **Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog` / `update`) across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`miaocast_core.h` C ABI + `.xcframework` script), and `miaocast-cli inspect` (read-only diagnostics exiting via `TCP shutdown` without sending `CLOSE`).
 
 ### 2. Visual Architecture Overview
 
@@ -224,11 +224,11 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 ```text
 miaocast/
 ├── core/               # [L1 Shared Core] Pure Rust protocol, multi-room sync engine, coordinator (engine), catalog & updater
-│   ├── include/        #   [FFI] iOS C11 header (miplay_core.h) & module.modulemap
+│   ├── include/        #   [FFI] iOS C11 header (miaocast_core.h) & module.modulemap
 │   └── src/            #   24 core modules (including Android JNI ffi.rs & iOS C ABI ffi_c.rs)
 ├── design/             # [L3 Shared Design] Light/dark tokens.json, 20 vector icons (24x24) & UI_SPEC.md
 ├── android/            # [L2+L3 Android] Native Kotlin client (:app standard/acceptance) & 3-UID isolation testtones
-├── cli/                # [Tooling] Standalone miplay-cli (discover / read-only inspect / cast & fault-injection debug)
+├── cli/                # [Tooling] Standalone miaocast-cli (discover / read-only inspect / cast & fault-injection debug)
 ├── scripts/            # [Build Pipeline] Android debug/release, iOS XCFramework & 16KB page-alignment verification
 └── docs/               # [Docs & Site] Product website (index.html), architecture explorer (architecture.html), docs & llms.txt
 ```
@@ -239,8 +239,8 @@ miaocast/
 
 ```sh
 # 1. Discover LAN speakers or run read-only inspection (exits via TCP shutdown without sending CLOSE)
-cargo run --release -p miplay-cli -- discover
-cargo run --release -p miplay-cli -- inspect <SPEAKER_IP> --auth legacy
+cargo run --release -p miaocast-cli -- discover
+cargo run --release -p miaocast-cli -- inspect <SPEAKER_IP> --auth legacy
 
 # 2. Build Android Debug / Release APK (16KB ELF page-aligned) & iOS XCFramework
 ./scripts/build-debug.sh
@@ -249,7 +249,7 @@ cargo run --release -p miplay-cli -- inspect <SPEAKER_IP> --auth legacy
 
 # 3. Run Rust unit tests, C11 header check, and Android JVM unit tests + NewApi Fatal Lint
 cargo test --workspace
-clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
+clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
 cd android && ./gradlew --no-daemon test lintStandardDebug
 ```
 

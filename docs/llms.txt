@@ -11,9 +11,9 @@
 - **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
 - **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/miaocast-releases
 - **Official Website (GitHub Pages)**: https://jasirvoriya.github.io/miaocast-releases/
-- **Downloads (Android APK & `miplay-cli`)**: https://github.com/JasirVoriya/miaocast-releases/releases
+- **Downloads (Android APK & `miaocast-cli`)**: https://github.com/JasirVoriya/miaocast-releases/releases
 - **Interactive Architecture Explorer**: https://jasirvoriya.github.io/miaocast-releases/architecture.html
-- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`miplay-cli`)
+- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`miaocast-cli`)
 - **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
 - **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://jasirvoriya.github.io/miaocast-releases/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
 
@@ -44,4 +44,4 @@
 - [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
 - [Changelog](https://github.com/JasirVoriya/miaocast-releases/blob/main/CHANGELOG.md): Version release history.
 - [Security Policy](https://github.com/JasirVoriya/miaocast-releases/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
-- [Releases & APK Downloads](https://github.com/JasirVoriya/miaocast-releases/releases): Signed Android APKs, `miplay-cli` binaries, and `SHA256SUMS.txt`.
+- [Releases & APK Downloads](https://github.com/JasirVoriya/miaocast-releases/releases): Signed Android APKs, `miaocast-cli` binaries, and `SHA256SUMS.txt`.

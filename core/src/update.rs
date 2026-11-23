@@ -1,6 +1,6 @@
 //! 跨端 App 更新裁决与跨版本区间日志聚合引擎（纯逻辑、零网络 I/O、零新增依赖）。
 //!
-//! 供 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs` / `miplay_core.h`) 共享同一套：
+//! 供 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs` / `miaocast_core.h`) 共享同一套：
 //! - SemVer 2.0 版本归一化与比较（自动剥离前导 `v` 与 `-release`/`-acceptance`/`-debug` 构建后缀）；
 //! - `update.json`（GitHub Pages 静态清单）与 GitHub Releases REST API 双格式自动解析；
 //! - `stable` / `prerelease` 通道过滤、平台资产挑选（排除未签名/调试包）与最低系统版本门禁；
@@ -980,7 +980,7 @@ fn error_decision_json(current_version: &str, msg: &str) -> String {
     )
 }
 
-/// 跨端更新裁决统一入口（供 JNI `NativeBridge.evaluateUpdateJson` 与 C ABI `miplay_update_evaluate_json` 共用）。
+/// 跨端更新裁决统一入口（供 JNI `NativeBridge.evaluateUpdateJson` 与 C ABI `miaocast_update_evaluate_json` 共用）。
 pub fn evaluate_update_json(
     current_version: &str,
     channel: &str,

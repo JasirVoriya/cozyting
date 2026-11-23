@@ -7,7 +7,7 @@
 ## 一、最快参与方式
 
 1. **上报音箱 / 手机兼容实测**：前往 [设备兼容实测模板](https://github.com/JasirVoriya/miaocast-releases/issues/new?template=device_compatibility.yml) 提交你的测试结果（可用或不可用都同样宝贵），帮助完善 [设备兼容矩阵](docs/COMPATIBILITY.md)。
-2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/miaocast-releases/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `miplay-cli inspect <IP> --auth legacy` 的脱敏输出。
+2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/miaocast-releases/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `miaocast-cli inspect <IP> --auth legacy` 的脱敏输出。
 3. **提交功能建议**：使用 [功能建议模板](https://github.com/JasirVoriya/miaocast-releases/issues/new?template=feature_request.yml) 描述真实使用场景。
 4. **提交代码或文档 PR**：按下方指南配好开发环境后发起 Pull Request。
 
@@ -36,8 +36,8 @@ cargo install cargo-ndk --locked
 # 1. Rust 核心与 CLI 单元测试
 cargo test --workspace
 
-# 2. 若修改了 C ABI 头文件（core/include/miplay_core.h），校验 C11 语法
-clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
+# 2. 若修改了 C ABI 头文件（core/include/miaocast_core.h），校验 C11 语法
+clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
 
 # 3. 编译 16KB 页对齐 arm64-v8a 原生库 + 运行 Android JVM 单测、Lint 与 Debug 构建
 ./scripts/build-debug.sh
@@ -61,7 +61,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **16KB ELF 页对齐**：所有 `arm64-v8a` `.so` 编译需保留 `-C link-arg=-Wl,-z,max-page-size=16384`，确保 Android 15+ 16KB 页设备兼容。
 - **诚实测试边界**：PR 中如实写明「已验证项」与「未测项」；编译通过 ≠ 全机型兼容，协议估算延迟 ≠ 声学实测。
 - **敏感信息零入库**：严禁提交 `.keystore` / `.jks` / `keystore.properties` / `local.properties` / 签名口令 / 私有设备序列号 / 原始 `.pcapng` 抓包文件。
-- **Android & iOS 双端同步**：任何协议/状态机/UI 改动必须同时兼顾 Android 与 iOS 两套工程——平台无关逻辑优先下沉 L1 `core/` 并同步维护 JNI 与 C ABI（`ffi_c.rs`/`miplay_core.h`），UI/交互改动同步更新 `design/` 规范并写明 iOS 对应实现与平台边界（详见 [AGENTS.md](AGENTS.md)）。
+- **Android & iOS 双端同步**：任何协议/状态机/UI 改动必须同时兼顾 Android 与 iOS 两套工程——平台无关逻辑优先下沉 L1 `core/` 并同步维护 JNI 与 C ABI（`ffi_c.rs`/`miaocast_core.h`），UI/交互改动同步更新 `design/` 规范并写明 iOS 对应实现与平台边界（详见 [AGENTS.md](AGENTS.md)）。
 - **个人开发环境隔离（`.local/`）**：个人机器路径、NAS/ADB 调试偏好、家庭局域网真实 IP、真实人名、设备尾号及临时调试/AI 会话计划**严禁提交入库**，统一放在已被 `.gitignore` 忽略的 `.local/` 目录内；每次开发前先查本地 `.local/`，每次提交前检查 diff 确保单测与文档仅使用 RFC 5737（`192.0.2.x`）或通用示例 IP（`192.168.1.x`）及匿名设备名（详见项目级规范 [AGENTS.md](AGENTS.md)）。
 
 ---

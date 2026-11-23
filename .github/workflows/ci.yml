@@ -106,12 +106,12 @@ jobs:
       - name: Run Rust workspace unit tests
         run: cargo test --workspace
 
-      - name: Build miplay-cli (release)
-        run: cargo build --release -p miplay-cli
+      - name: Build miaocast-cli (release)
+        run: cargo build --release -p miaocast-cli
 
       - name: Check iOS C ABI header syntax (C11)
-        if: hashFiles('core/include/miplay_core.h') != ''
-        run: clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
+        if: hashFiles('core/include/miaocast_core.h') != ''
+        run: clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
 
   android-build-and-test:
     name: Android JNI, Lint & Unit Tests

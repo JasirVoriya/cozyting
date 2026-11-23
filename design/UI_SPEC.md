@@ -20,7 +20,7 @@
    - **延迟模式快捷胶囊与极简下拉菜单（Android & iOS 双端对齐）**：
      - 单一事实来源：仅由持久化 `delayMs`（`0` = 自动，`> 0` = 具体毫秒）自动推导，绝不维护第二份模式枚举；
      - 4 个内置档位各配独立 `24×24` 几何线性图标：`标准`（`latency_standard.svg`，自动 5GHz 800ms / 2.4GHz 1000ms，14 AU，中性色）、`均衡`（`latency_balanced.svg`，400ms，8 AU，主题蓝）、`低延迟`（`latency_low.svg`，250ms，5 AU，主题蓝）、`极速`（`latency_ultra.svg`，150ms，3 AU，暖琥珀）；若用户在设置页手动填写了非预设值，胶囊自动显示 `latency_custom.svg` + `${delayMs}ms`（`<250ms` 琥珀 / `≥250ms` 蓝），下拉框 4 个预设均不勾选并在底部动态追加一行已勾选的 `自定义 · Nms`；
-     - 下拉菜单保持极致精简（宽约 `196–200dp/pt`，单行仅展示「图标 + 档位名 + 右侧 ms + 勾选」，零长文说明），点击任意预设立即调用 L1 `miplay_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 热重锚 `TIME_OFFSET` 即时生效（免断连重连），且冷启动按 L1 `startup_runway_aus_for_delay_ms` 自动缩放预热帧数；
+     - 下拉菜单保持极致精简（宽约 `196–200dp/pt`，单行仅展示「图标 + 档位名 + 右侧 ms + 勾选」，零长文说明），点击任意预设立即调用 L1 `miaocast_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 热重锚 `TIME_OFFSET` 即时生效（免断连重连），且冷启动按 L1 `startup_runway_aus_for_delay_ms` 自动缩放预热帧数；
      - 下拉框底部经细分割线提供按需入口 `ⓘ 档位说明 ›`，点击后弹出详情弹窗展示 4 档完整参数、适用场景与「去设置自定义 ms」跳转（Android 使用 `PopupWindow` + Style B `Dialog`；iOS SwiftUI 使用 `Menu` + `.sheet` 对应实现）。
 2. **正在播放区（Now Playing）**
    - **已获得活跃媒体会话**（双端统一左大封面 + 右文控结构）：
@@ -40,7 +40,7 @@
 4. **输出设备区（Output Devices）**
    - 分节标题栏：左侧 `输出设备`，右侧展示已发现设备数 + **`28dp/pt` 圆形刷新扫描按钮**（仅刷新局域网输出设备，扫描中旋转动画；且每次打开 App 或从外部切回前台——Android `onResume()` / iOS `scenePhase == .active`——在满足「非内部子页面返回 + 距上次扫描完成 ≥ 30 秒或当前可投设备为 0 台」时自动触发一次后台扫描刷新，扫描结果与当前可见列表一致时不重建设备行 View，正在拖动音量滑块时延后至松手再刷新，手动点击刷新按钮则无视 30 秒冷却立即强制刷新），避免放在顶栏造成全局刷新的语义误解。
    - 首行：`本机播放`（与外部接收端互斥，标题字号与外部设备行统一为 `13sp/pt Bold`）。
-   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ **同行轻分隔标题「设备名 + 可选房间名」**（单行末尾省略，不拼接型号后缀；设备名采用 `13sp/pt Bold` 主色，获取到非空房间名时紧随 ` · <房间名>` 采用 `11.5sp/pt Regular` 次级色，无房间名或获取不到时彻底隐藏、不留分隔符；Android 通过 `SpannableStringBuilder` 实现，iOS SwiftUI 通过 `Text(name).font(.system(size: 13, weight: .bold)) + Text(" · \(room)").font(.system(size: 11.5)).foregroundStyle(subColor)` 等价实现；双端统一消费第 1 层 Rust `miplay_discover_json_ex`，单次只读 TCP 8899 `GET_DEVICE_INFO` TLV 帧内同步提取 `miName` 与 `roomName`，名称优先级为「`miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已含 `room_info_queried=true` 的本地缓存，首次发现/缺房间字段的旧版缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
+   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ **同行轻分隔标题「设备名 + 可选房间名」**（单行末尾省略，不拼接型号后缀；设备名采用 `13sp/pt Bold` 主色，获取到非空房间名时紧随 ` · <房间名>` 采用 `11.5sp/pt Regular` 次级色，无房间名或获取不到时彻底隐藏、不留分隔符；Android 通过 `SpannableStringBuilder` 实现，iOS SwiftUI 通过 `Text(name).font(.system(size: 13, weight: .bold)) + Text(" · \(room)").font(.system(size: 11.5)).foregroundStyle(subColor)` 等价实现；双端统一消费第 1 层 Rust `miaocast_discover_json_ex`，单次只读 TCP 8899 `GET_DEVICE_INFO` TLV 帧内同步提取 `miName` 与 `roomName`，名称优先级为「`miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已含 `room_info_queried=true` 的本地缓存，首次发现/缺房间字段的旧版缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
    - 选中后行内展开带实时百分比的独立音量滑块；拖动音量时仅原位更新，禁止重建设备列表。
    - **主卡片底边收口与按需提示横条**：平时（待机、选定音源、正常投送中）主卡片在最后一台输出设备行下方直接以 `16dp/pt` 对称内边距干净收底，不常驻任何冗余文字（如「已选择音源：xxx」「已切回本机播放」等均由卡片高亮与顶栏胶囊体现）；仅在切换延迟档位/热切音源时底部展示 **2.5 秒自动消失** 的主题蓝轻提示横条，或在发生异常/权限缺失/扫描失败时展示带琥珀色圆点的告警提示条（恢复正常后自动隐藏）。
 
@@ -55,11 +55,11 @@
     - 主界面与音源页中的所有模态提示弹窗（首次使用无感模式配对引导、重启后无线调试恢复提示、常用音源与自动识别说明）统一采用 `UiComponents.showStyleBDialog` 自定义圆角卡片弹窗（深色 `#151A23` / 浅色 `#FFFFFF` + 顶栏关闭圆钮 + 可选内嵌附注框 + 全宽 Tonal 按钮，严禁使用系统原生 `AlertDialog`；iOS SwiftUI 采用同等 Style B 卡片弹窗 / `.sheet` 呈现）。
    - **投送时手机静音开关**（及实时状态说明；Android 13+ 无感单 App 模式下标注「单 App 无感环回静音，不影响其他 App 手机出声」，并在 `uid=2000` `AudioPolicy` 内自动启用双区音频焦点隔离，避免手机刷短视频暂停音箱音乐或恢复音乐导致视频短暂无声，停止/异常退出自动注销；iOS 受沙箱限制不支持 `AudioPolicy` 焦点接管）。
    - **自动识别正在播放的音源总开关**（Android，默认开启，仅从常用音源中已授权自动识别的 App 选取）、通知使用权实时状态与直达入口（Android）、电池优化豁免实时状态与直达入口（Android）。
-3. **连接与调试（默认折叠）**：手动添加音箱 IP、音源模式分段选择（选定 App / 测试静音）、播放延迟（ms）输入框与同行右侧「生效」主按钮（支持 50–5000ms 及留空/0 自动；投送中点击直接调用 L1 `miplay_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 清缓冲并热重锚广播 `TIME_OFFSET` 即时生效，无需断连重连，待机时保存并在下次连接生效；Android 与未来 iOS 共用同一交互与 L1 能力）、房间参考模式分段选择、认证模式分段选择、验收变体本地探针。
+3. **连接与调试（默认折叠）**：手动添加音箱 IP、音源模式分段选择（选定 App / 测试静音）、播放延迟（ms）输入框与同行右侧「生效」主按钮（支持 50–5000ms 及留空/0 自动；投送中点击直接调用 L1 `miaocast_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 清缓冲并热重锚广播 `TIME_OFFSET` 即时生效，无需断连重连，待机时保存并在下次连接生效；Android 与未来 iOS 共用同一交互与 L1 能力）、房间参考模式分段选择、认证模式分段选择、验收变体本地探针。
 4. **关于与更新（Android & iOS 双端对齐）**：
    - 展示品牌名 + 当前版本号（自动剥离 `-release` 构建后缀，预览版/验收版附状态标注）+ 上次检查时间与右侧状态胶囊（`已是最新` / `有新版本` / `检测中…` / `检查失败`）。
    - 主操作按钮（`立即检查更新` / `查看新版本 vX.Y.Z`）、`启动时自动检查更新` 开关（默认开启、每 24h 向公开静态清单发起一次只读 HTTPS 请求、零遥测，关闭后 100% 零外网请求）、更新通道分段 `[稳定版 | 预览版 (RC)]` 与公开 Release 页面直达入口。
-   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `miplay_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
+   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `miaocast_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
 
 ## 4. 图标规范（`design/icons/`）
 
