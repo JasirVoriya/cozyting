@@ -28,8 +28,8 @@ android {
         applicationId = "com.miaocast.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 22
-        versionName = "0.9.7-rc.7"
+        versionCode = 23
+        versionName = "0.9.7-rc.8"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
