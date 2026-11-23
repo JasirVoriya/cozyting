@@ -1,211 +1,209 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { C, FONT_CN, prog, easeInOut, easeOut, sceneFade } from "../theme";
-import { Eyebrow, Reveal, Speaker, StagePhone } from "../components";
+import { Eyebrow, Reveal, Speaker, StagePhone, UiSlice } from "../components";
 
+/**
+ * Scene 05 (6s = 360f) — Decluttered, User-First:
+ *   Left:  1 dimmed Settings phone + ONLY 2 HUGE zoomed real UI cards ("无感模式" & "投送时手机静音")
+ *   Right: Super clean, large-font "Pure LAN · Zero Cloud" privacy card (zero dev jargon!)
+ */
 export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
   const f = useCurrentFrame();
 
-  // Phone 1 (05-dark.png Settings): elevates "无感模式 (无线调试)", "单 App 隔离 + 打开 4 步配对引导", and "投送时手机静音"
-  const popEngine = prog(f, 14, 52, easeOut);
-  const popMute = prog(f, 34, 72, easeOut);
-
-  // Tap "打开 4 步配对引导" at f=75 -> Phone 2 (04-dark.png 4-Step Wireless Guide) glides in and elevates Step 3
-  const guidePhoneIn = prog(f, 80, 130, easeOut);
-  const popStep3 = prog(f, 125, 170, easeOut);
-
-  // Right side: Pure LAN · Zero Cloud topology badge
-  const house = prog(f, 40, 120, easeInOut);
-  const slash = prog(f, 95, 130, easeInOut);
+  const phoneIn = prog(f, 8, 48, easeOut);
+  const card1In = prog(f, 32, 74, easeOut);
+  const card2In = prog(f, 76, 118, easeOut);
+  const rightIn = prog(f, 45, 92, easeOut);
+  const house = prog(f, 65, 145, easeInOut);
+  const slash = prog(f, 115, 150, easeInOut);
 
   return (
-    <AbsoluteFill style={{ background: C.bg, opacity: sceneFade(f, dur, 12, 16) }}>
+    <AbsoluteFill style={{ background: C.bg, opacity: sceneFade(f, dur, 10, 16) }}>
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(circle at 28% 58%, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0) 42%), radial-gradient(circle at 62% 58%, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0) 38%)",
+            "radial-gradient(circle at 26% 58%, rgba(37,99,235,0.20) 0%, rgba(37,99,235,0) 44%), radial-gradient(circle at 76% 56%, rgba(52,211,153,0.14) 0%, rgba(52,211,153,0) 42%)",
         }}
       />
 
-      {/* Top Header */}
-      <div style={{ position: "absolute", left: 115, top: 72, zIndex: 20 }}>
-        <Eyebrow text="Wireless Debug Engine · Pure LAN Zero Cloud" start={4} />
+      {/* Clean User-Friendly Header */}
+      <div style={{ position: "absolute", left: 100, top: 64, zIndex: 20 }}>
+        <Eyebrow text="Seamless & Private · Pure LAN" start={4} />
         <div style={{ marginTop: 14 }}>
-          <Reveal text="内置无线调试无感采集，真 · 单 App 静音。" start={10} size={56} weight={650} stagger={1.8} />
+          <Reveal text="免弹框无感直投，音频绝不出家门。" start={10} size={62} weight={700} stagger={1.6} />
         </div>
         <div style={{ marginTop: 10 }}>
           <Reveal
-            text="免 Root · 免电脑 · 免 Shizuku，本机 4 步向导完成配对，全链路纯局域网零云端。"
-            start={45}
-            size={25}
-            weight={400}
-            color={C.ink2}
-            stagger={0.9}
+            text="两个核心开关，开启后无感开投、手机静音互不干扰，全程纯局域网零云端。"
+            start={38}
+            size={27}
+            weight={450}
+            color="#CBD5E1"
+            stagger={0.6}
           />
         </div>
       </div>
 
-      {/* Left Phone: 05-dark.png (Settings Core: Seamless Wireless Engine + Single-App Isolation + Phone Mute) */}
+      {/* Left: Single Strongly-Dimmed Phone as Context Anchor */}
       <div
         style={{
           position: "absolute",
-          left: 115,
-          top: 235,
+          left: 100,
+          top: 255,
           perspective: 1800,
-          zIndex: 10,
+          opacity: phoneIn,
+          zIndex: 8,
         }}
       >
+        <div style={{ transform: "rotateY(10deg) rotateX(2deg)", transformStyle: "preserve-3d" }}>
+          <StagePhone src="ui/05-dark.png" w={355} dim={0.82} />
+        </div>
+      </div>
+
+      {/* Center-Left: TWO MASSIVE, Effortlessly Readable Spotlighted Real UI Cards */}
+      <div
+        style={{
+          position: "absolute",
+          left: 365,
+          top: 295,
+          width: 650,
+          display: "flex",
+          flexDirection: "column",
+          gap: 54,
+          zIndex: 20,
+        }}
+      >
+        {/* Spotlight Card 1: 无感模式 */}
         <div
           style={{
-            transform: "translateY(0px) rotateY(8deg) rotateX(2deg)",
-            transformStyle: "preserve-3d",
+            opacity: card1In,
+            transform: `translateX(${(1 - card1In) * -40}px) scale(${0.94 + card1In * 0.06})`,
+            padding: 20,
+            borderRadius: 30,
+            background: "rgba(15,20,30,0.94)",
+            border: "2px solid rgba(59,130,246,0.88)",
+            boxShadow: "0 30px 75px rgba(0,0,0,0.68), 0 0 40px rgba(59,130,246,0.22)",
           }}
         >
-          <StagePhone
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div
+              style={{
+                padding: "6px 18px",
+                borderRadius: 999,
+                background: "rgba(59,130,246,0.24)",
+                fontFamily: FONT_CN,
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#93C5FD",
+              }}
+            >
+              ① 无感模式
+            </div>
+            <div style={{ fontFamily: FONT_CN, fontSize: 22, fontWeight: 600, color: "#FFFFFF" }}>
+              免每次点「开始录屏」确认
+            </div>
+          </div>
+          <UiSlice
             src="ui/05-dark.png"
-            w={365}
-            dim={popEngine * 0.45}
-            taps={[{ x: 195, y: 1098, start: 68, color: "#4C8DFF" }]}
-            slices={[
-              {
-                id: "engine-switch",
-                rect: [46, 656, 586, 56],
-                radius: 18,
-                elevate: popEngine,
-                dx: 22,
-                dy: -8,
-                popScale: 1.1,
-                accentBorder: "rgba(59,130,246,0.85)",
-              },
-              {
-                id: "single-app-scope",
-                rect: [46, 990, 586, 140],
-                radius: 20,
-                elevate: popEngine,
-                dx: 26,
-                dy: 0,
-                popScale: 1.1,
-                accentBorder: "rgba(59,130,246,0.85)",
-              },
-              {
-                id: "phone-mute-card",
-                rect: [46, 1156, 586, 120],
-                radius: 22,
-                elevate: popMute,
-                dx: 26,
-                dy: 10,
-                popScale: 1.1,
-                accentBorder: "rgba(52,211,153,0.75)",
-              },
-            ]}
+            rect={[42, 646, 594, 146]}
+            radius={20}
+            scale={1.01}
+            elevation={0.4}
+            accentBorder="rgba(59,130,246,0.5)"
           />
         </div>
-      </div>
 
-      {/* Center Phone: 04-dark.png (4-Step Wireless Debugging Guide) gliding in on tap */}
-      <div
-        style={{
-          position: "absolute",
-          left: 615,
-          top: 235,
-          perspective: 1800,
-          zIndex: 12,
-          opacity: guidePhoneIn,
-          filter: `blur(${(1 - guidePhoneIn) * 10}px)`,
-        }}
-      >
+        {/* Spotlight Card 2: 投送时手机静音 */}
         <div
           style={{
-            transform: `translateX(${(1 - guidePhoneIn) * 70}px) translateY(0px) rotateY(-4deg) rotateX(2deg)`,
-            transformStyle: "preserve-3d",
+            opacity: card2In,
+            transform: `translateX(${(1 - card2In) * -40}px) scale(${0.94 + card2In * 0.06})`,
+            padding: 20,
+            borderRadius: 30,
+            background: "rgba(15,20,30,0.94)",
+            border: "2px solid rgba(52,211,153,0.88)",
+            boxShadow: "0 30px 75px rgba(0,0,0,0.68), 0 0 40px rgba(52,211,153,0.20)",
           }}
         >
-          <StagePhone
-            src="ui/04-dark.png"
-            w={365}
-            dim={popStep3 * 0.45}
-            slices={[
-              {
-                id: "step1-done",
-                rect: [24, 448, 630, 116],
-                radius: 24,
-                elevate: popStep3 * 0.7,
-                dx: 14,
-                popScale: 1.04,
-                accentBorder: "rgba(52,211,153,0.65)",
-              },
-              {
-                id: "step2-done",
-                rect: [24, 584, 630, 116],
-                radius: 24,
-                elevate: popStep3 * 0.7,
-                dx: 14,
-                popScale: 1.04,
-                accentBorder: "rgba(52,211,153,0.65)",
-              },
-              {
-                id: "step3-pair",
-                rect: [22, 718, 634, 370],
-                radius: 28,
-                elevate: popStep3,
-                dx: 28,
-                dy: 6,
-                popScale: 1.11,
-                accentBorder: "rgba(59,130,246,0.9)",
-              },
-            ]}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div
+              style={{
+                padding: "6px 18px",
+                borderRadius: 999,
+                background: "rgba(52,211,153,0.22)",
+                fontFamily: FONT_CN,
+                fontSize: 22,
+                fontWeight: 700,
+                color: "#6EE7B7",
+              }}
+            >
+              ② 投送时手机静音
+            </div>
+            <div style={{ fontFamily: FONT_CN, fontSize: 22, fontWeight: 600, color: "#FFFFFF" }}>
+              只静音乐 · 刷视频照常有声
+            </div>
+          </div>
+          <UiSlice
+            src="ui/05-dark.png"
+            rect={[42, 1148, 594, 134]}
+            radius={20}
+            scale={1.01}
+            elevation={0.4}
+            accentBorder="rgba(52,211,153,0.5)"
           />
         </div>
       </div>
 
-      {/* Right Column: Pure LAN · Zero Cloud Architectural Topology Card */}
+      {/* Right Column: Ultra-Clean, Big-Font Pure LAN · Zero Cloud Privacy Card */}
       <div
         style={{
           position: "absolute",
-          left: 1125,
-          top: 245,
-          width: 680,
-          height: 730,
-          borderRadius: 34,
-          background: "rgba(21,26,35,0.72)",
-          border: `1px solid ${C.line2}`,
-          boxShadow: "0 40px 90px rgba(0,0,0,0.45)",
-          opacity: prog(f, 35, 85),
+          left: 1110,
+          top: 265,
+          width: 710,
+          height: 735,
+          borderRadius: 38,
+          background: "rgba(21,26,37,0.86)",
+          border: "2px solid rgba(255,255,255,0.18)",
+          boxShadow: "0 38px 90px rgba(0,0,0,0.52)",
+          opacity: rightIn,
+          transform: `translateY(${(1 - rightIn) * 26}px)`,
         }}
       >
-        <svg width="680" height="730" style={{ position: "absolute", inset: 0 }}>
+        <svg width="710" height="735" style={{ position: "absolute", inset: 0 }}>
           {/* Crossed-out Cloud */}
-          <g transform="translate(340 105) scale(0.76)">
+          <g transform="translate(355 105) scale(0.92)">
             <path
               d="M-70 30 h140 a40 40 0 0 0 0-80 a56 56 0 0 0-104-16 a42 42 0 0 0-36 96z"
               fill="none"
-              stroke={C.ink3}
-              strokeWidth={3}
+              stroke="#94A3B8"
+              strokeWidth={3.5}
               strokeLinejoin="round"
             />
             <line
-              x1={-90}
-              y1={-70}
-              x2={90}
-              y2={60}
+              x1={-95}
+              y1={-72}
+              x2={95}
+              y2={62}
               stroke={C.coral}
-              strokeWidth={4.5}
+              strokeWidth={5.5}
               strokeLinecap="round"
               pathLength={1}
               strokeDasharray="1 1"
               strokeDashoffset={1 - slash}
             />
           </g>
-          <text x={340} y={168} textAnchor="middle" fontFamily={FONT_CN} fontSize={17} fill={C.coral}>
-            0 云端请求 · 免账号登录
+          <text x={355} y={182} textAnchor="middle" fontFamily={FONT_CN} fontSize={26} fontWeight={700} fill={C.coral}>
+            零云端上传 · 免账号登录
           </text>
 
           {/* House Roof Outline */}
           <path
-            d="M 85 335 L 340 195 L 595 335 L 595 575 L 85 575 Z"
-            fill="rgba(255,255,255,0.015)"
-            stroke={C.line2}
-            strokeWidth={2.2}
+            d="M 80 355 L 355 210 L 630 355 L 630 570 L 80 570 Z"
+            fill="rgba(255,255,255,0.02)"
+            stroke="rgba(255,255,255,0.26)"
+            strokeWidth={2.6}
             strokeLinejoin="round"
             pathLength={1}
             strokeDasharray="1 1"
@@ -213,32 +211,32 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
           />
 
           {/* Router */}
-          <g transform="translate(340 345)">
-            <rect x={-52} y={-18} width={104} height={36} rx={10} fill={C.bg2} stroke={C.ink2} strokeWidth={2} />
+          <g transform="translate(355 345)">
+            <rect x={-64} y={-22} width={128} height={44} rx={12} fill={C.bg2} stroke="#CBD5E1" strokeWidth={2.4} />
             {[0, 1, 2].map((k) => (
-              <circle key={k} cx={-20 + k * 14} cy={0} r={3} fill={k === 0 ? C.coral : C.ink3} />
+              <circle key={k} cx={-26 + k * 18} cy={0} r={4.5} fill={k === 0 ? C.coral : "#64748B"} />
             ))}
-            <text x={0} y={-28} textAnchor="middle" fontFamily={FONT_CN} fontSize={16} fill={C.ink2}>
+            <text x={0} y={-34} textAnchor="middle" fontFamily={FONT_CN} fontSize={23} fontWeight={600} fill="#E2E8F0">
               家庭 Wi-Fi 局域网
             </text>
           </g>
 
-          {/* Local connections */}
+          {/* Local Nodes */}
           {[
-            { x: 185, y: 490, kind: "phone", label: "本机环回采集" },
-            { x: 385, y: 490, kind: "spk", label: "客厅音箱" },
-            { x: 505, y: 490, kind: "spk", label: "卧室音箱" },
+            { x: 185, y: 488, kind: "phone", label: "你的手机" },
+            { x: 395, y: 488, kind: "spk", label: "客厅音箱" },
+            { x: 530, y: 488, kind: "spk", label: "卧室音箱" },
           ].map((n, i) => {
-            const tt = ((f - 70 - i * 15) / 45) % 1;
+            const tt = ((f - 60 - i * 14) / 42) % 1;
             const fwd = n.kind === "phone" ? 1 - tt : tt;
             return (
               <g key={i}>
-                <line x1={340} y1={363} x2={n.x} y2={n.y - 25} stroke={C.line2} strokeWidth={1.8} />
-                {f > 70 && (
+                <line x1={355} y1={367} x2={n.x} y2={n.y - 32} stroke="rgba(255,255,255,0.28)" strokeWidth={2.4} />
+                {f > 60 && (
                   <circle
-                    cx={340 + (n.x - 340) * fwd}
-                    cy={363 + (n.y - 25 - 363) * fwd}
-                    r={4}
+                    cx={355 + (n.x - 355) * fwd}
+                    cy={367 + (n.y - 32 - 367) * fwd}
+                    r={5.5}
                     fill={C.coral}
                     opacity={Math.sin(tt * Math.PI)}
                   />
@@ -246,22 +244,27 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
                 {n.kind === "phone" ? (
                   <g>
                     <rect
-                      x={n.x - 22}
-                      y={n.y - 40}
-                      width={44}
-                      height={78}
-                      rx={10}
+                      x={n.x - 24}
+                      y={n.y - 44}
+                      width={48}
+                      height={84}
+                      rx={11}
                       fill={C.bg2}
-                      stroke={C.ink2}
-                      strokeWidth={2}
+                      stroke="#E2E8F0"
+                      strokeWidth={2.4}
                     />
-                    <circle cx={n.x} cy={n.y} r={8} fill={C.coral} />
-                    <text x={n.x} y={n.y + 62} textAnchor="middle" fontFamily={FONT_CN} fontSize={16} fill={C.ink2}>
+                    <circle cx={n.x} cy={n.y} r={9} fill={C.coral} />
+                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={FONT_CN} fontSize={22} fontWeight={600} fill="#E2E8F0">
                       {n.label}
                     </text>
                   </g>
                 ) : (
-                  <Speaker x={n.x} y={n.y} s={0.78} active={prog(f, 110, 130)} label={n.label} />
+                  <g>
+                    <Speaker x={n.x} y={n.y} s={0.88} active={prog(f, 90, 115)} />
+                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={FONT_CN} fontSize={22} fontWeight={600} fill="#E2E8F0">
+                      {n.label}
+                    </text>
+                  </g>
                 )}
               </g>
             );
@@ -269,11 +272,11 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
         </svg>
 
         <div style={{ position: "absolute", bottom: 38, width: "100%", textAlign: "center" }}>
-          <div style={{ fontFamily: FONT_CN, fontSize: 30, fontWeight: 650, color: C.ink }}>
-            纯局域网直连 · 音频绝不出户
+          <div style={{ fontFamily: FONT_CN, fontSize: 36, fontWeight: 700, color: "#FFFFFF" }}>
+            纯局域网直连 · 隐私绝不出户
           </div>
-          <div style={{ marginTop: 10, fontFamily: FONT_CN, fontSize: 19, color: C.ink2, letterSpacing: 1.5 }}>
-            127.0.0.1 本机无线调试握手 · AGPL-3.0 开源可审计
+          <div style={{ marginTop: 10, fontFamily: FONT_CN, fontSize: 23, fontWeight: 500, color: "#CBD5E1" }}>
+            不经过任何远程服务器 · 免费开源
           </div>
         </div>
       </div>

@@ -4,30 +4,31 @@ export const FPS = 60;
 export const BEAT = 30; // frames @120 BPM
 export const BAR = 120;
 
-// Scene boundaries (frames). Every cut lands on a bar line of the soundtrack.
+// Scene boundaries (frames). Every cut lands on a bar line of the 120 BPM soundtrack.
 export const T = {
   intro: [0, 4 * BAR],
   anyPhone: [4 * BAR, 7 * BAR],
   oneApp: [7 * BAR, 12 * BAR],
-  multiRoom: [12 * BAR, 17 * BAR],
-  latency: [17 * BAR, 21 * BAR],
-  lan: [21 * BAR, 24 * BAR],
-  ui: [24 * BAR, 29 * BAR],
-  outro: [29 * BAR, 33 * BAR],
+  multiRoomLatency: [12 * BAR, 19 * BAR],
+  lan: [19 * BAR, 22 * BAR],
+  ui: [22 * BAR, 25 * BAR],
+  search: [25 * BAR, 27 * BAR],
+  outro: [27 * BAR, 31 * BAR],
 } as const;
-export const TOTAL_FRAMES = 33 * BAR;
+export const TOTAL_FRAMES = 31 * BAR;
 
 export const C = {
   bg: "#0B0D12",
   bg2: "#11141B",
   ink: "#F2F3F5",
-  ink2: "#9AA3B2",
-  ink3: "#5B6475",
+  ink2: "#A8B2C2",
+  ink3: "#687387",
   line: "rgba(255,255,255,0.10)",
-  line2: "rgba(255,255,255,0.18)",
+  line2: "rgba(255,255,255,0.20)",
   coral: "#FF5C6C",
   coralSoft: "rgba(255,92,108,0.16)",
   blue: "#4C8DFF",
+  emerald: "#34D399",
   amber: "#FBBF24",
   ring1: "#363C49",
   ring2: "#101218",
@@ -50,4 +51,4 @@ export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Fade a whole scene in/out at its edges. */
 export const sceneFade = (f: number, dur: number, inLen = 14, outLen = 14) =>
-  Math.min(prog(f, 0, inLen, easeInOut), 1 - prog(f, dur - outLen, dur, easeInOut));
+  Math.min(prog(f, 0, inLen, easeInOut), outLen > 0 ? 1 - prog(f, dur - outLen, dur, easeInOut) : 1);
