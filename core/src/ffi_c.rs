@@ -113,6 +113,28 @@ pub extern "C" fn miaocast_set_auth_mode(mode: i32) {
     engine::set_auth_mode(mode);
 }
 
+/// 设置全局音量过大保护策略（默认开启、上限 60%，合法范围 30..=90）。
+#[no_mangle]
+pub extern "C" fn miaocast_set_volume_guard_policy(enabled: bool, safe_limit: i32) {
+    engine::set_volume_guard_policy(enabled, safe_limit);
+}
+
+/// 裁决一次音量变更是否需要二次确认（仅在跨过安全上限线时返回 `require_confirm`）。
+#[no_mangle]
+pub extern "C" fn miaocast_volume_guard_evaluate_json(
+    enabled: bool,
+    safe_limit: i32,
+    current_volume: i32,
+    target_volume: i32,
+) -> *mut c_char {
+    into_c_string(engine::evaluate_volume_change_json(
+        enabled,
+        safe_limit,
+        current_volume,
+        target_volume,
+    ))
+}
+
 #[no_mangle]
 pub extern "C" fn miaocast_engine_create(silent: bool) -> i64 {
     engine::create(silent)
@@ -139,6 +161,32 @@ pub unsafe extern "C" fn miaocast_engine_connect(
         volume_after_play,
         rf,
         sn,
+    ))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn miaocast_engine_connect_ex(
+    handle: i64,
+    ips: *const c_char,
+    delay_ms: i32,
+    premute: i32,
+    volume_after_play: i32,
+    ref_function: *const c_char,
+    source_name: *const c_char,
+    volume_confirmed: bool,
+) -> *mut c_char {
+    let ips = cstr_to_str(ips);
+    let rf = cstr_to_str(ref_function);
+    let sn = cstr_to_str(source_name);
+    into_c_string(engine::connect_with_volume_confirmed(
+        handle,
+        ips,
+        delay_ms,
+        premute,
+        volume_after_play,
+        rf,
+        sn,
+        volume_confirmed,
     ))
 }
 
@@ -173,6 +221,21 @@ pub unsafe extern "C" fn miaocast_engine_set_volume(
     volume: i32,
 ) -> *mut c_char {
     into_c_string(engine::queue_set_volume(handle, cstr_to_str(ip), volume))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn miaocast_engine_set_volume_checked(
+    handle: i64,
+    ip: *const c_char,
+    volume: i32,
+    confirmed: bool,
+) -> *mut c_char {
+    into_c_string(engine::queue_set_volume_checked(
+        handle,
+        cstr_to_str(ip),
+        volume,
+        confirmed,
+    ))
 }
 
 #[no_mangle]
@@ -311,6 +374,17 @@ mod tests {
             ));
             assert!(dec.contains("\"status\":\"update_available\""));
             assert!(dec.contains("\"latest_tag\":\"v0.9.7\""));
+
+            miaocast_set_volume_guard_policy(true, 60);
+            let vg_cross = take_str(miaocast_volume_guard_evaluate_json(true, 60, 40, 85));
+            assert!(vg_cross.contains("\"decision\":\"require_confirm\""));
+            let vg_high = take_str(miaocast_volume_guard_evaluate_json(true, 60, 75, 85));
+            assert!(vg_high.contains("\"decision\":\"allow\""));
+            let vh = miaocast_engine_create(true);
+            let vq = take_str(miaocast_engine_set_volume_checked(vh, ip.as_ptr(), 85, true));
+            assert!(vq.contains("\"volume\":85"));
+            assert!(vq.contains("\"clamped\":false"));
+            miaocast_engine_stop(vh);
         }
     }
 }

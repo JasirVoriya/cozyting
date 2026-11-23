@@ -56,6 +56,23 @@ class PrefsCastSettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_AUTO_DETECT_SOURCE, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_DETECT_SOURCE, value).apply()
 
+    /** 是否开启高音量保护（默认开启：从安全区跨过上限时弹窗二次确认）。 */
+    var volumeGuardEnabled: Boolean
+        get() = prefs.getBoolean(KEY_VOLUME_GUARD_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_VOLUME_GUARD_ENABLED, value).apply()
+
+    /** 安全音量上限百分比（默认 60%，合法范围 30..90）。 */
+    var volumeGuardSafeLimit: Int
+        get() = VolumeSafetyGuard.normalizeSafeLimit(
+            prefs.getInt(KEY_VOLUME_GUARD_SAFE_LIMIT, VolumeSafetyGuard.DEFAULT_SAFE_LIMIT),
+        )
+        set(value) = prefs.edit()
+            .putInt(KEY_VOLUME_GUARD_SAFE_LIMIT, VolumeSafetyGuard.normalizeSafeLimit(value))
+            .apply()
+
+    fun volumeGuardPolicy(): VolumeSafetyGuard.Policy =
+        VolumeSafetyGuard.Policy(enabled = volumeGuardEnabled, safeLimit = volumeGuardSafeLimit)
+
     var showAllDiscovered: Boolean
         get() = prefs.getBoolean(KEY_SHOW_ALL, false)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_ALL, value).apply()
@@ -138,6 +155,8 @@ class PrefsCastSettingsStore(context: Context) {
         private const val KEY_THEME = "theme_mode"
         private const val KEY_KEEP_LOCAL = "keep_local_output"
         private const val KEY_AUTO_DETECT_SOURCE = "auto_detect_audio_source"
+        private const val KEY_VOLUME_GUARD_ENABLED = "volume_guard_enabled"
+        private const val KEY_VOLUME_GUARD_SAFE_LIMIT = "volume_guard_safe_limit"
         private const val KEY_SHOW_ALL = "show_all_discovered"
         private const val KEY_SOURCE_MODE = "source_mode"
         private const val KEY_DELAY_MS = "delay_ms"

@@ -23,6 +23,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import com.miaocast.app.capture.CaptureEngineCapabilities
 import com.miaocast.app.capture.CaptureEngineMode
@@ -42,6 +43,7 @@ import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.ThemeMode
 import com.miaocast.app.ui.UiComponents
 import com.miaocast.app.ui.UiPalette
+import com.miaocast.app.ui.VolumeSafetyGuard
 import com.miaocast.app.update.AppUpdateManager
 import com.miaocast.app.update.UpdateChannel
 import com.miaocast.app.update.UpdateCheckState
@@ -257,6 +259,9 @@ class SettingsActivity : Activity() {
                 setPadding(dp(4), dp(6), dp(4), dp(10))
             },
         )
+
+        buildVolumeGuardSection(castCard)
+        castCard.addView(spacer(10))
 
         val notifGranted = isNotificationListenerEnabled()
         castCard.addView(
@@ -715,6 +720,106 @@ class SettingsActivity : Activity() {
         )
         localProbeBtn?.text = "停止本地过滤验收"
         localProbeStatus?.text = "本地过滤验收已启动"
+    }
+
+    private fun buildVolumeGuardSection(card: LinearLayout) {
+        val enabled = settingsStore.volumeGuardEnabled
+        card.addView(
+            UiComponents.switchRow(
+                context = this,
+                palette = palette,
+                title = "高音量保护",
+                subtitle = "从安全区调高音量跨过上限时弹窗二次确认，防止误触过吵",
+                initialChecked = enabled,
+            ) { checked ->
+                settingsStore.volumeGuardEnabled = checked
+                VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+                renderUi()
+            },
+        )
+        if (!enabled) return
+
+        val initialLimit = VolumeSafetyGuard.snapSafeLimit(settingsStore.volumeGuardSafeLimit)
+        val stepCount = (VolumeSafetyGuard.MAX_SAFE_LIMIT - VolumeSafetyGuard.MIN_SAFE_LIMIT) / VolumeSafetyGuard.STEP
+        val limitBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = palette.rowIdleBg,
+                radiusPx = UiComponents.dpf(this@SettingsActivity, UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                strokeColor = palette.rowIdleBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(8) }
+        }
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val limitValueView = TextView(this).apply {
+            text = "$initialLimit%"
+            textSize = 13.5f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+        }
+        header.addView(
+            TextView(this).apply {
+                text = "安全音量上限"
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            },
+        )
+        header.addView(limitValueView)
+        limitBox.addView(header)
+
+        val hintView = TextView(this).apply {
+            text = "从 ≤ $initialLimit% 调高超过 $initialLimit% 时将弹窗确认，降回安全区后自动重新保护"
+            textSize = 11.5f
+            setTextColor(palette.textSecondary)
+            setPadding(0, dp(4), 0, dp(4))
+        }
+        val limitSeek = UiComponents.styledSeekBar(
+            context = this,
+            activeColor = palette.accent,
+            trackColor = palette.trackIdle,
+            thumbFillColor = Color.WHITE,
+            thumbStrokeColor = palette.accent,
+        ).apply {
+            max = stepCount
+            progress = ((initialLimit - VolumeSafetyGuard.MIN_SAFE_LIMIT) / VolumeSafetyGuard.STEP)
+                .coerceIn(0, stepCount)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(4) }
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                    val v = (VolumeSafetyGuard.MIN_SAFE_LIMIT + p * VolumeSafetyGuard.STEP)
+                        .coerceIn(VolumeSafetyGuard.MIN_SAFE_LIMIT, VolumeSafetyGuard.MAX_SAFE_LIMIT)
+                    limitValueView.text = "$v%"
+                    hintView.text = "从 ≤ $v% 调高超过 $v% 时将弹窗确认，降回安全区后自动重新保护"
+                    if (fromUser) {
+                        settingsStore.volumeGuardSafeLimit = v
+                        VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+                    }
+                }
+                override fun onStartTrackingTouch(s: SeekBar?) {}
+                override fun onStopTrackingTouch(s: SeekBar?) {
+                    val v = (VolumeSafetyGuard.MIN_SAFE_LIMIT + progress * VolumeSafetyGuard.STEP)
+                        .coerceIn(VolumeSafetyGuard.MIN_SAFE_LIMIT, VolumeSafetyGuard.MAX_SAFE_LIMIT)
+                    settingsStore.volumeGuardSafeLimit = v
+                    VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+                }
+            })
+        }
+        limitBox.addView(limitSeek)
+        limitBox.addView(hintView)
+        card.addView(limitBox)
     }
 
     private fun buildCaptureEngineSection(card: LinearLayout) {

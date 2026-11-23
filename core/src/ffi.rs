@@ -126,6 +126,37 @@ mod android {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_com_miaocast_app_NativeBridge_connectWithVolumeConfirm(
+        mut env: JNIEnv,
+        _c: JClass,
+        h: jlong,
+        ips: JString,
+        delay_ms: jint,
+        premute: jint,
+        volume_after_play: jint,
+        ref_function: JString,
+        source_name: JString,
+        volume_confirmed: jboolean,
+    ) -> jstring {
+        let ips = jstr(&mut env, &ips);
+        let rf = jstr(&mut env, &ref_function);
+        let sn = jstr(&mut env, &source_name);
+        out(
+            &mut env,
+            engine::connect_with_volume_confirmed(
+                h,
+                &ips,
+                delay_ms,
+                premute,
+                volume_after_play,
+                &rf,
+                &sn,
+                volume_confirmed != 0,
+            ),
+        )
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_com_miaocast_app_NativeBridge_pushAac(
         env: JNIEnv,
         _c: JClass,
@@ -170,6 +201,52 @@ mod android {
     ) -> jstring {
         let ip = jstr(&mut env, &ip);
         out(&mut env, engine::queue_set_volume(h, &ip, v))
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queueSetVolumeChecked(
+        mut env: JNIEnv,
+        _c: JClass,
+        h: jlong,
+        ip: JString,
+        v: jint,
+        confirmed: jboolean,
+    ) -> jstring {
+        let ip = jstr(&mut env, &ip);
+        out(
+            &mut env,
+            engine::queue_set_volume_checked(h, &ip, v, confirmed != 0),
+        )
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_miaocast_app_NativeBridge_setVolumeGuardPolicy(
+        _e: JNIEnv,
+        _c: JClass,
+        enabled: jboolean,
+        safe_limit: jint,
+    ) {
+        engine::set_volume_guard_policy(enabled != 0, safe_limit);
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_miaocast_app_NativeBridge_evaluateVolumeChangeJson(
+        mut env: JNIEnv,
+        _c: JClass,
+        enabled: jboolean,
+        safe_limit: jint,
+        current_volume: jint,
+        target_volume: jint,
+    ) -> jstring {
+        out(
+            &mut env,
+            engine::evaluate_volume_change_json(
+                enabled != 0,
+                safe_limit,
+                current_volume,
+                target_volume,
+            ),
+        )
     }
 
     #[no_mangle]

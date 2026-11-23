@@ -79,6 +79,7 @@ import com.miaocast.app.ui.ThemeMode
 import com.miaocast.app.ui.UiComponents
 import com.miaocast.app.ui.UiIconCache
 import com.miaocast.app.ui.UiPalette
+import com.miaocast.app.ui.VolumeSafetyGuard
 import com.miaocast.app.update.AppUpdateManager
 import com.miaocast.app.update.UpdateCheckState
 import com.miaocast.app.update.UpdateDialogController
@@ -117,6 +118,7 @@ class MainActivity : Activity() {
     private var latencyDetailsDialog: Dialog? = null
     private var updateDialog: Dialog? = null
     private var wirelessPromptDialog: Dialog? = null
+    private var volumeConfirmDialog: Dialog? = null
     private var settingsUpdateBadge: View? = null
     private var updateBanner: LinearLayout? = null
     private var updateBannerText: TextView? = null
@@ -132,7 +134,7 @@ class MainActivity : Activity() {
     private lateinit var posView: TextView
     private lateinit var durView: TextView
     private lateinit var progressBar: SeekBar
-    private lateinit var volumeBar: SeekBar
+    private lateinit var volumeBar: UiComponents.VolumeGuardSeekBar
     private lateinit var volumePctView: TextView
     private lateinit var mainTargetIcon: ImageView
     private lateinit var mainTargetTitle: TextView
@@ -174,10 +176,11 @@ class MainActivity : Activity() {
         }
     }
     private var masterVolume: Int = 30
+    private var masterVolumeConfirmedHigh: Boolean = false
     private val speakerVolume = linkedMapOf<String, Int>()
     private val latencyIndicators = linkedMapOf<String, LatencyIndicatorViews>()
     private val speakerSubtitles = linkedMapOf<String, TextView>()
-    private val speakerVolumeViews = linkedMapOf<String, Pair<SeekBar, TextView>>()
+    private val speakerVolumeViews = linkedMapOf<String, Pair<UiComponents.VolumeGuardSeekBar, TextView>>()
     private var castRequested: Boolean = false
     private var stopRequested: Boolean = false
     private var wasServiceRunning: Boolean = false
@@ -244,6 +247,7 @@ class MainActivity : Activity() {
         store = PrefsTargetAppStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
         settingsStore = PrefsCastSettingsStore(this)
+        VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
         masterVolume = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
         val cachedDevices = deviceStore.loadDevices()
         routeState = CastRouteSelection.initial(
@@ -298,6 +302,8 @@ class MainActivity : Activity() {
         updateDialog = null
         runCatching { wirelessPromptDialog?.dismiss() }
         wirelessPromptDialog = null
+        runCatching { volumeConfirmDialog?.dismiss() }
+        volumeConfirmDialog = null
         quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
@@ -329,10 +335,12 @@ class MainActivity : Activity() {
             buildUi()
         }
         refreshTargetFromStore()
+        VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
         syncCastStateFromService(forceSyncRoute = true)
         updateLatencyCapsuleUi()
         refreshUpdateUi()
         renderDevices()
+        refreshAllVolumeGuardVisuals()
         nowPlayingTracker?.refresh()
         bindNowPlaying()
         maybeAutoSelectFromNowPlaying()
@@ -466,6 +474,8 @@ class MainActivity : Activity() {
         updateDialog = null
         runCatching { wirelessPromptDialog?.dismiss() }
         wirelessPromptDialog = null
+        runCatching { volumeConfirmDialog?.dismiss() }
+        volumeConfirmDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -950,7 +960,7 @@ class MainActivity : Activity() {
         }
         mainCard.addView(nowPlayingHintBanner)
 
-        // —— 总音量条（带实时百分比，拖动时增量更新音箱行不整表重建） ——
+        // —— 总音量条（带实时百分比与安全上限刻度，拖动时增量更新音箱行不整表重建；跨过安全上限时弹窗二次确认） ——
         val volRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -963,20 +973,25 @@ class MainActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(8) }
             },
         )
+        val masterPolicy = settingsStore.volumeGuardPolicy()
+        val masterWarning = VolumeSafetyGuard.isInHighVolumeZone(masterPolicy, masterVolume)
         volumePctView = TextView(this).apply {
             text = "$masterVolume%"
             textSize = 11.5f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(palette.textSecondary)
+            setTextColor(if (masterWarning) volumeWarningColor(onSelectedRow = false) else palette.textSecondary)
             gravity = Gravity.END
             minWidth = dp(34)
         }
-        volumeBar = UiComponents.styledSeekBar(
+        volumeBar = UiComponents.styledVolumeSeekBar(
             context = this,
             activeColor = palette.accent,
+            warningColor = volumeWarningColor(onSelectedRow = false),
             trackColor = palette.trackIdle,
             thumbFillColor = Color.WHITE,
-            thumbStrokeColor = palette.accent,
+            tickColor = volumeTickColor(onSelectedRow = false),
+            safeLimit = if (masterPolicy.enabled) masterPolicy.normalizedSafeLimit else null,
+            warning = masterWarning,
         ).apply {
             max = 100
             progress = masterVolume
@@ -985,23 +1000,17 @@ class MainActivity : Activity() {
             }
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
-                    masterVolume = p
-                    volumePctView.text = "$p%"
+                    applyMasterVolumeVisual(p)
                     if (fromUser) {
                         routeState.selectedSpeakerIds.forEach { id ->
-                            speakerVolume[id] = p
-                            speakerVolumeViews[id]?.let { (bar, pct) ->
-                                bar.progress = p
-                                pct.text = "$p%"
-                            }
+                            speakerVolumeViews[id]?.first?.progress = p
+                            applySpeakerVolumeVisual(id, p)
                         }
                     }
                 }
                 override fun onStartTrackingTouch(s: SeekBar?) {}
                 override fun onStopTrackingTouch(s: SeekBar?) {
-                    if (CastService.running.get() || castRequested) {
-                        setVolume("", masterVolume)
-                    }
+                    handleMasterVolumeReleased(progress)
                 }
             })
         }
@@ -1962,6 +1971,8 @@ class MainActivity : Activity() {
 
         if (d.isCastSink && selected && d.castable) {
             val initialVol = speakerVolume[d.id] ?: masterVolume
+            val policy = settingsStore.volumeGuardPolicy()
+            val warning = VolumeSafetyGuard.isInHighVolumeZone(policy, initialVol)
             val volLine = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -1971,16 +1982,19 @@ class MainActivity : Activity() {
                 text = "$initialVol%"
                 textSize = 11f
                 setTypeface(null, Typeface.BOLD)
-                setTextColor(subColor)
+                setTextColor(if (warning) volumeWarningColor(onSelectedRow = true) else subColor)
                 gravity = Gravity.END
                 minWidth = dp(32)
             }
-            val vol = UiComponents.styledSeekBar(
+            val vol = UiComponents.styledVolumeSeekBar(
                 context = this,
                 activeColor = palette.accent,
+                warningColor = volumeWarningColor(onSelectedRow = true),
                 trackColor = palette.trackOnSelected,
                 thumbFillColor = Color.WHITE,
-                thumbStrokeColor = palette.accent,
+                tickColor = volumeTickColor(onSelectedRow = true),
+                safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
+                warning = warning,
             ).apply {
                 max = 100
                 progress = initialVol
@@ -1989,16 +2003,14 @@ class MainActivity : Activity() {
                 }
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
-                        pctView.text = "$p%"
-                        if (fromUser) speakerVolume[d.id] = p
+                        applySpeakerVolumeVisual(d.id, p)
                     }
                     override fun onStartTrackingTouch(s: SeekBar?) {
                         draggingSpeakerVolume = true
                     }
                     override fun onStopTrackingTouch(s: SeekBar?) {
                         draggingSpeakerVolume = false
-                        speakerVolume[d.id] = progress
-                        if (CastService.running.get() || castRequested) setVolume(d.id, progress)
+                        handleSpeakerVolumeReleased(d.id, d.name, progress)
                         if (pendingDeviceListRender) {
                             pendingDeviceListRender = false
                             renderDevices()
@@ -2154,6 +2166,7 @@ class MainActivity : Activity() {
             .putExtra(CastService.EXTRA_IPS, ips)
             .putExtra(CastService.EXTRA_DELAY, settingsStore.delayMs)
             .putExtra(CastService.EXTRA_PREMUTE, masterVolume)
+            .putExtra(CastService.EXTRA_VOLUME_CONFIRMED, masterVolumeConfirmedHigh)
             .putExtra(CastService.EXTRA_REF, settingsStore.refFunction)
             .putExtra(CastService.EXTRA_AUTH, AuthModeResolve.coerceMode(settingsStore.authMode))
             .putExtra(
@@ -2922,10 +2935,188 @@ class MainActivity : Activity() {
 
     private fun stopCast() = service(CastService.ACTION_STOP)
 
-    private fun setVolume(ip: String, v: Int) = service(CastService.ACTION_VOLUME) {
+    private fun setVolume(ip: String, v: Int, confirmed: Boolean = false) = service(CastService.ACTION_VOLUME) {
         putExtra(CastService.EXTRA_VOLUME, v)
+        putExtra(CastService.EXTRA_VOLUME_CONFIRMED, confirmed)
         if (ip.isNotEmpty()) putExtra(CastService.EXTRA_IP, ip)
     }
+
+    private fun volumeWarningColor(onSelectedRow: Boolean): Int =
+        if (onSelectedRow) Color.rgb(217, 119, 6) else palette.statusWarning
+
+    private fun volumeTickColor(onSelectedRow: Boolean): Int {
+        val base = volumeWarningColor(onSelectedRow)
+        val alpha = if (onSelectedRow) 196 else if (palette.isDark) 210 else 196
+        return Color.argb(alpha, Color.red(base), Color.green(base), Color.blue(base))
+    }
+
+    private fun applyMasterVolumeVisual(value: Int) {
+        if (!::volumeBar.isInitialized || !::volumePctView.isInitialized) return
+        val policy = settingsStore.volumeGuardPolicy()
+        val clamped = value.coerceIn(0, 100)
+        val warning = VolumeSafetyGuard.isInHighVolumeZone(policy, clamped)
+        volumeBar.updateGuardVisual(
+            safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
+            warning = warning,
+        )
+        volumePctView.text = "$clamped%"
+        volumePctView.setTextColor(
+            if (warning) volumeWarningColor(onSelectedRow = false) else palette.textSecondary,
+        )
+    }
+
+    private fun applySpeakerVolumeVisual(deviceId: String, value: Int) {
+        val views = speakerVolumeViews[deviceId] ?: return
+        val policy = settingsStore.volumeGuardPolicy()
+        val clamped = value.coerceIn(0, 100)
+        val warning = VolumeSafetyGuard.isInHighVolumeZone(policy, clamped)
+        views.first.updateGuardVisual(
+            safeLimit = if (policy.enabled) policy.normalizedSafeLimit else null,
+            warning = warning,
+        )
+        views.second.text = "$clamped%"
+        views.second.setTextColor(
+            if (warning) volumeWarningColor(onSelectedRow = true) else palette.onSelectedSecondary,
+        )
+    }
+
+    private fun refreshAllVolumeGuardVisuals() {
+        applyMasterVolumeVisual(masterVolume)
+        speakerVolumeViews.keys.forEach { id ->
+            val v = speakerVolume[id] ?: masterVolume
+            applySpeakerVolumeVisual(id, v)
+        }
+    }
+
+    private fun revertMasterVolumeVisuals() {
+        if (::volumeBar.isInitialized) {
+            volumeBar.progress = masterVolume
+        }
+        applyMasterVolumeVisual(masterVolume)
+        routeState.selectedSpeakerIds.forEach { id ->
+            val prev = speakerVolume[id] ?: masterVolume
+            speakerVolumeViews[id]?.first?.progress = prev
+            applySpeakerVolumeVisual(id, prev)
+        }
+    }
+
+    private fun commitMasterVolume(target: Int, confirmed: Boolean) {
+        val clamped = target.coerceIn(0, 100)
+        val policy = settingsStore.volumeGuardPolicy()
+        masterVolume = clamped
+        masterVolumeConfirmedHigh = when {
+            !VolumeSafetyGuard.isInHighVolumeZone(policy, clamped) -> false
+            confirmed -> true
+            else -> masterVolumeConfirmedHigh
+        }
+        if (::volumeBar.isInitialized) {
+            volumeBar.progress = clamped
+        }
+        applyMasterVolumeVisual(clamped)
+        routeState.selectedSpeakerIds.forEach { id ->
+            speakerVolume[id] = clamped
+            speakerVolumeViews[id]?.first?.progress = clamped
+            applySpeakerVolumeVisual(id, clamped)
+        }
+        if (CastService.running.get() || castRequested) {
+            setVolume("", clamped, confirmed = confirmed)
+        }
+    }
+
+    private fun revertSpeakerVolumeVisual(deviceId: String) {
+        val prev = speakerVolume[deviceId] ?: masterVolume
+        speakerVolumeViews[deviceId]?.first?.progress = prev
+        applySpeakerVolumeVisual(deviceId, prev)
+    }
+
+    private fun commitSpeakerVolume(deviceId: String, target: Int, confirmed: Boolean) {
+        val clamped = target.coerceIn(0, 100)
+        speakerVolume[deviceId] = clamped
+        speakerVolumeViews[deviceId]?.first?.progress = clamped
+        applySpeakerVolumeVisual(deviceId, clamped)
+        if (CastService.running.get() || castRequested) {
+            setVolume(deviceId, clamped, confirmed = confirmed)
+        }
+    }
+
+    private fun handleMasterVolumeReleased(target: Int) {
+        val policy = settingsStore.volumeGuardPolicy()
+        val selectedCurrents = routeState.selectedSpeakerIds.map { id -> speakerVolume[id] ?: masterVolume }
+        when (val decision = VolumeSafetyGuard.evaluateGroup(policy, masterVolume, selectedCurrents, target)) {
+            is VolumeSafetyGuard.Decision.Allow -> commitMasterVolume(decision.volume, confirmed = false)
+            is VolumeSafetyGuard.Decision.RequireConfirm -> {
+                revertMasterVolumeVisuals()
+                showVolumeConfirmDialog(
+                    speakerName = null,
+                    currentVolume = decision.currentVolume,
+                    targetVolume = decision.targetVolume,
+                    safeLimit = decision.safeLimit,
+                ) {
+                    commitMasterVolume(decision.targetVolume, confirmed = true)
+                }
+            }
+        }
+    }
+
+    private fun handleSpeakerVolumeReleased(deviceId: String, deviceName: String, target: Int) {
+        val policy = settingsStore.volumeGuardPolicy()
+        val current = speakerVolume[deviceId] ?: masterVolume
+        when (val decision = VolumeSafetyGuard.evaluateSingle(policy, current, target)) {
+            is VolumeSafetyGuard.Decision.Allow -> commitSpeakerVolume(deviceId, decision.volume, confirmed = false)
+            is VolumeSafetyGuard.Decision.RequireConfirm -> {
+                revertSpeakerVolumeVisual(deviceId)
+                showVolumeConfirmDialog(
+                    speakerName = deviceName,
+                    currentVolume = decision.currentVolume,
+                    targetVolume = decision.targetVolume,
+                    safeLimit = decision.safeLimit,
+                ) {
+                    commitSpeakerVolume(deviceId, decision.targetVolume, confirmed = true)
+                }
+            }
+        }
+    }
+
+    private fun showVolumeConfirmDialog(
+        speakerName: String?,
+        currentVolume: Int,
+        targetVolume: Int,
+        safeLimit: Int,
+        onConfirm: () -> Unit,
+    ) {
+        if (isFinishing || isDestroyed) return
+        runCatching { volumeConfirmDialog?.dismiss() }
+        val msg = if (speakerName.isNullOrBlank()) {
+            "确定要将总音量从 $currentVolume% 调至 $targetVolume% 吗？"
+        } else {
+            "确定要将「$speakerName」的音量从 $currentVolume% 调至 $targetVolume% 吗？"
+        }
+        volumeConfirmDialog = UiComponents.showStyleBDialog(
+            activity = this,
+            palette = palette,
+            title = "音量超过安全上限（$safeLimit%）",
+            message = msg,
+            primaryLabel = "保持原音量（$currentVolume%）",
+            onPrimary = {},
+            secondaryLabel = "确认调至 $targetVolume%",
+            onSecondary = onConfirm,
+            onDismissed = { volumeConfirmDialog = null },
+        )
+    }
+
+    internal fun triggerMasterVolumeChangeForTest(target: Int): Dialog? {
+        handleMasterVolumeReleased(target)
+        return volumeConfirmDialog?.takeIf { it.isShowing }
+    }
+
+    internal fun triggerSpeakerVolumeChangeForTest(deviceId: String, deviceName: String, target: Int): Dialog? {
+        handleSpeakerVolumeReleased(deviceId, deviceName, target)
+        return volumeConfirmDialog?.takeIf { it.isShowing }
+    }
+
+    internal fun currentMasterVolumeForTest(): Int = masterVolume
+
+    internal fun currentSpeakerVolumeForTest(deviceId: String): Int? = speakerVolume[deviceId]
 
     private fun updateLatencyAndSubtitleIndicators(stats: JSONObject?) {
         val failed = CastService.lastFailMessage.isNotBlank()
