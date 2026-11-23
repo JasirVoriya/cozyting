@@ -1,5 +1,6 @@
 node_modules
 out/
+stills/
 public/music.wav
 public/ui/
 public/logo.svg

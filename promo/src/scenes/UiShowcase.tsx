@@ -1,16 +1,14 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolateColors } from "remotion";
-import { C, FONT_CN, prog, easeInOut, easeOut, sceneFade, lerp } from "../theme";
+import { C, fontForLocale, uiImg, prog, easeInOut, easeOut, sceneFade, lerp, type PromoLocale } from "../theme";
 import { Eyebrow, Reveal, StagePhone, TapRipple, UiSlice } from "../components";
+import { getCopy } from "../i18n";
 
-/**
- * Scene 06 (6s = 360f) — Clean Dual-Theme Showcase (Update-log aggregation REMOVED!)
- *   Focuses purely on user delight: Album-mood UI + One-tap Dark / Light / System theme switch.
- */
-export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
+export const UiShowcase: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).uiShowcase;
+  const fontMain = fontForLocale(locale);
 
-  // At f=162, finger taps "浅色" on the ENLARGED real floating Theme Switcher card -> radial wipe to Light Theme!
   const theme = prog(f, 168, 240, easeInOut);
 
   const bg = interpolateColors(theme, [0, 1], [C.bg, "#E8ECF2"]);
@@ -40,7 +38,7 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
           opacity: e,
         }}
       >
-        <StagePhone src={`ui/${dark}`} src2={`ui/${light}`} wipe2={theme} w={348} />
+        <StagePhone src={uiImg(locale, dark)} src2={uiImg(locale, light)} wipe2={theme} w={348} />
       </div>
     );
   };
@@ -58,13 +56,20 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
       }}
     >
       <Eyebrow text={eyebrow} start={a} out={b} />
-      <Reveal text={text} start={a + 6} out={b} size={52} weight={700} stagger={1.8} color={ink} />
+      <Reveal
+        text={text}
+        start={a + 6}
+        out={b}
+        size={copy.headlineSize}
+        weight={700}
+        font={fontMain}
+        stagger={locale === "en" ? 1.0 : 1.8}
+        color={ink}
+      />
     </div>
   );
 
-  // Enlarged floating real "主题模式 (跟随系统 / 浅色 / 深色)" card
   const themeCardIn = prog(f, 118, 152, easeOut);
-  const labels = ["常用音源 · 自动切换", "多音箱同步 · 独立音量", "四档延迟 · 播放中热切"];
 
   return (
     <AbsoluteFill style={{ background: bg, opacity: sceneFade(f, dur, 8, 18), overflow: "hidden" }}>
@@ -81,7 +86,7 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
         </AbsoluteFill>
       </AbsoluteFill>
 
-      {/* Enlarged Real Floating Theme Switcher Slice (clean segmented control crop, zero clipped text!) */}
+      {/* Enlarged Real Floating Theme Switcher Slice */}
       {themeCardIn > 0.001 && (
         <div
           style={{
@@ -94,8 +99,8 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
           }}
         >
           <UiSlice
-            src="ui/05-dark.png"
-            src2="ui/05-light.png"
+            src={uiImg(locale, "05-dark.png")}
+            src2={uiImg(locale, "05-light.png")}
             mix={theme}
             rect={[46, 224, 586, 68]}
             radius={22}
@@ -108,13 +113,12 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
         </div>
       )}
 
-      {/* Bottom fade so phones sink smoothly */}
       <AbsoluteFill style={{ background: `linear-gradient(180deg, rgba(0,0,0,0) 74%, ${bg} 98%)` }} />
 
-      {cap("专辑氛围主界面，信息克制一目了然。", 4, 152, "Clean Modern UI")}
-      {cap("深色 · 浅色 · 跟随系统，一键丝滑切换", 168, 355, "Adaptive Dual Themes")}
+      {cap(copy.headline1, 4, 152, copy.eyebrow1)}
+      {cap(copy.headline2, 168, 355, copy.eyebrow2)}
 
-      {/* 3 larger floating screen badges at the bottom */}
+      {/* 3 floating screen badges at the bottom */}
       <div
         style={{
           position: "absolute",
@@ -122,26 +126,27 @@ export const UiShowcase: React.FC<{ dur: number }> = ({ dur }) => {
           width: "100%",
           display: "flex",
           justifyContent: "center",
-          gap: 145,
+          gap: 110,
           opacity: prog(f, 45, 85),
         }}
       >
-        {labels.map((lb, idx) => (
+        {copy.badges.map((lb, idx) => (
           <div
             key={idx}
             style={{
-              padding: "12px 28px",
+              padding: "12px 26px",
               borderRadius: 999,
               background: pillBg,
               border: `1.5px solid ${pillBorder}`,
               boxShadow: "0 14px 36px rgba(0,0,0,0.22)",
-              fontFamily: FONT_CN,
-              fontSize: 24,
+              fontFamily: fontMain,
+              fontSize: 22,
               fontWeight: 600,
-              letterSpacing: 1,
+              letterSpacing: locale === "en" ? 0.2 : 1,
               color: ink2,
-              minWidth: 295,
+              minWidth: 310,
               textAlign: "center",
+              whiteSpace: "nowrap",
             }}
           >
             {lb}

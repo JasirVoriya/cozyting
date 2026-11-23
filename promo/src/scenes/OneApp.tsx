@@ -1,65 +1,27 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, FONT_EN, prog, easeInOut, easeOut, sceneFade, lerp } from "../theme";
+import { C, FONT_EN, fontForLocale, uiImg, prog, easeInOut, easeOut, sceneFade, lerp, type PromoLocale } from "../theme";
 import { Eyebrow, Reveal, Ripple, Speaker, StagePhone, UiSlice } from "../components";
+import { getCopy } from "../i18n";
 
-/** Real music apps cycling automatically in Act 1: 网易云音乐 -> QQ 音乐 -> 汽水音乐 */
-const MUSIC_APPS = [
-  {
-    id: "netease",
-    name: "网易云音乐",
-    sub: "自动识别：允许",
-    track: "夜航星 (Night Voyager)",
-    color: "#F43F5E",
-    iconBg: "linear-gradient(135deg, #E11D48, #FB7185)",
-    badgeGlyph: "☁",
-    cardY: 342,
-  },
-  {
-    id: "qqmusic",
-    name: "QQ 音乐",
-    sub: "自动识别：允许",
-    track: "晴天 · 臻品母带",
-    color: "#22C55E",
-    iconBg: "linear-gradient(135deg, #16A34A, #FACC15)",
-    badgeGlyph: "♪",
-    cardY: 540,
-  },
-  {
-    id: "soda",
-    name: "汽水音乐",
-    sub: "自动识别：允许",
-    track: "晚风告白 · 每日推荐",
-    color: "#22D3EE",
-    iconBg: "linear-gradient(135deg, #06B6D4, #84CC16)",
-    badgeGlyph: "♫",
-    cardY: 738,
-  },
-] as const;
-
-/**
- * Scene 03 (10s = 600f) — Two Concrete, User-Intuitive Acts:
- *   Act 1 (0–300f):   Auto-Detect & Auto-Switch across 3 Real Music Apps (网易云音乐 -> QQ 音乐 -> 汽水音乐)
- *   Act 2 (300–600f): Side-by-Side Real-Life Split ("📱 手机内播放" vs "🔊 客厅音箱播放")
- */
-export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
+export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).oneApp;
+  const fontMain = fontForLocale(locale);
+  const apps = copy.apps;
 
-  // Transition between Act 1 (3 Real Music Apps Auto-Switch) and Act 2 (Phone Short-Video vs Speaker Music)
   const act2 = prog(f, 295, 332, easeInOut);
   const act1Op = 1 - act2;
 
-  // Act 1 timings: 0..100 NetEase -> 100..200 QQ Music -> 200..300 Soda Music
   const enter1 = prog(f, 6, 46, easeOut);
-  const sw1 = prog(f, 98, 130, easeInOut); // 0 -> 1 (NetEase -> QQ Music)
-  const sw2 = prog(f, 196, 228, easeInOut); // 0 -> 1 (QQ Music -> Soda Music)
+  const sw1 = prog(f, 98, 130, easeInOut);
+  const sw2 = prog(f, 196, 228, easeInOut);
 
   const activeIdx = sw2 > 0.5 ? 2 : sw1 > 0.5 ? 1 : 0;
-  const activeApp = MUSIC_APPS[activeIdx];
-  // Smooth continuous origin Y gliding from card 0 -> card 1 -> card 2
+  const activeApp = apps[activeIdx];
   const streamStartY = lerp(
-    lerp(MUSIC_APPS[0].cardY + 74, MUSIC_APPS[1].cardY + 74, sw1),
-    MUSIC_APPS[2].cardY + 74,
+    lerp(apps[0].cardY + 74, apps[1].cardY + 74, sw1),
+    apps[2].cardY + 74,
     sw2
   );
   const switchPulse =
@@ -69,7 +31,6 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
       ? prog(f, 198, 224, easeOut) * (1 - prog(f, 265, 290, easeInOut))
       : 0;
 
-  // Act 2 timings (f >= 300)
   const f2 = Math.max(0, f - 305);
   const act2Enter = prog(f, 308, 346, easeOut);
   const swipeProg = prog(f2, 85, 125, easeInOut);
@@ -82,7 +43,8 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
     <AbsoluteFill style={{ background: C.bg, opacity: sceneFade(f, dur, 10, 16), overflow: "hidden" }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 26% 56%, rgba(56,189,248,0.16) 0%, rgba(56,189,248,0) 42%), radial-gradient(circle at 78% 54%, rgba(255,92,108,0.18) 0%, rgba(255,92,108,0) 42%)`,
+          background:
+            "radial-gradient(circle at 26% 56%, rgba(56,189,248,0.16) 0%, rgba(56,189,248,0) 42%), radial-gradient(circle at 78% 54%, rgba(255,92,108,0.18) 0%, rgba(255,92,108,0) 42%)",
         }}
       />
 
@@ -91,18 +53,26 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
         <AbsoluteFill style={{ opacity: act1Op, transform: `scale(${lerp(1, 0.96, act2)})` }}>
           {/* Header */}
           <div style={{ position: "absolute", left: 100, top: 60, zIndex: 20 }}>
-            <Eyebrow text="Smart Source Auto-Follow" start={4} />
+            <Eyebrow text={copy.act1Eyebrow} start={4} />
             <div style={{ marginTop: 14 }}>
-              <Reveal text="换个音乐 App 听歌，自动识别无缝切换。" start={10} size={58} weight={700} stagger={1.6} />
+              <Reveal
+                text={copy.act1Headline}
+                start={10}
+                size={copy.act1HeadlineSize}
+                weight={700}
+                font={fontMain}
+                stagger={locale === "en" ? 0.9 : 1.6}
+              />
             </div>
             <div style={{ marginTop: 10 }}>
               <Reveal
-                text="网易云、QQ 音乐、汽水音乐开启「自动识别」：切到哪个播，音箱就自动跟过去。"
+                text={copy.act1Subtitle}
                 start={32}
-                size={27}
+                size={copy.act1SubtitleSize}
                 weight={450}
+                font={fontMain}
                 color="#CBD5E1"
-                stagger={0.5}
+                stagger={0.4}
               />
             </div>
           </div>
@@ -110,13 +80,13 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
           {/* Left Background Context: Dimmed Real 03-dark Phone */}
           <div style={{ position: "absolute", left: 95, top: 235, perspective: 1800, opacity: enter1 }}>
             <div style={{ transform: "rotateY(8deg) rotateX(2deg)", transformStyle: "preserve-3d" }}>
-              <StagePhone src="ui/03-dark.png" w={390} dim={0.82} />
+              <StagePhone src={uiImg(locale, "03-dark.png")} w={390} dim={0.82} />
             </div>
           </div>
 
-          {/* Left Foreground: 3 Crystal-Clear Real Music App Cards (网易云音乐 / QQ 音乐 / 汽水音乐) */}
+          {/* Left Foreground: 3 Crystal-Clear Real Music App Cards */}
           <div style={{ position: "absolute", left: 175, top: 342, width: 530, zIndex: 20 }}>
-            {MUSIC_APPS.map((app, idx) => {
+            {apps.map((app, idx) => {
               const isActive = idx === activeIdx;
               const lift = isActive ? 1 : 0;
               return (
@@ -143,8 +113,8 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                   }}
                 >
                   {/* Top Row: App Icon + Name + Active Pill */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
                       <div
                         style={{
                           width: 56,
@@ -158,27 +128,30 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                           fontWeight: 800,
                           color: "#FFFFFF",
                           boxShadow: `0 8px 20px ${app.color}44`,
+                          flexShrink: 0,
                         }}
                       >
                         {app.badgeGlyph}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div
                           style={{
-                            fontFamily: FONT_CN,
-                            fontSize: 30,
+                            fontFamily: fontMain,
+                            fontSize: 28,
                             fontWeight: 800,
                             color: isActive ? "#0F172A" : "#FFFFFF",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {app.name}
                         </div>
                         <div
                           style={{
-                            fontFamily: FONT_CN,
-                            fontSize: 18,
+                            fontFamily: fontMain,
+                            fontSize: 17,
                             fontWeight: 500,
                             color: isActive ? "#475569" : "#94A3B8",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {app.track}
@@ -188,21 +161,22 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
 
                     <div
                       style={{
-                        padding: "7px 16px",
+                        padding: "7px 14px",
                         borderRadius: 999,
                         background: isActive ? app.color : "rgba(255,255,255,0.08)",
-                        fontFamily: FONT_CN,
-                        fontSize: 18,
+                        fontFamily: fontMain,
+                        fontSize: 17,
                         fontWeight: 700,
                         color: isActive ? "#FFFFFF" : "#94A3B8",
                         whiteSpace: "nowrap",
+                        flexShrink: 0,
                       }}
                     >
-                      {isActive ? (idx === 0 ? "♫ 正在投送" : "⚡ 已自动切换") : "待命"}
+                      {isActive ? (idx === 0 ? copy.statusCasting : copy.statusSwitched) : copy.statusStandby}
                     </div>
                   </div>
 
-                  {/* Bottom Row: Real-style Blue Toggle ("自动识别：允许") */}
+                  {/* Bottom Row: Real-style Blue Toggle */}
                   <div
                     style={{
                       display: "flex",
@@ -236,7 +210,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                       </div>
                       <span
                         style={{
-                          fontFamily: FONT_CN,
+                          fontFamily: fontMain,
                           fontSize: 19,
                           fontWeight: 700,
                           color: isActive ? "#2563EB" : "#60A5FA",
@@ -268,7 +242,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
             })}
           </div>
 
-          {/* Center Curved Stream Gliding Dynamically from Card 0 -> Card 1 -> Card 2 to the Speaker */}
+          {/* Center Curved Stream Gliding Dynamically */}
           <svg width="1920" height="1080" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
             {(() => {
               const endY = 585;
@@ -294,7 +268,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
             <Ripple cx={1540} cy={510} t={(f - 213) / 50} maxR={260} color="#22D3EE" width={4} />
           </svg>
 
-          {/* Center Clean Auto-Switch Callout Pill (Positioned cleanly above the curve) */}
+          {/* Center Clean Auto-Switch Callout Pill */}
           <div
             style={{
               position: "absolute",
@@ -308,42 +282,40 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
           >
             <div
               style={{
-                padding: "16px 32px",
+                padding: "16px 30px",
                 borderRadius: 999,
                 background: `${activeApp.color}28`,
                 border: `2px solid ${activeApp.color}`,
                 boxShadow: `0 18px 46px rgba(0,0,0,0.48), 0 0 36px ${activeApp.color}38`,
-                fontFamily: FONT_CN,
-                fontSize: 28,
+                fontFamily: fontMain,
+                fontSize: 26,
                 fontWeight: 700,
                 color: "#FFFFFF",
                 whiteSpace: "nowrap",
                 transform: `scale(${1 + switchPulse * 0.08})`,
               }}
             >
-              {activeIdx === 0
-                ? "🎵 自动跟随：网易云音乐"
-                : `⚡ 自动识别 · 切至 ${activeApp.name}`}
+              {activeIdx === 0 ? copy.pillAutoFollow(activeApp.name) : copy.pillSwitchedTo(activeApp.name)}
             </div>
           </div>
           <div
             style={{
               position: "absolute",
-              left: 755,
+              left: 740,
               top: 855,
-              width: 480,
+              width: 510,
               textAlign: "center",
-              fontFamily: FONT_CN,
-              fontSize: 25,
+              fontFamily: fontMain,
+              fontSize: 23,
               fontWeight: 500,
               color: "#CBD5E1",
               opacity: enter1,
             }}
           >
-            切歌换 App 全自动，免回妙投重选
+            {copy.act1Footnote}
           </div>
 
-          {/* Right: Prominent Speaker Card Displaying Live Switched Music App */}
+          {/* Right: Prominent Speaker Card */}
           <div
             style={{
               position: "absolute",
@@ -374,44 +346,53 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                 borderRadius: 999,
                 background: `${activeApp.color}28`,
                 border: `2px solid ${activeApp.color}`,
-                fontFamily: FONT_CN,
-                fontSize: 28,
+                fontFamily: fontMain,
+                fontSize: 27,
                 fontWeight: 800,
                 color: "#FFFFFF",
                 whiteSpace: "nowrap",
               }}
             >
-              ♫ 正在投送：{activeApp.name}
+              {copy.speakerCastingPrefix}
+              {activeApp.name}
             </div>
-            <div style={{ fontFamily: FONT_CN, fontSize: 25, color: "#CBD5E1", fontWeight: 500 }}>
+            <div style={{ fontFamily: fontMain, fontSize: 24, color: "#CBD5E1", fontWeight: 500 }}>
               {activeApp.track}
             </div>
           </div>
         </AbsoluteFill>
       )}
 
-      {/* ==================== ACT 2: REAL-LIFE SPLIT — 📱 手机内播放 vs 🔊 客厅音箱播放 ==================== */}
+      {/* ==================== ACT 2: REAL-LIFE SPLIT ==================== */}
       {act2 > 0.001 && (
         <AbsoluteFill style={{ opacity: act2, transform: `scale(${lerp(1.04, 1, act2)})` }}>
           {/* Header */}
           <div style={{ position: "absolute", left: 100, top: 60, zIndex: 20 }}>
-            <Eyebrow text="Dual-Channel Isolation · Zero Interruption" start={302} />
+            <Eyebrow text={copy.act2Eyebrow} start={302} />
             <div style={{ marginTop: 14 }}>
-              <Reveal text="手机刷视频、回语音，音箱照常放歌。" start={308} size={62} weight={700} stagger={1.6} />
+              <Reveal
+                text={copy.act2Headline}
+                start={308}
+                size={copy.act2HeadlineSize}
+                weight={700}
+                font={fontMain}
+                stagger={locale === "en" ? 0.9 : 1.6}
+              />
             </div>
             <div style={{ marginTop: 10 }}>
               <Reveal
-                text="只投你选的音乐 App，短视频与微信语音全部留在手机本地，不断歌、不串音。"
+                text={copy.act2Subtitle}
                 start={332}
-                size={27}
+                size={copy.act2SubtitleSize}
                 weight={450}
+                font={fontMain}
                 color="#CBD5E1"
-                stagger={0.5}
+                stagger={0.4}
               />
             </div>
           </div>
 
-          {/* LEFT PANEL: Symmetric Top Header ("📱 手机内播放" | "● 声音仅留本机") + Short-Video Phone */}
+          {/* LEFT PANEL: Phone Playback */}
           <div
             style={{
               position: "absolute",
@@ -426,25 +407,25 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              padding: "32px 42px 36px 42px",
+              padding: "32px 40px 36px 40px",
               opacity: act2Enter,
             }}
           >
-            {/* Symmetric Panel Header Matching Right Box! */}
-            <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
               <div
                 style={{
-                  padding: "8px 22px",
+                  padding: "8px 20px",
                   borderRadius: 999,
                   background: "rgba(96,165,250,0.22)",
                   border: "1.5px solid rgba(96,165,250,0.72)",
-                  fontFamily: FONT_CN,
-                  fontSize: 23,
+                  fontFamily: fontMain,
+                  fontSize: 22,
                   fontWeight: 700,
                   color: "#93C5FD",
+                  whiteSpace: "nowrap",
                 }}
               >
-                📱 手机内播放
+                {copy.phoneHeaderLeft}
               </div>
               <div
                 style={{
@@ -452,18 +433,18 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                   borderRadius: 999,
                   background: "rgba(56,189,248,0.16)",
                   border: "1.5px solid rgba(56,189,248,0.55)",
-                  fontFamily: FONT_CN,
-                  fontSize: 20,
+                  fontFamily: fontMain,
+                  fontSize: 19,
                   fontWeight: 700,
                   color: "#7DD3FC",
+                  whiteSpace: "nowrap",
                 }}
               >
-                ● 声音仅留本机
+                {copy.phoneHeaderRight}
               </div>
             </div>
 
-            {/* Body: Phone running Short Videos + Clean Right Copy */}
-            <div style={{ display: "flex", alignItems: "center", gap: 36, flex: 1, marginTop: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 34, flex: 1, marginTop: 22 }}>
               <div
                 style={{
                   width: 306,
@@ -494,22 +475,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                       height: 1168,
                     }}
                   >
-                    {[
-                      {
-                        bg: "linear-gradient(160deg, #1E3A5F 0%, #2D1B4E 55%, #111827 100%)",
-                        tag: "短视频推荐",
-                        title: "@旅行日记 · 周末露营",
-                        likes: "12.8w",
-                        emoji: "🏕️",
-                      },
-                      {
-                        bg: "linear-gradient(160deg, #4C1D3D 0%, #1F2937 55%, #0F172A 100%)",
-                        tag: "美食探店",
-                        title: "@街角小馆 · 深夜拉面",
-                        likes: "8.4w",
-                        emoji: "🍜",
-                      },
-                    ].map((v, idx) => (
+                    {copy.shortVideos.map((v, idx) => (
                       <div
                         key={idx}
                         style={{
@@ -523,33 +489,35 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                           padding: 20,
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
                           <div
                             style={{
-                              padding: "4px 12px",
+                              padding: "4px 10px",
                               borderRadius: 999,
                               background: "rgba(0,0,0,0.45)",
-                              fontFamily: FONT_CN,
-                              fontSize: 15,
+                              fontFamily: fontMain,
+                              fontSize: 14,
                               fontWeight: 600,
                               color: "#FFFFFF",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {v.tag}
                           </div>
                           <div
                             style={{
-                              padding: "4px 11px",
+                              padding: "4px 10px",
                               borderRadius: 999,
                               background: "rgba(96,165,250,0.28)",
                               border: "1px solid rgba(96,165,250,0.7)",
-                              fontFamily: FONT_CN,
-                              fontSize: 14,
+                              fontFamily: fontMain,
+                              fontSize: 13,
                               fontWeight: 700,
                               color: "#93C5FD",
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            🔊 手机发声
+                            {copy.phoneSpeakerChip}
                           </div>
                         </div>
 
@@ -571,15 +539,16 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                           </div>
                           <div
                             style={{
-                              padding: "6px 15px",
+                              padding: "6px 14px",
                               borderRadius: 999,
                               background: "rgba(0,0,0,0.45)",
-                              fontFamily: FONT_CN,
-                              fontSize: 15,
+                              fontFamily: fontMain,
+                              fontSize: 14,
                               color: "#E2E8F0",
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            ▶ 短视频外放中
+                            {copy.shortVideoPlaying}
                           </div>
                         </div>
 
@@ -608,12 +577,12 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                           </div>
                           <div style={{ textAlign: "center" }}>
                             <div style={{ fontSize: 24 }}>↗</div>
-                            <div>分享</div>
+                            <div style={{ fontFamily: fontMain }}>{copy.shareLabel}</div>
                           </div>
                         </div>
 
                         <div style={{ paddingRight: 42 }}>
-                          <div style={{ fontFamily: FONT_CN, fontSize: 18, fontWeight: 700, color: "#FFFFFF", whiteSpace: "nowrap" }}>
+                          <div style={{ fontFamily: fontMain, fontSize: 16, fontWeight: 700, color: "#FFFFFF", whiteSpace: "nowrap" }}>
                             {v.title}
                           </div>
                           <div
@@ -632,7 +601,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                     ))}
                   </div>
 
-                  {/* Popping WeChat Voice Notification Banner */}
+                  {/* Popping Voice Notification Banner */}
                   <div
                     style={{
                       position: "absolute",
@@ -661,32 +630,41 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: 17,
+                        flexShrink: 0,
                       }}
                     >
                       💬
                     </div>
                     <div>
-                      <div style={{ fontFamily: FONT_CN, fontSize: 15, fontWeight: 700, color: "#FFFFFF" }}>
-                        微信语音 6&quot;
+                      <div style={{ fontFamily: fontMain, fontSize: 14, fontWeight: 700, color: "#FFFFFF" }}>
+                        {copy.voiceBannerTitle}
                       </div>
-                      <div style={{ fontFamily: FONT_CN, fontSize: 13, color: "#86EFAC" }}>仅手机本机收听</div>
+                      <div style={{ fontFamily: fontMain, fontSize: 12, color: "#86EFAC" }}>{copy.voiceBannerSub}</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-                <div style={{ fontFamily: FONT_CN, fontSize: 40, fontWeight: 700, color: "#FFFFFF", lineHeight: 1.28 }}>
-                  照常刷短视频
+                <div
+                  style={{
+                    fontFamily: fontMain,
+                    fontSize: locale === "zh" ? 40 : 34,
+                    fontWeight: 700,
+                    color: "#FFFFFF",
+                    lineHeight: 1.28,
+                  }}
+                >
+                  {copy.phoneCopyTitleLines[0]}
                   <br />
-                  听微信语音
+                  {copy.phoneCopyTitleLines[1]}
                 </div>
-                <div style={{ fontFamily: FONT_CN, fontSize: 25, color: "#CBD5E1", lineHeight: 1.58 }}>
-                  声音只留在手机本地，
+                <div style={{ fontFamily: fontMain, fontSize: locale === "zh" ? 25 : 23, color: "#CBD5E1", lineHeight: 1.58 }}>
+                  {copy.phoneCopyBodyLines[0]}
                   <br />
-                  绝不外放到客厅音箱，
+                  {copy.phoneCopyBodyLines[1]}
                   <br />
-                  不尴尬、不社死。
+                  {copy.phoneCopyBodyLines[2]}
                 </div>
               </div>
             </div>
@@ -707,7 +685,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
           >
             <div
               style={{
-                padding: "16px 26px",
+                padding: "16px 24px",
                 borderRadius: 24,
                 background: "rgba(11,13,18,0.96)",
                 border: "2px solid rgba(255,92,108,0.75)",
@@ -715,14 +693,16 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                 textAlign: "center",
               }}
             >
-              <div style={{ fontFamily: FONT_CN, fontSize: 28, fontWeight: 800, color: C.coral }}>互不打扰</div>
-              <div style={{ marginTop: 4, fontFamily: FONT_CN, fontSize: 18, fontWeight: 600, color: "#E2E8F0" }}>
-                双路独立发声
+              <div style={{ fontFamily: fontMain, fontSize: 26, fontWeight: 800, color: C.coral, whiteSpace: "nowrap" }}>
+                {copy.dividerTitle}
+              </div>
+              <div style={{ marginTop: 4, fontFamily: fontMain, fontSize: 17, fontWeight: 600, color: "#E2E8F0", whiteSpace: "nowrap" }}>
+                {copy.dividerSub}
               </div>
             </div>
           </div>
 
-          {/* RIGHT PANEL: Symmetric Top Header ("🔊 客厅音箱播放" | "● 音乐持续不断") */}
+          {/* RIGHT PANEL: Speaker Playback */}
           <div
             style={{
               position: "absolute",
@@ -738,24 +718,25 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "space-between",
-              padding: "32px 42px 36px 42px",
+              padding: "32px 40px 36px 40px",
               opacity: act2Enter,
             }}
           >
-            <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
               <div
                 style={{
-                  padding: "8px 22px",
+                  padding: "8px 20px",
                   borderRadius: 999,
                   background: "rgba(255,92,108,0.20)",
                   border: "1.5px solid rgba(255,92,108,0.68)",
-                  fontFamily: FONT_CN,
-                  fontSize: 23,
+                  fontFamily: fontMain,
+                  fontSize: 22,
                   fontWeight: 700,
                   color: "#FF8A95",
+                  whiteSpace: "nowrap",
                 }}
               >
-                🔊 客厅音箱播放
+                {copy.speakerHeaderLeft}
               </div>
               <div
                 style={{
@@ -763,13 +744,14 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                   borderRadius: 999,
                   background: "rgba(52,211,153,0.18)",
                   border: "1.5px solid rgba(52,211,153,0.6)",
-                  fontFamily: FONT_CN,
-                  fontSize: 20,
+                  fontFamily: fontMain,
+                  fontSize: 19,
                   fontWeight: 700,
                   color: "#6EE7B7",
+                  whiteSpace: "nowrap",
                 }}
               >
-                ● 音乐持续不断
+                {copy.speakerHeaderRight}
               </div>
             </div>
 
@@ -805,7 +787,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
 
             <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
               <UiSlice
-                src="ui/01-dark.png"
+                src={uiImg(locale, "01-dark.png")}
                 rect={[32, 102, 614, 240]}
                 radius={26}
                 scale={0.86}
@@ -814,7 +796,7 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
               />
 
               <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 4 }}>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 34 }}>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 34, flexShrink: 0 }}>
                   {beatBars.map((h, i) => (
                     <div
                       key={i}
@@ -827,8 +809,16 @@ export const OneApp: React.FC<{ dur: number }> = ({ dur }) => {
                     />
                   ))}
                 </div>
-                <div style={{ fontFamily: FONT_CN, fontSize: 34, fontWeight: 700, color: "#FFFFFF" }}>
-                  音箱照常放歌 · 不断歌、不串音
+                <div
+                  style={{
+                    fontFamily: fontMain,
+                    fontSize: locale === "zh" ? 34 : 28,
+                    fontWeight: 700,
+                    color: "#FFFFFF",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {copy.speakerBottomLine}
                 </div>
               </div>
             </div>

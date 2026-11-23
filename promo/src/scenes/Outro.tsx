@@ -1,17 +1,13 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, FONT_EN, FONT_MONO, prog, easeInOut, easeOut, BEAT, lerp } from "../theme";
+import { C, FONT_EN, FONT_MONO, fontForLocale, uiImg, prog, easeInOut, easeOut, BEAT, lerp, type PromoLocale } from "../theme";
 import { GitHubIcon, LogoMark, MouseCursor, Reveal, Ripple, StagePhone } from "../components";
+import { getCopy } from "../i18n";
 
-/**
- * Scene 08 (8s = 480f) — Product Hero Freeze Frame (NEVER fades to black!)
- *   - Left: Dual-theme real hero phones
- *   - Right: Brand logo, MiaoCast name, tagline, 4 user-facing feature pills
- *   - Bottom-Right: Clean, prominent GitHub Search Bar with GitHub Icon + Repo Name ONLY + Search Button + Mouse Pointer Click!
- *   - Final frame holds 100% sharp & bright forever!
- */
-export const Outro: React.FC<{ dur: number }> = () => {
+export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).outro;
+  const fontMain = fontForLocale(locale);
   const size = 216;
   const rings = prog(f, 0, 48, easeInOut);
   const core = prog(f, 4, 32, easeOut);
@@ -20,22 +16,17 @@ export const Outro: React.FC<{ dur: number }> = () => {
   const pulse = Math.max(0, Math.sin(((f - 58) / BEAT) * Math.PI)) * prog(f, 58, 86) * (1 - prog(f, 280, 340));
   const phonesIn = prog(f, 8, 68, easeOut);
 
-  // Prominent GitHub Search Box animation
   const barIn = prog(f, 115, 155, easeOut);
 
-  // Mouse pointer glides from lower-right directly onto the "搜索" button inside the GitHub search bar (center ~ x=1698, y=814)
   const cursorMove = prog(f, 175, 232, easeInOut);
-  const cursorX = lerp(1835, 1698, cursorMove);
+  const cursorX = lerp(1835, 1692, cursorMove);
   const cursorY = lerp(1025, 816, cursorMove);
   const hovering = prog(f, 218, 236, easeOut);
 
-  // Click happens at f=244..264, then holds cleanly in highlighted state on the final frame!
   const clickDown = prog(f, 244, 252, easeOut);
   const clickUp = prog(f, 252, 266, easeOut);
   const pressing = Math.max(0, clickDown - clickUp);
   const rippleT = f >= 246 ? Math.min(1, (f - 246) / 42) : 0;
-
-  const tags = ["Android 10+", "最多 63 台同频", "刷视频不打断听歌", "纯局域网 · 免费开源"];
 
   return (
     <AbsoluteFill style={{ background: C.bg }}>
@@ -49,9 +40,8 @@ export const Outro: React.FC<{ dur: number }> = () => {
         <Ripple cx={1315} cy={245} t={(f - 12) / 80} maxR={700} color={C.ink} width={1} />
       </svg>
 
-      {/* NO END FADE-OUT! Everything stays crisp on screen until the final frame. */}
       <AbsoluteFill>
-        {/* Left Side: Dual-Theme Real Hero Phones (01-light in back, 01-dark in front) */}
+        {/* Left Side: Dual-Theme Real Hero Phones */}
         <div
           style={{
             position: "absolute",
@@ -61,7 +51,6 @@ export const Outro: React.FC<{ dur: number }> = () => {
             opacity: phonesIn,
           }}
         >
-          {/* Light Mode Phone (back right) */}
           <div
             style={{
               position: "absolute",
@@ -71,10 +60,9 @@ export const Outro: React.FC<{ dur: number }> = () => {
               transformStyle: "preserve-3d",
             }}
           >
-            <StagePhone src="ui/01-light.png" w={355} />
+            <StagePhone src={uiImg(locale, "01-light.png")} w={355} />
           </div>
 
-          {/* Dark Mode Phone (front left, with elevated speaker card) */}
           <div
             style={{
               position: "absolute",
@@ -85,7 +73,7 @@ export const Outro: React.FC<{ dur: number }> = () => {
             }}
           >
             <StagePhone
-              src="ui/01-dark.png"
+              src={uiImg(locale, "01-dark.png")}
               w={365}
               dim={0.28}
               slices={[
@@ -104,7 +92,7 @@ export const Outro: React.FC<{ dur: number }> = () => {
           </div>
         </div>
 
-        {/* Right Side: Brand Mark, Wordmark, Tagline, Feature Pills, and Clean GitHub Search Box */}
+        {/* Right Side: Brand Mark, Wordmark, Tagline, Feature Pills, GitHub Search Box */}
         <div
           style={{
             position: "absolute",
@@ -127,8 +115,18 @@ export const Outro: React.FC<{ dur: number }> = () => {
             gap: 24,
           }}
         >
-          <Reveal text="妙投" start={28} size={104} weight={700} stagger={4} tracking={6} />
-          <Reveal text="MiaoCast" start={40} size={56} weight={600} font={FONT_EN} color="#CBD5E1" stagger={2} />
+          <Reveal
+            text={copy.brandPrimary}
+            start={28}
+            size={copy.brandSecondary ? 104 : 96}
+            weight={700}
+            font={copy.brandSecondary ? fontMain : FONT_EN}
+            stagger={copy.brandSecondary ? 4 : 2.2}
+            tracking={copy.brandSecondary ? 6 : 2}
+          />
+          {copy.brandSecondary ? (
+            <Reveal text={copy.brandSecondary} start={40} size={56} weight={600} font={FONT_EN} color="#CBD5E1" stagger={2} />
+          ) : null}
         </div>
 
         <div
@@ -142,13 +140,14 @@ export const Outro: React.FC<{ dur: number }> = () => {
           }}
         >
           <Reveal
-            text="任何安卓手机，一键投向全屋小米音箱。"
+            text={copy.tagline}
             start={62}
-            size={36}
+            size={copy.taglineSize}
             weight={600}
+            font={fontMain}
             color="#FFFFFF"
-            stagger={1.2}
-            tracking={1.5}
+            stagger={locale === "en" ? 0.8 : 1.2}
+            tracking={locale === "en" ? 0.2 : 1.2}
           />
         </div>
 
@@ -165,22 +164,23 @@ export const Outro: React.FC<{ dur: number }> = () => {
             gap: 14,
           }}
         >
-          {tags.map((t, i) => {
+          {copy.tags.map((t, i) => {
             const a = prog(f, 92 + i * 6, 128 + i * 6);
             return (
               <div
                 key={t}
                 style={{
-                  padding: "11px 24px",
+                  padding: "11px 22px",
                   borderRadius: 999,
                   border: "1.5px solid rgba(255,255,255,0.20)",
                   background: "rgba(255,255,255,0.06)",
-                  fontFamily: FONT_CN,
-                  fontSize: 23,
+                  fontFamily: fontMain,
+                  fontSize: 22,
                   fontWeight: 600,
                   color: "#F1F5F9",
                   opacity: a,
                   transform: `translateY(${(1 - a) * 14}px)`,
+                  whiteSpace: "nowrap",
                 }}
               >
                 {t}
@@ -189,7 +189,7 @@ export const Outro: React.FC<{ dur: number }> = () => {
           })}
         </div>
 
-        {/* CLEAN GITHUB SEARCH BAR: [GitHub Icon] + [🔍 Repo Name ONLY] + [搜索] + Mouse Pointer */}
+        {/* CLEAN GITHUB SEARCH BAR */}
         <div
           style={{
             position: "absolute",
@@ -216,7 +216,6 @@ export const Outro: React.FC<{ dur: number }> = () => {
               padding: "0 16px 0 28px",
             }}
           >
-            {/* Left: GitHub Octocat Icon + Magnifier + Repo Name ONLY */}
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
               <div
                 style={{
@@ -251,7 +250,7 @@ export const Outro: React.FC<{ dur: number }> = () => {
               <div
                 style={{
                   fontFamily: FONT_MONO,
-                  fontSize: 31,
+                  fontSize: 30,
                   fontWeight: 700,
                   color: "#FFFFFF",
                   letterSpacing: 0.2,
@@ -262,33 +261,32 @@ export const Outro: React.FC<{ dur: number }> = () => {
               </div>
             </div>
 
-            {/* Right: Search Button */}
             <div
               style={{
                 height: 76,
-                padding: "0 42px",
+                minWidth: 164,
+                padding: "0 38px",
                 borderRadius: 999,
                 background: hovering > 0.25 ? "#FF6B7A" : C.coral,
                 boxShadow: `0 10px 30px rgba(255,92,108,${0.44 + hovering * 0.26})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: FONT_CN,
-                fontSize: 28,
+                fontFamily: fontMain,
+                fontSize: 27,
                 fontWeight: 700,
                 color: "#FFFFFF",
-                letterSpacing: 3,
+                letterSpacing: locale === "en" ? 0.5 : 3,
                 whiteSpace: "nowrap",
                 flexShrink: 0,
                 transform: `scale(${1 + hovering * 0.035 - pressing * 0.07})`,
               }}
             >
-              搜索
+              {copy.searchButton}
             </div>
           </div>
         </div>
 
-        {/* Crisp Vector Mouse Pointer Gliding & Clicking "搜索" */}
         <MouseCursor
           x={cursorX}
           y={cursorY}

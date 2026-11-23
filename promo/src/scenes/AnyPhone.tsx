@@ -1,7 +1,8 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, FONT_EN, prog, easeInOut, easeOut, sceneFade, lerp } from "../theme";
+import { C, FONT_EN, fontForLocale, uiImg, prog, easeInOut, easeOut, sceneFade, lerp, type PromoLocale } from "../theme";
 import { Eyebrow, Reveal, Speaker, StagePhone } from "../components";
+import { getCopy } from "../i18n";
 
 const bez = (p0: number[], p1: number[], p2: number[], p3: number[], t: number) => {
   const u = 1 - t;
@@ -10,17 +11,10 @@ const bez = (p0: number[], p1: number[], p2: number[], p3: number[], t: number) 
   );
 };
 
-const BRANDS = [
-  { name: "华为", en: "HUAWEI", sub: "HarmonyOS / Android" },
-  { name: "三星", en: "SAMSUNG", sub: "Galaxy · One UI" },
-  { name: "OPPO", en: "", sub: "Find · ColorOS" },
-  { name: "vivo", en: "", sub: "X Series · OriginOS" },
-  { name: "一加", en: "OnePlus", sub: "ColorOS / OxygenOS" },
-  { name: "Pixel", en: "", sub: "Android 10 – 16+" },
-];
-
-export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
+export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).anyPhone;
+  const fontMain = fontForLocale(locale);
 
   const tapFrame = 78;
   const castMorph = prog(f, 92, 130, easeInOut);
@@ -31,7 +25,6 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
   const phoneTarget = [1015, 585];
   const spkPos = [1690, 565];
 
-  // 7th wide card ("以及任何其他 Android 手机")
   const otherA = prog(f, 52, 88);
   const otherDraw = prog(f, 62, 114, easeInOut);
   const otherP0 = [95 + 578, 762 + 58];
@@ -53,15 +46,22 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
 
       {/* Top Header */}
       <div style={{ position: "absolute", left: 100, top: 64, zIndex: 20 }}>
-        <Eyebrow text="Any Android · Brand Free" start={4} />
+        <Eyebrow text={copy.eyebrow} start={4} />
         <div style={{ marginTop: 14 }}>
-          <Reveal text="不是小米手机，也能一键妙播。" start={10} size={64} weight={700} stagger={1.8} />
+          <Reveal
+            text={copy.headline}
+            start={10}
+            size={copy.headlineSize}
+            weight={700}
+            font={fontMain}
+            stagger={locale === "en" ? 1.1 : 1.8}
+          />
         </div>
       </div>
 
       {/* Left: 6 LARGE Brand Cards + 7th Full-Width "Any Other Android Phone" Card */}
       <svg width="1920" height="1080" style={{ position: "absolute", inset: 0 }}>
-        {BRANDS.map((b, i) => {
+        {copy.brands.map((b, i) => {
           const col = i % 2;
           const row = Math.floor(i / 2);
           const bx = 95 + col * 300;
@@ -105,8 +105,8 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
               <text
                 x={bx + 56}
                 y={by + 58}
-                fontFamily={b.en ? FONT_CN : FONT_EN}
-                fontSize={36}
+                fontFamily={b.en ? fontMain : FONT_EN}
+                fontSize={34}
                 fontWeight={700}
                 fill="#FFFFFF"
               >
@@ -151,11 +151,11 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
           <text x={136} y={829} textAnchor="middle" fontFamily={FONT_EN} fontSize={28} fontWeight={700} fill={C.coral}>
             +
           </text>
-          <text x={174} y={814} fontFamily={FONT_CN} fontSize={33} fontWeight={700} fill="#FFFFFF">
-            以及任何其他 Android 手机
+          <text x={174} y={814} fontFamily={fontMain} fontSize={locale === "ja" ? 28 : 31} fontWeight={700} fill="#FFFFFF">
+            {copy.otherTitle}
           </text>
-          <text x={174} y={852} fontFamily={FONT_CN} fontSize={20} fontWeight={500} fill="#CBD5E1">
-            荣耀 · 魅族 · 索尼 · 摩托罗拉 · Android 10+ 通用
+          <text x={174} y={852} fontFamily={fontMain} fontSize={19} fontWeight={500} fill="#CBD5E1">
+            {copy.otherSub}
           </text>
         </g>
 
@@ -190,36 +190,37 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
       <div
         style={{
           position: "absolute",
-          left: 1510,
+          left: 1495,
           top: 718,
-          width: 360,
+          width: 390,
           textAlign: "center",
           opacity: prog(f, 52, 96),
         }}
       >
-        <div style={{ fontFamily: FONT_CN, fontSize: 32, fontWeight: 700, color: "#FFFFFF", letterSpacing: 1 }}>
-          小米 / 小爱音箱
+        <div style={{ fontFamily: fontMain, fontSize: 32, fontWeight: 700, color: "#FFFFFF", letterSpacing: 1 }}>
+          {copy.speakerTitle}
         </div>
         <div
           style={{
             marginTop: 18,
             display: "inline-block",
-            padding: "10px 24px",
+            padding: "10px 22px",
             borderRadius: 999,
             background: "rgba(255,92,108,0.16)",
             border: "1.5px solid rgba(255,92,108,0.55)",
-            fontFamily: FONT_CN,
-            fontSize: 25,
+            fontFamily: fontMain,
+            fontSize: locale === "en" ? 22 : 24,
             fontWeight: 600,
             color: "#FF8A95",
             opacity: prog(f, 130, 170),
+            whiteSpace: "nowrap",
           }}
         >
-          免 Root · 免登录小米账号
+          {copy.speakerBadge}
         </div>
       </div>
 
-      {/* Center: Real 3D Phone transitioning from 07-dark (Standby) -> 01-dark (Casting) with BIG elevated speaker cards */}
+      {/* Center: Real 3D Phone transitioning from 07-dark (Standby) -> 01-dark (Casting) */}
       <div
         style={{
           position: "absolute",
@@ -235,8 +236,8 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
           }}
         >
           <StagePhone
-            src="ui/07-dark.png"
-            src2="ui/01-dark.png"
+            src={uiImg(locale, "07-dark.png")}
+            src2={uiImg(locale, "01-dark.png")}
             fade2={castMorph}
             w={395}
             dim={popCards * 0.68}
@@ -247,7 +248,7 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
             slices={[
               {
                 id: "status-pill",
-                src: "ui/01-dark.png",
+                src: uiImg(locale, "01-dark.png"),
                 rect: [16, 14, 646, 72],
                 radius: 20,
                 elevate: castMorph,
@@ -257,7 +258,7 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
               },
               {
                 id: "spk-card-1",
-                src: "ui/01-dark.png",
+                src: uiImg(locale, "01-dark.png"),
                 rect: [48, 792, 582, 150],
                 radius: 26,
                 elevate: popCards,
@@ -268,7 +269,7 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
               },
               {
                 id: "spk-card-2",
-                src: "ui/01-dark.png",
+                src: uiImg(locale, "01-dark.png"),
                 rect: [48, 958, 582, 150],
                 radius: 26,
                 elevate: popCards,
@@ -288,15 +289,15 @@ export const AnyPhone: React.FC<{ dur: number }> = ({ dur }) => {
           position: "absolute",
           left: 100,
           bottom: 42,
-          fontFamily: FONT_CN,
-          fontSize: 27,
+          fontFamily: fontMain,
+          fontSize: 26,
           fontWeight: 500,
-          letterSpacing: 1.5,
+          letterSpacing: locale === "en" ? 0.3 : 1.2,
           color: "#CBD5E1",
           opacity: prog(f, 75, 115),
         }}
       >
-        轻触勾选音箱，任意安卓手机即刻直连全屋小米音箱
+        {copy.bottomCallout}
       </div>
     </AbsoluteFill>
   );

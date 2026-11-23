@@ -1,38 +1,33 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, FONT_EN, FONT_MONO, prog, easeInOut, easeOut, sceneFade, lerp } from "../theme";
+import { C, FONT_EN, FONT_MONO, fontForLocale, prog, easeInOut, easeOut, sceneFade, lerp, type PromoLocale } from "../theme";
 import { GitHubIcon, LogoMark, MouseCursor } from "../components";
+import { getCopy } from "../i18n";
 
 const QUERY = "MiaoCast";
 
-/**
- * Scene 07 (4s = 240f) — Search Project Name -> Cursor Clicks Search -> Zooms into Final Product Card!
- */
-export const Search: React.FC<{ dur: number }> = ({ dur }) => {
+export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).search;
+  const fontMain = fontForLocale(locale);
 
   const barIn = prog(f, 8, 42, easeOut);
-  // Typewriter "MiaoCast" from f=44..116
   const typedCount = Math.min(QUERY.length, Math.max(0, Math.floor((f - 44) / 8)));
   const typedText = QUERY.slice(0, typedCount);
   const caretOn = f < 132 && Math.floor(f / 14) % 2 === 0;
 
-  // Autocomplete suggestion preview card slides down once typed
   const suggestIn = prog(f, 108, 138, easeOut);
 
-  // Mouse cursor glides from bottom-right onto the "搜索" button (button center ~ x=1420, y=456)
   const cursorIn = prog(f, 106, 158, easeInOut);
   const cursorX = lerp(1640, 1418, cursorIn);
   const cursorY = lerp(760, 460, cursorIn);
   const hovering = prog(f, 146, 162, easeOut);
 
-  // Click happens at f=166..182
   const clickDown = prog(f, 166, 174, easeOut);
   const clickUp = prog(f, 174, 186, easeOut);
   const pressing = Math.max(0, clickDown - clickUp);
   const rippleT = f >= 168 ? Math.min(1, (f - 168) / 36) : 0;
 
-  // Smooth zoom-out into Outro right after click
   const zoomOut = prog(f, 198, dur, easeInOut);
 
   return (
@@ -63,8 +58,8 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
         >
           <div style={{ display: "inline-flex", alignItems: "center", gap: 16 }}>
             <GitHubIcon size={40} color="#FFFFFF" />
-            <span style={{ fontFamily: FONT_CN, fontSize: 42, fontWeight: 700, color: "#FFFFFF", letterSpacing: 2 }}>
-              在 GitHub 搜索获取妙投
+            <span style={{ fontFamily: fontMain, fontSize: 42, fontWeight: 700, color: "#FFFFFF", letterSpacing: locale === "en" ? 0.5 : 2 }}>
+              {copy.prompt}
             </span>
           </div>
         </div>
@@ -89,7 +84,6 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
             transform: `scale(${lerp(0.92, 1, barIn)})`,
           }}
         >
-          {/* Left: Magnifying Glass + Typed Query */}
           <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
             <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.4" strokeLinecap="round">
               <circle cx="11" cy="11" r="7.5" />
@@ -99,14 +93,14 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
               style={{
                 display: "flex",
                 alignItems: "center",
-                fontFamily: FONT_EN,
-                fontSize: 46,
+                fontFamily: typedCount > 0 ? FONT_EN : fontMain,
+                fontSize: 44,
                 fontWeight: 700,
                 color: typedCount > 0 ? "#FFFFFF" : "#64748B",
                 letterSpacing: 1,
               }}
             >
-              {typedCount > 0 ? typedText : "搜索开源项目..."}
+              {typedCount > 0 ? typedText : copy.placeholder}
               {caretOn && (
                 <span
                   style={{
@@ -122,11 +116,11 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
             </div>
           </div>
 
-          {/* Right: Prominent "搜索" Button with hover + click press */}
           <div
             style={{
               height: 80,
-              padding: "0 48px",
+              minWidth: 180,
+              padding: "0 44px",
               borderRadius: 999,
               background: hovering > 0.3 ? "#FF6B7A" : C.coral,
               boxShadow: `0 12px 34px rgba(255,92,108,${0.42 + hovering * 0.28})`,
@@ -134,15 +128,15 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
               alignItems: "center",
               justifyContent: "center",
               gap: 12,
-              fontFamily: FONT_CN,
-              fontSize: 32,
+              fontFamily: fontMain,
+              fontSize: 30,
               fontWeight: 700,
               color: "#FFFFFF",
-              letterSpacing: 3,
+              letterSpacing: locale === "en" ? 0.5 : 3,
               transform: `scale(${1 + hovering * 0.035 - pressing * 0.07})`,
             }}
           >
-            搜索
+            {copy.button}
           </div>
         </div>
 
@@ -167,7 +161,7 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-              <div style={{ width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <LogoMark size={64} rings={1} core={1} play={1} arc={1} />
               </div>
               <div>
@@ -181,17 +175,18 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
                       borderRadius: 999,
                       background: "rgba(52,211,153,0.18)",
                       border: "1px solid rgba(52,211,153,0.55)",
-                      fontFamily: FONT_CN,
+                      fontFamily: fontMain,
                       fontSize: 18,
                       fontWeight: 600,
                       color: "#6EE7B7",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    官方分发仓
+                    {copy.officialBadge}
                   </span>
                 </div>
-                <div style={{ marginTop: 8, fontFamily: FONT_CN, fontSize: 23, color: "#CBD5E1" }}>
-                  妙投（MiaoCast）— 任何安卓手机一键投送全屋小米 / 小爱音箱
+                <div style={{ marginTop: 8, fontFamily: fontMain, fontSize: 22, color: "#CBD5E1" }}>
+                  {copy.repoDesc}
                 </div>
               </div>
             </div>
@@ -199,7 +194,6 @@ export const Search: React.FC<{ dur: number }> = ({ dur }) => {
           </div>
         )}
 
-        {/* Crisp Vector Mouse Pointer Clicking "搜索" */}
         <MouseCursor
           x={cursorX}
           y={cursorY}

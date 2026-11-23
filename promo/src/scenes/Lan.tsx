@@ -1,15 +1,13 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, prog, easeInOut, easeOut, sceneFade } from "../theme";
+import { C, fontForLocale, uiImg, prog, easeInOut, easeOut, sceneFade, type PromoLocale } from "../theme";
 import { Eyebrow, Reveal, Speaker, StagePhone, UiSlice } from "../components";
+import { getCopy } from "../i18n";
 
-/**
- * Scene 05 (6s = 360f) — Decluttered, User-First:
- *   Left:  1 dimmed Settings phone + ONLY 2 HUGE zoomed real UI cards ("无感模式" & "投送时手机静音")
- *   Right: Super clean, large-font "Pure LAN · Zero Cloud" privacy card (zero dev jargon!)
- */
-export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
+export const Lan: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).lan;
+  const fontMain = fontForLocale(locale);
 
   const phoneIn = prog(f, 8, 48, easeOut);
   const card1In = prog(f, 32, 74, easeOut);
@@ -29,18 +27,26 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
 
       {/* Clean User-Friendly Header */}
       <div style={{ position: "absolute", left: 100, top: 64, zIndex: 20 }}>
-        <Eyebrow text="Seamless & Private · Pure LAN" start={4} />
+        <Eyebrow text={copy.eyebrow} start={4} />
         <div style={{ marginTop: 14 }}>
-          <Reveal text="免弹框无感直投，音频绝不出家门。" start={10} size={62} weight={700} stagger={1.6} />
+          <Reveal
+            text={copy.headline}
+            start={10}
+            size={copy.headlineSize}
+            weight={700}
+            font={fontMain}
+            stagger={locale === "en" ? 1.0 : 1.6}
+          />
         </div>
         <div style={{ marginTop: 10 }}>
           <Reveal
-            text="两个核心开关，开启后无感开投、手机静音互不干扰，全程纯局域网零云端。"
+            text={copy.subtitle}
             start={38}
-            size={27}
+            size={copy.subtitleSize}
             weight={450}
+            font={fontMain}
             color="#CBD5E1"
-            stagger={0.6}
+            stagger={0.45}
           />
         </div>
       </div>
@@ -57,24 +63,24 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
         }}
       >
         <div style={{ transform: "rotateY(10deg) rotateX(2deg)", transformStyle: "preserve-3d" }}>
-          <StagePhone src="ui/05-dark.png" w={355} dim={0.82} />
+          <StagePhone src={uiImg(locale, "05-dark.png")} w={355} dim={0.82} />
         </div>
       </div>
 
-      {/* Center-Left: TWO MASSIVE, Effortlessly Readable Spotlighted Real UI Cards */}
+      {/* Center-Left: TWO MASSIVE Spotlighted Real UI Cards */}
       <div
         style={{
           position: "absolute",
           left: 365,
-          top: 295,
+          top: 290,
           width: 650,
           display: "flex",
           flexDirection: "column",
-          gap: 54,
+          gap: 48,
           zIndex: 20,
         }}
       >
-        {/* Spotlight Card 1: 无感模式 */}
+        {/* Spotlight Card 1: Silent Mode */}
         <div
           style={{
             opacity: card1In,
@@ -86,27 +92,28 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
             boxShadow: "0 30px 75px rgba(0,0,0,0.68), 0 0 40px rgba(59,130,246,0.22)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
             <div
               style={{
-                padding: "6px 18px",
+                padding: "6px 16px",
                 borderRadius: 999,
                 background: "rgba(59,130,246,0.24)",
-                fontFamily: FONT_CN,
-                fontSize: 22,
+                fontFamily: fontMain,
+                fontSize: 20,
                 fontWeight: 700,
                 color: "#93C5FD",
+                whiteSpace: "nowrap",
               }}
             >
-              ① 无感模式
+              {copy.card1Badge}
             </div>
-            <div style={{ fontFamily: FONT_CN, fontSize: 22, fontWeight: 600, color: "#FFFFFF" }}>
-              免每次点「开始录屏」确认
+            <div style={{ fontFamily: fontMain, fontSize: 20, fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap" }}>
+              {copy.card1Hint}
             </div>
           </div>
           <UiSlice
-            src="ui/05-dark.png"
-            rect={[42, 646, 594, 146]}
+            src={uiImg(locale, "05-dark.png")}
+            rect={copy.card1Rect}
             radius={20}
             scale={1.01}
             elevation={0.4}
@@ -114,7 +121,7 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
           />
         </div>
 
-        {/* Spotlight Card 2: 投送时手机静音 */}
+        {/* Spotlight Card 2: Mute Phone While Casting */}
         <div
           style={{
             opacity: card2In,
@@ -126,27 +133,28 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
             boxShadow: "0 30px 75px rgba(0,0,0,0.68), 0 0 40px rgba(52,211,153,0.20)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
             <div
               style={{
-                padding: "6px 18px",
+                padding: "6px 16px",
                 borderRadius: 999,
                 background: "rgba(52,211,153,0.22)",
-                fontFamily: FONT_CN,
-                fontSize: 22,
+                fontFamily: fontMain,
+                fontSize: 20,
                 fontWeight: 700,
                 color: "#6EE7B7",
+                whiteSpace: "nowrap",
               }}
             >
-              ② 投送时手机静音
+              {copy.card2Badge}
             </div>
-            <div style={{ fontFamily: FONT_CN, fontSize: 22, fontWeight: 600, color: "#FFFFFF" }}>
-              只静音乐 · 刷视频照常有声
+            <div style={{ fontFamily: fontMain, fontSize: 20, fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap" }}>
+              {copy.card2Hint}
             </div>
           </div>
           <UiSlice
-            src="ui/05-dark.png"
-            rect={[42, 1148, 594, 134]}
+            src={uiImg(locale, "05-dark.png")}
+            rect={copy.card2Rect}
             radius={20}
             scale={1.01}
             elevation={0.4}
@@ -155,7 +163,7 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
         </div>
       </div>
 
-      {/* Right Column: Ultra-Clean, Big-Font Pure LAN · Zero Cloud Privacy Card */}
+      {/* Right Column: Pure LAN · Zero Cloud Privacy Card */}
       <div
         style={{
           position: "absolute",
@@ -172,7 +180,6 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
         }}
       >
         <svg width="710" height="735" style={{ position: "absolute", inset: 0 }}>
-          {/* Crossed-out Cloud */}
           <g transform="translate(355 105) scale(0.92)">
             <path
               d="M-70 30 h140 a40 40 0 0 0 0-80 a56 56 0 0 0-104-16 a42 42 0 0 0-36 96z"
@@ -194,11 +201,10 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
               strokeDashoffset={1 - slash}
             />
           </g>
-          <text x={355} y={182} textAnchor="middle" fontFamily={FONT_CN} fontSize={26} fontWeight={700} fill={C.coral}>
-            零云端上传 · 免账号登录
+          <text x={355} y={182} textAnchor="middle" fontFamily={fontMain} fontSize={26} fontWeight={700} fill={C.coral}>
+            {copy.zeroCloudTitle}
           </text>
 
-          {/* House Roof Outline */}
           <path
             d="M 80 355 L 355 210 L 630 355 L 630 570 L 80 570 Z"
             fill="rgba(255,255,255,0.02)"
@@ -210,22 +216,20 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
             strokeDashoffset={1 - house}
           />
 
-          {/* Router */}
           <g transform="translate(355 345)">
             <rect x={-64} y={-22} width={128} height={44} rx={12} fill={C.bg2} stroke="#CBD5E1" strokeWidth={2.4} />
             {[0, 1, 2].map((k) => (
               <circle key={k} cx={-26 + k * 18} cy={0} r={4.5} fill={k === 0 ? C.coral : "#64748B"} />
             ))}
-            <text x={0} y={-34} textAnchor="middle" fontFamily={FONT_CN} fontSize={23} fontWeight={600} fill="#E2E8F0">
-              家庭 Wi-Fi 局域网
+            <text x={0} y={-34} textAnchor="middle" fontFamily={fontMain} fontSize={23} fontWeight={600} fill="#E2E8F0">
+              {copy.routerLabel}
             </text>
           </g>
 
-          {/* Local Nodes */}
           {[
-            { x: 185, y: 488, kind: "phone", label: "你的手机" },
-            { x: 395, y: 488, kind: "spk", label: "客厅音箱" },
-            { x: 530, y: 488, kind: "spk", label: "卧室音箱" },
+            { x: 185, y: 488, kind: "phone", label: copy.nodePhone },
+            { x: 395, y: 488, kind: "spk", label: copy.nodeLiving },
+            { x: 530, y: 488, kind: "spk", label: copy.nodeBedroom },
           ].map((n, i) => {
             const tt = ((f - 60 - i * 14) / 42) % 1;
             const fwd = n.kind === "phone" ? 1 - tt : tt;
@@ -254,14 +258,14 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
                       strokeWidth={2.4}
                     />
                     <circle cx={n.x} cy={n.y} r={9} fill={C.coral} />
-                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={FONT_CN} fontSize={22} fontWeight={600} fill="#E2E8F0">
+                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={fontMain} fontSize={21} fontWeight={600} fill="#E2E8F0">
                       {n.label}
                     </text>
                   </g>
                 ) : (
                   <g>
                     <Speaker x={n.x} y={n.y} s={0.88} active={prog(f, 90, 115)} />
-                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={FONT_CN} fontSize={22} fontWeight={600} fill="#E2E8F0">
+                    <text x={n.x} y={n.y + 68} textAnchor="middle" fontFamily={fontMain} fontSize={21} fontWeight={600} fill="#E2E8F0">
                       {n.label}
                     </text>
                   </g>
@@ -271,12 +275,12 @@ export const Lan: React.FC<{ dur: number }> = ({ dur }) => {
           })}
         </svg>
 
-        <div style={{ position: "absolute", bottom: 38, width: "100%", textAlign: "center" }}>
-          <div style={{ fontFamily: FONT_CN, fontSize: 36, fontWeight: 700, color: "#FFFFFF" }}>
-            纯局域网直连 · 隐私绝不出户
+        <div style={{ position: "absolute", bottom: 38, width: "100%", textAlign: "center", padding: "0 24px" }}>
+          <div style={{ fontFamily: fontMain, fontSize: locale === "zh" ? 36 : 31, fontWeight: 700, color: "#FFFFFF" }}>
+            {copy.footerTitle}
           </div>
-          <div style={{ marginTop: 10, fontFamily: FONT_CN, fontSize: 23, fontWeight: 500, color: "#CBD5E1" }}>
-            不经过任何远程服务器 · 免费开源
+          <div style={{ marginTop: 10, fontFamily: fontMain, fontSize: 22, fontWeight: 500, color: "#CBD5E1" }}>
+            {copy.footerSub}
           </div>
         </div>
       </div>
