@@ -1,10 +1,13 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { C, FONT_CN, FONT_EN, prog, easeInOut, easeOut, BEAT, lerp } from "../theme";
+import { C, FONT_EN, fontForLocale, uiImg, prog, easeInOut, easeOut, BEAT, lerp, type PromoLocale } from "../theme";
 import { LogoMark, Reveal, Ripple, StagePhone } from "../components";
+import { getCopy } from "../i18n";
 
-export const Intro: React.FC = () => {
+export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).intro;
+  const fontMain = fontForLocale(locale);
   const size = 440;
 
   const core = prog(f, 16, 62, easeOut);
@@ -29,6 +32,7 @@ export const Intro: React.FC = () => {
   const sec = 34 + Math.floor(playProgress * 6);
 
   const out = prog(f, 444, 480, easeInOut);
+  const pillColors = ["#34D399", C.blue, C.coral] as const;
 
   return (
     <AbsoluteFill style={{ background: C.bg }}>
@@ -71,49 +75,59 @@ export const Intro: React.FC = () => {
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 24 }}>
-          <Reveal text="妙投" start={215} size={118} weight={700} stagger={5} dur={38} tracking={6} />
           <Reveal
-            text="MiaoCast"
-            start={228}
-            size={58}
-            weight={600}
-            font={FONT_EN}
-            color={C.ink2}
-            stagger={2}
-            tracking={1}
+            text={copy.brandPrimary}
+            start={215}
+            size={copy.brandSecondary ? 118 : 104}
+            weight={700}
+            font={copy.brandSecondary ? fontMain : FONT_EN}
+            stagger={copy.brandSecondary ? 5 : 2.5}
+            dur={38}
+            tracking={copy.brandSecondary ? 6 : 2}
           />
+          {copy.brandSecondary ? (
+            <Reveal
+              text={copy.brandSecondary}
+              start={228}
+              size={58}
+              weight={600}
+              font={FONT_EN}
+              color={C.ink2}
+              stagger={2}
+              tracking={1}
+            />
+          ) : null}
         </div>
         <div style={{ marginTop: 34, marginLeft: -210 }}>
           <Reveal
-            text="把手机里的那首歌，投向每一个房间。"
+            text={copy.headline}
             start={255}
-            size={42}
+            size={copy.headlineSize}
             weight={600}
+            font={fontMain}
             color={C.ink}
-            stagger={1.5}
-            tracking={2}
+            stagger={locale === "en" ? 0.9 : 1.5}
+            tracking={locale === "en" ? 0.2 : 1.5}
           />
         </div>
         <div style={{ marginTop: 18, marginLeft: -210 }}>
           <Reveal
-            text="打破手机品牌限制的开源 MiPlay 纯局域网多音箱投送工具"
+            text={copy.subtitle}
             start={285}
-            size={25}
+            size={copy.subtitleSize}
             weight={400}
+            font={fontMain}
             color={C.ink2}
-            stagger={1}
-            tracking={1.5}
+            stagger={0.7}
+            tracking={locale === "en" ? 0.2 : 1}
           />
         </div>
 
         {/* 3 live status callout pills linked to the real screenshot on the right */}
-        <div style={{ marginTop: 48, marginLeft: -210, display: "flex", gap: 16 }}>
-          {[
-            { label: "● 投送中 · 2 台同频", accent: "#34D399", delay: 315 },
-            { label: "48kHz AAC 局域网直连", accent: C.blue, delay: 330 },
-            { label: "单 App 纯净音频隔离", accent: C.coral, delay: 345 },
-          ].map((b, i) => {
-            const p = prog(f, b.delay, b.delay + 32);
+        <div style={{ marginTop: 48, marginLeft: -210, display: "flex", flexWrap: "wrap", gap: 14, maxWidth: 960 }}>
+          {copy.pills.map((label, i) => {
+            const p = prog(f, 315 + i * 15, 347 + i * 15);
+            const accent = pillColors[i];
             return (
               <div
                 key={i}
@@ -121,18 +135,19 @@ export const Intro: React.FC = () => {
                   padding: "11px 22px",
                   borderRadius: 999,
                   background: "rgba(21,26,35,0.85)",
-                  border: `1px solid rgba(255,255,255,0.14)`,
-                  fontFamily: FONT_CN,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  fontFamily: fontMain,
                   fontSize: 20,
                   fontWeight: 500,
                   color: C.ink,
                   opacity: p,
                   transform: `translateY(${(1 - p) * 18}px)`,
                   boxShadow: "0 14px 34px rgba(0,0,0,0.35)",
+                  whiteSpace: "nowrap",
                 }}
               >
-                <span style={{ color: b.accent, marginRight: 8 }}>●</span>
-                {b.label}
+                <span style={{ color: accent, marginRight: 8 }}>●</span>
+                {label}
               </div>
             );
           })}
@@ -157,7 +172,7 @@ export const Intro: React.FC = () => {
           }}
         >
           <StagePhone
-            src="ui/01-dark.png"
+            src={uiImg(locale, "01-dark.png")}
             w={430}
             dim={popPlayer * 0.45}
             slices={[

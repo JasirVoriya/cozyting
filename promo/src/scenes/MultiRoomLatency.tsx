@@ -1,60 +1,17 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
-import { C, FONT_CN, FONT_EN, FONT_MONO, prog, easeInOut, sceneFade, easeOut, lerp } from "../theme";
+import { C, FONT_EN, FONT_MONO, fontForLocale, uiImg, prog, easeInOut, sceneFade, easeOut, lerp, type PromoLocale } from "../theme";
 import { Eyebrow, Reveal, Speaker, StagePhone } from "../components";
+import { getCopy } from "../i18n";
 
-const ROOMS = [
-  { x: 0, y: 0, w: 300, h: 195, name: "卧室", spkX: 150, spkY: 112, t: 85 },
-  { x: 300, y: 0, w: 300, h: 195, name: "书房", spkX: 450, spkY: 112, t: 115 },
-  { x: 0, y: 195, w: 340, h: 215, name: "客厅", spkX: 170, spkY: 315, t: 55 },
-  { x: 340, y: 195, w: 260, h: 215, name: "餐厨", spkX: 470, spkY: 315, t: 145 },
-];
-
-const TIERS = [
-  {
-    name: "标准",
-    ms: 800,
-    tag: "穿墙稳听 · 多房不卡顿",
-    color: "#E2E8F0",
-    accent: "rgba(96,165,250,0.9)",
-    pulseSpeed: 1.0,
-    rect: [60, 445, 558, 150] as const,
-  },
-  {
-    name: "均衡",
-    ms: 400,
-    tag: "日常主力 · 切歌响应快一倍",
-    color: "#60A5FA",
-    accent: "rgba(96,165,250,0.95)",
-    pulseSpeed: 1.6,
-    rect: [60, 617, 558, 150] as const,
-  },
-  {
-    name: "低延迟",
-    ms: 250,
-    tag: "5GHz 强网 · 拖进度条秒跟手",
-    color: "#38BDF8",
-    accent: "rgba(56,189,248,0.95)",
-    pulseSpeed: 2.3,
-    rect: [60, 789, 558, 150] as const,
-  },
-  {
-    name: "极速",
-    ms: 150,
-    tag: "同房极速 · 几乎零等待",
-    color: C.coral,
-    accent: "rgba(255,92,108,0.95)",
-    pulseSpeed: 3.2,
-    rect: [60, 962, 558, 150] as const,
-  },
-];
-
-// Phase 1 (0..260f): Multi-room sync light-up & 63-speaker counter
-// Phase 2 (260..840f): Phone switches to 02-dark Latency Sheet while right multi-room floorplan stays LIVE and responds to each tier!
 const TIER_AT = [295, 430, 565, 700];
 
-export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
+export const MultiRoomLatency: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
+  const copy = getCopy(locale).multiRoom;
+  const fontMain = fontForLocale(locale);
+  const TIERS = copy.tiers;
+  const ROOMS = copy.rooms;
 
   const popSpk1 = prog(f, 16, 62, easeOut) * (1 - prog(f, 245, 275, easeInOut));
   const popSpk2 = prog(f, 34, 80, easeOut) * (1 - prog(f, 245, 275, easeInOut));
@@ -68,7 +25,6 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
     interpolate(f, [150, 245], [2, 63], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: easeOut })
   );
 
-  // Determine current latency tier in Phase 2
   let tierIdx = 0;
   TIER_AT.forEach((a, i) => (f >= a ? (tierIdx = i) : null));
   const prevMs = tierIdx === 0 ? 800 : TIERS[tierIdx - 1].ms;
@@ -89,7 +45,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
     const elevate = Math.max(0, enter - leave) * latencyMode;
     return {
       id: `tier-${i}`,
-      src: "ui/02-dark.png",
+      src: uiImg(locale, "02-dark.png"),
       rect: t.rect,
       radius: 22,
       elevate,
@@ -103,7 +59,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
   const allSlices = [
     {
       id: "sound-pro-card",
-      src: "ui/01-dark.png",
+      src: uiImg(locale, "01-dark.png"),
       rect: [48, 792, 582, 150] as const,
       radius: 26,
       elevate: popSpk1,
@@ -132,7 +88,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
     },
     {
       id: "xiaoai-pro-card",
-      src: "ui/01-dark.png",
+      src: uiImg(locale, "01-dark.png"),
       rect: [48, 958, 582, 150] as const,
       radius: 26,
       elevate: popSpk2,
@@ -175,19 +131,34 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
 
       {/* Top Headline spanning across right column */}
       <div style={{ position: "absolute", left: 685, top: 56, width: 1160, zIndex: 20 }}>
-        <Eyebrow text="Multi-Room Sync × 4-Tier Hot-Switch Latency" start={4} />
-        <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 18 }}>
-          <Reveal text="全屋多房同频合唱，" start={10} size={56} weight={700} stagger={1.6} />
-          <Reveal text="播着歌就能热切 4 档延迟。" start={30} size={56} weight={700} stagger={1.4} color={C.coral} />
+        <Eyebrow text={copy.eyebrow} start={4} />
+        <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 16, flexWrap: "nowrap" }}>
+          <Reveal
+            text={copy.headlinePart1}
+            start={10}
+            size={copy.headlineSize}
+            weight={700}
+            font={fontMain}
+            stagger={locale === "en" ? 1.0 : 1.6}
+          />
+          <Reveal
+            text={copy.headlinePart2}
+            start={30}
+            size={copy.headlineSize}
+            weight={700}
+            font={fontMain}
+            stagger={locale === "en" ? 0.9 : 1.4}
+            color={C.coral}
+          />
         </div>
       </div>
 
-      {/* LEFT: Real Phone transitioning seamlessly from 01-dark (Selected Speakers) -> 02-dark (4-Tier Latency Dialog) */}
+      {/* LEFT: Real Phone transitioning from 01-dark -> 02-dark */}
       <div style={{ position: "absolute", left: 105, top: 90, perspective: 1800, zIndex: 15 }}>
         <div style={{ transform: "rotateY(9deg) rotateX(2deg)", transformStyle: "preserve-3d" }}>
           <StagePhone
-            src="ui/01-dark.png"
-            src2="ui/02-dark.png"
+            src={uiImg(locale, "01-dark.png")}
+            src2={uiImg(locale, "02-dark.png")}
             fade2={latencyMode}
             w={420}
             dim={0.62}
@@ -205,7 +176,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
         </div>
       </div>
 
-      {/* RIGHT STAGE — Top Row: Dynamic Mode Panel (Multi-Room 63-Speaker Banner -> Live 4-Tier Latency Control & Buffer Bar) */}
+      {/* RIGHT STAGE — Top Row: Dynamic Mode Panel */}
       <div
         style={{
           position: "absolute",
@@ -231,22 +202,23 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: 24,
             }}
           >
             <div>
-              <div style={{ fontFamily: FONT_CN, fontSize: 32, fontWeight: 700, color: "#FFFFFF" }}>
-                多房间同步播放 · 每台独立调音量
+              <div style={{ fontFamily: fontMain, fontSize: 31, fontWeight: 700, color: "#FFFFFF" }}>
+                {copy.phase1Title}
               </div>
-              <div style={{ marginTop: 14, fontFamily: FONT_CN, fontSize: 25, color: "#CBD5E1" }}>
-                客厅、卧室、书房、餐厨一拍齐响，实时显示每台音箱延迟。
+              <div style={{ marginTop: 14, fontFamily: fontMain, fontSize: 23, color: "#CBD5E1", lineHeight: 1.45 }}>
+                {copy.phase1Sub}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexShrink: 0 }}>
-              <span style={{ fontFamily: FONT_CN, fontSize: 28, color: "#CBD5E1" }}>最多</span>
+              <span style={{ fontFamily: fontMain, fontSize: 26, color: "#CBD5E1" }}>{copy.countPrefix}</span>
               <span
                 style={{
                   fontFamily: FONT_EN,
-                  fontSize: 132,
+                  fontSize: 128,
                   fontWeight: 800,
                   color: C.coral,
                   lineHeight: 1,
@@ -255,7 +227,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
               >
                 {count}
               </span>
-              <span style={{ fontFamily: FONT_CN, fontSize: 28, color: "#CBD5E1" }}>台同频</span>
+              <span style={{ fontFamily: fontMain, fontSize: 26, color: "#CBD5E1" }}>{copy.countSuffix}</span>
             </div>
           </div>
         )}
@@ -272,9 +244,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
               justifyContent: "space-between",
             }}
           >
-            {/* Top row: 4-tier pill selector + giant ms readout */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              {/* 4-tier segmented bar */}
               <div
                 style={{
                   width: PW * 4 + 14,
@@ -308,8 +278,8 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontFamily: FONT_CN,
-                      fontSize: 25,
+                      fontFamily: fontMain,
+                      fontSize: 23,
                       fontWeight: 700,
                       color: Math.abs(pillPos - i) < 0.5 ? (tierIdx === 3 ? "#FFFFFF" : C.bg) : "#CBD5E1",
                     }}
@@ -319,7 +289,6 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
                 ))}
               </div>
 
-              {/* Giant live ms readout */}
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                 <span
                   style={{
@@ -338,12 +307,11 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
               </div>
             </div>
 
-            {/* Middle: Clear user scenario description */}
-            <div style={{ fontFamily: FONT_CN, fontSize: 32, fontWeight: 700, color: "#FFFFFF" }}>
-              当前效果：<span style={{ color: activeTier.color }}>{activeTier.tag}</span>
+            <div style={{ fontFamily: fontMain, fontSize: 30, fontWeight: 700, color: "#FFFFFF" }}>
+              {copy.effectPrefix}
+              <span style={{ color: activeTier.color }}>{activeTier.tag}</span>
             </div>
 
-            {/* Bottom: Visual shrinking buffer bar showing latency difference */}
             <div>
               <div
                 style={{
@@ -369,23 +337,22 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
                   display: "flex",
                   justifyContent: "space-between",
                   marginTop: 10,
-                  fontFamily: FONT_EN,
+                  fontFamily: fontMain,
                   fontSize: 18,
                   fontWeight: 600,
                   color: "#94A3B8",
                 }}
               >
-                <span>150 ms 极速</span>
-                <span>250 ms 低延迟</span>
-                <span>400 ms 均衡</span>
-                <span>800 ms 标准</span>
+                {copy.barLabels.map((lb) => (
+                  <span key={lb}>{lb}</span>
+                ))}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* RIGHT STAGE — Bottom Row: LIVE Multi-Room Floorplan + Real-Time Sync Response Card (Stays alive across BOTH phases!) */}
+      {/* RIGHT STAGE — Bottom Row: LIVE Multi-Room Floorplan + Waveform Monitor */}
       <div
         style={{
           position: "absolute",
@@ -403,7 +370,6 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
           gap: 32,
         }}
       >
-        {/* Multi-Room Floorplan SVG (600x410) */}
         <svg width="600" height="410" style={{ flexShrink: 0, overflow: "visible" }}>
           {ROOMS.map((r, i) => {
             const active = prog(f, r.t, r.t + 16);
@@ -425,14 +391,13 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
                 <text
                   x={r.x + 18}
                   y={r.y + 38}
-                  fontFamily={FONT_CN}
-                  fontSize={25}
+                  fontFamily={fontMain}
+                  fontSize={24}
                   fontWeight={700}
                   fill={active > 0 ? "#FFFFFF" : C.ink3}
                 >
                   {r.name}
                 </text>
-                {/* Live ms pill in EVERY room updating with latency tier! */}
                 {active > 0.5 && (
                   <g transform={`translate(${r.x + r.w - 104} ${r.y + 14})`}>
                     <rect
@@ -462,7 +427,6 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
             );
           })}
 
-          {/* Animated speakers inside each room */}
           {ROOMS.map((r, i) => {
             const active = prog(f, r.t, r.t + 14);
             return (
@@ -473,20 +437,18 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
           })}
         </svg>
 
-        {/* Right Live Sync Waveform Monitor showing speed & phase lock across all rooms */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "12px 0" }}>
           <div>
-            <div style={{ fontFamily: FONT_CN, fontSize: 28, fontWeight: 700, color: "#FFFFFF" }}>
-              全屋音箱实时同频波形
+            <div style={{ fontFamily: fontMain, fontSize: 27, fontWeight: 700, color: "#FFFFFF" }}>
+              {copy.waveTitle}
             </div>
-            <div style={{ marginTop: 8, fontFamily: FONT_CN, fontSize: 21, color: "#94A3B8" }}>
-              {latencyMode > 0.5 ? "切换档位不断连，全屋音箱同步生效" : "客厅 / 卧室 / 书房 / 餐厨精准对齐"}
+            <div style={{ marginTop: 8, fontFamily: fontMain, fontSize: 20, color: "#94A3B8" }}>
+              {latencyMode > 0.5 ? copy.waveSubLatency : copy.waveSubSync}
             </div>
           </div>
 
-          {/* 3 phase-locked room rows whose wave velocity accelerates with lower latency! */}
           <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 18 }}>
-            {["客厅音箱", "卧室音箱", "书房音箱"].map((roomName, i) => {
+            {copy.waveRooms.map((roomName) => {
               const speed = latencyMode > 0.5 ? activeTier.pulseSpeed : 1.0;
               const pts: string[] = [];
               for (let x = 0; x <= 290; x += 4) {
@@ -497,7 +459,7 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
               }
               return (
                 <div key={roomName} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ width: 102, fontFamily: FONT_CN, fontSize: 23, fontWeight: 600, color: "#E2E8F0" }}>
+                  <div style={{ width: copy.waveLabelWidth, fontFamily: fontMain, fontSize: 22, fontWeight: 600, color: "#E2E8F0", whiteSpace: "nowrap" }}>
                     {roomName}
                   </div>
                   <svg width={290} height={44}>
@@ -506,11 +468,10 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
                 </div>
               );
             })}
-            {/* Vertical phase-lock hairline */}
             <div
               style={{
                 position: "absolute",
-                left: 116 + 145,
+                left: copy.waveLabelWidth + 14 + 145,
                 top: -6,
                 width: 3,
                 height: 178,
@@ -523,20 +484,19 @@ export const MultiRoomLatency: React.FC<{ dur: number }> = ({ dur }) => {
 
           <div
             style={{
-              padding: "12px 20px",
+              padding: "12px 18px",
               borderRadius: 16,
               background: "rgba(255,255,255,0.05)",
               border: "1px solid rgba(255,255,255,0.12)",
-              fontFamily: FONT_CN,
-              fontSize: 22,
+              fontFamily: fontMain,
+              fontSize: 20,
               fontWeight: 600,
               color: "#E2E8F0",
               textAlign: "center",
+              whiteSpace: "nowrap",
             }}
           >
-            {latencyMode > 0.5
-              ? `⚡ 热切至 ${activeTier.name} (${currentMs}ms) · 全屋不断音`
-              : "● 全屋 4 房间已精准锁相"}
+            {latencyMode > 0.5 ? copy.waveStatusLatency(activeTier.name, currentMs) : copy.waveStatusSync}
           </div>
         </div>
       </div>

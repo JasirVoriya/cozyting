@@ -2,12 +2,17 @@
   "name": "miaocast-promo",
   "private": true,
   "version": "1.0.0",
-  "description": "MiaoCast promo film (no narration) built with Remotion",
+  "description": "MiaoCast multilingual promo film (zh-CN / en / ja, no narration) built with Remotion",
   "scripts": {
     "music": "node scripts/make-music.mjs",
     "assets": "node scripts/prepare-assets.mjs",
-    "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.tsx MiaoCastPromo out/miaocast-promo.mp4 --codec h264 --crf 16"
+    "studio": "remotion studio src/index.tsx",
+    "typecheck": "tsc --noEmit",
+    "render": "npm run render:zh",
+    "render:zh": "remotion render src/index.tsx MiaoCastPromo out/miaocast-promo-zh.mp4 --codec h264 --crf 16",
+    "render:en": "remotion render src/index.tsx MiaoCastPromoEn out/miaocast-promo-en.mp4 --codec h264 --crf 16",
+    "render:ja": "remotion render src/index.tsx MiaoCastPromoJa out/miaocast-promo-ja.mp4 --codec h264 --crf 16",
+    "render:all": "npm run render:zh && npm run render:en && npm run render:ja"
   },
   "dependencies": {
     "@remotion/cli": "4.0.545",

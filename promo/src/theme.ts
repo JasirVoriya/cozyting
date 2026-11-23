@@ -1,5 +1,7 @@
 import { Easing, interpolate } from "remotion";
 
+export type PromoLocale = "zh" | "en" | "ja";
+
 export const FPS = 60;
 export const BEAT = 30; // frames @120 BPM
 export const BAR = 120;
@@ -35,9 +37,25 @@ export const C = {
   ring3: "#242934",
 };
 
-export const FONT_CN = `"PingFang SC", "SF Pro Display", -apple-system, "Helvetica Neue", sans-serif`;
-export const FONT_EN = `"SF Pro Display", -apple-system, "Helvetica Neue", "PingFang SC", sans-serif`;
+export const FONT_CN = `"PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "SF Pro Display", -apple-system, sans-serif`;
+export const FONT_EN = `"SF Pro Display", -apple-system, "Helvetica Neue", "Inter", sans-serif`;
+export const FONT_JA = `"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans CJK JP", "SF Pro Display", -apple-system, sans-serif`;
 export const FONT_MONO = `"SF Mono", "SFNSMono", ui-monospace, Menlo, monospace`;
+
+export function fontForLocale(locale: PromoLocale): string {
+  switch (locale) {
+    case "en":
+      return FONT_EN;
+    case "ja":
+      return FONT_JA;
+    default:
+      return FONT_CN;
+  }
+}
+
+export function uiImg(locale: PromoLocale, file: string): string {
+  return `ui/${locale}/${file}`;
+}
 
 export const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
 export const easeInOut = Easing.bezier(0.65, 0, 0.35, 1);
