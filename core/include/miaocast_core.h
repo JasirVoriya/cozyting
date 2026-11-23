@@ -41,6 +41,17 @@ int32_t miaocast_parse_auth_mode(const char *raw);
 /* 设置全局认证模式（0=auto, 1=legacy, 2=safety），对后续 connect 生效。 */
 void miaocast_set_auth_mode(int32_t mode);
 
+/* 设置全局音量过大保护策略（默认开启、上限 60%，合法范围 30..=90）。 */
+void miaocast_set_volume_guard_policy(bool enabled, int32_t safe_limit);
+
+/* 裁决一次音量变更是否需要二次确认（仅在跨过安全上限线时返回 require_confirm JSON）。 */
+char *miaocast_volume_guard_evaluate_json(
+    bool enabled,
+    int32_t safe_limit,
+    int32_t current_volume,
+    int32_t target_volume
+);
+
 /* 创建投送引擎实例并返回非零句柄；silent=true 使用内置静音 AAC 帧。 */
 int64_t miaocast_engine_create(bool silent);
 
@@ -55,6 +66,18 @@ char *miaocast_engine_connect(
     const char *source_name
 );
 
+/* 同上，附带 volume_confirmed 标志：用户已确认超限初始音量时传 true，否则按安全上限兜底钳制。 */
+char *miaocast_engine_connect_ex(
+    int64_t handle,
+    const char *ips,
+    int32_t delay_ms,
+    int32_t premute,
+    int32_t volume_after_play,
+    const char *ref_function,
+    const char *source_name,
+    bool volume_confirmed
+);
+
 /* 推入一帧 48kHz 立体声裸 AAC AU（不含 ADTS 头）。返回 0 成功，负数为错误码。 */
 int32_t miaocast_engine_push_aac(int64_t handle, const uint8_t *data, size_t len);
 
@@ -62,6 +85,13 @@ int32_t miaocast_engine_push_aac(int64_t handle, const uint8_t *data, size_t len
 char *miaocast_engine_add_receiver(int64_t handle, const char *ip);
 bool miaocast_engine_remove_receiver(int64_t handle, const char *ip);
 char *miaocast_engine_set_volume(int64_t handle, const char *ip, int32_t volume);
+/* 带二次确认标志的协调式调音量：confirmed=true 放行已确认超限值，false 时按安全上限兜底钳制。 */
+char *miaocast_engine_set_volume_checked(
+    int64_t handle,
+    const char *ip,
+    int32_t volume,
+    bool confirmed
+);
 
 /* 播放期组控制。 */
 char *miaocast_engine_pause(int64_t handle);

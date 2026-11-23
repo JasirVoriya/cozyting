@@ -43,6 +43,7 @@ import com.miaocast.app.cast.PrefsDiscoveredDeviceStore
 import com.miaocast.app.compat.AcceptanceAudioDefaults
 import com.miaocast.app.compat.CaptureSelectionLayers
 import com.miaocast.app.ui.PrefsCastSettingsStore
+import com.miaocast.app.ui.VolumeSafetyGuard
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -83,6 +84,7 @@ class CastService : Service() {
         const val EXTRA_PROJ_CODE = "proj_code"
         const val EXTRA_PROJ_DATA = "proj_data"
         const val EXTRA_VOLUME = "volume"
+        const val EXTRA_VOLUME_CONFIRMED = "volume_confirmed"
         const val EXTRA_SECS = "secs"
         const val EXTRA_TARGET_PACKAGE = "target_package"
         const val EXTRA_TARGET_LABEL = "target_label"
@@ -346,10 +348,12 @@ class CastService : Service() {
             ACTION_STOP -> { stopCast(); stopSelf(); return START_NOT_STICKY }
             ACTION_VOLUME -> {
                 val v = intent.getIntExtra(EXTRA_VOLUME, 0).coerceIn(0, 100)
+                val confirmed = intent.getBooleanExtra(EXTRA_VOLUME_CONFIRMED, false)
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
                 if (h != 0L && running.get()) {
-                    val res = NativeBridge.queueSetVolume(h, ip, v)
-                    event("协调音量(${ip.ifEmpty { "全组" }}, $v): $res")
+                    VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+                    val res = NativeBridge.queueSetVolumeChecked(h, ip, v, confirmed)
+                    event("协调音量(${ip.ifEmpty { "全组" }}, $v, confirmed=$confirmed): $res")
                 }
                 return START_NOT_STICKY
             }
@@ -551,6 +555,7 @@ class CastService : Service() {
         val reqDelay = intent?.getIntExtra(EXTRA_DELAY, 0) ?: 0
         val delay = if (reqDelay > 0) reqDelay else autoDelayMs(this)
         val premute = intent?.getIntExtra(EXTRA_PREMUTE, 0) ?: 0
+        val volumeConfirmed = intent?.getBooleanExtra(EXTRA_VOLUME_CONFIRMED, false) ?: false
         val ref = intent?.getStringExtra(EXTRA_REF).orEmpty()
         val secs = intent?.getIntExtra(EXTRA_SECS, 0) ?: 0
         val sessionHandle = NativeBridge.create(source == "silent")
@@ -571,7 +576,17 @@ class CastService : Service() {
             val authReq = intent?.getIntExtra(EXTRA_AUTH, 0) ?: 0
             event("auth_mode_requested=$authReq (${AuthModeResolve.label(authReq)})")
             NativeBridge.setAuthMode(authReq)
-            val st = NativeBridge.connect(sessionHandle, ips, delay, premute, premute, ref, Build.MODEL ?: "Android")
+            VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+            val st = NativeBridge.connectWithVolumeConfirm(
+                sessionHandle,
+                ips,
+                delay,
+                premute,
+                premute,
+                ref,
+                Build.MODEL ?: "Android",
+                volumeConfirmed,
+            )
             if (!running.get() || handle != sessionHandle) {
                 return@bg
             }

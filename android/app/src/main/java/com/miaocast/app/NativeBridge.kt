@@ -32,11 +32,33 @@ object NativeBridge {
      * refFunction 为空时按台数自动填 single_room / multi_room。返回 stats JSON（失败含 "error"）。
      */
     @JvmStatic external fun connect(handle: Long, ips: String, delayMs: Int, premute: Int, volumeAfterPlay: Int, refFunction: String, sourceName: String): String
+    /** 同上，附带 volumeConfirmed：仅在用户明确确认超限音量后传 true，否则由 L1 按安全上限兜底钳制。 */
+    @JvmStatic external fun connectWithVolumeConfirm(
+        handle: Long,
+        ips: String,
+        delayMs: Int,
+        premute: Int,
+        volumeAfterPlay: Int,
+        refFunction: String,
+        sourceName: String,
+        volumeConfirmed: Boolean,
+    ): String
     @JvmStatic external fun pushAac(handle: Long, au: ByteArray): Int
     /** 协调式非阻塞增删接收端与调音量（排队/reconcile 全部下沉至 Rust core Engine）。 */
     @JvmStatic external fun queueAddReceiver(handle: Long, ip: String): String
     @JvmStatic external fun queueRemoveReceiver(handle: Long, ip: String): Boolean
     @JvmStatic external fun queueSetVolume(handle: Long, ip: String, volume: Int): String
+    /** 带二次确认标志的协调式调音量：confirmed=true 放行已确认超限音量，false 按 L1 安全上限兜底。 */
+    @JvmStatic external fun queueSetVolumeChecked(handle: Long, ip: String, volume: Int, confirmed: Boolean): String
+    /** 同步全局音量过大保护策略至 L1 Rust 核心（默认开启、上限 60%）。 */
+    @JvmStatic external fun setVolumeGuardPolicy(enabled: Boolean, safeLimit: Int)
+    /** 跨端音量跨线裁决 JSON 入口（与 iOS C ABI 共享同一套实现）。 */
+    @JvmStatic external fun evaluateVolumeChangeJson(
+        enabled: Boolean,
+        safeLimit: Int,
+        currentVolume: Int,
+        targetVolume: Int,
+    ): String
     /** ip 为空 = 全组。返回每台的结果。 */
     @JvmStatic external fun setVolume(handle: Long, ip: String, volume: Int): String
     @JvmStatic external fun addReceiver(handle: Long, ip: String): String

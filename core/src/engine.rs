@@ -18,6 +18,7 @@ use crate::session::{
     AuSource, AuthMode, CapturedAu, CastConfig, CastSession, ChannelSource, ReceiverStats,
     SilenceSource,
 };
+use crate::volume_guard;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::net::Ipv4Addr;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicI64, Ordering};
@@ -47,6 +48,8 @@ struct CoordState {
     pending_connecting: Vec<Ipv4Addr>,
     pending_group_volume: Option<u8>,
     pending_speaker_volumes: BTreeMap<Ipv4Addr, u8>,
+    last_group_volume: Option<u8>,
+    last_speaker_volumes: BTreeMap<Ipv4Addr, u8>,
     in_flight_add: Option<Ipv4Addr>,
     reconcile_running: bool,
 }
@@ -67,6 +70,8 @@ impl CoordState {
         self.pending_connecting.clear();
         self.pending_group_volume = None;
         self.pending_speaker_volumes.clear();
+        self.last_group_volume = None;
+        self.last_speaker_volumes.clear();
         self.in_flight_add = None;
         self.reconcile_running = false;
     }
@@ -124,6 +129,24 @@ pub fn set_auth_mode(mode: i32) {
     let coerced = coerce_auth_mode(mode);
     AUTH_MODE.store(coerced, Ordering::SeqCst);
     log::info!("AUTH_MODE set to {coerced} ({})", device_catalog::auth_mode_label(coerced));
+}
+
+pub fn set_volume_guard_policy(enabled: bool, safe_limit: i32) {
+    let p = volume_guard::set_global_policy(enabled, safe_limit);
+    log::info!(
+        "VOLUME_GUARD set to enabled={} safe_limit={}",
+        p.enabled,
+        p.safe_limit
+    );
+}
+
+pub fn evaluate_volume_change_json(
+    enabled: bool,
+    safe_limit: i32,
+    current_volume: i32,
+    target_volume: i32,
+) -> String {
+    volume_guard::evaluate_volume_change_json(enabled, safe_limit, current_volume, target_volume)
 }
 
 pub fn current_auth_mode() -> AuthMode {
@@ -307,6 +330,28 @@ pub fn connect(
     ref_function: &str,
     source_name: &str,
 ) -> String {
+    connect_with_volume_confirmed(
+        handle,
+        ips_raw,
+        delay_ms,
+        premute,
+        volume_after_play,
+        ref_function,
+        source_name,
+        false,
+    )
+}
+
+pub fn connect_with_volume_confirmed(
+    handle: i64,
+    ips_raw: &str,
+    delay_ms: i32,
+    premute: i32,
+    volume_after_play: i32,
+    ref_function: &str,
+    source_name: &str,
+    volume_confirmed: bool,
+) -> String {
     let ips = parse_ip_list(ips_raw);
     let mut id = SourceIdentity::default();
     let rf = ref_function.trim();
@@ -327,8 +372,27 @@ pub fn connect(
         crate::netinfo::auto_playback_delay_us()
     };
     let auth = current_auth_mode();
+    let guard_policy = volume_guard::global_policy();
+    let effective_premute = (premute >= 0).then(|| {
+        let (v, clamped) = volume_guard::enforce_engine_volume(guard_policy, 0, premute, volume_confirmed);
+        if clamped {
+            log::warn!(
+                "connect premute {premute} clamped to safe_limit={v} (unconfirmed)"
+            );
+        }
+        v
+    });
+    let effective_after_play = (volume_after_play >= 0).then(|| {
+        let (v, clamped) = volume_guard::enforce_engine_volume(guard_policy, 0, volume_after_play, volume_confirmed);
+        if clamped {
+            log::warn!(
+                "connect volume_after_play {volume_after_play} clamped to safe_limit={v} (unconfirmed)"
+            );
+        }
+        v
+    });
     log::info!(
-        "connect auth_mode_requested={} ref_function={} source_name_len={} delay_us={delay_us} wifi_freq={freq:?}",
+        "connect auth_mode_requested={} ref_function={} source_name_len={} delay_us={delay_us} wifi_freq={freq:?} premute={effective_premute:?} volume_confirmed={volume_confirmed}",
         auth.as_str(),
         id.ref_function,
         id.source_name.len()
@@ -336,8 +400,8 @@ pub fn connect(
     let cfg = CastConfig {
         identity: id,
         playback_delay_us: delay_us,
-        premute: (premute >= 0).then(|| premute.min(100) as u8),
-        volume_after_play: (volume_after_play >= 0).then(|| volume_after_play.min(100) as u8),
+        premute: effective_premute,
+        volume_after_play: effective_after_play,
         auth,
         ..Default::default()
     };
@@ -350,13 +414,18 @@ pub fn connect(
     let Some(source) = e.source.lock().unwrap().take() else {
         return err_json("already started");
     };
+    let initial_vol = effective_after_play.or(effective_premute);
     {
         let mut c = e.coord.lock().unwrap();
         c.connect_started = true;
+        c.last_group_volume = initial_vol;
         for &ip in &ips {
             CoordState::add_unique(&mut c.desired, ip);
             CoordState::add_unique(&mut c.submitted, ip);
             CoordState::add_unique(&mut c.pending_connecting, ip);
+            if let Some(v) = initial_vol {
+                c.last_speaker_volumes.insert(ip, v);
+            }
         }
     }
     match CastSession::start(&ips, source, cfg) {
@@ -427,6 +496,11 @@ pub fn queue_add_receiver(handle: i64, ip_raw: &str) -> String {
         if !c.submitted.contains(&ip) {
             CoordState::add_unique(&mut c.pending_connecting, ip);
         }
+        if !c.last_speaker_volumes.contains_key(&ip) {
+            if let Some(v) = c.last_group_volume {
+                c.last_speaker_volumes.insert(ip, v);
+            }
+        }
         c.connect_finished
     };
     if ready {
@@ -451,6 +525,7 @@ pub fn queue_remove_receiver(handle: i64, ip_raw: &str) -> bool {
         c.desired.retain(|x| *x != ip);
         c.pending_connecting.retain(|x| *x != ip);
         c.pending_speaker_volumes.remove(&ip);
+        c.last_speaker_volumes.remove(&ip);
         (c.in_flight_add == Some(ip), c.connect_finished)
     };
     if cancel_in_flight {
@@ -471,8 +546,20 @@ pub fn queue_remove_receiver(handle: i64, ip_raw: &str) -> bool {
 }
 
 /// 协调式调音量：`ip_raw` 为空表示全组；若首台尚未建连或目标音箱尚在连接队列则排队等待就绪后自动应用。
+/// 未传 `confirmed=true` 时受 L1 音量安全上限保护（跨过安全上限自动钳制到 `safe_limit`）。
 pub fn queue_set_volume(handle: i64, ip_raw: &str, volume: i32) -> String {
-    let v = volume.clamp(0, 100) as u8;
+    queue_set_volume_checked(handle, ip_raw, volume, false)
+}
+
+/// 带用户二次确认标记的协调式调音量：
+/// - `confirmed=true` 表示 UI 已完成超限二次确认，直接放行目标音量；
+/// - `confirmed=false` 时按全局 `VolumeGuardPolicy` 仅在「跨过上限线」时兜底钳制。
+pub fn queue_set_volume_checked(
+    handle: i64,
+    ip_raw: &str,
+    volume: i32,
+    confirmed: bool,
+) -> String {
     let ip_opt = if ip_raw.trim().is_empty() {
         None
     } else {
@@ -487,24 +574,58 @@ pub fn queue_set_volume(handle: i64, ip_raw: &str, volume: i32) -> String {
     if e.stopped.load(Ordering::SeqCst) {
         return err_json("stopped");
     }
-    let ready = {
+    let policy = volume_guard::global_policy();
+    let (v, clamped, ready) = {
         let mut c = e.coord.lock().unwrap();
+        let current_for_guard: i32 = match ip_opt {
+            None => {
+                let master = c.last_group_volume.unwrap_or(0);
+                let min_speaker = c
+                    .desired
+                    .iter()
+                    .map(|ip| c.last_speaker_volumes.get(ip).copied().unwrap_or(master))
+                    .min();
+                min_speaker.map_or(master, |m| m.min(master)) as i32
+            }
+            Some(ip) => c
+                .last_speaker_volumes
+                .get(&ip)
+                .copied()
+                .or(c.last_group_volume)
+                .unwrap_or(0) as i32,
+        };
+        let (applied, clamped) =
+            volume_guard::enforce_engine_volume(policy, current_for_guard, volume, confirmed);
+        if clamped {
+            log::warn!(
+                "queue_set_volume({ip_opt:?}, {volume}) clamped to safe_limit={applied} (current={current_for_guard}, unconfirmed)"
+            );
+        }
         match ip_opt {
-            None => c.pending_group_volume = Some(v),
+            None => {
+                c.pending_group_volume = Some(applied);
+                c.last_group_volume = Some(applied);
+                let desired_ips = c.desired.clone();
+                for ip in desired_ips {
+                    c.last_speaker_volumes.insert(ip, applied);
+                }
+            }
             Some(ip) => {
-                c.pending_speaker_volumes.insert(ip, v);
+                c.pending_speaker_volumes.insert(ip, applied);
+                c.last_speaker_volumes.insert(ip, applied);
             }
         }
-        c.connect_finished
+        (applied, clamped, c.connect_finished)
     };
     if ready {
         trigger_reconcile(e);
     }
     format!(
-        "{{\"queued\":true,\"ip\":{},\"volume\":{v},\"connect_finished\":{ready}}}",
+        "{{\"queued\":true,\"ip\":{},\"volume\":{v},\"clamped\":{clamped},\"safe_limit\":{},\"connect_finished\":{ready}}}",
         ip_opt
             .map(|ip| device_catalog::json_escape(&ip.to_string()))
-            .unwrap_or_else(|| "\"\"".into())
+            .unwrap_or_else(|| "\"\"".into()),
+        policy.safe_limit
     )
 }
 
@@ -669,6 +790,7 @@ pub fn remove_receiver(handle: i64, ip_raw: &str) {
             c.submitted.retain(|x| *x != ip);
             c.pending_connecting.retain(|x| *x != ip);
             c.pending_speaker_volumes.remove(&ip);
+            c.last_speaker_volumes.remove(&ip);
         }
         if let Some(s) = session(handle) {
             s.remove_receiver(ip);
@@ -825,6 +947,8 @@ mod tests {
             pending_connecting: vec![ip2],
             pending_group_volume: Some(50),
             pending_speaker_volumes: BTreeMap::from([(ip2, 35)]),
+            last_group_volume: None,
+            last_speaker_volumes: BTreeMap::new(),
             in_flight_add: None,
             reconcile_running: true,
         };
@@ -868,5 +992,37 @@ mod tests {
         assert_eq!(push_aac(app_h, vec![0x21, 0x10]), 0);
         stop(app_h);
         assert_eq!(push_aac(app_h, vec![0x21, 0x10]), -1);
+    }
+
+    #[test]
+    fn queue_set_volume_checked_enforces_crossing_threshold_policy() {
+        set_volume_guard_policy(true, 60);
+        let h = create(true);
+        let _ = queue_add_receiver(h, "192.0.2.50");
+
+        // 未确认跨过安全上限 -> 兜底钳制到 60
+        let r1 = queue_set_volume(h, "192.0.2.50", 85);
+        assert!(r1.contains("\"volume\":60"), "r1={r1}");
+        assert!(r1.contains("\"clamped\":true"), "r1={r1}");
+
+        // 用户二次确认后 -> 放行 85
+        let r2 = queue_set_volume_checked(h, "192.0.2.50", 85, true);
+        assert!(r2.contains("\"volume\":85"), "r2={r2}");
+        assert!(r2.contains("\"clamped\":false"), "r2={r2}");
+
+        // 已在高音量区内继续微调 -> 不再钳制
+        let r3 = queue_set_volume_checked(h, "192.0.2.50", 92, false);
+        assert!(r3.contains("\"volume\":92"), "r3={r3}");
+        assert!(r3.contains("\"clamped\":false"), "r3={r3}");
+
+        // 降回安全区后再未确认拉超 -> 重新钳制到 60
+        let r4 = queue_set_volume_checked(h, "192.0.2.50", 40, false);
+        assert!(r4.contains("\"volume\":40"), "r4={r4}");
+        let r5 = queue_set_volume_checked(h, "192.0.2.50", 80, false);
+        assert!(r5.contains("\"volume\":60"), "r5={r5}");
+        assert!(r5.contains("\"clamped\":true"), "r5={r5}");
+
+        stop(h);
+        set_volume_guard_policy(true, volume_guard::DEFAULT_SAFE_VOLUME_LIMIT as i32);
     }
 }

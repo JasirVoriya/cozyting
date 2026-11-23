@@ -25,6 +25,7 @@ pub mod session;
 pub mod engine;
 pub mod inspect;
 pub mod update;
+pub mod volume_guard;
 pub mod ffi;
 pub mod ffi_c;
 
