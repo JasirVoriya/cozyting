@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>MiaoCast — Open-Source Pure-LAN MiPlay Multi-Room Audio Casting for Any Android Phone</title>
+  <meta name="description" content="MiaoCast is a free, open-source (AGPL-3.0) third-party MiPlay pure-LAN audio casting app for Android 10+. Stream exclusively from one chosen music app on Samsung, Pixel, OnePlus, OPPO, vivo, or Huawei phones to up to 63 Xiaomi / XiaoAi speakers in millisecond sync—zero cloud, zero Xiaomi account, no root.">
+  <meta name="keywords" content="MiaoCast,MiPlay,Xiaomi speaker casting,XiaoAi speaker audio cast,multi-room Wi-Fi audio,Android AudioPlaybackCapture,per-app audio isolation,pure LAN audio cast,open source MiPlay sender,Rust audio sync engine">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/en/">
+  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/miaocast-releases/">
+  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/miaocast-releases/en/">
+  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/miaocast-releases/ja/">
+  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/miaocast-releases/">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="MiaoCast LLM-friendly summary (llms.txt)">
+  <link rel="icon" type="image/svg+xml" href="../assets/logo.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="ja_JP">
+  <meta property="og:site_name" content="MiaoCast">
+  <meta property="og:title" content="MiaoCast — Open-Source Pure-LAN MiPlay Multi-Room Audio Casting">
+  <meta property="og:description" content="Cast only your chosen music app from any Android 10+ phone to up to 63 Xiaomi / XiaoAi speakers in millisecond sync over home Wi-Fi—zero cloud, zero account, no root.">
+  <meta property="og:url" content="https://jasirvoriya.github.io/miaocast-releases/en/">
+  <meta property="og:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="MiaoCast — Cross-platform pure-LAN MiPlay audio casting and multi-speaker sync engine">
+  <meta property="og:video" content="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en.mp4">
+  <meta property="og:video:type" content="video/mp4">
+  <meta property="og:video:width" content="1280">
+  <meta property="og:video:height" content="720">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MiaoCast — Open-Source Pure-LAN MiPlay Multi-Room Audio Casting">
+  <meta name="twitter:description" content="Any Android 10+ phone to up to 63 Xiaomi / XiaoAi speakers over local Wi-Fi: strict single-app audio isolation, 4 live latency tiers, zero cloud, no root.">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+
+  <!-- Structured Data (JSON-LD) for Search Engines & AI Generative Engines (GEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/en/#website",
+        "url": "https://jasirvoriya.github.io/miaocast-releases/en/",
+        "name": "MiaoCast",
+        "alternateName": ["MiaoCast", "妙投", "MiPlay Sender"],
+        "inLanguage": ["en", "zh-CN", "ja"],
+        "description": "Free, open-source third-party MiPlay pure-LAN audio casting client for Android 10+ with millisecond multi-speaker sync and strict single-app audio isolation."
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/en/#app",
+        "name": "MiaoCast",
+        "alternateName": "妙投",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Android 10+ (API 29-36), iOS (Planned)",
+        "softwareRequirements": "Android 10 (API 29) or higher, arm64-v8a, local Wi-Fi network shared with MiPlay-capable Xiaomi / XiaoAi speakers",
+        "isAccessibleForFree": true,
+        "license": "https://github.com/JasirVoriya/miaocast-releases/blob/main/LICENSE",
+        "url": "https://jasirvoriya.github.io/miaocast-releases/en/",
+        "downloadUrl": "https://github.com/JasirVoriya/miaocast-releases/releases",
+        "releaseNotes": "https://github.com/JasirVoriya/miaocast-releases/blob/main/CHANGELOG.md",
+        "screenshot": "https://jasirvoriya.github.io/miaocast-releases/assets/screenshots/en/01-main-casting-dark-vs-light.png",
+        "image": "https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Works on any Android 10+ phone (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) directly over local Wi-Fi with Xiaomi / XiaoAi speakers",
+          "Strict per-app audio isolation (Fail-Closed): casts only your selected music app; chat voice notes and system alerts stay off the speakers",
+          "Synchronizes up to 63 Xiaomi / XiaoAi speakers in millisecond lockstep with per-speaker volume and live add/remove",
+          "4 live latency presets (Standard 800/1000ms, Balanced 400ms, Low 250ms, Ultra 150ms) plus custom ms hot-switched without reconnecting",
+          "Built-in Wireless Debugging Silent Mode on Android 13+: no root, no PC, no Shizuku; eliminates capture prompts and isolates dual-zone AudioFocus",
+          "100% pure LAN streaming, zero cloud servers, no Xiaomi account login, AGPL-3.0 open source"
+        ]
+      },
+      {
+        "@type": "VideoObject",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/en/#video",
+        "name": "MiaoCast in 1 Minute: Cast Single-App Audio from Any Android Phone to Xiaomi Speakers",
+        "description": "Narration-free product demo showcasing brand-free Android support, automatic music-app switching, simultaneous short-video browsing and speaker playback, up to 63-speaker multi-room sync with 4 live latency tiers, and pure-LAN zero-cloud privacy.",
+        "thumbnailUrl": "https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en-poster.jpg",
+        "contentUrl": "https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en.mp4",
+        "uploadDate": "2026-11-24",
+        "duration": "PT1M2S",
+        "inLanguage": "en",
+        "about": { "@id": "https://jasirvoriya.github.io/miaocast-releases/en/#app" }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://jasirvoriya.github.io/miaocast-releases/en/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Can non-Xiaomi phones (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) cast to Xiaomi / XiaoAi speakers?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Any Android 10+ phone on the same home Wi-Fi LAN can stream directly to MiPlay-capable Xiaomi / XiaoAi speakers without a Xiaomi phone, Xiaomi account, or root."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is MiaoCast different from connecting via Bluetooth?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Bluetooth usually pairs with only one speaker, drops across walls, compresses audio, and broadcasts all phone sounds. MiaoCast runs over home Wi-Fi to synchronize up to 63 speakers in millisecond lockstep at 48kHz 256kbps AAC while capturing only your chosen music app."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Will watching short videos or listening to voice notes leak to speakers or pause the music?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No audio leaks. MiaoCast strictly isolates your selected music app. With Silent Mode enabled on Android 13+, dual-zone AudioFocus isolation and per-app local mute let you watch videos or listen to voice messages on your phone without pausing speaker music."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Silent Mode require root, a computer, or Shizuku?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. MiaoCast embeds a lightweight on-device Wireless Debugging client. Pair once using Android's 6-digit pairing code via the guided wizard—no root, no PC, and no Shizuku needed. Standard Mode also works out of the box on Android 10+."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does MiaoCast upload audio or require a Xiaomi account?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Never. Discovery and audio streaming stay 100% inside your local Wi-Fi network with zero cloud servers, zero accounts, and zero telemetry. The optional daily update check fetches only a read-only public manifest (verified with SHA-256 and APK signature) and can be disabled in Settings."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is iPhone / iPad (iOS) supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The shared Rust core (miaocast_core.h C ABI and XCFramework build pipeline) and cross-platform UI specification are ready; the native SwiftUI + ReplayKit iOS client is planned."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    @layer reset, tokens, base, layout, components;
+
+    @layer tokens {
+      :root {
+        /* Raw light & dark tokens (Ceramic & Slate flat industrial palette) */
+        --bg-page-light: #F4F6FA;
+        --bg-page-dark: #10131A;
+        --bg-surface-light: #FFFFFF;
+        --bg-surface-dark: #181C26;
+        --bg-subtle-light: #EEF1F7;
+        --bg-subtle-dark: #202634;
+        --border-light: rgba(15, 23, 42, 0.10);
+        --border-dark: rgba(248, 250, 252, 0.11);
+        --text-1-light: #14171F;
+        --text-1-dark: #F4F6FA;
+        --text-2-light: #475569;
+        --text-2-dark: #A6B0C3;
+        --text-3-light: #64748B;
+        --text-3-dark: #8592A8;
+        --accent-light: #E13E50;
+        --accent-dark: #FF6B7A;
+        --accent-soft-light: #FFF0F2;
+        --accent-soft-dark: rgba(255, 92, 108, 0.16);
+        --ok-light: #0F8A5F;
+        --ok-dark: #34D399;
+        --shadow-light: 0 10px 30px rgba(15, 23, 42, 0.06);
+        --shadow-dark: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+        /* Default light values + @media fallback for browsers without light-dark() */
+        --bg-page: var(--bg-page-light);
+        --bg-surface: var(--bg-surface-light);
+        --bg-subtle: var(--bg-subtle-light);
+        --border: var(--border-light);
+        --text-1: var(--text-1-light);
+        --text-2: var(--text-2-light);
+        --text-3: var(--text-3-light);
+        --accent: var(--accent-light);
+        --accent-soft: var(--accent-soft-light);
+        --ok: var(--ok-light);
+        --shadow: var(--shadow-light);
+
+        @media (prefers-color-scheme: dark) {
+          --bg-page: var(--bg-page-dark);
+          --bg-surface: var(--bg-surface-dark);
+          --bg-subtle: var(--bg-subtle-dark);
+          --border: var(--border-dark);
+          --text-1: var(--text-1-dark);
+          --text-2: var(--text-2-dark);
+          --text-3: var(--text-3-dark);
+          --accent: var(--accent-dark);
+          --accent-soft: var(--accent-soft-dark);
+          --ok: var(--ok-dark);
+          --shadow: var(--shadow-dark);
+        }
+
+        @supports (color: light-dark(white, black)) {
+          --bg-page: light-dark(var(--bg-page-light), var(--bg-page-dark));
+          --bg-surface: light-dark(var(--bg-surface-light), var(--bg-surface-dark));
+          --bg-subtle: light-dark(var(--bg-subtle-light), var(--bg-subtle-dark));
+          --border: light-dark(var(--border-light), var(--border-dark));
+          --text-1: light-dark(var(--text-1-light), var(--text-1-dark));
+          --text-2: light-dark(var(--text-2-light), var(--text-2-dark));
+          --text-3: light-dark(var(--text-3-light), var(--text-3-dark));
+          --accent: light-dark(var(--accent-light), var(--accent-dark));
+          --accent-soft: light-dark(var(--accent-soft-light), var(--accent-soft-dark));
+          --ok: light-dark(var(--ok-light), var(--ok-dark));
+        }
+
+        color-scheme: light dark;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --radius-sm: 10px;
+        --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+      }
+
+      html {
+        accent-color: var(--accent);
+      }
+    }
+
+    @layer reset {
+      *, *::before, *::after { box-sizing: border-box; }
+      body, h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
+      img { display: block; max-inline-size: 100%; height: auto; }
+    }
+
+    @layer base {
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-page);
+        color: var(--text-1);
+        line-height: 1.65;
+        min-block-size: 100dvh;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      :where(a:any-link, button, summary, [tabindex="0"]):focus-visible {
+        outline: 2.5px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 6px;
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+        background: var(--bg-subtle);
+        padding: 0.12em 0.42em;
+        border-radius: 6px;
+      }
+    }
+
+    @layer layout {
+      .container {
+        width: min(1120px, calc(100% - 2rem));
+        margin-inline: auto;
+      }
+
+      .site-header {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 20;
+        background: color-mix(in srgb, var(--bg-page) 88%, transparent);
+        backdrop-filter: blur(12px);
+        border-block-end: 1px solid var(--border);
+      }
+
+      .nav-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-block-size: 64px;
+        flex-wrap: wrap;
+        padding-block: 0.5rem;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        text-decoration: none;
+        color: var(--text-1);
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+        list-style: none;
+        font-size: 0.94rem;
+      }
+
+      .nav-links a {
+        color: var(--text-2);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .nav-links a:hover {
+        color: var(--text-1);
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.2rem;
+        border-radius: 999px;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+      }
+
+      .lang-switch a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.24rem 0.62rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-2);
+        text-decoration: none;
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+      }
+
+      .lang-switch a:hover {
+        color: var(--text-1);
+      }
+
+      .lang-switch a[aria-current="page"] {
+        background: var(--bg-surface);
+        color: var(--text-1);
+        border-color: var(--accent);
+        font-weight: 700;
+      }
+
+      @media (forced-colors: active) {
+        .lang-switch a[aria-current="page"] {
+          border-color: Highlight;
+          text-decoration: underline;
+        }
+      }
+
+      section.block {
+        padding-block: clamp(2.5rem, 5vw, 4.25rem);
+      }
+
+      .promo-video {
+        margin: 0 auto;
+        max-width: 1080px;
+      }
+      .promo-video video {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        background: #05070b;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+      }
+      .promo-video figcaption {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 0.875rem;
+        opacity: 0.7;
+      }
+      .section-head {
+        max-inline-size: 46rem;
+        margin-block-end: 1.75rem;
+      }
+
+      .section-eyebrow {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-soft);
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        margin-block-end: 0.75rem;
+      }
+
+      .section-head h2 {
+        font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+        letter-spacing: -0.025em;
+        line-height: 1.25;
+        margin-block-end: 0.5rem;
+      }
+
+      .section-head p {
+        color: var(--text-2);
+        font-size: 1rem;
+      }
+    }
+
+    @layer components {
+      .hero {
+        padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 4vw, 3rem);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: clamp(1.75rem, 4vw, 3rem);
+        align-items: center;
+      }
+
+      @media (max-width: 860px) {
+        .hero-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .hero h1 {
+        font-size: clamp(2rem, 4.4vw, 3.1rem);
+        line-height: 1.16;
+        letter-spacing: -0.03em;
+        margin-block-end: 1rem;
+      }
+
+      .hero-lead {
+        font-size: 1.08rem;
+        color: var(--text-2);
+        margin-block-end: 1.5rem;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-block-end: 1.35rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.78rem 1.35rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.96rem;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      .btn:hover { transform: translateY(-1px); }
+
+      .btn-primary {
+        background: #FF5C6C;
+        color: #FFFFFF;
+      }
+
+      .btn-secondary {
+        background: var(--bg-surface);
+        color: var(--text-1);
+        border-color: var(--border);
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+      }
+
+      .chip {
+        font-size: 0.84rem;
+        color: var(--text-2);
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.28rem 0.78rem;
+      }
+
+      .hero-shot {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 0.75rem;
+        box-shadow: var(--shadow);
+      }
+
+      .hero-shot img {
+        border-radius: calc(var(--radius-lg) - 6px);
+      }
+
+      .hero-shot figcaption {
+        margin-block-start: 0.65rem;
+        font-size: 0.84rem;
+        color: var(--text-3);
+        text-align: center;
+      }
+
+      /* Feature grid */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+        gap: 1.15rem;
+      }
+
+      .card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.35rem 1.4rem;
+      }
+
+      .card h3 {
+        font-size: 1.08rem;
+        margin-block-end: 0.45rem;
+        letter-spacing: -0.01em;
+      }
+
+      .card p {
+        color: var(--text-2);
+        font-size: 0.94rem;
+      }
+
+      .card-tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--accent);
+        margin-block-end: 0.5rem;
+        font-weight: 700;
+      }
+
+      /* Responsive Comparison Table (follows modern-web-guidance responsive-table) */
+      .table-wrapper {
+        overflow: auto;
+        max-inline-size: 100%;
+        container-type: inline-size;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+      }
+
+      table.compare-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.93rem;
+        --label-2: "MiaoCast";
+        --label-3: "Bluetooth";
+        --label-4: "Stock Xiaomi MiPlay";
+        --label-5: "Screen Mirroring";
+      }
+
+      .compare-table caption {
+        text-align: start;
+        padding: 1rem 1.2rem 0.6rem;
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: var(--text-1);
+      }
+
+      .compare-table thead {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 2;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        text-align: start;
+        padding: 0.85rem 1rem;
+        border-block-end: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      .compare-table thead th {
+        background: var(--bg-subtle);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .compare-table tbody th {
+        position: sticky;
+        inset-inline-start: 0;
+        z-index: 1;
+        background: var(--bg-surface);
+        font-weight: 700;
+        min-inline-size: 10rem;
+      }
+
+      .compare-table td.highlight {
+        background: color-mix(in srgb, var(--accent-soft) 55%, var(--bg-surface));
+        font-weight: 600;
+      }
+
+      @container (width < 680px) {
+        table.compare-table,
+        .compare-table caption,
+        .compare-table thead,
+        .compare-table tbody,
+        .compare-table tr,
+        .compare-table th,
+        .compare-table td {
+          display: block;
+        }
+
+        .compare-table thead {
+          display: none;
+        }
+
+        .compare-table tr {
+          margin: 0.85rem;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+        }
+
+        .compare-table tbody th {
+          position: sticky;
+          inset-block-start: 0;
+          z-index: 2;
+          background: var(--bg-subtle);
+        }
+
+        .compare-table td:nth-child(2)::before { content: var(--label-2) "："; font-weight: 700; color: var(--accent); }
+        .compare-table td:nth-child(3)::before { content: var(--label-3) "："; font-weight: 600; color: var(--text-3); }
+        .compare-table td:nth-child(4)::before { content: var(--label-4) "："; font-weight: 600; color: var(--text-3); }
+        .compare-table td:nth-child(5)::before { content: var(--label-5) "："; font-weight: 600; color: var(--text-3); }
+      }
+
+      /* Screenshots gallery */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+        gap: 1.25rem;
+      }
+
+      .shot-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.9rem;
+      }
+
+      .shot-card img {
+        border-radius: 10px;
+      }
+
+      .shot-card figcaption {
+        margin-block-start: 0.7rem;
+        font-size: 0.9rem;
+        color: var(--text-2);
+      }
+
+      .shot-card strong {
+        display: block;
+        color: var(--text-1);
+        margin-block-end: 0.15rem;
+      }
+
+      /* Steps */
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+        gap: 1rem;
+        counter-reset: step;
+      }
+
+      .step-item {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem 1.35rem;
+      }
+
+      .step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 0.85rem;
+        margin-block-end: 0.65rem;
+      }
+
+      .step-item h3 {
+        font-size: 1.02rem;
+        margin-block-end: 0.35rem;
+      }
+
+      .step-item p {
+        color: var(--text-2);
+        font-size: 0.92rem;
+      }
+
+      /* Accordion FAQ (follows modern-web-guidance accordion) */
+      .accordion {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.75rem;
+      }
+
+      .accordion details {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding-inline: 1.2rem;
+      }
+
+      .accordion summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding-block: 1.05rem;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .accordion summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .accordion summary::before {
+        content: "";
+        inline-size: 1.1em;
+        block-size: 1.1em;
+        flex-shrink: 0;
+        background-color: var(--accent);
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M6 9l6 6 6-6' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' fill-opacity='0'/%3E%3C/svg%3E") no-repeat center / contain;
+        rotate: -90deg;
+      }
+
+      .accordion details[open] > summary::before {
+        rotate: 0deg;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .accordion summary::before {
+          transition: rotate 0.2s ease;
+        }
+      }
+
+      .accordion details::details-content {
+        interpolate-size: allow-keywords;
+        overflow: clip;
+        contain: layout;
+      }
+
+      .accordion details:not([open])::details-content {
+        block-size: 0;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .accordion details::details-content {
+          transition: block-size 0.25s ease, content-visibility 0.25s ease, display 0.25s ease;
+          transition-behavior: allow-discrete;
+        }
+      }
+
+      .faq-answer {
+        color: var(--text-2);
+        font-size: 0.95rem;
+        padding-block-end: 1.15rem;
+        padding-inline-start: 1.75rem;
+      }
+
+      /* Tech summary banner */
+      .tech-banner {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: clamp(1.4rem, 3vw, 2.2rem);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+      }
+
+      .tech-banner h2 {
+        font-size: clamp(1.3rem, 2.2vw, 1.65rem);
+        margin-block-end: 0.4rem;
+      }
+
+      .tech-banner p {
+        color: var(--text-2);
+        max-inline-size: 42rem;
+        font-size: 0.95rem;
+      }
+
+      .site-footer {
+        border-block-start: 1px solid var(--border);
+        padding-block: 2rem 2.75rem;
+        color: var(--text-3);
+        font-size: 0.86rem;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-block-end: 0.75rem;
+      }
+
+      .footer-links a {
+        color: var(--text-2);
+        text-decoration: none;
+      }
+
+      .footer-links a:hover {
+        color: var(--accent);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-bar">
+      <a class="brand" href="./">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="../assets/logo-dark.svg">
+          <img src="../assets/logo.svg" alt="" width="30" height="30">
+        </picture>
+        <span>MiaoCast</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <ul class="nav-links">
+          <li><a href="#pain-points">Compare</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#video">Video</a></li>
+          <li><a href="#screenshots">Screenshots</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li>
+            <span class="lang-switch" role="group" aria-label="Switch language">
+              <a href="../" lang="zh-CN" hreflang="zh-CN">中文</a>
+              <a href="./" lang="en" hreflang="en" aria-current="page">EN</a>
+              <a href="../ja/" lang="ja" hreflang="ja">日本語</a>
+            </span>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <span class="section-eyebrow">Pure LAN · Zero Cloud · AGPL-3.0</span>
+          <h1>Open-Source Pure-LAN MiPlay Audio Casting for Any Android Phone</h1>
+          <p class="hero-lead">
+            <strong>MiaoCast</strong> is a free, open-source third-party MiPlay local-network audio casting app (Android 10+, iOS planned).
+            No root and no Xiaomi account required—stream exclusively from one chosen music app to one or up to 63 Xiaomi / XiaoAi speakers in millisecond sync, while voice messages and alerts stay private on your phone.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://github.com/JasirVoriya/miaocast-releases/releases">Download Latest APK</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/miaocast-releases">GitHub Repository</a>
+            <a class="btn btn-secondary" href="architecture.html">Architecture Explorer</a>
+          </div>
+          <ul class="hero-meta" aria-label="Key capabilities">
+            <li class="chip">Any Android Brand (API 29+)</li>
+            <li class="chip">Up to 63 Synced Speakers</li>
+            <li class="chip">Strict Single-App Isolation</li>
+            <li class="chip">4 Live Latency Tiers (150–1000ms)</li>
+            <li class="chip">Android 13+ Rootless Silent Capture</li>
+          </ul>
+        </div>
+
+        <figure class="hero-shot">
+          <img
+            src="../assets/screenshots/en/01-main-casting-dark-vs-light.png"
+            alt="MiaoCast main screen in dark and light themes showing multi-room synchronized casting, album backdrop, per-speaker volume sliders, and live ms latency"
+            width="2608"
+            height="2841"
+            fetchpriority="high">
+          <figcaption>Real Android UI render: album-mood backdrop, room labels, live ms telemetry, and independent volume bars</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Pain Points & Comparison -->
+    <section class="block" id="pain-points">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Why MiaoCast</span>
+          <h2>Solving the 4 Everyday Frustrations of Xiaomi Speakers</h2>
+          <p>Compared to Bluetooth, stock Xiaomi MiPlay, and system screen mirroring, MiaoCast combines brand freedom, multi-room Wi-Fi sync, and strict per-app privacy isolation.</p>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
+          <table class="compare-table">
+            <caption id="compare-caption">MiaoCast vs. common ways to cast phone audio to Xiaomi speakers</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capability</th>
+                <th scope="col">MiaoCast</th>
+                <th scope="col">Bluetooth</th>
+                <th scope="col">Stock Xiaomi MiPlay</th>
+                <th scope="col">Screen Mirroring</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Phone Brand Support</th>
+                <td class="highlight">Any Android 10+ phone (iOS planned)</td>
+                <td>Any brand</td>
+                <td>Select Xiaomi / Redmi only</td>
+                <td>Any brand</td>
+              </tr>
+              <tr>
+                <th scope="row">Multi-Room Sync</th>
+                <td class="highlight">Up to 63 speakers in ms sync; live add/remove</td>
+                <td>Usually 1 speaker; multi-speaker echo</td>
+                <td>Supports multiple MiPlay speakers</td>
+                <td>Single target or high latency</td>
+              </tr>
+              <tr>
+                <th scope="row">Single-App Isolation</th>
+                <td class="highlight">Only your chosen music app; zero chat/alert leaks</td>
+                <td>Broadcasts all phone audio</td>
+                <td>Supports media source routing</td>
+                <td>Broadcasts entire screen &amp; audio</td>
+              </tr>
+              <tr>
+                <th scope="row">Videos Don&rsquo;t Pause Music</th>
+                <td class="highlight">Dual-zone AudioFocus isolation (Android 13+ Silent Mode)</td>
+                <td>Videos immediately pause speaker music</td>
+                <td>Depends on OS version</td>
+                <td>Cannot isolate</td>
+              </tr>
+              <tr>
+                <th scope="row">Live Latency Tuning</th>
+                <td class="highlight">4 tiers (150–1000ms) + custom ms without reconnecting</td>
+                <td>Not adjustable</td>
+                <td>Not adjustable</td>
+                <td>Not adjustable</td>
+              </tr>
+              <tr>
+                <th scope="row">Privacy, Account &amp; License</th>
+                <td class="highlight">Pure LAN, zero Xiaomi account, AGPL-3.0 open source</td>
+                <td>Local proprietary</td>
+                <td>Tied to Xiaomi account &amp; ROM</td>
+                <td>Depends on vendor service</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Features -->
+    <section class="block" id="features">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Core Features</span>
+          <h2>6 Core Capabilities Crafted for Daily Listening</h2>
+          <p>Complex multi-speaker clock synchronization and LAN protocol handling stay under the hood—leaving a calm, effortless player up front.</p>
+        </div>
+
+        <div class="cards-grid">
+          <article class="card">
+            <span class="card-tag">01 · CROSS-BRAND LAN</span>
+            <h3>Brand-Free, Out-of-the-Box LAN Casting</h3>
+            <p>Samsung, Pixel, OnePlus, OPPO, vivo, and Huawei phones connect directly to MiPlay-capable Xiaomi / XiaoAi speakers over home Wi-Fi—zero cloud relays and no Xiaomi account login.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">02 · FAIL-CLOSED ISOLATION</span>
+            <h3>Only Your Chosen Music App</h3>
+            <p>Fail-Closed single-UID isolation never silently degrades to full-system screen capture or microphone input. Voice notes, short videos, and notifications stay off your living-room speakers.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">03 · SILENT MODE (ANDROID 13+)</span>
+            <h3>Built-In Wireless Debugging: No Root, No Shizuku</h3>
+            <p>Pair once on-device with Android&rsquo;s 6-digit pairing code to remove repeated cast prompts, unlock true per-app phone mute, and isolate AudioFocus so phone videos never interrupt speaker playback.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">04 · MULTI-ROOM SYNC</span>
+            <h3>Up to 63 Speakers in Millisecond Lockstep</h3>
+            <p>Select living-room, bedroom, and study speakers together with per-speaker volume sliders, room names, and live latency readouts (`ms`). Add or remove rooms mid-song without interruption.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">05 · LIVE LATENCY TIERS</span>
+            <h3>4-Tier Hot-Switch Playback Latency</h3>
+            <p>Switch between Standard (800/1000ms), Balanced (400ms), Low (250ms), Ultra (150ms), or custom ms right from the top bar—reanchoring TIME_OFFSET live with zero disconnect.</p>
+          </article>
+
+          <article class="card">
+            <span class="card-tag">06 · AUTO SOURCE &amp; MODERN UI</span>
+            <h3>Favorite Sources, Auto-Detect &amp; Dual Themes</h3>
+            <p>Curate and drag-reorder favorite music apps with per-app Auto-Detect toggles, enjoy album-art ambient backdrops in Dark / Light / System themes, and optional SHA-256 verified updates.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Demo Video -->
+    <section class="block" id="video" aria-labelledby="video-heading">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Video Overview</span>
+          <h2 id="video-heading">MiaoCast in 1 Minute: Any Android Phone to Every Xiaomi Speaker</h2>
+          <p>Narration-free visual walkthrough: brand-free Android support, automatic music-app following, watching short videos without interrupting speaker music, whole-home sync with 4 live latency tiers, and pure-LAN zero-cloud privacy.</p>
+        </div>
+        <figure class="promo-video">
+          <video controls playsinline loading="lazy" preload="none" width="1280" height="720"
+                 poster="../assets/video/miaocast-promo-en-poster.jpg"
+                 aria-describedby="promo-video-caption">
+            <source src="../assets/video/miaocast-promo-en.mp4" type="video/mp4">
+            Your browser does not support HTML5 video. You can <a href="../assets/video/miaocast-promo-en.mp4">download the demo video (MP4)</a> directly.
+          </video>
+          <figcaption id="promo-video-caption">MiaoCast product walkthrough · 1280×720 · Rendered demo UI with placeholder device names and RFC 5737 addresses.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Screenshots Showcase -->
+    <section class="block" id="screenshots">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">UI Showcase</span>
+          <h2>Authentic Dark &amp; Light Dual-Theme Interface</h2>
+          <p>Every screenshot is rendered directly from the real Android View hierarchy in English, showcasing daily casting, latency tuning, source management, and setup flows.</p>
+        </div>
+
+        <div class="gallery-grid">
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/02-latency-tiers-dark-vs-light.png" alt="MiaoCast 4-tier playback latency selector dialog in dark and light themes" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>4-Tier Live Latency Switching</strong>Switch between Standard, Balanced, Low, and Ultra mid-stream without reconnecting.</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/03-app-picker-dark-vs-light.png" alt="MiaoCast favorite audio source manager in dark and light themes" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>Favorite Sources &amp; Per-App Auto-Detect</strong>Add, remove, drag-reorder, and toggle Auto-Detect independently per music app.</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/04-wireless-guide-dark-vs-light.png" alt="MiaoCast Android 13+ built-in wireless debugging setup wizard in dark and light themes" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>Guided On-Device Silent Capture Setup</strong>Pair once on your phone with zero root, zero PC, and zero Shizuku.</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/05-settings-core-dark-vs-light.png" alt="MiaoCast settings screen showing theme, display language, capture engine, and single-app mute" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>Settings · Language, Capture Engine &amp; Mute</strong>Switch theme, in-app language, Standard vs. Silent mode, and phone mute policies transparently.</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/06-settings-update-dark-vs-light.png" alt="MiaoCast settings screen showing safe volume guard and verified updates card" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>Volume Safety Guard &amp; Verified Updates</strong>Protect against accidental blasts and toggle optional read-only update checks anytime.</figcaption>
+          </figure>
+          <figure class="shot-card">
+            <img src="../assets/screenshots/en/08-update-dialog-dark-vs-light.png" alt="MiaoCast cross-version changelog and SHA-256 verified update dialog" width="2608" height="2841" loading="lazy">
+            <figcaption><strong>Cross-Version Changelog &amp; Dual Verification</strong>Aggregates release notes across versions and enforces SHA-256 + signing certificate verification.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3-Step Quick Start -->
+    <section class="block" id="quickstart">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">Quick Start</span>
+          <h2>Start Pure-LAN Casting in 3 Steps</h2>
+        </div>
+
+        <div class="steps-grid">
+          <article class="step-item">
+            <span class="step-num">1</span>
+            <h3>Install the Android APK</h3>
+            <p>Requires Android 10 (API 29) or higher on <code>arm64-v8a</code>. Download the signed release APK from <a href="https://github.com/JasirVoriya/miaocast-releases/releases">GitHub Releases</a>.</p>
+          </article>
+          <article class="step-item">
+            <span class="step-num">2</span>
+            <h3>Join the Same Home Wi-Fi</h3>
+            <p>Connect your phone and Xiaomi / XiaoAi speakers to the same local Wi-Fi router; MiaoCast discovers compatible MiPlay speakers automatically.</p>
+          </article>
+          <article class="step-item">
+            <span class="step-num">3</span>
+            <h3>Pick Your Music App &amp; Speakers</h3>
+            <p>Standard Mode works out of the box on Android 10+. On Android 13+, optionally configure Silent Mode in Settings for zero-prompt capture and dual-zone AudioFocus.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section class="block" id="faq" aria-labelledby="faq-heading">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-eyebrow">FAQ</span>
+          <h2 id="faq-heading">Frequently Asked Questions</h2>
+          <p>Answers covering device compatibility, privacy boundaries, Wireless Debugging setup, and platform roadmap.</p>
+        </div>
+
+        <div class="accordion">
+          <details open>
+            <summary>Can non-Xiaomi phones (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) cast to Xiaomi / XiaoAi speakers?</summary>
+            <div class="faq-answer">Yes. Any Android 10+ phone on the same Wi-Fi LAN can cast directly via the MiPlay protocol without a Xiaomi phone or Xiaomi account. See real-device test records in the <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md">Device Compatibility Matrix</a>.</div>
+          </details>
+
+          <details>
+            <summary>How is MiaoCast different from connecting via Bluetooth?</summary>
+            <div class="faq-answer">Bluetooth typically connects to one speaker, drops through walls, and broadcasts all phone sounds (voice chats, alerts, reels). MiaoCast streams 48kHz 256kbps AAC over home Wi-Fi to up to 63 speakers in millisecond sync while isolating only your chosen music app.</div>
+          </details>
+
+          <details>
+            <summary>Will watching short videos or listening to voice notes leak to speakers or pause the music?</summary>
+            <div class="faq-answer">No audio leaks. MiaoCast captures only the single music app you select. With Silent Mode enabled on Android 13+, dual-zone AudioFocus isolation and per-app local mute keep speaker music playing uninterrupted while you browse videos or listen to voice messages on your phone.</div>
+          </details>
+
+          <details>
+            <summary>Does Silent Mode require root, a computer, or Shizuku?</summary>
+            <div class="faq-answer">No. MiaoCast includes a built-in wireless debugging client—just pair once on-device with Android&rsquo;s 6-digit pairing code via the guided wizard. If you prefer zero setup, Standard Mode works out of the box on Android 10+.</div>
+          </details>
+
+          <details>
+            <summary>Does MiaoCast upload audio privacy or require a Xiaomi account?</summary>
+            <div class="faq-answer">Never. Device discovery and audio streaming run 100% locally on your home Wi-Fi with zero cloud servers, zero account login, and zero telemetry. Optional daily update checks fetch only a public read-only manifest (SHA-256 + signature verified) and can be turned off in Settings for 100% zero outbound requests.</div>
+          </details>
+
+          <details>
+            <summary>Is iPhone / iPad (iOS) supported?</summary>
+            <div class="faq-answer">The shared Rust core (<code>miaocast_core.h</code> C ABI and XCFramework build pipeline) and cross-platform UI specification are ready; the native SwiftUI + ReplayKit iOS client is planned.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical Deep-Dive Callout -->
+    <section class="block" id="developers">
+      <div class="container">
+        <div class="tech-banner">
+          <div>
+            <span class="section-eyebrow">For Developers &amp; Researchers</span>
+            <h2>Explore the Rust Sync Engine &amp; MiPlay LAN Architecture</h2>
+            <p>
+              MiaoCast uses a 3-layer architecture: L1 shared pure-Rust core (zero async runtime, deterministic real-time threads) + JNI / C ABI bridges + L2/L3 native clients, paired with the read-only <code>miaocast-cli</code> diagnostic tool.
+            </p>
+          </div>
+          <div class="cta-row" style="margin-block-end: 0;">
+            <a class="btn btn-primary" href="architecture.html">Open Architecture Explorer</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/ARCHITECTURE.md">Read Architecture Manual</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/JasirVoriya/miaocast-releases">GitHub Repo</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/releases">Releases</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md">Compatibility Matrix</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/LIMITATIONS.md">Known Limitations</a>
+        <a href="https://github.com/JasirVoriya/miaocast-releases/blob/main/SECURITY.md">Security &amp; Privacy</a>
+        <a href="architecture.html">Architecture Explorer</a>
+        <a href="../llms.txt">llms.txt</a>
+      </div>
+      <p>
+        MiaoCast is released under GNU AGPL-3.0-only. Independent third-party open-source project—not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

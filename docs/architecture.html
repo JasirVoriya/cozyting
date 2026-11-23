@@ -9,8 +9,15 @@
   <meta name="description" content="在线交互式探索妙投（MiaoCast）的跨端三层架构（L1 纯 Rust 同步核心 · JNI/C ABI · L2/L3 Android Kotlin 与 iOS SwiftUI）、4 条局域网数据流向、63 台音箱实时线程模型与全仓文件职责字典。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">
+  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html">
+  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
   <link rel="alternate" type="text/plain" href="llms.txt" title="MiaoCast LLM-friendly summary">
   <meta property="og:type" content="article">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
   <meta property="og:site_name" content="妙投 · MiaoCast">
   <meta property="og:title" content="交互式架构与运行时浏览器 | 妙投（MiaoCast）">
   <meta property="og:description" content="点击任意模块追踪妙投（MiaoCast）Rust L1 同步引擎与 Android/iOS 跨端架构的上下游数据流、实时线程与生命周期。">
@@ -202,6 +209,41 @@
 
       .kpi-pill strong {
         color: var(--text-1);
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.16rem;
+        border-radius: 99px;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .lang-switch a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.18rem 0.56rem;
+        border-radius: 99px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-2);
+        text-decoration: none;
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+      }
+
+      .lang-switch a:hover {
+        color: var(--text-1);
+      }
+
+      .lang-switch a[aria-current="page"] {
+        background: var(--bg-card-hover);
+        color: var(--text-1);
+        border-color: var(--cyan);
+        font-weight: 700;
       }
 
       /* Tabs bar (accessible, border-block-end active indicator) */
@@ -780,6 +822,10 @@
         .tablist button[role="tab"][aria-selected="true"]::after {
           border-block-end-color: Highlight;
         }
+        .lang-switch a[aria-current="page"] {
+          border-color: Highlight;
+          text-decoration: underline;
+        }
       }
     }
   </style>
@@ -802,6 +848,13 @@
         <li class="kpi-pill"><strong>41</strong> 个 Android 主源码</li>
         <li class="kpi-pill"><strong>24</strong> 个 Rust 核心模块</li>
         <li class="kpi-pill"><strong>4</strong> 条数据流 · <strong>Max 63</strong> 并发音箱</li>
+        <li>
+          <span class="lang-switch" role="group" aria-label="切换语言">
+            <a href="architecture.html" lang="zh-CN" hreflang="zh-CN" aria-current="page">中文</a>
+            <a href="en/architecture.html" lang="en" hreflang="en">EN</a>
+            <a href="ja/architecture.html" lang="ja" hreflang="ja">日本語</a>
+          </span>
+        </li>
       </ul>
     </header>
 

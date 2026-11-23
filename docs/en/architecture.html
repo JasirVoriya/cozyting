@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" type="image/svg+xml" href="../assets/logo-dark.svg">
+  <title>Interactive Architecture & Runtime Explorer | MiaoCast Rust MiPlay Engine</title>
+  <meta name="description" content="Explore MiaoCast's 3-layer cross-platform architecture (L1 pure Rust sync core · JNI/C ABI · L2/L3 Android Kotlin & iOS SwiftUI), 4 LAN data flows, 63-speaker real-time threading model, and full file inventory.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">
+  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html">
+  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="MiaoCast LLM-friendly summary">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="ja_JP">
+  <meta property="og:site_name" content="MiaoCast">
+  <meta property="og:title" content="Interactive Architecture & Runtime Explorer | MiaoCast">
+  <meta property="og:description" content="Click any module to trace upstream producers and downstream consumers across MiaoCast's Rust L1 sync engine and native clients.">
+  <meta property="og:url" content="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">
+  <meta property="og:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Interactive Architecture & Runtime Explorer | MiaoCast">
+  <meta name="twitter:description" content="Click any module to trace upstream producers and downstream consumers across MiaoCast's Rust L1 sync engine and native clients.">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "MiaoCast Interactive Architecture & Runtime Explorer",
+    "description": "Explore MiaoCast's 3-layer cross-platform architecture (L1 pure Rust sync core · JNI/C ABI · L2/L3 Android Kotlin & iOS SwiftUI), 4 LAN data flows, 63-speaker real-time threading model, and full file inventory.",
+    "url": "https://jasirvoriya.github.io/miaocast-releases/en/architecture.html",
+    "image": "https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png",
+    "inLanguage": "en",
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "MiaoCast",
+      "url": "https://jasirvoriya.github.io/miaocast-releases/en/"
+    }
+  }
+  </script>
+  <style>
+    @layer reset, base, components, utilities;
+
+    :root {
+      color-scheme: dark;
+      --bg-0: #060912;
+      --bg-1: #0b1120;
+      --bg-2: #111a2e;
+      --bg-card: #141f38;
+      --bg-card-hover: #1a2847;
+      --border-subtle: #243352;
+      --border-strong: #3b527e;
+      --text-1: #f8fafc;
+      --text-2: #cbd5e1;
+      --text-3: #94a3b8;
+      --cyan: #22d3ee;
+      --cyan-soft: rgba(34, 211, 238, 0.14);
+      --amber: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.14);
+      --emerald: #34d399;
+      --emerald-soft: rgba(52, 211, 153, 0.14);
+      --violet: #c084fc;
+      --violet-soft: rgba(192, 132, 252, 0.14);
+      --rust: #fb923c;
+      --accent: #38bdf8;
+      --radius-lg: 16px;
+      --radius-md: 11px;
+      --radius-sm: 7px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      --font-mono: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+    }
+
+    @layer reset {
+      html, body, h1, h2, h3, p, ul, ol, figure, table {
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        box-sizing: border-box;
+      }
+      body, button, input, div, section, article, aside, header, main, footer, nav, figure {
+        box-sizing: inherit;
+      }
+    }
+
+    @layer base {
+      body {
+        min-block-size: 100dvh;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.10), transparent 36%),
+          radial-gradient(circle at 82% 18%, rgba(192, 132, 252, 0.09), transparent 34%),
+          radial-gradient(circle at 50% 82%, rgba(251, 146, 60, 0.07), transparent 40%),
+          linear-gradient(155deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-0) 100%);
+        color: var(--text-1);
+        font-family: var(--font-sans);
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--border-subtle);
+        border-radius: 5px;
+        padding: 0.1em 0.38em;
+        color: #7dd3fc;
+      }
+
+      :where(a:any-link, button, input, [tabindex="0"]):focus-visible {
+        outline: 2.5px solid var(--cyan);
+        outline-offset: 2px;
+      }
+    }
+
+    @layer components {
+      .skip-link {
+        position: absolute;
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        z-index: 100;
+        background: var(--cyan);
+        color: #020617;
+        font-weight: 700;
+        padding: 0.5rem 0.9rem;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+      }
+      .visually-hidden:where(:not(:focus-within, :active)) {
+        position: absolute !important;
+        clip-path: inset(50%) !important;
+        overflow: hidden !important;
+        width: 1px !important;
+        height: 1px !important;
+        margin: -1px !important;
+        padding: 0 !important;
+        border: 0 !important;
+        white-space: nowrap !important;
+      }
+
+      .page-shell {
+        max-inline-size: 1480px;
+        margin-inline: auto;
+        padding-block: 1.5rem 3rem;
+        padding-inline: clamp(1rem, 2.5vw, 2rem);
+      }
+
+      .site-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-block-end: 1.25rem;
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .brand-bar {
+        inline-size: 5px;
+        block-size: 2.4rem;
+        border-radius: 99px;
+        background: linear-gradient(180deg, var(--cyan), var(--violet), var(--amber));
+        flex: none;
+      }
+
+      .site-header h1 {
+        font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+        letter-spacing: 0.01em;
+      }
+
+      .site-subtitle {
+        color: var(--text-3);
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        margin-block-start: 0.2rem;
+      }
+
+      .kpi-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+      }
+
+      .kpi-pill {
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: 99px;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.78rem;
+        color: var(--text-2);
+        font-family: var(--font-mono);
+      }
+
+      .kpi-pill strong {
+        color: var(--text-1);
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        padding: 0.16rem;
+        border-radius: 99px;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .lang-switch a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.18rem 0.56rem;
+        border-radius: 99px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-2);
+        text-decoration: none;
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+      }
+
+      .lang-switch a:hover {
+        color: var(--text-1);
+      }
+
+      .lang-switch a[aria-current="page"] {
+        background: var(--bg-card-hover);
+        color: var(--text-1);
+        border-color: var(--cyan);
+        font-weight: 700;
+      }
+
+      /* Tabs bar (accessible, border-block-end active indicator) */
+      .tabs-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-block-start: 1.15rem;
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .tablist {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.25rem;
+        scrollbar-width: thin;
+      }
+
+      .tablist button[role="tab"] {
+        position: relative;
+        flex: none;
+        min-block-size: 42px;
+        background: transparent;
+        border: 0;
+        color: var(--text-3);
+        font-family: inherit;
+        font-size: 0.92rem;
+        font-weight: 600;
+        padding: 0.65rem 1.05rem;
+        cursor: pointer;
+        transition: color 0.15s ease;
+      }
+
+      .tablist button[role="tab"]:hover:not([aria-selected="true"]) {
+        color: var(--text-1);
+      }
+
+      .tablist button[role="tab"][aria-selected="true"] {
+        color: var(--text-1);
+      }
+
+      .tablist button[role="tab"][aria-selected="true"]::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        border-block-end: 3px solid var(--cyan);
+      }
+
+      .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-block-end: 0.4rem;
+      }
+
+      .btn {
+        min-block-size: 34px;
+        padding: 0.35rem 0.78rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-2);
+        color: var(--text-2);
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+
+      .btn:hover:not(:disabled) {
+        background: var(--bg-card-hover);
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+
+      .btn[aria-pressed="true"] {
+        background: rgba(56, 189, 248, 0.16);
+        border-color: var(--cyan);
+        color: var(--text-1);
+      }
+
+      /* Tab Panels: NO padding/margin/border on [role="tabpanel"] itself (hidden="until-found" compliance) */
+      .panel-stack {
+        display: grid;
+      }
+
+      .panel-stack > [role="tabpanel"] {
+        grid-area: 1 / 1;
+      }
+
+      .panel-body {
+        padding-block-start: 1.15rem;
+      }
+
+      /* Filter bar */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-block-end: 0.9rem;
+      }
+
+      .chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .chip {
+        min-block-size: 34px;
+        padding: 0.32rem 0.75rem;
+        border-radius: 99px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-2);
+        color: var(--text-2);
+        font-family: inherit;
+        font-size: 0.81rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.42rem;
+      }
+
+      .chip:hover:not([aria-pressed="true"]) {
+        border-color: var(--border-strong);
+        color: var(--text-1);
+      }
+
+      .chip[aria-pressed="true"] {
+        border-color: var(--chip-color, var(--cyan));
+        background: var(--chip-bg, var(--cyan-soft));
+        color: var(--text-1);
+      }
+
+      .chip-swatch {
+        inline-size: 9px;
+        block-size: 9px;
+        border-radius: 99px;
+        background: var(--chip-color, var(--cyan));
+        flex: none;
+      }
+
+      .chip-swatch.diamond {
+        border-radius: 2px;
+        transform: rotate(45deg);
+      }
+
+      .chip-swatch.ring {
+        background: transparent;
+        border: 2px solid var(--chip-color, var(--emerald));
+      }
+
+      .chip-swatch.dash {
+        inline-size: 13px;
+        block-size: 0;
+        border-radius: 0;
+        border-block-start: 2.5px dashed var(--chip-color, var(--violet));
+        background: transparent;
+      }
+
+      .hint-text {
+        font-size: 0.82rem;
+        color: var(--text-3);
+      }
+
+      /* Split Workspace: Interactive Canvas + Inspector Aside */
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 1rem;
+        align-items: start;
+      }
+
+      @media (max-width: 1120px) {
+        .workspace {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .canvas-card {
+        background: linear-gradient(180deg, rgba(13, 21, 38, 0.94), rgba(8, 13, 25, 0.96));
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 0.85rem;
+        overflow-x: auto;
+      }
+
+      .arch-svg {
+        display: block;
+        inline-size: 100%;
+        min-inline-size: 760px;
+        block-size: auto;
+      }
+
+      /* Interactive SVG Node & Edge States */
+      .svg-node {
+        cursor: pointer;
+        transition: opacity 0.22s ease;
+      }
+
+      .svg-node rect.node-box {
+        fill: #141f38;
+        stroke: #2c3e63;
+        stroke-width: 1.3;
+        transition: stroke 0.2s ease, fill 0.2s ease, stroke-width 0.2s ease;
+      }
+
+      .svg-node:hover rect.node-box,
+      .svg-node:focus-visible rect.node-box {
+        fill: #1b2a4a;
+        stroke: #7dd3fc;
+        stroke-width: 2;
+      }
+
+      .svg-node.is-selected rect.node-box {
+        fill: #1d3054;
+        stroke: #f8fafc;
+        stroke-width: 2.5;
+      }
+
+      .svg-node.is-upstream rect.node-box {
+        stroke: var(--cyan);
+        stroke-width: 2.2;
+      }
+
+      .svg-node.is-downstream rect.node-box {
+        stroke: var(--emerald);
+        stroke-width: 2.2;
+      }
+
+      .svg-node.is-active-step rect.node-box {
+        fill: #1c2d4f;
+        stroke: var(--cyan);
+        stroke-width: 2.3;
+      }
+
+      .svg-node.is-dimmed {
+        opacity: 0.2;
+      }
+
+      .svg-edge {
+        transition: opacity 0.22s ease;
+      }
+
+      .svg-edge.is-dimmed {
+        opacity: 0.08;
+      }
+
+      .svg-edge .edge-flow {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2.3;
+        animation: dash-move 1.5s linear infinite;
+      }
+
+      .svg-edge.flow-media .edge-flow { stroke: var(--cyan); stroke-dasharray: 10 14; animation-duration: 1.3s; }
+      .svg-edge.flow-ctrl .edge-flow { stroke: var(--amber); stroke-dasharray: 7 12; animation-duration: 1.85s; }
+      .svg-edge.flow-sync .edge-flow { stroke: var(--emerald); stroke-dasharray: 4 9; animation-duration: 2.0s; }
+      .svg-edge.flow-tel .edge-flow { stroke: var(--violet); stroke-dasharray: 5 9; animation-duration: 2.2s; }
+
+      .svg-edge .edge-base {
+        fill: none;
+        stroke-width: 2.2;
+        opacity: 0.24;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .svg-edge.flow-media .edge-base { stroke: var(--cyan); }
+      .svg-edge.flow-ctrl .edge-base { stroke: var(--amber); }
+      .svg-edge.flow-sync .edge-base { stroke: var(--emerald); }
+      .svg-edge.flow-tel .edge-base { stroke: var(--violet); }
+
+      .is-paused .edge-flow {
+        animation-play-state: paused !important;
+      }
+
+      @keyframes dash-move {
+        from { stroke-dashoffset: 48; }
+        to { stroke-dashoffset: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .svg-edge .edge-flow { animation: none !important; }
+      }
+
+      /* Inspector Panel */
+      .inspector {
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 1.1rem;
+        position: sticky;
+        inset-block-start: 1rem;
+      }
+
+      .inspector-badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.55rem;
+        border-radius: 6px;
+        background: rgba(56, 189, 248, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        color: #7dd3fc;
+        margin-block-end: 0.55rem;
+      }
+
+      .inspector h2 {
+        font-size: 1.08rem;
+        margin-block-end: 0.45rem;
+      }
+
+      .inspector p {
+        font-size: 0.86rem;
+        color: var(--text-2);
+        margin-block-end: 0.85rem;
+      }
+
+      .inspector-section {
+        border-block-start: 1px solid var(--border-subtle);
+        padding-block-start: 0.75rem;
+        margin-block-start: 0.75rem;
+      }
+
+      .inspector-section h3 {
+        font-size: 0.78rem;
+        font-family: var(--font-mono);
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-block-end: 0.45rem;
+      }
+
+      .file-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .file-list li {
+        font-size: 0.8rem;
+        color: var(--text-2);
+        word-break: break-all;
+      }
+
+      .rel-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+
+      .rel-btn {
+        min-block-size: 28px;
+        padding: 0.22rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-1);
+        font-family: inherit;
+        font-size: 0.78rem;
+        cursor: pointer;
+      }
+
+      .rel-btn.up { border-color: rgba(34, 211, 238, 0.55); color: #67e8f9; }
+      .rel-btn.down { border-color: rgba(52, 211, 153, 0.55); color: #6ee7b7; }
+      .rel-btn:hover { background: var(--bg-card-hover); }
+
+      /* Runtime Lifecycle Stepper */
+      .stepper {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+        gap: 0.55rem;
+        margin-block-end: 1rem;
+      }
+
+      .step-btn {
+        text-align: start;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 0.65rem 0.8rem;
+        color: var(--text-2);
+        font-family: inherit;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .step-btn:hover:not([aria-pressed="true"]) {
+        border-color: var(--border-strong);
+        background: var(--bg-card);
+      }
+
+      .step-btn[aria-pressed="true"] {
+        border-color: var(--cyan);
+        background: rgba(34, 211, 238, 0.13);
+        color: var(--text-1);
+      }
+
+      .step-num {
+        font-family: var(--font-mono);
+        font-size: 0.73rem;
+        font-weight: 700;
+        color: var(--cyan);
+      }
+
+      .step-name {
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      /* Search & Responsive Table */
+      .search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin-block-end: 0.9rem;
+      }
+
+      .search-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1 1 280px;
+      }
+
+      .search-field label {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--text-2);
+        white-space: nowrap;
+      }
+
+      .search-field input {
+        inline-size: 100%;
+        min-block-size: 38px;
+        background: var(--bg-2);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: 0.4rem 0.75rem;
+        color: var(--text-1);
+        font-family: inherit;
+        font-size: 0.88rem;
+      }
+
+      .table-wrapper {
+        overflow: auto;
+        max-inline-size: 100%;
+        max-block-size: min(680px, 74dvh);
+        container-type: inline-size;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        background: var(--bg-1);
+      }
+
+      .file-table {
+        inline-size: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.85rem;
+      }
+
+      .file-table caption {
+        text-align: start;
+        padding: 0.65rem 0.9rem;
+        font-size: 0.82rem;
+        color: var(--text-3);
+        background: var(--bg-2);
+        border-block-end: 1px solid var(--border-subtle);
+      }
+
+      .file-table thead {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 2;
+      }
+
+      .file-table thead th {
+        background: #132038;
+        color: var(--text-1);
+        text-align: start;
+        font-weight: 700;
+        padding: 0.65rem 0.85rem;
+        border-block-end: 1px solid var(--border-strong);
+      }
+
+      .file-table tbody th,
+      .file-table tbody td {
+        padding: 0.6rem 0.85rem;
+        border-block-end: 1px solid rgba(36, 51, 82, 0.7);
+        vertical-align: top;
+      }
+
+      .file-table tbody th {
+        text-align: start;
+        font-weight: 600;
+        color: var(--text-1);
+        background: var(--bg-1);
+        white-space: nowrap;
+      }
+
+      .file-table tbody tr:hover td,
+      .file-table tbody tr:hover th {
+        background: rgba(26, 40, 71, 0.75);
+      }
+
+      .layer-pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.16rem 0.5rem;
+        border-radius: 5px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-2);
+        color: var(--text-1);
+      }
+
+      @container (width < 680px) {
+        .file-table, .file-table caption, .file-table thead, .file-table tbody, .file-table tr, .file-table th, .file-table td {
+          display: block;
+        }
+        .file-table, .file-table caption {
+          inline-size: 100%;
+        }
+        .file-table thead {
+          display: none;
+        }
+        .file-table tbody tr {
+          inline-size: auto;
+          margin: 0.75rem;
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-sm);
+          background: var(--bg-2);
+          overflow-wrap: anywhere;
+        }
+        .file-table tbody th {
+          background: #132038;
+          border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        }
+        .file-table tbody td:nth-child(2)::before { content: "Path: "; color: var(--text-3); font-weight: 600; }
+        .file-table tbody td:nth-child(3)::before { content: "Role: "; color: var(--text-3); font-weight: 600; }
+      }
+
+      .site-footer {
+        margin-block-start: 2rem;
+        padding-block-start: 1rem;
+        border-block-start: 1px solid var(--border-subtle);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--text-3);
+      }
+
+      @media (forced-colors: active) {
+        .card, .inspector, .btn, .chip, .step-btn, .table-wrapper {
+          border: 1px solid CanvasText;
+        }
+        .tablist button[role="tab"][aria-selected="true"]::after {
+          border-block-end-color: Highlight;
+        }
+        .lang-switch a[aria-current="page"] {
+          border-color: Highlight;
+          text-decoration: underline;
+        }
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link visually-hidden">Skip to main content</a>
+
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="brand-title">
+        <img src="../assets/logo-dark.svg" alt="" width="40" height="40" style="border-radius: 10px; flex-shrink: 0; display: block;">
+        <div>
+          <h1>MiaoCast · Interactive Architecture & Runtime Explorer</h1>
+          <p class="site-subtitle">Android (Kotlin · JNI) &amp; iOS (Swift · C ABI) ⇄ Rust L1 Core (miaocast-core) · Pure LAN Multi-Speaker</p>
+        </div>
+      </div>
+      <ul class="kpi-row" aria-label="Architecture key metrics">
+        <li class="kpi-pill"><a href="./" style="text-decoration: none; font-weight: 600;">← Product Website</a></li>
+        <li class="kpi-pill"><strong>L1–L3</strong> 3-Layer Cross-Platform</li>
+        <li class="kpi-pill"><strong>41</strong> Android Sources</li>
+        <li class="kpi-pill"><strong>24</strong> Rust Core Modules</li>
+        <li class="kpi-pill"><strong>4</strong> Data Flows · <strong>Max 63</strong> Synced Speakers</li>
+        <li>
+          <span class="lang-switch" role="group" aria-label="Switch language">
+            <a href="../architecture.html" lang="zh-CN" hreflang="zh-CN">中文</a>
+            <a href="architecture.html" lang="en" hreflang="en" aria-current="page">EN</a>
+            <a href="../ja/architecture.html" lang="ja" hreflang="ja">日本語</a>
+          </span>
+        </li>
+      </ul>
+    </header>
+
+    <main id="main-content" tabindex="-1">
+      <div class="tabs-bar">
+        <div class="tablist" role="tablist" focusgroup="tablist nomemory" aria-label="Architecture view tabs">
+          <button type="button" role="tab" id="tab-overview" aria-selected="true" focusgroupstart>1. System Architecture & Flows</button>
+          <button type="button" role="tab" id="tab-runtime" aria-selected="false">2. Runtime Threads & Lifecycle</button>
+          <button type="button" role="tab" id="tab-files" aria-selected="false">3. L1–L3 File Inventory</button>
+        </div>
+        <div class="toolbar-actions">
+          <button type="button" class="btn" id="btn-motion" aria-pressed="false">Pause Motion</button>
+          <button type="button" class="btn" id="btn-reset">Reset Highlight</button>
+        </div>
+      </div>
+
+      <div class="visually-hidden" aria-live="polite" id="live-status"></div>
+
+      <div class="panel-stack">
+        <!-- TAB 1 -->
+        <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
+          <div class="panel-body">
+            <div class="filter-bar">
+              <div class="chip-group" role="group" aria-label="Filter by data flow">
+                <button type="button" class="chip" data-flow="all" aria-pressed="true" style="--chip-color:#38bdf8;--chip-bg:rgba(56,189,248,0.16)">All Flows (4)</button>
+                <button type="button" class="chip" data-flow="media" aria-pressed="false" style="--chip-color:#22d3ee;--chip-bg:rgba(34,211,238,0.16)"><span class="chip-swatch" aria-hidden="true"></span>Audio Media Path</button>
+                <button type="button" class="chip" data-flow="ctrl" aria-pressed="false" style="--chip-color:#fbbf24;--chip-bg:rgba(251,191,36,0.16)"><span class="chip-swatch diamond" aria-hidden="true"></span>Control & Auth (8899)</button>
+                <button type="button" class="chip" data-flow="sync" aria-pressed="false" style="--chip-color:#34d399;--chip-bg:rgba(52,211,153,0.16)"><span class="chip-swatch ring" aria-hidden="true"></span>Clock & Group Sync</button>
+                <button type="button" class="chip" data-flow="tel" aria-pressed="false" style="--chip-color:#c084fc;--chip-bg:rgba(192,132,252,0.16)"><span class="chip-swatch dash" aria-hidden="true"></span>Discovery & Telemetry</button>
+              </div>
+              <p class="hint-text">Tip: Click any module to highlight all <strong>↑ Upstream</strong> producers and <strong>↓ Downstream</strong> consumers</p>
+            </div>
+
+            <div class="workspace">
+              <figure class="canvas-card" id="overview-canvas">
+                <svg class="arch-svg" id="svg-overview" viewBox="0 0 1060 760" role="img" aria-label="Interactive system architecture graph; click any node to inspect upstream and downstream links">
+                  <defs>
+                    <pattern id="ov-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="0.9" fill="#334155" opacity="0.35"/>
+                    </pattern>
+                    <marker id="ov-arr-media" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#22d3ee"/></marker>
+                    <marker id="ov-arr-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#fbbf24"/></marker>
+                    <marker id="ov-arr-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#34d399"/></marker>
+                    <marker id="ov-arr-tel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#c084fc"/></marker>
+                  </defs>
+                  <rect width="1060" height="760" rx="12" fill="#080d19"/>
+                  <rect width="1060" height="760" rx="12" fill="url(#ov-dots)"/>
+
+                  <g fill="#0e1629" stroke="#1e293b" stroke-width="1">
+                    <rect x="16" y="18" width="1028" height="114" rx="12"/>
+                    <rect x="16" y="162" width="1028" height="122" rx="12"/>
+                    <rect x="16" y="316" width="1028" height="54" rx="10" fill="#131936" stroke="#3b527e"/>
+                    <rect x="16" y="402" width="1028" height="140" rx="12"/>
+                    <rect x="16" y="592" width="1028" height="148" rx="12"/>
+                  </g>
+                  <g font-family="var(--font-mono)" font-size="11" font-weight="700">
+                    <rect x="16" y="18" width="4" height="114" rx="2" fill="#38bdf8"/>
+                    <text x="30" y="52" fill="#7dd3fc">L3 · UI Layer</text>
+                    <text x="30" y="72" fill="#94a3b8" font-size="10" font-weight="400">Native UI / Design</text>
+
+                    <rect x="16" y="162" width="4" height="122" rx="2" fill="#818cf8"/>
+                    <text x="30" y="200" fill="#a5b4fc">L2 · Platform</text>
+                    <text x="30" y="220" fill="#94a3b8" font-size="10" font-weight="400">Service / Capture</text>
+
+                    <rect x="16" y="316" width="4" height="54" rx="2" fill="#22d3ee"/>
+                    <text x="30" y="347" fill="#e0f2fe">FFI · Bridge</text>
+
+                    <rect x="16" y="402" width="4" height="140" rx="2" fill="#fb923c"/>
+                    <text x="30" y="446" fill="#fdba74">L1 · Rust Core</text>
+                    <text x="30" y="466" fill="#94a3b8" font-size="10" font-weight="400">Protocol / Sync</text>
+
+                    <rect x="16" y="592" width="4" height="148" rx="2" fill="#34d399"/>
+                    <text x="30" y="644" fill="#6ee7b7">LAN & Tools</text>
+                    <text x="30" y="664" fill="#94a3b8" font-size="10" font-weight="400">Speakers / QA</text>
+                  </g>
+
+                  <g id="ov-edges"></g>
+                  <g id="ov-nodes"></g>
+                </svg>
+                <figcaption class="visually-hidden">MiaoCast 5-band architecture and 4 orthogonal data flows</figcaption>
+              </figure>
+
+              <aside class="inspector" id="overview-inspector" aria-label="Selected node details">
+                <span class="inspector-badge" id="ins-layer">OVERVIEW</span>
+                <h2 id="ins-title">Click any module to inspect links</h2>
+                <p id="ins-desc">Filter by data flow (Media / Control & Auth / Clock Sync / Discovery & Telemetry) or click any module to trace its upstream producers and downstream consumers across the directed graph.</p>
+                <div class="inspector-section">
+                  <h3>Key Source Files</h3>
+                  <ul class="file-list" id="ins-files">
+                    <li><code>MainActivity.kt</code> · <code>CastService.kt</code></li>
+                    <li><code>core/src/session.rs</code> · <code>core/src/control.rs</code></li>
+                  </ul>
+                </div>
+                <div class="inspector-section">
+                  <h3>↑ Upstream Producers</h3>
+                  <div class="rel-chips" id="ins-up"><span class="hint-text">No node selected</span></div>
+                </div>
+                <div class="inspector-section">
+                  <h3>↓ Downstream Consumers</h3>
+                  <div class="rel-chips" id="ins-down"><span class="hint-text">No node selected</span></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2 -->
+        <section role="tabpanel" id="panel-runtime" aria-labelledby="tab-runtime" hidden="until-found">
+          <div class="panel-body">
+            <div class="stepper" role="group" aria-label="Runtime lifecycle stage selector" id="lifecycle-stepper"></div>
+
+            <div class="workspace">
+              <figure class="canvas-card" id="runtime-canvas">
+                <svg class="arch-svg" id="svg-runtime" viewBox="0 0 1060 660" role="img" aria-label="Interactive runtime threads, queues, and LAN channels topology">
+                  <defs>
+                    <pattern id="rt-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="0.9" fill="#334155" opacity="0.35"/>
+                    </pattern>
+                    <marker id="rt-a-media" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#22d3ee"/></marker>
+                    <marker id="rt-a-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#fbbf24"/></marker>
+                    <marker id="rt-a-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#34d399"/></marker>
+                    <marker id="rt-a-tel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1.5L8.5 5L1 8.5z" fill="#c084fc"/></marker>
+                  </defs>
+                  <rect width="1060" height="660" rx="12" fill="#080d19"/>
+                  <rect width="1060" height="660" rx="12" fill="url(#rt-dots)"/>
+
+                  <rect x="16" y="16" width="690" height="628" rx="14" fill="#0d1527" stroke="#243554" stroke-width="1.2"/>
+                  <text x="32" y="40" fill="#93c5fd" font-family="var(--font-mono)" font-size="11" font-weight="700">ANDROID PROCESS · com.miaocast.app (ART + libmiaocast_core.so)</text>
+
+                  <rect x="30" y="54" width="662" height="170" rx="10" fill="#111c33" stroke="#1e293b"/>
+                  <text x="44" y="74" fill="#7dd3fc" font-family="var(--font-mono)" font-size="10.5" font-weight="700">KOTLIN / ART THREADS</text>
+
+                  <rect x="30" y="242" width="662" height="58" rx="9" fill="#151936" stroke="#3b527e"/>
+                  <text x="44" y="264" fill="#e0f2fe" font-family="var(--font-mono)" font-size="10.5" font-weight="700">JNI BOUNDARY · ENGINES Registry + FEED_QUEUE_AUS (sync_channel 96 ≈ 2s)</text>
+                  <text x="44" y="284" fill="#94a3b8" font-family="var(--font-mono)" font-size="10">stop() drops feed sender first to wake media-clock immediately, eliminating stop deadlocks</text>
+
+                  <rect x="30" y="320" width="662" height="308" rx="10" fill="#111c33" stroke="#1e293b"/>
+                  <text x="294" y="340" fill="#fdba74" font-family="var(--font-mono)" font-size="10.5" font-weight="700">RUST NATIVE RUNTIME · Shared Core + 5 Threads/Speaker × N</text>
+
+                  <rect x="724" y="16" width="320" height="628" rx="14" fill="#0d1527" stroke="#059669" stroke-width="1.2"/>
+                  <text x="740" y="40" fill="#6ee7b7" font-family="var(--font-mono)" font-size="11" font-weight="700">LAN · 6 Network Channels per Speaker</text>
+
+                  <g id="rt-edges"></g>
+                  <g id="rt-nodes"></g>
+                </svg>
+                <figcaption class="visually-hidden">MiaoCast runtime threads and 6 LAN network channels topology</figcaption>
+              </figure>
+
+              <aside class="inspector" id="runtime-inspector" aria-label="Runtime stage and thread details">
+                <span class="inspector-badge" id="rt-badge">STEP 4</span>
+                <h2 id="rt-title">Stage Overview</h2>
+                <p id="rt-desc"></p>
+                <div class="inspector-section">
+                  <h3>Concurrency & Safety Invariants</h3>
+                  <ul class="file-list" id="rt-invariants"></ul>
+                </div>
+                <div class="inspector-section">
+                  <h3>Active Threads / Ports</h3>
+                  <div class="rel-chips" id="rt-active-list"></div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3 -->
+        <section role="tabpanel" id="panel-files" aria-labelledby="tab-files" hidden="until-found">
+          <div class="panel-body">
+            <search class="search-bar">
+              <div class="search-field">
+                <label for="file-search">Filter files or roles:</label>
+                <input type="search" id="file-search" placeholder="Search filename, protocol, or keyword (e.g. safety / UID / RTSP / mDNS / mute)...">
+              </div>
+              <div class="chip-group" role="group" aria-label="Filter by architecture layer" id="layer-filters"></div>
+            </search>
+
+            <div tabindex="0" role="region" aria-labelledby="files-table-caption" class="table-wrapper">
+              <table class="file-table">
+                <caption id="files-table-caption">Repository L1–L3 file inventory (<span id="file-count">0</span> entries)</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Layer</th>
+                    <th scope="col">File Path</th>
+                    <th scope="col">Responsibility & Key Mechanism</th>
+                  </tr>
+                </thead>
+                <tbody id="files-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span>MiaoCast · MiPlay Protocol · AGPL-3.0-only · Independent Pure-LAN Audio Casting Architecture</span>
+      <span>Static SVG diagrams: <a href="../assets/architecture-overview.svg">architecture-overview.svg</a> · <a href="../assets/runtime-architecture.svg">runtime-architecture.svg</a></span>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const el = (tag, attrs = {}, parent = null) => {
+        const n = document.createElementNS(SVG_NS, tag);
+        for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+        if (parent) parent.appendChild(n);
+        return n;
+      };
+
+      const live = document.getElementById("live-status");
+      const announce = (msg) => { live.textContent = ""; requestAnimationFrame(() => { live.textContent = msg; }); };
+
+      const OV_NODES = [
+  {
+    "id": "src_app",
+    "layer": "L3 · Audio Source",
+    "title": "Target Music App",
+    "sub": "USAGE_MEDIA / GAME",
+    "x": 138,
+    "y": 32,
+    "w": 184,
+    "h": 84,
+    "desc": "Single third-party music or podcast app selected by the user; outputs PCM to Android audio layer and publishes MediaSession metadata.",
+    "files": [
+      "android/.../capture/LaunchableAppCatalog.kt"
+    ]
+  },
+  {
+    "id": "main_ui",
+    "layer": "L3 · Native UI",
+    "title": "MainActivity / Settings",
+    "sub": "design/ · Themes · 1Hz ms",
+    "x": 344,
+    "y": 32,
+    "w": 222,
+    "h": 84,
+    "desc": "Built on shared design/ tokens with Dark/Light/System themes and zh/en/ja localization; displays Now Playing, speakers, inline ms latency, and volume controls.",
+    "files": [
+      "design/tokens.json",
+      "android/.../MainActivity.kt",
+      "android/.../SettingsActivity.kt",
+      "android/.../ui/AppLanguage.kt",
+      "android/.../LatencyDisplay.kt"
+    ]
+  },
+  {
+    "id": "app_picker",
+    "layer": "L3 · Source Picker",
+    "title": "AppPickerActivity",
+    "sub": "MAIN/LAUNCHER · Cert Hash",
+    "x": 588,
+    "y": 32,
+    "w": 204,
+    "h": 84,
+    "desc": "Enumerates same-user launchable apps via <queries> (no QUERY_ALL_PACKAGES), loads icons asynchronously, and persists only package name + signing digest (never UID).",
+    "files": [
+      "android/.../AppPickerActivity.kt",
+      "android/.../capture/AndroidLaunchableApps.kt",
+      "android/.../capture/PrefsTargetAppStore.kt"
+    ]
+  },
+  {
+    "id": "now_playing",
+    "layer": "L3/L2 · Metadata",
+    "title": "NowPlaying Stack",
+    "sub": "MediaSession Controls",
+    "x": 814,
+    "y": 32,
+    "w": 210,
+    "h": 84,
+    "desc": "Reads active track title, artist, artwork, and progress via Notification Access locally and forwards play/pause/skip/seek commands to TransportControls.",
+    "files": [
+      "android/.../NowPlayingNotificationListener.kt",
+      "android/.../cast/NowPlayingTracker.kt",
+      "android/.../cast/NowPlayingInfo.kt"
+    ]
+  },
+  {
+    "id": "capture",
+    "layer": "L2 · Strict UID Capture",
+    "title": "UID Capture & Probe",
+    "sub": "fail-closed · AudioRecord",
+    "x": 138,
+    "y": 176,
+    "w": 206,
+    "h": 94,
+    "desc": "Verifies package existence, same-user, non-shared UID, and SHA-256 certificate before start; builds single-UID AudioPlaybackCapture or Android 13+ Wireless Debugging AudioMix with PcmProbe.",
+    "files": [
+      "android/.../capture/CaptureTargetResolver.kt",
+      "android/.../capture/PlaybackCaptureFactory.kt",
+      "android/.../capture/ProjectionSessionPolicy.kt",
+      "android/.../capture/PcmProbe.kt"
+    ]
+  },
+  {
+    "id": "encoder",
+    "layer": "L2 · Audio Encode",
+    "title": "AacEncoder",
+    "sub": "MediaCodec 48k 256kbps",
+    "x": 366,
+    "y": 176,
+    "w": 174,
+    "h": 94,
+    "desc": "Wraps Android MediaCodec to encode 48kHz stereo 16-bit PCM into raw 256kbps AAC-LC access units (1024 samples = 21.333ms per AU, without ADTS header).",
+    "files": [
+      "android/.../AacEncoder.kt"
+    ]
+  },
+  {
+    "id": "cast_svc",
+    "layer": "L2 · Foreground Service",
+    "title": "CastService Layer",
+    "sub": "FGS · Rust Engine Delegate",
+    "x": 562,
+    "y": 176,
+    "w": 232,
+    "h": 94,
+    "desc": "Holds mediaProjection|mediaPlayback foreground service and Wake/WifiLocks; delegates desired receiver set & volume to L1 Rust Engine; polls stats at 1Hz.",
+    "files": [
+      "android/.../CastService.kt"
+    ]
+  },
+  {
+    "id": "cast_compat",
+    "layer": "L2 · Mute & Compat",
+    "title": "Route · Mute · Compat",
+    "sub": "6-Beat Lock · API 29–36",
+    "x": 816,
+    "y": 176,
+    "w": 208,
+    "h": 94,
+    "desc": "CastRouteSelection mirrors L1 device_catalog; LocalOutputMute locks mute after 6 active beats to prevent track-gap dual output; compat/* isolates API 29–36 differences.",
+    "files": [
+      "android/.../cast/CastRouteSelection.kt",
+      "android/.../cast/LocalOutputMute.kt",
+      "android/.../compat/BlurCompat.kt",
+      "android/.../compat/LocaleCompat.kt"
+    ]
+  },
+  {
+    "id": "jni",
+    "layer": "FFI · Cross-Language Bridge",
+    "title": "FFI Bridge (Android JNI ffi.rs · iOS C ABI ffi_c.rs / miaocast_core.h)",
+    "sub": "Thin parameter forwarder → core::engine & device_catalog · 16KB ELF .so / .xcframework",
+    "x": 138,
+    "y": 322,
+    "w": 886,
+    "h": 42,
+    "desc": "Thin FFI bridge: Android connects via JNI (.so) and iOS via C11 ABI (miaocast_core.h / .xcframework), both delegating uniformly to L1 core::engine and device_catalog.",
+    "files": [
+      "android/.../NativeBridge.kt",
+      "core/src/ffi.rs",
+      "core/src/ffi_c.rs",
+      "core/include/miaocast_core.h"
+    ]
+  },
+  {
+    "id": "session",
+    "layer": "L1 · Sync Engine",
+    "title": "engine · session · timeline",
+    "sub": "Coordinator · OffsetBarrier",
+    "x": 138,
+    "y": 418,
+    "w": 214,
+    "h": 108,
+    "desc": "L1 core scheduler: engine serializes multi-speaker joins/removals and volume; session flushes backlog at OffsetBarrier, prerolls 14 AUs for shared TIME_OFFSET, and drives monotonic PTS/PCR + 15s watchdog.",
+    "files": [
+      "core/src/engine.rs",
+      "core/src/session.rs",
+      "core/src/timeline.rs",
+      "core/src/clock.rs",
+      "core/src/latency.rs",
+      "core/src/group.rs"
+    ]
+  },
+  {
+    "id": "media_pipe",
+    "layer": "L1 · Media Pipeline",
+    "title": "media/* Packetizer",
+    "sub": "ADTS → PES → TS → RTP",
+    "x": 372,
+    "y": 418,
+    "w": 194,
+    "h": 108,
+    "desc": "Per-receiver Packetizer with isolated RTP seq & TS continuity counters: packs 7B ADTS, PES(0xC0), 188B MPEG-TS (with PAT/PMT/PCR), RTP(PT=33), and $+24bit TCP framing.",
+    "files": [
+      "core/src/media/mod.rs",
+      "core/src/media/adts.rs",
+      "core/src/media/mpegts.rs",
+      "core/src/media/rtp.rs"
+    ]
+  },
+  {
+    "id": "ctrl_auth",
+    "layer": "L1 · Control & Auth",
+    "title": "control · auth/*",
+    "sub": "TCP 8899 · Legacy / Safety",
+    "x": 586,
+    "y": 418,
+    "w": 204,
+    "h": 108,
+    "desc": "Per-speaker TCP 8899 control session: supports isolated Legacy (HMAC-SHA1) and Safety (mutual HMAC + chained AES-128-CBC) auth, Open/Volume/Pause/Double-Resume/Heartbeat, and read-only inspect.",
+    "files": [
+      "core/src/control.rs",
+      "core/src/auth/mod.rs",
+      "core/src/auth/legacy.rs",
+      "core/src/auth/safety.rs",
+      "core/src/frame.rs",
+      "core/src/commands.rs",
+      "core/src/inspect.rs"
+    ]
+  },
+  {
+    "id": "disc_rtsp",
+    "layer": "L1 · Discovery & Clock",
+    "title": "discovery · catalog · rtsp",
+    "sub": "mDNS · Catalog · WFD · Timer",
+    "x": 810,
+    "y": 418,
+    "w": 214,
+    "h": 108,
+    "desc": "Multicast mDNS browsing and device_catalog filtering/cache merge/route state machine; WFD SourceRtsp reverse server for M1–M5/SETUP/PLAY & TIME_OFFSET; UDP TimerServer 40B monotonic clock alignment.",
+    "files": [
+      "core/src/device_catalog.rs",
+      "core/src/discovery.rs",
+      "core/src/rtsp.rs",
+      "core/src/clock_sync.rs",
+      "core/src/netinfo.rs"
+    ]
+  },
+  {
+    "id": "lan_speakers",
+    "layer": "LAN · Receiver Fleet",
+    "title": "LAN MiPlay Speakers & TVs (1..63)",
+    "sub": "TCP 8899 Control · 3× Reverse TCP (RTSP/Aux/Audio) · UDP Timer · Shared TIME_OFFSET",
+    "x": 138,
+    "y": 612,
+    "w": 618,
+    "h": 108,
+    "desc": "Supports L17A / LX06 speakers and MiPlay-capable TVs in synchronized groups; all group members share identical AAC frames, PTS, and TIME_OFFSET with live join/leave and auto-reconnect.",
+    "files": [
+      "Protocol ports: UDP 5353 / TCP 8899 / 3× Reverse TCP / UDP Timer"
+    ]
+  },
+  {
+    "id": "aux_tools",
+    "layer": "Tooling & QA",
+    "title": "CLI / Probe / testtones",
+    "sub": "miaocast-cli · DevMain · A/B/deny",
+    "x": 778,
+    "y": 612,
+    "w": 246,
+    "h": 108,
+    "desc": "Standalone diagnostic CLI miaocast-cli (read-only inspect without CLOSE), app_process DevMain harness, acceptance local filter probe, and 3 controlled sine-wave test APKs.",
+    "files": [
+      "cli/src/main.rs",
+      "android/.../DevMain.kt",
+      "android/.../LocalFilterProbeService.kt",
+      "android/testtones/.../ToneService.kt"
+    ]
+  }
+];
+
+      const OV_EDGES = [
+        // Media (cyan)
+        { id: "e_m1", from: "src_app", to: "capture", flow: "media", d: "M 230 116 L 230 176" },
+        { id: "e_m2", from: "capture", to: "encoder", flow: "media", d: "M 344 223 L 366 223" },
+        { id: "e_m3", from: "encoder", to: "jni", flow: "media", d: "M 453 270 L 453 322" },
+        { id: "e_m4", from: "jni", to: "session", flow: "media", d: "M 245 364 L 245 418" },
+        { id: "e_m5", from: "session", to: "media_pipe", flow: "media", d: "M 352 472 L 372 472" },
+        { id: "e_m6", from: "media_pipe", to: "lan_speakers", flow: "media", d: "M 469 526 L 469 560 L 290 560 L 290 612" },
+        // Control (amber)
+        { id: "e_c1", from: "main_ui", to: "cast_svc", flow: "ctrl", d: "M 442 116 L 442 142 L 664 142 L 664 176" },
+        { id: "e_c2", from: "cast_svc", to: "jni", flow: "ctrl", d: "M 678 270 L 678 322" },
+        { id: "e_c3", from: "jni", to: "ctrl_auth", flow: "ctrl", d: "M 678 364 L 678 418" },
+        { id: "e_c4", from: "ctrl_auth", to: "lan_speakers", flow: "ctrl", d: "M 688 526 L 688 572 L 450 572 L 450 612" },
+        { id: "e_c5", from: "aux_tools", to: "ctrl_auth", flow: "ctrl", d: "M 850 612 L 850 584 L 740 584 L 740 526" },
+        // Sync (emerald)
+        { id: "e_s1", from: "disc_rtsp", to: "session", flow: "sync", d: "M 880 418 L 880 390 L 300 390 L 300 418" },
+        { id: "e_s2", from: "disc_rtsp", to: "lan_speakers", flow: "sync", d: "M 918 526 L 918 564 L 620 564 L 620 612", visualBidir: true },
+        // Telemetry & Discovery (violet)
+        { id: "e_t1", from: "app_picker", to: "main_ui", flow: "tel", d: "M 588 74 L 566 74" },
+        { id: "e_t2", from: "now_playing", to: "main_ui", flow: "tel", d: "M 918 116 L 918 128 L 510 128 L 510 116" },
+        { id: "e_t3", from: "capture", to: "cast_compat", flow: "tel", d: "M 284 270 L 284 294 L 920 294 L 920 270" },
+        { id: "e_t4", from: "disc_rtsp", to: "jni", flow: "tel", d: "M 956 418 L 956 364" },
+        { id: "e_t5", from: "jni", to: "cast_svc", flow: "tel", d: "M 956 322 L 956 304 L 740 304 L 740 270" },
+        { id: "e_t6", from: "cast_svc", to: "main_ui", flow: "tel", d: "M 740 176 L 740 152 L 492 152 L 492 116" },
+        { id: "e_t7", from: "cast_compat", to: "main_ui", flow: "tel", d: "M 960 176 L 960 144 L 542 144 L 542 116" }
+      ];
+
+      const RT_NODES = [
+  {
+    "id": "rt_ui",
+    "x": 46,
+    "y": 88,
+    "w": 196,
+    "h": 118,
+    "title": "Main Thread (UI)",
+    "sub": "1Hz refreshLoop · Route State",
+    "accent": "#38bdf8"
+  },
+  {
+    "id": "rt_cap",
+    "x": 262,
+    "y": 88,
+    "w": 204,
+    "h": 118,
+    "title": "capture (MAX_PRIO)",
+    "sub": "AudioRecord · PcmProbe · AAC",
+    "accent": "#22d3ee"
+  },
+  {
+    "id": "rt_rec",
+    "x": 486,
+    "y": 88,
+    "w": 192,
+    "h": 118,
+    "title": "cast-start / reconcile",
+    "sub": "Serialized via Rust Engine",
+    "accent": "#fbbf24"
+  },
+  {
+    "id": "rt_clk",
+    "x": 46,
+    "y": 356,
+    "w": 214,
+    "h": 116,
+    "title": "media-clock thread",
+    "sub": "OffsetBarrier · 21.333ms tick",
+    "accent": "#22d3ee"
+  },
+  {
+    "id": "rt_sup",
+    "x": 46,
+    "y": 492,
+    "w": 214,
+    "h": 118,
+    "title": "supervisor + EPOCH",
+    "sub": "15s watchdog · 2→30s backoff",
+    "accent": "#fbbf24"
+  },
+  {
+    "id": "rt_med",
+    "x": 294,
+    "y": 356,
+    "w": 382,
+    "h": 74,
+    "title": "media-<ip> + rtsp-<ip> (×N)",
+    "sub": "sync_channel(256) → Packetizer → Audio TCP · RTSP",
+    "accent": "#22d3ee"
+  },
+  {
+    "id": "rt_ctl",
+    "x": 294,
+    "y": 446,
+    "w": 382,
+    "h": 74,
+    "title": "ctl-<ip> + hb-<ip> (×N)",
+    "sub": "TCP 8899 reader (15s) · 5s HEARTBEAT · Legacy/Safety",
+    "accent": "#fbbf24"
+  },
+  {
+    "id": "rt_tmr",
+    "x": 294,
+    "y": 536,
+    "w": 382,
+    "h": 74,
+    "title": "timer-<ip> + Aux + CancelToken",
+    "sub": "UDP 40B master · Aux keepalive · Atomic cancel guard",
+    "accent": "#34d399"
+  },
+  {
+    "id": "lan_mdns",
+    "x": 742,
+    "y": 60,
+    "w": 284,
+    "h": 74,
+    "title": "① UDP 224.0.0.251:5353",
+    "sub": "mDNS _mi-connect / _lyra-mdns",
+    "accent": "#c084fc"
+  },
+  {
+    "id": "lan_8899",
+    "x": 742,
+    "y": 152,
+    "w": 284,
+    "h": 78,
+    "title": "② Forward TCP 8899 (Control)",
+    "sub": "Legacy / Safety Auth · Open · Vol/Pause",
+    "accent": "#fbbf24"
+  },
+  {
+    "id": "lan_rtsp",
+    "x": 742,
+    "y": 248,
+    "w": 284,
+    "h": 78,
+    "title": "③ Reverse TCP #1 (WFD RTSP)",
+    "sub": "M1–M5 · SETUP/PLAY · TIME_OFFSET",
+    "accent": "#34d399"
+  },
+  {
+    "id": "lan_aux",
+    "x": 742,
+    "y": 344,
+    "w": 284,
+    "h": 66,
+    "title": "④ Reverse TCP #2 (Aux)",
+    "sub": "Accepted on same listener, kept alive",
+    "accent": "#94a3b8"
+  },
+  {
+    "id": "lan_aud",
+    "x": 742,
+    "y": 428,
+    "w": 284,
+    "h": 82,
+    "title": "⑤ Reverse TCP #3 (Media)",
+    "sub": "$+24bit → RTP(PT=33) / MPEG-TS / ADTS",
+    "accent": "#22d3ee"
+  },
+  {
+    "id": "lan_tmr",
+    "x": 742,
+    "y": 528,
+    "w": 284,
+    "h": 82,
+    "title": "⑥ UDP Timer (Ephemeral)",
+    "sub": "40B bidirectional timestamps for clock sync",
+    "accent": "#34d399"
+  }
+];
+
+      const RT_EDGES = [
+        { id: "re_1", from: "rt_cap", to: "rt_clk", flow: "media", d: "M 364 206 L 364 242 M 153 300 L 153 356" },
+        { id: "re_2", from: "rt_clk", to: "rt_med", flow: "media", d: "M 260 393 L 294 393" },
+        { id: "re_3", from: "rt_med", to: "lan_aud", flow: "media", d: "M 676 393 L 712 393 L 712 469 L 742 469" },
+        { id: "re_4", from: "rt_ui", to: "rt_rec", flow: "ctrl", d: "M 242 114 L 252 114 L 252 68 L 582 68 L 582 88" },
+        { id: "re_5", from: "rt_rec", to: "rt_ctl", flow: "ctrl", d: "M 582 206 L 582 242 M 582 300 L 582 311 L 277 311 L 277 466 L 294 466" },
+        { id: "re_6", from: "rt_ctl", to: "lan_8899", flow: "ctrl", d: "M 676 483 L 700 483 L 700 191 L 742 191" },
+        { id: "re_7", from: "rt_med", to: "lan_rtsp", flow: "sync", d: "M 676 376 L 690 376 L 690 287 L 742 287" },
+        { id: "re_8", from: "rt_tmr", to: "lan_tmr", flow: "sync", d: "M 676 572 L 742 572" },
+        { id: "re_9", from: "rt_sup", to: "rt_ctl", flow: "ctrl", d: "M 260 546 L 278 546 L 278 483 L 294 483" },
+        { id: "re_10", from: "rt_ui", to: "lan_mdns", flow: "tel", d: "M 144 88 L 144 48 L 714 48 L 714 97 L 742 97" }
+      ];
+
+      const LIFECYCLE_STEPS = [
+  {
+    "id": "step1",
+    "num": "STEP 1",
+    "name": "Cold Start & mDNS Discovery",
+    "desc": "Zero runtime permission popups on API 29–32 cold start (API 33+ requests notifications only on demand). MainActivity acquires MulticastLock and calls NativeBridge.discover to query _mi-connect and _lyra-mdns PTR records, prioritizing apps=[5] and merging cached speakers.",
+    "nodes": [
+      "rt_ui",
+      "lan_mdns"
+    ],
+    "edges": [
+      "re_10"
+    ],
+    "invariants": [
+      "Same-IP duplicate mDNS records prioritize apps=[5] and _mi-connect",
+      "Non-MiPlay non-TV LAN nodes stay hidden by default (with Show All fallback toggle)",
+      "Zero RECORD_AUDIO requested on cold start; silent test mode needs zero audio permission"
+    ]
+  },
+  {
+    "id": "step2",
+    "num": "STEP 2",
+    "name": "Source Picker & Capture Grant",
+    "desc": "AppPicker stores only package name and signing certificate digest. Selecting speakers initiates a fresh MediaProjection grant (or Android 13+ Wireless Debugging AudioMix); CastService enters foreground service first and verifies UID, same-user, non-shared-UID, and certificate (fail-closed).",
+    "nodes": [
+      "rt_ui",
+      "rt_cap",
+      "rt_rec"
+    ],
+    "edges": [
+      "re_4"
+    ],
+    "invariants": [
+      "MediaProjection requires a fresh grant per session; switching apps stops the old session",
+      "App Picker UID is the sole capture allowlist authority; empty allowlists are forbidden",
+      "Any CaptureTargetResolver check failure aborts immediately without degrading to system capture"
+    ]
+  },
+  {
+    "id": "step3",
+    "num": "STEP 3",
+    "name": "TCP 8899 Auth & Sync Connect",
+    "desc": "cast-start connects all checked speakers concurrently: completes TCP 8899 Legacy or Safety auth, binds UDP TimerServer + reverse TCP listener, and sends Open. Speakers dial back RTSP/Aux/Audio; OffsetBarrier flushes connect-time backlog and prerolls 14 AUs to establish shared TIME_OFFSET.",
+    "nodes": [
+      "rt_rec",
+      "rt_clk",
+      "rt_med",
+      "rt_ctl",
+      "rt_tmr",
+      "lan_8899",
+      "lan_rtsp",
+      "lan_aux",
+      "lan_tmr"
+    ],
+    "edges": [
+      "re_5",
+      "re_6",
+      "re_7",
+      "re_8"
+    ],
+    "invariants": [
+      "Mandatory flush() before OffsetBarrier eliminates multi-second startup backlog",
+      "TimerServer, TIME_OFFSET, and PCR share one monotonic CLOCK_MONOTONIC EPOCH",
+      "Additional speaker taps during initial connect queue in desiredReceivers—zero dropped taps"
+    ]
+  },
+  {
+    "id": "step4",
+    "num": "STEP 4",
+    "name": "Steady Multi-Speaker Streaming",
+    "desc": "capture thread runs at MAX_PRIORITY reading 48kHz stereo PCM and encoding AAC AUs into sync_channel(96). media-clock stamps shared PTS/PCR every 21.333ms and fans out Arc<SharedAu> to per-speaker media-<ip> packetizers. PcmProbe locks local mute after 6 active beats.",
+    "nodes": [
+      "rt_ui",
+      "rt_cap",
+      "rt_clk",
+      "rt_med",
+      "rt_ctl",
+      "rt_tmr",
+      "lan_8899",
+      "lan_rtsp",
+      "lan_aud",
+      "lan_tmr"
+    ],
+    "edges": [
+      "re_1",
+      "re_2",
+      "re_3",
+      "re_6",
+      "re_7",
+      "re_8"
+    ],
+    "invariants": [
+      "Isolated media_rx(256) + Packetizer per sink: slow consumers are evicted individually",
+      "LocalOutputMute stays locked across silent track transitions once 6 beats confirm audio",
+      "UI refreshes inline integer ms latency in-place at 1Hz without disrupting volume drags"
+    ]
+  },
+  {
+    "id": "step5",
+    "num": "STEP 5",
+    "name": "Live Join · Pause · Reconnect",
+    "desc": "Adding a speaker mid-stream shows an inline spinner while reconcile-receivers calls addReceiver (upgrading ref_function=multi_room and reusing TIME_OFFSET with per-attempt cancel token). Resume or tier hot-switch broadcasts a new TIME_OFFSET to all receivers; 15s silence triggers 2→30s supervisor reconnect.",
+    "nodes": [
+      "rt_ui",
+      "rt_rec",
+      "rt_sup",
+      "rt_ctl",
+      "rt_med",
+      "rt_tmr",
+      "lan_8899",
+      "lan_rtsp"
+    ],
+    "edges": [
+      "re_4",
+      "re_5",
+      "re_6",
+      "re_7",
+      "re_9"
+    ],
+    "invariants": [
+      "Each join holds an independent Arc<AtomicBool> cancel token to prevent cancel-then-recheck races",
+      "Pending reconnect targets merge into stats() as phase=reconnecting for honest UI state",
+      "Resume sends double Resume (29ms apart) after synchronizing the new TIME_OFFSET"
+    ]
+  },
+  {
+    "id": "step6",
+    "num": "STEP 6",
+    "name": "Deadlock-Free Stop & Cleanup",
+    "desc": "Switching back to This Device or revoking capture restores STREAM_MUSIC, stops AudioRecord/MediaCodec/MediaProjection, and calls NativeBridge.stop. Rust drops the feed SyncSender first to wake media-clock (50ms poll_au), joins threads, sends CLOSE(0x0002), and closes all sockets.",
+    "nodes": [
+      "rt_ui",
+      "rt_cap",
+      "rt_clk",
+      "rt_ctl",
+      "rt_tmr",
+      "lan_8899"
+    ],
+    "edges": [
+      "re_1",
+      "re_6"
+    ],
+    "invariants": [
+      "Feed SyncSender is always dropped before joining media-clock, preventing shutdown deadlocks",
+      "All sinks execute shutdown(true) with protocol CLOSE(0x0002) to release speaker WFD sessions",
+      "Releases WakeLock/WifiLock, cancels foreground notification, and clears grantSession"
+    ]
+  }
+];
+
+      const FILES_DATA = [
+  [
+    "L3 · Shared Design",
+    "design/tokens.json",
+    "Cross-platform light/dark semantic color palette, corner radii, typography scale, and spacing tokens for Android & iOS"
+  ],
+  [
+    "L3 · Shared Design",
+    "design/UI_SPEC.md",
+    "Cross-platform UI layout, interaction spec, 3-language i18n baseline, and iOS SwiftUI boundary"
+  ],
+  [
+    "L3 · Shared Design",
+    "design/icons/*.svg",
+    "20 unified 24×24 stroke vector icons (transport, speakers/phone/TV, theme, search, navigation)"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../MainActivity.kt",
+    "Main casting console: status bar, latency pill, Now Playing card, 1Hz in-place ms latency & spinner refresh, volume sliders"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../AppPickerActivity.kt",
+    "Favorite source picker: auto-detect toggles, drag reorder, search filter, async icon loading, package + cert hash storage"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../SettingsActivity.kt",
+    "Settings screen: Dark/Light/System theme, Display Language (System/zh/en/ja), capture engine, mute policy, updates"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../ui/AppLanguage.kt",
+    "Zero-dependency in-app locale switcher (SYSTEM / ZH_CN / EN / JA) using createConfigurationContext + LocaleList"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../ui/ThemeMode.kt & UiPalette.kt",
+    "Dark/Light/System theme state and semantic palette aligned with design/tokens.json"
+  ],
+  [
+    "L3 · Native UI",
+    "android/.../NowPlayingNotificationListener.kt",
+    "Local-only NotificationListenerService for MediaSession metadata and transport controls"
+  ],
+  [
+    "L2 · Service & Route",
+    "android/.../CastService.kt",
+    "Core foreground service: capture & AAC loop, Rust Engine delegation, 1Hz telemetry, and localized notifications"
+  ],
+  [
+    "L2 · Service & Route",
+    "android/.../AacEncoder.kt",
+    "Android MediaCodec hardware AAC-LC encoder (48kHz stereo 256kbps raw access units)"
+  ],
+  [
+    "L2 · Service & Route",
+    "android/.../LatencyDisplay.kt",
+    "Consumes L1 normalized ui_state and display_latency_ms to drive per-row Value/Loading/Hidden indicators"
+  ],
+  [
+    "L2 · Service & Route",
+    "android/.../cast/CastRouteSelection.kt",
+    "Kotlin route/discovery model aligned with L1 device_catalog.rs (This Device vs multi-speaker exclusivity)"
+  ],
+  [
+    "L2 · Service & Route",
+    "android/.../cast/LocalOutputMute.kt",
+    "STREAM_MUSIC mute probe state machine with 6-beat active-audio lock preventing track-switch dual playback"
+  ],
+  [
+    "L2 · Single-App Capture",
+    "android/.../capture/CaptureTargetResolver.kt",
+    "Fail-closed single-app identity verifier (installed, same user, non-shared UID, SHA-256 cert digest)"
+  ],
+  [
+    "L2 · Single-App Capture",
+    "android/.../capture/PlaybackCaptureFactory.kt",
+    "Sole builder for single-UID AudioPlaybackCaptureConfiguration—forbids system-wide capture fallback"
+  ],
+  [
+    "L2 · Single-App Capture",
+    "android/.../capture/shell/*",
+    "Android 13+ built-in Wireless Debugging pairing wizard, AudioMix capture helper, and dual-zone AudioFocus isolation"
+  ],
+  [
+    "L2 · Single-App Capture",
+    "android/.../capture/PcmProbe.kt",
+    "Stereo s16le RMS/peak + Goertzel 1kHz/2kHz energy probe for silence detection and QA acceptance"
+  ],
+  [
+    "L2 · API 29–36 Compat",
+    "android/.../compat/*",
+    "Isolates API 31 RenderEffect blur, API 33 LocaleManager/POST_NOTIFICATIONS, WindowInsets, and signing cert APIs (NewApi fatal)"
+  ],
+  [
+    "FFI · Bridge",
+    "android/.../NativeBridge.kt",
+    "Kotlin external JNI declarations and 16KB-aligned libmiaocast_core.so loader"
+  ],
+  [
+    "FFI · Bridge",
+    "core/src/ffi.rs",
+    "Thin Android JNI exports delegating all session, coordination, catalog, and update logic to L1 core"
+  ],
+  [
+    "FFI · Bridge",
+    "core/src/ffi_c.rs & core/include/miaocast_core.h",
+    "iOS / cross-platform C11 ABI exports and module.modulemap packaged into MiaoCastCore.xcframework"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/engine.rs",
+    "Platform-agnostic facade: handle table, 96-AU bounded queue, serialized multi-speaker coordinator, deadlock-free stop"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/device_catalog.rs",
+    "Shared discovery parser, TV heuristic, non-MiPlay filter, cache merge, and mutual-exclusion route state machine"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/discovery.rs",
+    "Multicast mDNS (224.0.0.251:5353) PTR builder, parser, same-IP priority merge, and 6-column TSV output"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/clock.rs & clock_sync.rs",
+    "Process-wide CLOCK_MONOTONIC EPOCH and 40B UDP TimerServer clock master for receiver skew correction"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/auth/* & control.rs",
+    "TCP 8899 control session with isolated Legacy (HMAC-SHA1) and Safety (OPack + mutual HMAC + chained AES-128-CBC) auth"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/rtsp.rs & timeline.rs",
+    "Reverse WFD RTSP server (M1–M5/SETUP/PLAY/TIME_OFFSET) and monotonic 90kHz PTS / 27MHz PCR shared timeline"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/media/*",
+    "Per-receiver Packetizer: 7B ADTS, PES(0xC0), 188B MPEG-TS (PAT/PMT/PCR), RTP(PT=33), and $+24bit TCP frames"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/session.rs & latency.rs",
+    "CastSession runtime engine: OffsetBarrier 14-AU preroll, media-clock, supervisor backoff reconnect, and latency normalization"
+  ],
+  [
+    "L1 · Rust Core",
+    "core/src/inspect.rs & update.rs",
+    "Read-only diagnostic inspect (no CLOSE) and structured i18n update manifest evaluator"
+  ],
+  [
+    "Tooling & QA",
+    "cli/src/main.rs",
+    "Standalone miaocast-cli for LAN discover, read-only inspect, cast, and fault-injection debugging"
+  ],
+  [
+    "Tooling & QA",
+    "android/testtones/* & app/src/test/*",
+    "3-UID sine-wave isolation test APKs (1kHz/2kHz/deny) and JVM/Robolectric unit & i18n contract test suites"
+  ],
+  [
+    "Build & Scripts",
+    "scripts/build-*.sh & ui-preview.sh",
+    "16KB-aligned cargo-ndk + Gradle build pipeline, iOS XCFramework script, and 3-language Skia UI preview exporter"
+  ]
+];
+
+      /* ==================== RENDER OVERVIEW SVG ==================== */
+      const ovEdgesG = document.getElementById("ov-edges");
+      const ovNodesG = document.getElementById("ov-nodes");
+      const nodeById = Object.fromEntries(OV_NODES.map(n => [n.id, n]));
+
+      for (const e of OV_EDGES) {
+        const g = el("g", { class: `svg-edge flow-${e.flow}`, "data-edge": e.id, "data-flow": e.flow, "data-from": e.from, "data-to": e.to }, ovEdgesG);
+        el("path", { d: e.d, class: "edge-base" }, g);
+        const pAttrs = { d: e.d, class: "edge-flow", "marker-end": `url(#ov-arr-${e.flow})` };
+        if (e.visualBidir) pAttrs["marker-start"] = `url(#ov-arr-${e.flow})`;
+        el("path", pAttrs, g);
+      }
+
+      for (const n of OV_NODES) {
+        const g = el("g", {
+          class: "svg-node",
+          "data-node": n.id,
+          tabindex: "0",
+          role: "button",
+          "aria-label": `${n.title} (${n.layer}): click to inspect upstream/downstream`
+        }, ovNodesG);
+        el("rect", { class: "node-box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 10 }, g);
+        if (n.h <= 50) {
+          const t1 = el("text", { x: n.x + 14, y: n.y + 18, fill: "#f8fafc", "font-size": 12.5, "font-weight": 700 }, g);
+          t1.textContent = n.title;
+          const t2 = el("text", { x: n.x + 14, y: n.y + 34, fill: "#7dd3fc", "font-family": "var(--font-mono)", "font-size": 10.2 }, g);
+          t2.textContent = n.sub;
+        } else {
+          const t0 = el("text", { x: n.x + 12, y: n.y + 20, fill: "#7dd3fc", "font-family": "var(--font-mono)", "font-size": 9.6, "font-weight": 700 }, g);
+          t0.textContent = n.layer;
+          const t1 = el("text", { x: n.x + 12, y: n.y + 42, fill: "#f8fafc", "font-size": 13, "font-weight": 700 }, g);
+          t1.textContent = n.title;
+          const t2 = el("text", { x: n.x + 12, y: n.y + 62, fill: "#cbd5e1", "font-family": "var(--font-mono)", "font-size": 10.2 }, g);
+          t2.textContent = n.sub;
+          if (n.h >= 92) {
+            const t3 = el("text", { x: n.x + 12, y: n.y + n.h - 12, fill: "#94a3b8", "font-size": 10 }, g);
+            t3.textContent = "Click to trace ↑up / ↓down";
+          }
+        }
+        g.addEventListener("click", () => selectOverviewNode(n.id));
+        g.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") selectOverviewNode(n.id);
+          if (ev.key === " ") ev.preventDefault();
+        });
+        g.addEventListener("keyup", (ev) => {
+          if (ev.key === " ") selectOverviewNode(n.id);
+        });
+      }
+
+      let activeFlow = "all";
+      let selectedNodeId = null;
+
+      function traceGraph(startId, flowFilter) {
+        const edges = flowFilter === "all" ? OV_EDGES : OV_EDGES.filter(e => e.flow === flowFilter);
+        const upNodes = new Set(), downNodes = new Set(), activeEdgeIds = new Set();
+
+        // Flow-preserving Forward BFS (Downstream): follows the same flow channel once leaving startId
+        const fq = [[startId, null]];
+        const fSeen = new Set([`${startId}:*`]);
+        while (fq.length) {
+          const [cur, flow] = fq.shift();
+          for (const e of edges) {
+            if (e.from !== cur) continue;
+            if (flow !== null && e.flow !== flow) continue;
+            if (e.to === startId) continue;
+            activeEdgeIds.add(e.id);
+            downNodes.add(e.to);
+            const key = `${e.to}:${e.flow}`;
+            if (!fSeen.has(key)) { fSeen.add(key); fq.push([e.to, e.flow]); }
+          }
+        }
+        // Flow-preserving Reverse BFS (Upstream): traces each incoming flow channel back to its producer
+        const rq = [[startId, null]];
+        const rSeen = new Set([`${startId}:*`]);
+        while (rq.length) {
+          const [cur, flow] = rq.shift();
+          for (const e of edges) {
+            if (e.to !== cur) continue;
+            if (flow !== null && e.flow !== flow) continue;
+            if (e.from === startId) continue;
+            activeEdgeIds.add(e.id);
+            upNodes.add(e.from);
+            const key = `${e.from}:${e.flow}`;
+            if (!rSeen.has(key)) { rSeen.add(key); rq.push([e.from, e.flow]); }
+          }
+        }
+        return { upNodes, downNodes, activeEdgeIds };
+      }
+
+      function applyOverviewHighlights() {
+        const nodeEls = ovNodesG.querySelectorAll(".svg-node");
+        const edgeEls = ovEdgesG.querySelectorAll(".svg-edge");
+
+        if (!selectedNodeId) {
+          const allowedEdges = new Set(OV_EDGES.filter(e => activeFlow === "all" || e.flow === activeFlow).map(e => e.id));
+          const touchedNodes = new Set();
+          for (const e of OV_EDGES) {
+            if (allowedEdges.has(e.id)) { touchedNodes.add(e.from); touchedNodes.add(e.to); }
+          }
+          edgeEls.forEach(g => g.classList.toggle("is-dimmed", !allowedEdges.has(g.dataset.edge)));
+          nodeEls.forEach(g => {
+            g.classList.remove("is-selected", "is-upstream", "is-downstream");
+            g.classList.toggle("is-dimmed", activeFlow !== "all" && !touchedNodes.has(g.dataset.node));
+          });
+          return;
+        }
+
+        const { upNodes, downNodes, activeEdgeIds } = traceGraph(selectedNodeId, activeFlow);
+        edgeEls.forEach(g => g.classList.toggle("is-dimmed", !activeEdgeIds.has(g.dataset.edge)));
+        nodeEls.forEach(g => {
+          const id = g.dataset.node;
+          g.classList.toggle("is-selected", id === selectedNodeId);
+          g.classList.toggle("is-upstream", id !== selectedNodeId && upNodes.has(id));
+          g.classList.toggle("is-downstream", id !== selectedNodeId && downNodes.has(id));
+          g.classList.toggle("is-dimmed", id !== selectedNodeId && !upNodes.has(id) && !downNodes.has(id));
+        });
+
+        const n = nodeById[selectedNodeId];
+        document.getElementById("ins-layer").textContent = n.layer;
+        document.getElementById("ins-title").textContent = n.title;
+        document.getElementById("ins-desc").textContent = n.desc;
+        const filesUl = document.getElementById("ins-files");
+        filesUl.innerHTML = "";
+        n.files.forEach(f => {
+          const li = document.createElement("li");
+          const code = document.createElement("code");
+          code.textContent = f;
+          li.appendChild(code);
+          filesUl.appendChild(li);
+        });
+
+        const fillRel = (containerId, ids, cls) => {
+          const box = document.getElementById(containerId);
+          box.innerHTML = "";
+          if (!ids.size) {
+            const s = document.createElement("span");
+            s.className = "hint-text";
+            s.textContent = "None (boundary node)";
+            box.appendChild(s);
+            return;
+          }
+          ids.forEach(id => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = `rel-btn ${cls}`;
+            b.textContent = nodeById[id].title;
+            b.addEventListener("click", () => selectOverviewNode(id));
+            box.appendChild(b);
+          });
+        };
+        fillRel("ins-up", upNodes, "up");
+        fillRel("ins-down", downNodes, "down");
+        announce(`Selected ${n.title}: ${upNodes.size} upstream, ${downNodes.size} downstream`);
+      }
+
+      function selectOverviewNode(id) {
+        selectedNodeId = selectedNodeId === id ? null : id;
+        applyOverviewHighlights();
+      }
+
+      document.querySelectorAll("[data-flow]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          activeFlow = btn.dataset.flow;
+          document.querySelectorAll("[data-flow]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+          applyOverviewHighlights();
+        });
+      });
+
+      /* ==================== RENDER RUNTIME SVG & LIFECYCLE STEPPER ==================== */
+      const rtEdgesG = document.getElementById("rt-edges");
+      const rtNodesG = document.getElementById("rt-nodes");
+      const rtNodeMap = Object.fromEntries(RT_NODES.map(n => [n.id, n]));
+
+      for (const e of RT_EDGES) {
+        const g = el("g", { class: `svg-edge flow-${e.flow}`, "data-redge": e.id }, rtEdgesG);
+        el("path", { d: e.d, class: "edge-base" }, g);
+        el("path", { d: e.d, class: "edge-flow", "marker-end": `url(#rt-a-${e.flow})` }, g);
+      }
+
+      for (const n of RT_NODES) {
+        const g = el("g", { class: "svg-node", "data-rnode": n.id }, rtNodesG);
+        el("rect", { class: "node-box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9 }, g);
+        el("circle", { cx: n.x + 14, cy: n.y + 20, r: 4, fill: n.accent }, g);
+        const t1 = el("text", { x: n.x + 25, y: n.y + 24, fill: "#f8fafc", "font-size": 12.2, "font-weight": 700 }, g);
+        t1.textContent = n.title;
+        const t2 = el("text", { x: n.x + 12, y: n.y + 46, fill: "#cbd5e1", "font-family": "var(--font-mono)", "font-size": 9.8 }, g);
+        t2.textContent = n.sub;
+      }
+
+      const stepperEl = document.getElementById("lifecycle-stepper");
+      function activateStep(stepId) {
+        const step = LIFECYCLE_STEPS.find(s => s.id === stepId) || LIFECYCLE_STEPS[3];
+        stepperEl.querySelectorAll(".step-btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.step === step.id)));
+        const nSet = new Set(step.nodes);
+        const eSet = new Set(step.edges);
+        rtNodesG.querySelectorAll(".svg-node").forEach(g => {
+          const on = nSet.has(g.dataset.rnode);
+          g.classList.toggle("is-active-step", on);
+          g.classList.toggle("is-dimmed", !on);
+        });
+        rtEdgesG.querySelectorAll(".svg-edge").forEach(g => {
+          g.classList.toggle("is-dimmed", !eSet.has(g.dataset.redge));
+        });
+        document.getElementById("rt-badge").textContent = step.num;
+        document.getElementById("rt-title").textContent = step.name;
+        document.getElementById("rt-desc").textContent = step.desc;
+        const inv = document.getElementById("rt-invariants");
+        inv.innerHTML = "";
+        step.invariants.forEach(text => {
+          const li = document.createElement("li");
+          li.textContent = "• " + text;
+          inv.appendChild(li);
+        });
+        const act = document.getElementById("rt-active-list");
+        act.innerHTML = "";
+        step.nodes.forEach(id => {
+          const span = document.createElement("span");
+          span.className = "rel-btn up";
+          span.textContent = rtNodeMap[id]?.title || id;
+          act.appendChild(span);
+        });
+      }
+
+      for (const s of LIFECYCLE_STEPS) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "step-btn";
+        b.dataset.step = s.id;
+        b.setAttribute("aria-pressed", "false");
+        b.innerHTML = `<span class="step-num">${s.num}</span><span class="step-name">${s.name}</span>`;
+        b.addEventListener("click", () => activateStep(s.id));
+        stepperEl.appendChild(b);
+      }
+      activateStep("step4");
+
+      /* ==================== RENDER FILES EXPLORER TABLE ==================== */
+      const layerSet = ["All", ...new Set(FILES_DATA.map(r => r[0]))];
+      let activeLayer = "All";
+      const layerFiltersEl = document.getElementById("layer-filters");
+      const searchInput = document.getElementById("file-search");
+      const tbody = document.getElementById("files-tbody");
+      const countEl = document.getElementById("file-count");
+
+      function renderFilesTable() {
+        const q = searchInput.value.trim().toLowerCase();
+        const rows = FILES_DATA.filter(([layer, path, desc]) => {
+          if (activeLayer !== "All" && layer !== activeLayer) return false;
+          if (!q) return true;
+          return `${layer} ${path} ${desc}`.toLowerCase().includes(q);
+        });
+        countEl.textContent = String(rows.length);
+        tbody.innerHTML = "";
+        for (const [layer, path, desc] of rows) {
+          const tr = document.createElement("tr");
+          const th = document.createElement("th");
+          th.scope = "row";
+          const pill = document.createElement("span");
+          pill.className = "layer-pill";
+          pill.textContent = layer;
+          th.appendChild(pill);
+          const tdPath = document.createElement("td");
+          const code = document.createElement("code");
+          code.textContent = path;
+          tdPath.appendChild(code);
+          const tdDesc = document.createElement("td");
+          tdDesc.textContent = desc;
+          tr.append(th, tdPath, tdDesc);
+          tbody.appendChild(tr);
+        }
+      }
+
+      for (const l of layerSet) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip";
+        b.textContent = l;
+        b.setAttribute("aria-pressed", String(l === "All"));
+        b.addEventListener("click", () => {
+          activeLayer = l;
+          layerFiltersEl.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+          renderFilesTable();
+        });
+        layerFiltersEl.appendChild(b);
+      }
+      searchInput.addEventListener("input", renderFilesTable);
+      renderFilesTable();
+
+      /* ==================== ACCESSIBLE TABS + BEFOREMATCH ==================== */
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const panels = [...document.querySelectorAll('[role="tabpanel"]')];
+
+      function activateTab(tab, moveFocus = false) {
+        tabs.forEach((t, i) => {
+          const selected = t === tab;
+          t.setAttribute("aria-selected", String(selected));
+          t.toggleAttribute("focusgroupstart", selected);
+          t.tabIndex = selected ? 0 : -1;
+          const panel = panels[i];
+          if (selected) {
+            panel.removeAttribute("hidden");
+            panel.tabIndex = 0;
+          } else {
+            panel.setAttribute("hidden", "until-found");
+            panel.removeAttribute("tabindex");
+          }
+        });
+        tab.scrollIntoView({ block: "nearest", inline: "nearest" });
+        if (moveFocus) tab.focus();
+      }
+
+      tabs.forEach((tab, idx) => {
+        tab.tabIndex = idx === 0 ? 0 : -1;
+        tab.addEventListener("click", () => activateTab(tab));
+        tab.addEventListener("keydown", (ev) => {
+          let next = null;
+          if (ev.key === "ArrowRight") next = tabs[(idx + 1) % tabs.length];
+          else if (ev.key === "ArrowLeft") next = tabs[(idx - 1 + tabs.length) % tabs.length];
+          else if (ev.key === "Home") next = tabs[0];
+          else if (ev.key === "End") next = tabs[tabs.length - 1];
+          if (next) { ev.preventDefault(); activateTab(next, true); }
+        });
+      });
+
+      panels.forEach((panel, idx) => {
+        panel.addEventListener("beforematch", () => activateTab(tabs[idx]));
+      });
+
+      /* ==================== GLOBAL MOTION & RESET CONTROLS ==================== */
+      const btnMotion = document.getElementById("btn-motion");
+      btnMotion.addEventListener("click", () => {
+        const paused = document.body.classList.toggle("is-paused");
+        btnMotion.setAttribute("aria-pressed", String(paused));
+        btnMotion.textContent = paused ? "Resume Motion" : "Pause Motion";
+      });
+
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        selectedNodeId = null;
+        activeFlow = "all";
+        document.querySelectorAll("[data-flow]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.flow === "all")));
+        applyOverviewHighlights();
+        activateStep("step4");
+        announce("All highlights and filters reset");
+      });
+    })();
+  
+  </script>
+</body>
+</html>

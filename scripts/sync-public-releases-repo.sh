@@ -31,7 +31,7 @@ fi
 find "$STAGE_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
 # 1. 复制公开顶层文档（严禁复制任何源码或私有文件）
-for f in README.md README_EN.md CHANGELOG.md SECURITY.md CONTRIBUTING.md LICENSE; do
+for f in README.md README_EN.md README_JA.md CHANGELOG.md SECURITY.md CONTRIBUTING.md LICENSE; do
   if [[ -f "$ROOT/$f" ]]; then
     cp "$ROOT/$f" "$STAGE_DIR/$f"
   fi
@@ -56,7 +56,7 @@ target_repo = sys.argv[2]
 owner, repo = target_repo.split("/", 1)
 pages_url = f"https://{owner.lower()}.github.io/{repo}/"
 
-for fname in ("README.md", "README_EN.md"):
+for fname in ("README.md", "README_EN.md", "README_JA.md"):
     p = stage / fname
     if not p.is_file():
         continue
@@ -118,6 +118,12 @@ jobs:
             cp docs/architecture.html _site/index.html
           fi
           cp docs/architecture.html _site/architecture.html
+          for locale_dir in en ja; do
+            if [[ -d "docs/$locale_dir" ]]; then
+              mkdir -p "_site/$locale_dir"
+              cp -r "docs/$locale_dir/." "_site/$locale_dir/"
+            fi
+          done
           for seo_file in robots.txt sitemap.xml llms.txt; do
             if [[ -f "docs/$seo_file" ]]; then
               cp "docs/$seo_file" "_site/$seo_file"
