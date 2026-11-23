@@ -4,6 +4,7 @@ import android.Manifest
 import android.animation.ObjectAnimator
 import android.app.Activity
 import android.app.Dialog
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -95,6 +96,7 @@ class MainActivity : Activity() {
         private const val REQ_PROJECTION = 42
         private const val REQ_APP_PICKER = 43
         private const val REQ_SETTINGS = 45
+        private const val AUTO_DISCOVER_COOLDOWN_MS = 30_000L
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -142,6 +144,8 @@ class MainActivity : Activity() {
     private val quickChipSelectedFlags = mutableMapOf<View, Boolean>()
     private lateinit var deviceCountView: TextView
     private lateinit var deviceList: LinearLayout
+    private lateinit var statusBanner: LinearLayout
+    private lateinit var statusDot: View
     private lateinit var statusLine: TextView
 
     private var cachedLaunchableApps: List<LaunchableApp> = emptyList()
@@ -178,10 +182,27 @@ class MainActivity : Activity() {
     private var stopRequested: Boolean = false
     private var wasServiceRunning: Boolean = false
     private var discovering: Boolean = false
+    private var lastDiscoverCompletedAtMs: Long = 0L
+    private var suppressNextResumeAutoDiscover: Boolean = false
+    private var draggingSpeakerVolume: Boolean = false
+    private var pendingDeviceListRender: Boolean = false
     private var refreshAnim: ObjectAnimator? = null
     private var lastRenderedDark: Boolean = true
     private var lastPromptedWirelessError: String = ""
-    private var lastStatusMessage: String = "本机出声 · 点击下方音箱开始投送"
+    private var lastStatusMessage: String = ""
+    private var lastStatusKind: StatusBannerKind = StatusBannerKind.HIDDEN
+
+    private enum class StatusBannerKind {
+        HIDDEN,
+        TRANSIENT_INFO,
+        WARNING_ALERT,
+    }
+
+    private val hideTransientStatusRunnable = Runnable {
+        if (!isFinishing && !isDestroyed && lastStatusKind == StatusBannerKind.TRANSIENT_INFO) {
+            clearStatusBanner()
+        }
+    }
 
     private data class LatencyIndicatorViews(
         val container: LinearLayout,
@@ -208,6 +229,10 @@ class MainActivity : Activity() {
             updateLatencyAndSubtitleIndicators(stats)
             updateHeaderStatusPill()
             refreshUpdateUi()
+            if (!nowPlaying.available && isNotificationListenerEnabled()) {
+                nowPlayingTracker?.refresh()
+                bindNowPlaying()
+            }
             tickNowPlayingProgress()
             main.postDelayed(this, 1000)
         }
@@ -255,8 +280,7 @@ class MainActivity : Activity() {
         ).also { it.start() }
         main.postDelayed(refreshRunnable, 1000)
         AppUpdateManager.addListener(updateCheckListener)
-        if (intent?.extras == null) {
-            discover()
+        if (intent?.getBooleanExtra("ui_preview", false) != true) {
             main.postDelayed(autoUpdateCheckRunnable, 1500)
         }
         handleAutomation(intent)
@@ -265,6 +289,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         AppUpdateManager.removeListener(updateCheckListener)
         main.removeCallbacks(autoUpdateCheckRunnable)
+        main.removeCallbacks(hideTransientStatusRunnable)
         runCatching { latencyPopup?.dismiss() }
         latencyPopup = null
         runCatching { latencyDetailsDialog?.dismiss() }
@@ -309,16 +334,35 @@ class MainActivity : Activity() {
         refreshUpdateUi()
         renderDevices()
         nowPlayingTracker?.refresh()
+        bindNowPlaying()
         maybeAutoSelectFromNowPlaying()
+        maybeAutoDiscoverOnResume()
+    }
+
+    private fun maybeAutoDiscoverOnResume() {
+        if (intent?.getBooleanExtra("ui_preview", false) == true) return
+        if (suppressNextResumeAutoDiscover) {
+            suppressNextResumeAutoDiscover = false
+            return
+        }
+        if (discovering) return
+        val now = System.currentTimeMillis()
+        val castableCount = routeState.devices.count { it.isCastSink && it.castable }
+        val cooldownElapsed = lastDiscoverCompletedAtMs <= 0L ||
+            (now - lastDiscoverCompletedAtMs) >= AUTO_DISCOVER_COOLDOWN_MS
+        if (castableCount == 0 || cooldownElapsed) {
+            discover(forceRefreshNames = false)
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        suppressNextResumeAutoDiscover = true
         if (requestCode != REQ_PERMS) return
         permissions.forEachIndexed { i, p ->
             val ok = grantResults.getOrNull(i) == PackageManager.PERMISSION_GRANTED
             if (p == Manifest.permission.RECORD_AUDIO && !ok) {
-                setStatusText("未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）")
+                showAlertStatus("未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）")
             }
         }
     }
@@ -345,9 +389,72 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun setStatusText(msg: String) {
+    private fun clearStatusBanner() {
+        main.removeCallbacks(hideTransientStatusRunnable)
+        lastStatusMessage = ""
+        lastStatusKind = StatusBannerKind.HIDDEN
+        if (::statusBanner.isInitialized) {
+            statusBanner.visibility = View.GONE
+        }
+    }
+
+    private fun showTransientStatus(msg: String, durationMs: Long = 2500L) {
+        if (msg.isBlank()) {
+            clearStatusBanner()
+            return
+        }
+        main.removeCallbacks(hideTransientStatusRunnable)
         lastStatusMessage = msg
-        if (::statusLine.isInitialized) statusLine.text = msg
+        lastStatusKind = StatusBannerKind.TRANSIENT_INFO
+        applyStatusBannerUi()
+        main.postDelayed(hideTransientStatusRunnable, durationMs)
+    }
+
+    private fun showAlertStatus(msg: String) {
+        if (msg.isBlank()) {
+            clearStatusBanner()
+            return
+        }
+        main.removeCallbacks(hideTransientStatusRunnable)
+        lastStatusMessage = msg
+        lastStatusKind = StatusBannerKind.WARNING_ALERT
+        applyStatusBannerUi()
+    }
+
+    private fun applyStatusBannerUi() {
+        if (!::statusBanner.isInitialized) return
+        if (lastStatusKind == StatusBannerKind.HIDDEN || lastStatusMessage.isBlank()) {
+            statusBanner.visibility = View.GONE
+            return
+        }
+        val isWarning = lastStatusKind == StatusBannerKind.WARNING_ALERT
+        val fgColor = if (isWarning) palette.statusWarning else palette.accentBright
+        val bgColor = if (isWarning) {
+            Color.argb(
+                if (palette.isDark) 34 else 24,
+                Color.red(palette.statusWarning),
+                Color.green(palette.statusWarning),
+                Color.blue(palette.statusWarning),
+            )
+        } else {
+            palette.accentSoftBg
+        }
+        val borderColor = Color.argb(
+            if (palette.isDark) 72 else 52,
+            Color.red(fgColor),
+            Color.green(fgColor),
+            Color.blue(fgColor),
+        )
+        statusBanner.background = UiComponents.roundedDrawable(
+            fillColor = bgColor,
+            radiusPx = dpf(12f),
+            strokeColor = borderColor,
+            strokeWidthPx = dp(1).coerceAtLeast(1),
+        )
+        statusDot.background = UiComponents.roundedDrawable(fgColor, dp(7) / 2f)
+        statusLine.setTextColor(fgColor)
+        statusLine.text = lastStatusMessage
+        statusBanner.visibility = View.VISIBLE
     }
 
     private fun buildUi() {
@@ -721,7 +828,11 @@ class MainActivity : Activity() {
             isClickable = true
             isFocusable = true
             contentDescription = "播放或暂停"
-            setOnClickListener { nowPlayingTracker?.playPause() }
+            setOnClickListener {
+                if (nowPlayingTracker?.playPause() != true) {
+                    openNowPlayingApp()
+                }
+            }
             addView(playBtnIcon)
         }
         controls.addView(playWrap)
@@ -1078,13 +1189,34 @@ class MainActivity : Activity() {
         deviceList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         mainCard.addView(deviceList)
 
-        statusLine = TextView(this).apply {
-            setTextColor(palette.textSecondary)
-            textSize = 11.5f
-            text = lastStatusMessage
-            setPadding(dp(4), dp(8), dp(4), dp(2))
+        val statusDotSize = dp(7)
+        statusDot = View(this).apply {
+            background = UiComponents.roundedDrawable(palette.accentBright, statusDotSize / 2f)
+            layoutParams = LinearLayout.LayoutParams(statusDotSize, statusDotSize).apply {
+                marginEnd = dp(8)
+            }
         }
-        mainCard.addView(statusLine)
+        statusLine = TextView(this).apply {
+            setTextColor(palette.accentBright)
+            textSize = 11.5f
+            setTypeface(null, Typeface.BOLD)
+            text = lastStatusMessage
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        statusBanner = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(9), dp(12), dp(9))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(10) }
+            visibility = View.GONE
+            addView(statusDot)
+            addView(statusLine)
+        }
+        mainCard.addView(statusBanner)
+        applyStatusBannerUi()
 
         content.addView(mainCard)
 
@@ -1398,9 +1530,9 @@ class MainActivity : Activity() {
             } else {
                 "（实时热生效，免重连）"
             }
-            setStatusText("已切换至「${preset.nameZh} · ${preset.shortMsZh}」$multiWarn")
+            showTransientStatus("已切换至「${preset.nameZh} · ${preset.shortMsZh}」$multiWarn")
         } else {
-            setStatusText("已设为「${preset.nameZh} · ${preset.shortMsZh}」，下次连接音箱时生效")
+            showTransientStatus("已设为「${preset.nameZh} · ${preset.shortMsZh}」，下次连接音箱时生效")
         }
     }
 
@@ -1575,11 +1707,25 @@ class MainActivity : Activity() {
         return requireNotNull(latencyDetailsDialog)
     }
 
+    private fun isNotificationListenerEnabled(): Boolean {
+        if (intent?.getBooleanExtra("ui_preview", false) == true) {
+            return nowPlaying.available || !nowPlaying.placeholderReasonZh.contains("通知使用权")
+        }
+        val flat = runCatching {
+            Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        }.getOrNull().orEmpty()
+        val cn = ComponentName(this, NowPlayingNotificationListener::class.java).flattenToString()
+        val shortCn = ComponentName(this, NowPlayingNotificationListener::class.java).flattenToShortString()
+        return flat.split(':').any { it.equals(cn, ignoreCase = true) || it.equals(shortCn, ignoreCase = true) }
+    }
+
     private fun bindNowPlaying() {
         if (!::nowPlayingFullBox.isInitialized) return
         val available = nowPlaying.available
-        nowPlayingFullBox.visibility = if (available) View.VISIBLE else View.GONE
-        nowPlayingHintBanner.visibility = if (available) View.GONE else View.VISIBLE
+        val notifAccessGranted = isNotificationListenerEnabled()
+        val showFullPlayer = available || notifAccessGranted
+        nowPlayingFullBox.visibility = if (showFullPlayer) View.VISIBLE else View.GONE
+        nowPlayingHintBanner.visibility = if (showFullPlayer) View.GONE else View.VISIBLE
 
         val art = nowPlaying.artwork
         if (art != null) {
@@ -1594,12 +1740,7 @@ class MainActivity : Activity() {
             bgArt.setImageDrawable(UiComponents.ambientBackdropDrawable(palette))
         }
 
-        if (!available) return
-        titleView.text = NowPlayingInfo.displayTitle(nowPlaying)
-        artistView.text = NowPlayingInfo.displayArtist(nowPlaying)
-        playBtnIcon.setImageResource(
-            if (nowPlaying.isPlaying == true) R.drawable.ic_ui_pause else R.drawable.ic_ui_play,
-        )
+        if (!showFullPlayer) return
         val badgePkg = nowPlaying.sourcePackage?.takeIf { it.isNotBlank() }
             ?: selectedPackage.takeIf { it.isNotBlank() }
         if (badgePkg != null) {
@@ -1608,6 +1749,26 @@ class MainActivity : Activity() {
         } else {
             albumAppBadgeWrap.visibility = View.GONE
         }
+
+        if (!available) {
+            titleView.text = if (selectedLabel.isNotBlank()) "暂未播放 · $selectedLabel" else "暂无正在播放"
+            artistView.text = if (selectedLabel.isNotBlank()) {
+                "点击左侧封面或播放键启动 $selectedLabel"
+            } else {
+                "打开音乐 App 播放即可同步曲目与播控"
+            }
+            playBtnIcon.setImageResource(R.drawable.ic_ui_play)
+            posView.text = "—:—"
+            durView.text = "—:—"
+            progressBar.progress = 0
+            return
+        }
+
+        titleView.text = NowPlayingInfo.displayTitle(nowPlaying)
+        artistView.text = NowPlayingInfo.displayArtist(nowPlaying)
+        playBtnIcon.setImageResource(
+            if (nowPlaying.isPlaying == true) R.drawable.ic_ui_pause else R.drawable.ic_ui_play,
+        )
         durView.text = NowPlayingInfo.formatTime(nowPlaying.durationMs)
         tickNowPlayingProgress()
     }
@@ -1642,6 +1803,7 @@ class MainActivity : Activity() {
 
     private fun renderDevices() {
         if (!::deviceList.isInitialized) return
+        pendingDeviceListRender = false
         deviceList.removeAllViews()
         latencyIndicators.clear()
         speakerSubtitles.clear()
@@ -1653,8 +1815,8 @@ class MainActivity : Activity() {
         )
         val castableSinks = visible.count { it.isCastSink && it.castable }
         deviceCountView.text = if (castableSinks > 0) "发现 $castableSinks 台可投设备" else "支持多音箱同频投送"
-        visible.forEach { d ->
-            deviceList.addView(deviceRow(d))
+        visible.forEachIndexed { idx, d ->
+            deviceList.addView(deviceRow(d, isLast = idx == visible.lastIndex))
         }
         suppressRoute = false
         val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
@@ -1662,7 +1824,7 @@ class MainActivity : Activity() {
         updateHeaderStatusPill()
     }
 
-    private fun deviceRow(d: CastRouteSelection.Device): View {
+    private fun deviceRow(d: CastRouteSelection.Device, isLast: Boolean = false): View {
         val selected = d.selected
         val bgColor = if (selected) palette.rowSelectedBg else palette.rowIdleBg
         val borderColor = if (selected) palette.rowSelectedBorder else palette.rowIdleBorder
@@ -1688,7 +1850,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { bottomMargin = dp(8) }
+            ).apply { bottomMargin = if (isLast) 0 else dp(8) }
             isClickable = true
             isFocusable = true
             setOnClickListener { onDeviceClicked(d) }
@@ -1830,10 +1992,17 @@ class MainActivity : Activity() {
                         pctView.text = "$p%"
                         if (fromUser) speakerVolume[d.id] = p
                     }
-                    override fun onStartTrackingTouch(s: SeekBar?) {}
+                    override fun onStartTrackingTouch(s: SeekBar?) {
+                        draggingSpeakerVolume = true
+                    }
                     override fun onStopTrackingTouch(s: SeekBar?) {
+                        draggingSpeakerVolume = false
                         speakerVolume[d.id] = progress
                         if (CastService.running.get() || castRequested) setVolume(d.id, progress)
+                        if (pendingDeviceListRender) {
+                            pendingDeviceListRender = false
+                            renderDevices()
+                        }
                     }
                 })
             }
@@ -1896,7 +2065,7 @@ class MainActivity : Activity() {
                     stopCast()
                     updateLatencyAndSubtitleIndicators(null)
                     updateHeaderStatusPill()
-                    setStatusText("已切回本机播放")
+                    clearStatusBanner()
                 }
                 is Effect.StartCast -> startCastTo(e.speakerIds)
                 is Effect.AddSpeaker -> {
@@ -1905,11 +2074,11 @@ class MainActivity : Activity() {
                         CastService.primeConnectingReceivers(setOf(e.id))
                         updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                         service(CastService.ACTION_ADD) { putExtra(CastService.EXTRA_IP, e.id) }
-                        setStatusText("正在加入音箱 ${e.id}…")
+                        clearStatusBanner()
                     } else if (pendingStart != null) {
                         val ips = routeState.selectedSpeakerIds.joinToString(",")
                         pendingStart?.putExtra(CastService.EXTRA_IPS, ips)
-                        setStatusText("已加入待投送列表：${e.id}")
+                        clearStatusBanner()
                     } else {
                         startCastTo(routeState.selectedSpeakerIds)
                     }
@@ -1923,10 +2092,10 @@ class MainActivity : Activity() {
                         updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                         service(CastService.ACTION_REMOVE) { putExtra(CastService.EXTRA_IP, e.id) }
                     }
-                    setStatusText("已移除音箱 ${e.id}")
+                    clearStatusBanner()
                 }
                 is Effect.RejectNonCastable -> {
-                    setStatusText("无法投送：${e.reason}")
+                    showAlertStatus("无法投送：${e.reason}")
                 }
             }
         }
@@ -1954,7 +2123,7 @@ class MainActivity : Activity() {
             )
         }
         if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
-            setStatusText(validation.messageZh)
+            showAlertStatus(validation.messageZh)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             showWirelessPrecheckGuideDialog(speakerIds, validation.messageZh)
@@ -1964,7 +2133,7 @@ class MainActivity : Activity() {
         val needsTargetApp = appMode && allowed.effectiveScope == CaptureScopeMode.SINGLE_APP
 
         if (needsTargetApp && selectedPackage.isBlank()) {
-            setStatusText("请先选择要投送的音频 App")
+            showAlertStatus("请先选择要投送的音频 App")
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             openAppPicker()
@@ -1974,7 +2143,7 @@ class MainActivity : Activity() {
             allowed.effectiveEngine == CaptureEngineMode.STANDARD &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
         ) {
-            setStatusText("需要音频捕获权限（仅用于播放捕获，不采集麦克风）")
+            showAlertStatus("需要音频捕获权限（仅用于播放捕获，不采集麦克风）")
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_PERMS)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
@@ -1994,6 +2163,7 @@ class MainActivity : Activity() {
             .putExtra(CastService.EXTRA_CAPTURE_ENGINE, allowed.effectiveEngine.id)
             .putExtra(CastService.EXTRA_CAPTURE_SCOPE, allowed.effectiveScope.id)
         speakerIds.forEach { speakerVolume[it] = masterVolume }
+        clearStatusBanner()
         if (appMode && allowed.effectiveEngine == CaptureEngineMode.WIRELESS_DEBUG) {
             // 无感模式：零 MediaProjection 弹窗、直接启动 mediaPlayback 前台服务
             castRequested = true
@@ -2010,13 +2180,6 @@ class MainActivity : Activity() {
                     .putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
             }
             startForegroundService(svcIntent)
-            setStatusText(
-                if (allowed.effectiveScope == CaptureScopeMode.GLOBAL_MEDIA) {
-                    "正在启动无感全局媒体投送…"
-                } else {
-                    "正在无感连接并投送 $selectedLabel…"
-                },
-            )
         } else if (appMode) {
             val grantSession = UUID.randomUUID().toString()
             lastGrantSession = grantSession
@@ -2032,14 +2195,12 @@ class MainActivity : Activity() {
                 getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent(),
                 REQ_PROJECTION,
             )
-            setStatusText("等待系统播放捕获授权（UID 锁定 $selectedLabel）…")
         } else {
             castRequested = true
             CastService.primeConnectingReceivers(speakerIds)
             updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
             updateHeaderStatusPill()
             startForegroundService(base.putExtra(CastService.EXTRA_SOURCE, "silent"))
-            setStatusText("正在启动静音测试投送…")
         }
     }
 
@@ -2185,7 +2346,7 @@ class MainActivity : Activity() {
                 CastService.lastFailMessage = ""
                 settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                 refreshTargetFromStore()
-                setStatusText("已切回标准投屏模式，点击音箱即可投送")
+                showTransientStatus("已切回标准投屏模式，点击音箱即可投送")
             },
             onDismissed = { wirelessPromptDialog = null },
         )
@@ -2220,6 +2381,9 @@ class MainActivity : Activity() {
                 if (::mainTargetAutoBadge.isInitialized) {
                     mainTargetAutoBadge.visibility = if (currentSelectionAutoDetected) View.VISIBLE else View.GONE
                 }
+            }
+            if (!nowPlaying.available) {
+                bindNowPlaying()
             }
         }
         renderQuickSwitchRow()
@@ -2273,15 +2437,16 @@ class MainActivity : Activity() {
                     nowPlayingTracker?.refresh()
                 }
             }
-            val ev = CastService.lastEvent
-            if (ev.isNotBlank()) setStatusText(ev)
+            if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                clearStatusBanner()
+            }
         } else {
             val stoppedFromRunning = wasServiceRunning
             wasServiceRunning = false
             val failMsg = CastService.lastFailMessage
             if (failMsg.isNotBlank()) {
                 castRequested = false
-                setStatusText(failMsg)
+                showAlertStatus(failMsg)
                 maybePromptWirelessRecovery(failMsg)
                 if (pendingStart == null && routeState.selectedSpeakerIds.isNotEmpty()) {
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
@@ -2295,7 +2460,7 @@ class MainActivity : Activity() {
                     if (::deviceList.isInitialized) renderDevices()
                 }
                 if (stoppedFromRunning) {
-                    setStatusText("已切回本机播放")
+                    clearStatusBanner()
                 }
             }
         }
@@ -2364,7 +2529,6 @@ class MainActivity : Activity() {
                     currentSelectionAutoDetected = true
                     lastGrantSession = null
                     refreshTargetFromStore()
-                    setStatusText("已自动识别音源：$labelHint")
                 }
             }
         }.start()
@@ -2455,13 +2619,12 @@ class MainActivity : Activity() {
 
     private fun quickSelectApp(app: LaunchableApp) {
         if (app.packageName == selectedPackage && settingsStore.sourceMode != "silent") {
-            setStatusText("当前音源已是 ${app.label}")
             return
         }
         Thread {
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
             when (val r = resolver.resolveForCapture(app.packageName)) {
-                is CaptureTargetResult.Fail -> main.post { setStatusText(r.messageZh) }
+                is CaptureTargetResult.Fail -> main.post { showAlertStatus(r.messageZh) }
                 is CaptureTargetResult.Ok -> {
                     store.saveSelection(
                         TargetAppSelection(
@@ -2487,9 +2650,9 @@ class MainActivity : Activity() {
                                 putExtra(CastService.EXTRA_TARGET_LABEL, app.label)
                                 putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
                             }
-                            setStatusText("正在切换投送音源为 ${app.label}…")
-                        } else {
-                            setStatusText("已选择音源：${app.label}")
+                            showTransientStatus("正在切换投送音源为 ${app.label}…")
+                        } else if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                            clearStatusBanner()
                         }
                     }
                 }
@@ -2505,7 +2668,7 @@ class MainActivity : Activity() {
             stopCast()
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
-            setStatusText("已切回本机播放")
+            clearStatusBanner()
         }
         startActivityForResult(Intent(this, AppPickerActivity::class.java), REQ_APP_PICKER)
     }
@@ -2520,9 +2683,6 @@ class MainActivity : Activity() {
         if (discovering) return
         discovering = true
         startRefreshSpinner()
-        if (!CastService.running.get() || stopRequested) {
-            setStatusText("正在扫描局域网音箱…")
-        }
         val cachedJson = deviceStore.loadRawJson()
         Thread {
             val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -2539,7 +2699,7 @@ class MainActivity : Activity() {
                 val parsed = CastRouteSelection.parseDiscoverJsonResult(r)
                 if (parsed == null || parsed.error != null) {
                     if (!CastService.running.get() || stopRequested) {
-                        setStatusText("扫描失败，请点击刷新重试")
+                        showAlertStatus("扫描失败，请点击刷新重试")
                     }
                     return@post
                 }
@@ -2548,6 +2708,10 @@ class MainActivity : Activity() {
                 }
                 val mergedDevices = parsed.merged
                 deviceStore.saveDevices(parsed.cacheable)
+                val prevVisible = CastRouteSelection.filterVisibleDevices(
+                    routeState.devices,
+                    settingsStore.showAllDiscovered,
+                )
                 var next = CastRouteSelection.mergeDiscovered(routeState, mergedDevices)
                 if (CastService.running.get() && !stopRequested) {
                     val activeIps = CastService.activeReceiverIps()
@@ -2555,26 +2719,44 @@ class MainActivity : Activity() {
                         next = CastRouteSelection.syncActiveSpeakers(next, activeIps)
                     }
                 }
+                val hadPendingIps = !pendingIps.isNullOrEmpty()
                 pendingIps?.forEach { ip ->
                     if (next.devices.any { it.id == ip && it.castable }) {
                         next = CastRouteSelection.setSpeakerChecked(next, ip, true).state
                     }
                 }
                 pendingIps = null
+                lastDiscoverCompletedAtMs = System.currentTimeMillis()
                 routeState = next
-                renderDevices()
+                val nextVisible = CastRouteSelection.filterVisibleDevices(
+                    next.devices,
+                    settingsStore.showAllDiscovered,
+                )
+                val castableSinks = nextVisible.count { it.isCastSink && it.castable }
+                if (::deviceCountView.isInitialized) {
+                    deviceCountView.text = if (castableSinks > 0) "发现 $castableSinks 台可投设备" else "支持多音箱同频投送"
+                }
+                val listChanged = hadPendingIps ||
+                    prevVisible != nextVisible ||
+                    (::deviceList.isInitialized && deviceList.childCount != nextVisible.size)
+                if (listChanged) {
+                    if (draggingSpeakerVolume) {
+                        pendingDeviceListRender = true
+                    } else {
+                        renderDevices()
+                    }
+                } else {
+                    val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
+                    updateLatencyAndSubtitleIndicators(stats)
+                    updateHeaderStatusPill()
+                }
                 val foundCount = parsed.rows.size
-                val castableCount = parsed.castableCount
-                val hiddenCount = parsed.hiddenCount
                 if (!CastService.running.get() || stopRequested) {
-                    setStatusText(
-                        when {
-                            foundCount == 0 -> "未扫描到在线音箱（可点击右上角刷新或手动添加 IP）"
-                            hiddenCount > 0 && !settingsStore.showAllDiscovered ->
-                                "发现 $castableCount 台可投设备（已隐藏 $hiddenCount 台未声明 MiPlay 节点）"
-                            else -> "发现 $foundCount 台设备 · 点击音箱即可投送"
-                        },
-                    )
+                    if (foundCount == 0 && next.devices.none { it.isCastSink }) {
+                        showAlertStatus("未扫描到在线音箱（可点击刷新或去设置手动添加 IP）")
+                    } else if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                        clearStatusBanner()
+                    }
                 }
             }
         }.start()
@@ -2607,7 +2789,7 @@ class MainActivity : Activity() {
             stopCast()
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
-            setStatusText("已切回本机播放")
+            clearStatusBanner()
         }
         if (i.getBooleanExtra("pause", false)) service(CastService.ACTION_PAUSE)
         if (i.getBooleanExtra("resume", false)) service(CastService.ACTION_RESUME)
@@ -2658,13 +2840,14 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        suppressNextResumeAutoDiscover = true
         when (requestCode) {
             REQ_PROJECTION -> {
                 val p = pendingStart ?: return
                 pendingStart = null
                 if (resultCode != RESULT_OK || data == null) {
                     castRequested = false
-                    setStatusText("播放捕获授权已取消 · 已切回本机播放")
+                    showTransientStatus("播放捕获授权已取消 · 已切回本机播放")
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
                     renderDevices()
                     lastGrantSession = null
@@ -2673,7 +2856,7 @@ class MainActivity : Activity() {
                 val currentIps = routeState.selectedSpeakerIds
                 if (currentIps.isEmpty()) {
                     castRequested = false
-                    setStatusText("未选择投送音箱 · 已切回本机播放")
+                    clearStatusBanner()
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
                     renderDevices()
                     lastGrantSession = null
@@ -2684,11 +2867,11 @@ class MainActivity : Activity() {
                 CastService.primeConnectingReceivers(currentIps)
                 updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
                 updateHeaderStatusPill()
+                clearStatusBanner()
                 startForegroundService(
                     p.putExtra(CastService.EXTRA_PROJ_CODE, resultCode)
                         .putExtra(CastService.EXTRA_PROJ_DATA, data),
                 )
-                setStatusText("正在连接并投送到音箱…")
             }
             REQ_APP_PICKER -> {
                 if (store.hasInitializedFavoriteSources()) {
@@ -2716,7 +2899,9 @@ class MainActivity : Activity() {
                 lastGrantSession = null
                 settingsStore.sourceMode = "app"
                 refreshTargetFromStore()
-                setStatusText("已选择音源：$selectedLabel")
+                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                    clearStatusBanner()
+                }
             }
             REQ_SETTINGS -> {
                 if (data?.getBooleanExtra(SettingsActivity.EXTRA_DEVICES_CHANGED, false) == true) {
@@ -2853,10 +3038,13 @@ class MainActivity : Activity() {
             nextRoute = CastRouteSelection.setSpeakerChecked(nextRoute, speakerId, true).state
         }
         routeState = nextRoute
-        lastStatusMessage = previewStatusText
+        lastStatusMessage = ""
+        lastStatusKind = StatusBannerKind.HIDDEN
         buildUi()
         updateLatencyAndSubtitleIndicators(previewStats)
         updateHeaderStatusPill()
-        if (previewStatusText.isNotBlank()) setStatusText(previewStatusText)
+        if (previewStatusText.contains("异常") || previewStatusText.contains("失败") || previewStatusText.contains("未授予")) {
+            showAlertStatus(previewStatusText)
+        }
     }
 }

@@ -42,19 +42,26 @@ class NowPlayingTracker(
     private val observed = linkedMapOf<MediaSession.Token, ObservedController>()
     private var controller: MediaController? = null
     private var initialized = false
+    private var listenerRegistered = false
     private var seqCounter = 0L
     private var lastEmittedSnapshots: List<ActiveMediaSessionSelector.SessionSnapshot>? = null
 
     private val sessionsListener =
         MediaSessionManager.OnActiveSessionsChangedListener { refreshControllers(it) }
 
+    private val listenerConnectedCallback: () -> Unit = {
+        main.post { refresh() }
+    }
+
     fun start() {
+        NowPlayingNotificationListener.registerSessionChangeCallback(listenerConnectedCallback)
         val cn = ComponentName(context, NowPlayingNotificationListener::class.java)
+        ensureSessionListenerRegistered(cn)
         runCatching {
-            msm?.addOnActiveSessionsChangedListener(sessionsListener, cn, main)
             refreshControllers(msm?.getActiveSessions(cn))
         }.onFailure {
             Log.i(TAG, "MediaSession 不可用: ${it.message}")
+            listenerRegistered = false
             if (publishMetadata) {
                 onUpdate(
                     NowPlayingInfo.unavailable("无法读取 MediaSession（需通知使用权或系统限制）"),
@@ -71,7 +78,11 @@ class NowPlayingTracker(
     }
 
     fun stop() {
-        runCatching { msm?.removeOnActiveSessionsChangedListener(sessionsListener) }
+        NowPlayingNotificationListener.unregisterSessionChangeCallback(listenerConnectedCallback)
+        if (listenerRegistered) {
+            runCatching { msm?.removeOnActiveSessionsChangedListener(sessionsListener) }
+            listenerRegistered = false
+        }
         observed.values.forEach { entry ->
             runCatching { entry.controller.unregisterCallback(entry.callback) }
         }
@@ -81,21 +92,38 @@ class NowPlayingTracker(
         lastEmittedSnapshots = null
     }
 
-    /** 回到前台、配置更新或低频兜底校验时主动拉取一次活跃会话，避免错过状态切换。 */
+    /** 回到前台、刚授予通知使用权返回或低频兜底校验时主动补注册监听器并拉取活跃会话。 */
     fun refresh() {
         val cn = ComponentName(context, NowPlayingNotificationListener::class.java)
+        ensureSessionListenerRegistered(cn)
         runCatching {
             refreshControllers(msm?.getActiveSessions(cn))
+        }.onFailure {
+            listenerRegistered = false
+        }
+    }
+
+    private fun ensureSessionListenerRegistered(cn: ComponentName) {
+        if (listenerRegistered) return
+        runCatching {
+            msm?.addOnActiveSessionsChangedListener(sessionsListener, cn, main)
+            listenerRegistered = true
+        }.onFailure {
+            listenerRegistered = false
         }
     }
 
     fun currentSessionsSnapshot(): List<ActiveMediaSessionSelector.SessionSnapshot> = buildSnapshots()
 
-    fun playPause() {
-        val c = controller ?: return
+    fun playPause(): Boolean {
+        val c = controller ?: return false
         val st = c.playbackState?.state
-        if (st == PlaybackState.STATE_PLAYING) c.transportControls.pause()
-        else c.transportControls.play()
+        if (st == PlaybackState.STATE_PLAYING || st == PlaybackState.STATE_BUFFERING) {
+            c.transportControls.pause()
+        } else {
+            c.transportControls.play()
+        }
+        return true
     }
 
     fun skipNext() {
