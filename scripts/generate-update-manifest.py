@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从 GitHub Releases 聚合生成静态更新清单 `update.json`（schema_version = 1）。
 
-输出供 Android / iOS 共享 L1 Rust 核心 `miplay_update_evaluate_json` 消费：
+输出供 Android / iOS 共享 L1 Rust 核心 `miaocast_update_evaluate_json` 消费：
 - `channels.stable`：最新正式版及其已签名 Android APK + SHA-256 + iOS 信息；
 - `channels.prerelease`：最新最高 SemVer 版本（含预发布 RC 与正式版）资产信息；
 - `releases[]`：按 SemVer 倒序保存最近 30 个版本的精简变更日志，支持客户端跨版本区间聚合。

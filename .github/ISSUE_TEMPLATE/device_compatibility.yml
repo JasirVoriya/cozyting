@@ -76,7 +76,7 @@ body:
     id: notes
     attributes:
       label: 详细表现与诊断信息（可选）
-      description: 可补充界面显示的估计延迟（ms）、多箱组合型号、后台保活时长，或附上只读命令 `miplay-cli inspect <音箱IP> --auth legacy` 的脱敏输出。
+      description: 可补充界面显示的估计延迟（ms）、多箱组合型号、后台保活时长，或附上只读命令 `miaocast-cli inspect <音箱IP> --auth legacy` 的脱敏输出。
       placeholder: 例如：单箱 5GHz 下估计延迟约 820ms，连续播放 30 分钟稳定；和另一台音箱组队时晚加入无声...
     validations:
       required: false

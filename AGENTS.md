@@ -38,7 +38,7 @@
 本项目采用「**L1 共享 Rust 核心 + L2/L3 Android 与 iOS 双端原生**」架构。**后续所有功能、架构、协议、状态机与 UI/交互改动，必须同时兼顾 Android 与 iOS 两套工程**，严禁只考虑单端导致双端分裂：
 
 1. **业务逻辑、协议与状态机（L1 优先下沉）**：
-   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/miplay_core.h`），保证 C11 头文件与 Rust 单测双通过。
+   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/miaocast_core.h`），保证 C11 头文件与 Rust 单测双通过。
 2. **UI 布局、视觉与交互（`design/` 同步更新）**：
    - 任何界面排版、组件尺寸、滑块/按钮样式、色板 Token、图标或交互流改动，**必须同步更新跨端单一事实来源 `design/`**（`design/UI_SPEC.md`、`design/tokens.json`、`design/icons/*.svg`）。
    - 若某项能力存在平台差异（例如 Android 可按包名读取任意第三方 App 图标并 `getLaunchIntentForPackage` 跳转，而 iOS 受沙箱限制需按已知音源/URL Scheme 降级），必须在 `design/UI_SPEC.md` 中**明确写清 iOS 端对应的 SwiftUI 实现与降级边界**。

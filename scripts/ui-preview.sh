@@ -44,13 +44,13 @@ else
 fi
 
 OUT_DIR="${OUT_DIR:-${DEFAULT_OUT}}"
-GRADLE_ARGS+=("-Dmiplay.uiPreviewDir=${OUT_DIR}")
+GRADLE_ARGS+=("-Dmiaocast.uiPreviewDir=${OUT_DIR}")
 
 (
   cd "${ANDROID_DIR}"
   ./gradlew "${GRADLE_ARGS[@]}" \
     :app:testStandardDebugUnitTest \
-    --tests 'com.miplay.sender.ui.UiPreviewRenderTest' \
+    --tests 'com.miaocast.app.ui.UiPreviewRenderTest' \
     --rerun
 )
 

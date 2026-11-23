@@ -108,7 +108,7 @@ jobs:
           path: dist/*
 
   build-cli:
-    name: Build miplay-cli (${{ matrix.label }})
+    name: Build miaocast-cli (${{ matrix.label }})
     strategy:
       fail-fast: false
       matrix:
@@ -116,15 +116,15 @@ jobs:
           - os: ubuntu-latest
             label: linux-x86_64
             ext: tar.gz
-            bin: miplay-cli
+            bin: miaocast-cli
           - os: macos-latest
             label: macos-arm64
             ext: tar.gz
-            bin: miplay-cli
+            bin: miaocast-cli
           - os: windows-latest
             label: windows-x86_64
             ext: zip
-            bin: miplay-cli.exe
+            bin: miaocast-cli.exe
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -136,14 +136,14 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Build miplay-cli
-        run: cargo build --release -p miplay-cli
+      - name: Build miaocast-cli
+        run: cargo build --release -p miaocast-cli
 
-      - name: Package miplay-cli archive
+      - name: Package miaocast-cli archive
         shell: bash
         run: |
           TAG="${{ inputs.tag || github.ref_name }}"
-          OUT="miplay-cli-${TAG}-${{ matrix.label }}"
+          OUT="miaocast-cli-${TAG}-${{ matrix.label }}"
           mkdir -p "dist/${OUT}"
           cp "target/release/${{ matrix.bin }}" "dist/${OUT}/"
           cp LICENSE README.md "dist/${OUT}/"

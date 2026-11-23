@@ -209,7 +209,7 @@
     <rect x="22" y="18" width="118" height="22" rx="11" fill="#3a1219" stroke="#ff5c6c" stroke-opacity="0.55"/>
     <text x="81" y="33" text-anchor="middle" class="mono badge" fill="#fda4af">CROSS-PLATFORM</text>
     <text x="152" y="35" class="sans hd">跨端三层架构（Android · iOS · 桌面只读诊断 CLI）</text>
-    <text x="22" y="60" class="sans desc">双端共用 L1 Rust 引擎与 design/ 明暗双主题规范；内置独立终端工具 miplay-cli 支持无副作用设备调查</text>
+    <text x="22" y="60" class="sans desc">双端共用 L1 Rust 引擎与 design/ 明暗双主题规范；内置独立终端工具 miaocast-cli 支持无副作用设备调查</text>
 
     <!-- Visual Flow Box -->
     <rect x="22" y="76" width="594" height="106" rx="10" fill="#09101f" stroke="#1e293b"/>
@@ -220,7 +220,7 @@
 
     <rect x="36" y="134" width="176" height="36" rx="7" class="sub-box" stroke="#38bdf8"/>
     <text x="124" y="149" text-anchor="middle" class="sans node-title" fill="#bae6fd">iOS 跨端桥接 &amp; 设计层</text>
-    <text x="124" y="163" text-anchor="middle" class="mono node-sub">C11 miplay_core.h · XCFramework</text>
+    <text x="124" y="163" text-anchor="middle" class="mono node-sub">C11 miaocast_core.h · XCFramework</text>
 
     <line x1="216" y1="108" x2="248" y2="122" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
     <line x1="216" y1="152" x2="248" y2="136" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
@@ -233,7 +233,7 @@
     <line x1="424" y1="129" x2="446" y2="129" stroke="#ff5c6c" stroke-width="1.8" marker-end="url(#fh-arr-coral)"/>
 
     <rect x="452" y="92" width="148" height="76" rx="8" class="sub-box" stroke="#94a3b8"/>
-    <text x="526" y="114" text-anchor="middle" class="mono node-title">miplay-cli 终端</text>
+    <text x="526" y="114" text-anchor="middle" class="mono node-title">miaocast-cli 终端</text>
     <text x="526" y="132" text-anchor="middle" class="mono node-sub" fill="#6ee7b7">inspect --auth legacy</text>
     <text x="526" y="148" text-anchor="middle" class="sans node-sub">只读不发 CLOSE 断流</text>
 

@@ -3,7 +3,7 @@
     <!-- 仅 acceptance 变体合并：本地过滤探针服务（不进 standard APK） -->
     <application>
         <service
-            android:name="com.miplay.sender.LocalFilterProbeService"
+            android:name="com.miaocast.app.LocalFilterProbeService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
     </application>

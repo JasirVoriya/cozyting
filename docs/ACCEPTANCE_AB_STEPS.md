@@ -16,7 +16,7 @@
 
 ## 量化判据（发送端 PCM 探针）
 
-验收 UI / logcat 标签 `MiPlaySender` 的 `PCM_PROBE`：
+验收 UI / logcat 标签 `MiaoCast` 的 `PCM_PROBE`：
 
 - **选 A 且仅 A 播放**：主导应为 `A`，且 `energyA ≫ energyB`
 - **选 A 且仅 B 播放**：主导不应为 `B`（期望静音或 OTHER，且无稳定 2kHz 主导）

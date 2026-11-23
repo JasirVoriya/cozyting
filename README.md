@@ -35,7 +35,7 @@
 > **妙投（MiaoCast）是什么？**
 > **妙投（MiaoCast）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
 >
-> 📦 **立即获取**：前往 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `miplay-cli`。
+> 📦 **立即获取**：前往 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `miaocast-cli`。
 > 📑 **快速导航**：[一分钟看懂妙投](#-一分钟看懂妙投) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
 
 ---
@@ -190,7 +190,7 @@
 **不会。** 音频投送与设备发现 100% 在你的本地家庭局域网内完成，**零云端服务器、零账号登录、零音频上传、零使用统计**。仅有的可选外网行为是每日只读检查公开版本清单 `update.json`（零 Cookie、零遥测参数），且可在「设置 → 关于与更新」中一键关闭，实现 100% 零外网请求。
 
 ### Q7：支持 iPhone / iPad（iOS）吗？
-**底层核心已就绪，iOS 客户端正在规划推进中。** 妙投的共享 Rust 协议与同步核心已经提供完整的 iOS C ABI（`miplay_core.h`）与 `XCFramework` 打包脚本，跨端设计规范（`design/`）亦已同步；原生 SwiftUI + ReplayKit 客户端设计详见 [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md)。
+**底层核心已就绪，iOS 客户端正在规划推进中。** 妙投的共享 Rust 协议与同步核心已经提供完整的 iOS C ABI（`miaocast_core.h`）与 `XCFramework` 打包脚本，跨端设计规范（`design/`）亦已同步；原生 SwiftUI + ReplayKit 客户端设计详见 [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md)。
 
 ---
 ---
@@ -207,7 +207,7 @@
 - **内置无线调试 `AudioPolicy` 无感引擎（Android 13+）**：通过本机无线 ADB（mDNS + SPAKE2 / TLS 1.3）拉起同应用 `uid=2000` 辅助进程，绕开 `MediaProjection` 弹窗与投屏提示；采用本机环回 `127.0.0.1` + 一次性 256-bit Token 通信，在单一 `AudioPolicy` 上同时挂载单 App `AudioMix` 与 `AudioPolicyFocusListener` 实现双区音频焦点隔离。
 - **63 台音箱确定性毫秒级同步**：L1 纯 Rust 核心（`miplay-core`）完全基于确定性实时线程与有界通道（**零异步运行时**），通过 `EPOCH` 单调时基、`UDP 40B TimerServer` 时钟主与 `OffsetBarrier` 14 AU 预读对齐实现全组同频，并支持投送中 `TIME_OFFSET` 热重锚切档、随时加减音箱与慢端单端剔除。
 - **双认证控制链路严格隔离**：完整实现局域网 MiPlay 发现与 TCP `8899` 控制协议，严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条认证链路。
-- **跨端共享 L1 核心 + 只读诊断 CLI**：Android（Kotlin + 16KB 页对齐 JNI `.so`）与规划中的 iOS（Swift + C11 `miplay_core.h` / `.xcframework`）共用 100% 平台无关的 L1 Rust 核心与 `design/` 跨端视觉规范；桌面端 `miplay-cli inspect` 仅发 `GET_*` 并以 `TCP shutdown` 退出，绝不发 `CLOSE` 打断正在播放的音乐。
+- **跨端共享 L1 核心 + 只读诊断 CLI**：Android（Kotlin + 16KB 页对齐 JNI `.so`）与规划中的 iOS（Swift + C11 `miaocast_core.h` / `.xcframework`）共用 100% 平台无关的 L1 Rust 核心与 `design/` 跨端视觉规范；桌面端 `miaocast-cli inspect` 仅发 `GET_*` 并以 `TCP shutdown` 退出，绝不发 `CLOSE` 打断正在播放的音乐。
 
 ### 2. 架构可视化总览
 
@@ -220,7 +220,7 @@
 ![妙投（MiaoCast）L1 Rust 核心与 Android iOS 跨端三层架构图](docs/assets/cross-platform-architecture.svg)
 
 - **L1 公共核心层（Rust `core/`，100% 跨端共享）**：统一承载 mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步、流媒体封装、跨版本更新裁决（`update`），以及下沉的 `engine` 多箱并发协调器和 `device_catalog` 路由状态机。
-- **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`miplay_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
+- **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`miaocast_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
 
 #### （2）四条正交数据流向（媒体 · 控制 · 时钟同步 · 发现遥测）
 
@@ -241,11 +241,11 @@
 ```text
 miaocast/
 ├── core/               # [L1 公共核心层] 纯 Rust 协议、多箱同步引擎、并发协调器 (engine)、设备目录与更新裁决
-│   ├── include/        #   [FFI] iOS / C11 头文件 (miplay_core.h) 与 module.modulemap
+│   ├── include/        #   [FFI] iOS / C11 头文件 (miaocast_core.h) 与 module.modulemap
 │   └── src/            #   24 个核心模块（含 Android JNI ffi.rs 与 iOS C ABI ffi_c.rs）
 ├── design/             # [L3 跨端共享设计层] 明暗双主题 tokens.json、20 枚 24x24 矢量图标与 UI_SPEC.md
 ├── android/            # [L2+L3 Android 端] Kotlin 原生客户端 (:app standard/acceptance) 与三 UID 隔离测试音源 (:testtones)
-├── cli/                # [工程支撑] 独立终端工具 miplay-cli（discover / 只读 inspect / 投送与故障注入调试）
+├── cli/                # [工程支撑] 独立终端工具 miaocast-cli（discover / 只读 inspect / 投送与故障注入调试）
 ├── scripts/            # [构建流水线] Android debug/release 构建、iOS XCFramework 打包与 16KB 页对齐/签名验收脚本
 └── docs/               # [文档与官网] 产品官网 (index.html)、交互式架构图 (architecture.html)、深度手册、兼容矩阵与 GEO 索引 (llms.txt)
 ```
@@ -256,16 +256,16 @@ miaocast/
 
 ## 七、开发者指南：CLI 诊断 · 本地构建 · 测试
 
-### 1. 使用 `miplay-cli` 只读诊断局域网音箱
+### 1. 使用 `miaocast-cli` 只读诊断局域网音箱
 
-可在 **[GitHub Releases](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载预编译三端 `miplay-cli`，或在源码仓库本地运行：
+可在 **[GitHub Releases](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载预编译三端 `miaocast-cli`，或在源码仓库本地运行：
 
 ```sh
 # 扫描局域网 MiPlay / 小爱音箱（输出 6 列 TSV：IP、名称、型号、MiPlay 能力声明等）
-cargo run --release -p miplay-cli -- discover
+cargo run --release -p miaocast-cli -- discover
 
 # 只读查询指定音箱状态（仅发 GET_* 并以 TCP shutdown 退出，不发 CLOSE，不打断正在播放的音乐）
-cargo run --release -p miplay-cli -- inspect <音箱IP> --auth legacy
+cargo run --release -p miaocast-cli -- inspect <音箱IP> --auth legacy
 ```
 
 ### 2. 本地构建（Android APK & iOS XCFramework）
@@ -284,7 +284,7 @@ cargo install cargo-ndk --locked
 # Android Release 正式签名构建（通过 MIPLAY_RELEASE_* 或未跟踪的 android/keystore.properties 注入签名）：
 ./scripts/build-release.sh
 
-# iOS 静态库与 MiPlayCore.xcframework 打包（macOS + Xcode）：
+# iOS 静态库与 MiaoCastCore.xcframework 打包（macOS + Xcode）：
 ./scripts/build-ios-xcframework.sh
 ```
 
@@ -295,7 +295,7 @@ cargo install cargo-ndk --locked
 cargo test --workspace
 
 # 2. FFI iOS C ABI 头文件 C11 严格语法校验
-clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miplay_core.h
+clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
 
 # 3. L2/L3 Android JVM 契约单测与 NewApi Fatal Lint
 cd android && ./gradlew --no-daemon test lintStandardDebug

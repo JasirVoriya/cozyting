@@ -11,7 +11,7 @@
 
 | 候选路线 | 定位与结论 | 核心原因 |
 | --- | --- | --- |
-| **`ReplayKit` 系统广播扩展（本方案）** | ✅ **当前主力落地路线** | iOS 唯一官方合规、可在纯单机无额外硬件条件下捕获第三方 App 音频的方案；可直接复用现成 `MiPlayCore.xcframework`，支持 App Store 合规分发。 |
+| **`ReplayKit` 系统广播扩展（本方案）** | ✅ **当前主力落地路线** | iOS 唯一官方合规、可在纯单机无额外硬件条件下捕获第三方 App 音频的方案；可直接复用现成 `MiaoCastCore.xcframework`，支持 App Store 合规分发。 |
 | **局域网 AirPlay 2 → MiPlay 网关** | 📌 **长期保留方案（暂不启动）** | 详见 [AIRPLAY_BRIDGE_DESIGN.md](AIRPLAY_BRIDGE_DESIGN.md)。依赖局域网常驻主机，但可提供 iOS 零 App、控制中心多选与 Apple Music 投送体验。 |
 | **同机模拟 AirPlay 接收端回环** | ❌ **已排除** | 受限于未越狱 iOS 沙箱禁止绑定 AirPlay 2 PTP 特权端口（UDP `319`/`320`）、系统同机自发现过滤、后台套接字挂起/`AVAudioSession` 冲突及 App Store 拒审，工程不可行。 |
 | **纯 App 内置播放器（`AVAudioEngine`）** | ❌ **不作为主方案** | 无法捕获 QQ 音乐 / 网易云音乐等第三方 App，且 `MusicKit` 受 FairPlay DRM 限制无法提取 PCM；仅适合本地/自建曲库，或作为开发调试期播放测试音轨的辅助手段。 |
@@ -22,7 +22,7 @@
 
 iOS 主 App 进入后台或锁屏几秒后会被系统挂起，网络连接与定时器均会中断；而 **Broadcast Upload Extension（系统广播上传扩展）** 是独立于主 App 的系统级扩展进程，在用户切换至第三方音乐 App 甚至**锁屏后仍可持续存活**。
 
-因此，iOS 端**必须将 L1 推流核心 `MiPlayCore.xcframework` 运行在 Broadcast Upload Extension 进程中**，主 App 仅负责前台设备发现、UI 呈现、授权拉起与低频控制指令下发：
+因此，iOS 端**必须将 L1 推流核心 `MiaoCastCore.xcframework` 运行在 Broadcast Upload Extension 进程中**，主 App 仅负责前台设备发现、UI 呈现、授权拉起与低频控制指令下发：
 
 ```text
 第三方音乐 App（QQ 音乐 / 网易云 / 播客 / B 站等）
@@ -35,8 +35,8 @@ iOS 主 App 进入后台或锁屏几秒后会被系统挂起，网络连接与�
 │     ├─ .video / .audioMic ──► 立即丢弃（零视频处理、不碰麦克风）         │
 │     └─ .audioApp (PCM)    ──► AudioToolbox (AudioConverter)             │
 │                               动态格式适配 → 48kHz 立体声 → 裸 AAC-LC   │
-│  2. MiPlayCore.xcframework（纯 Rust L1 公共核心，staticlib）             │
-│     ├─ miplay_engine_create / connect / push_aac / stop                 │
+│  2. MiaoCastCore.xcframework（纯 Rust L1 公共核心，staticlib）             │
+│     ├─ miaocast_engine_create / connect / push_aac / stop                 │
 │     ├─ 8899 Legacy & Safety 双认证、WFD 反向 RTSP、UDP TimerServer      │
 │     └─ EPOCH + OffsetBarrier 多箱毫秒同频、15s 看门狗与退避重连         │
 │  3. 轻量控制服务端（ExtensionControlServer）                             │
@@ -44,10 +44,10 @@ iOS 主 App 进入后台或锁屏几秒后会被系统挂起，网络连接与�
 └──────────────────────────────────▲──────────────────────────────────────┘
                                    │ 跨进程控制面通信（低频 JSON，不传音频）
 ┌──────────────────────────────────▼──────────────────────────────────────┐
-│ 主 App 进程（MiPlaySender · SwiftUI L3 表现层 + 发现/控制入口）           │
+│ 主 App 进程（MiaoCast · SwiftUI L3 表现层 + 发现/控制入口）           │
 │                                                                         │
 │  • 局域网发现：原生 NWBrowser 扫描 _mi-connect._udp / _lyra-mdns._udp    │
-│  • 路由状态机：调用 miplay_route_apply_json 复用 L1 过滤与缓存合并       │
+│  • 路由状态机：调用 miaocast_route_apply_json 复用 L1 过滤与缓存合并       │
 │  • 音源槽位：嵌入 RPSystemBroadcastPickerView 唤起系统广播开关           │
 │  • 1Hz 原位刷新：拉取 stats JSON 刷新设备行内延迟 ms、连接态与独立音量   │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -73,7 +73,7 @@ iOS 主 App 进入后台或锁屏几秒后会被系统挂起，网络连接与�
 - `add_receiver` / `remove_receiver`：`{ "cmd": "add_receiver", "ip": "192.0.2.11" }`
 - `set_volume`：`{ "cmd": "set_volume", "ip": "192.0.2.10", "volume": 35 }`（`ip` 为空字符串表示全组音量）
 - `pause` / `resume` / `stop`
-- `stats`：原样透传 `miplay_engine_stats_json(handle)` 返回的归一化 JSON（含 `ui_state`、`display_latency_ms`、`phase`、实时音量等字段）。
+- `stats`：原样透传 `miaocast_engine_stats_json(handle)` 返回的归一化 JSON（含 `ui_state`、`display_latency_ms`、`phase`、实时音量等字段）。
 
 ---
 
@@ -89,18 +89,18 @@ AudioConverter #1（格式归一化与重采样，仅在源格式 != 48kHz s16le
 AudioConverter #2（硬件 AAC-LC 编码：kAudioFormatMPEG4AAC · 256kbps）
    │ 裸 AAC Access Unit（不含 7 字节 ADTS 头）
    ▼
-miplay_engine_push_aac(handle, ptr, len)
+miaocast_engine_push_aac(handle, ptr, len)
    │ L1 sync_channel(96) → media-clock → ADTS/PES/MPEG-TS/RTP → 多音箱同步发送
 ```
 
 ### 关键实现约束
 1. **严格零视频处理**：`processSampleBuffer(_:with:)` 收到 `.video` 或 `.audioMic` 时立即直接返回，禁止调用 `CMSampleBufferGetImageBuffer`、`CIImage` 或任何视频编码器，防止触碰 50MB Jetsam 内存上限。
 2. **动态输入格式切换容错**：切换不同音频 App 或播放源时，`ReplayKit` 送入的 `CMAudioFormatDescription`（如 44.1kHz ↔ 48kHz、单声道 ↔ 立体声）可能在中途变化。`PcmToAacConverter` 需比对 `AudioStreamBasicDescription`，变化时平滑重建重采样器并清空残余未凑满 1024 samples 的零头缓冲。
-3. **背压与可观测性**：`miplay_engine_push_aac` 返回 `-4` 表示 L1 `FEED_QUEUE_AUS(96)`（约 2 秒）已满，应计数上报并丢弃溢出帧，严禁在 Swift 侧无限堆积缓冲导致 Extension OOM。
+3. **背压与可观测性**：`miaocast_engine_push_aac` 返回 `-4` 表示 L1 `FEED_QUEUE_AUS(96)`（约 2 秒）已满，应计数上报并丢弃溢出帧，严禁在 Swift 侧无限堆积缓冲导致 Extension OOM。
 4. **无死锁停止顺序**：在 `broadcastFinished()` 或控制面 `stop` 中，严格按以下顺序清理：
    1. 标记停止，拒绝后续 `processSampleBuffer` 回调；
    2. 停止并释放 `AudioConverter`；
-   3. 调用 `miplay_engine_stop(handle)`（L1 内部先 `drop(feed)` 唤醒 `media-clock`，再 `join` 全部线程并向所有音箱发 `CLOSE(0x0002)`）；
+   3. 调用 `miaocast_engine_stop(handle)`（L1 内部先 `drop(feed)` 唤醒 `media-clock`，再 `join` 全部线程并向所有音箱发 `CLOSE(0x0002)`）；
    4. 关闭控制面监听并释放全部 C 字符串与句柄。
 
 ---
@@ -114,7 +114,7 @@ miplay_engine_push_aac(handle, ptr, len)
   - 在 `Info.plist` 中声明：
     - `NSLocalNetworkUsageDescription`：明确说明仅用于发现并向本地局域网小米音箱投送音频；
     - `NSBonjourServices`：`_mi-connect._udp`、`_lyra-mdns._udp`。
-  - 在主 App 中使用苹果原生 **`NWBrowser`** 并发浏览这两个服务类型，解析 `NWEndpoint` 获取 IPv4 地址与 `NWTXTRecord`，整理为 L1 兼容设备列表 JSON 后，调用 **`miplay_route_apply_json(devices_json, "merge_discovered", ...)`**，100% 复用 L1 的默认过滤规则（`apps=[5]` 同 IP 优先、TV 启发式、历史缓存合并上限 16 台）。
+  - 在主 App 中使用苹果原生 **`NWBrowser`** 并发浏览这两个服务类型，解析 `NWEndpoint` 获取 IPv4 地址与 `NWTXTRecord`，整理为 L1 兼容设备列表 JSON 后，调用 **`miaocast_route_apply_json(devices_json, "merge_discovered", ...)`**，100% 复用 L1 的默认过滤规则（`apps=[5]` 同 IP 优先、TV 启发式、历史缓存合并上限 16 台）。
 
 ### 2. 推流与控制通路权限
 - MiPlay 的正向 TCP `8899`、反向 WFD RTSP/Aux/Audio TCP、以及 UDP `TimerServer` 均属于局域网单播通信，**无需 `multicast` 特殊权限**；
@@ -125,8 +125,8 @@ miplay_engine_push_aac(handle, ptr, len)
 ## 六、仓库已就绪资产与 `ios/` 目标工程规划
 
 ### 已就绪（直接复用，无需重写）
-- **L1 C ABI 导出与头文件**：[core/src/ffi_c.rs](../core/src/ffi_c.rs)、[core/include/miplay_core.h](../core/include/miplay_core.h)（已完整导出 18 个 `miplay_*` 函数及 `miplay_string_free`）与 [core/include/module.modulemap](../core/include/module.modulemap)（Swift 中直接 `import MiPlayCore`）。
-- **XCFramework 打包流水线**：[scripts/build-ios-xcframework.sh](../scripts/build-ios-xcframework.sh)（自动运行 `cargo test --workspace`，编译 `aarch64-apple-ios` 真机与 `aarch64-apple-ios-sim` 模拟器静态库并输出 `ios/Frameworks/MiPlayCore.xcframework`）。
+- **L1 C ABI 导出与头文件**：[core/src/ffi_c.rs](../core/src/ffi_c.rs)、[core/include/miaocast_core.h](../core/include/miaocast_core.h)（已完整导出 18 个 `miaocast_*` 函数及 `miaocast_string_free`）与 [core/include/module.modulemap](../core/include/module.modulemap)（Swift 中直接 `import MiaoCastCore`）。
+- **XCFramework 打包流水线**：[scripts/build-ios-xcframework.sh](../scripts/build-ios-xcframework.sh)（自动运行 `cargo test --workspace`，编译 `aarch64-apple-ios` 真机与 `aarch64-apple-ios-sim` 模拟器静态库并输出 `ios/Frameworks/MiaoCastCore.xcframework`）。
 - **跨端视觉规范与图标**：[design/UI_SPEC.md](../design/UI_SPEC.md)、[design/tokens.json](../design/tokens.json) 与 `design/icons/*.svg`（20 枚统一矢量图标）。
 
 ### 待新建的 `ios/` 目录结构规划
@@ -134,14 +134,14 @@ miplay_engine_push_aac(handle, ptr, len)
 ```text
 ios/
 ├── Frameworks/
-│   └── MiPlayCore.xcframework            # 由 scripts/build-ios-xcframework.sh 生成（.gitignore 忽略或按需构建）
-├── MiPlaySender.xcodeproj/               # Xcode 工程（建议配合 xcodegen project.yml 维护）
+│   └── MiaoCastCore.xcframework            # 由 scripts/build-ios-xcframework.sh 生成（.gitignore 忽略或按需构建）
+├── MiaoCast.xcodeproj/               # Xcode 工程（建议配合 xcodegen project.yml 维护）
 ├── Shared/                               # 主 App 与 Extension 共用轻量代码（零重型依赖）
-│   ├── MiPlayCoreBridge.swift            # 对 core/include/miplay_core.h 的类型安全封装与 miplay_string_free RAII 管理
+│   ├── MiaoCastCoreBridge.swift            # 对 core/include/miaocast_core.h 的类型安全封装与 miaocast_string_free RAII 管理
 │   ├── ExtensionControlProtocol.swift    # 控制面 JSON 消息定义与编解码
 │   └── SpeakerModels.swift               # 与 L1 device_catalog / latency 对齐的数据模型
-├── MiPlaySender/                         # [Target 1] 主 App（SwiftUI · L3 + 发现 + 控制入口）
-│   ├── App/MiPlaySenderApp.swift
+├── MiaoCast/                         # [Target 1] 主 App（SwiftUI · L3 + 发现 + 控制入口）
+│   ├── App/MiaoCastApp.swift
 │   ├── Discovery/BonjourSpeakerBrowser.swift   # NWBrowser（_mi-connect._udp + _lyra-mdns._udp）
 │   ├── IPC/ExtensionControlClient.swift        # 1Hz stats 轮询 + 加减箱/调音量指令下发
 │   ├── UI/
@@ -154,9 +154,9 @@ ios/
 │   ├── SampleHandler.swift                     # RPBroadcastSampleHandler 生命周期与 50MB 内存守卫
 │   ├── Audio/PcmToAacConverter.swift           # AudioToolbox 动态重采样 + 48kHz 256kbps 裸 AAC 编码器
 │   └── IPC/ExtensionControlServer.swift        # App Group Unix Socket / 127.0.0.1 控制服务端
-└── MiPlaySenderTests/                    # [Target 3] XCTest 单测
+└── MiaoCastTests/                    # [Target 3] XCTest 单测
     ├── PcmToAacConverterTests.swift            # 44.1kHz/48kHz/Float32/Int16 Mock CMSampleBuffer 编码契约测试
-    ├── RouteAndLatencyContractTests.swift      # 验证与 MiPlayCore C ABI 的路由/延迟归一化一致
+    ├── RouteAndLatencyContractTests.swift      # 验证与 MiaoCastCore C ABI 的路由/延迟归一化一致
     └── ExtensionControlProtocolTests.swift     # 控制面消息序列化与边界单测
 ```
 
@@ -171,7 +171,7 @@ ios/
 | **本机静音** | 代码自动静音 `STREAM_MUSIC` + `PcmProbe` 6 拍锁定 | **无公开 API 自动静音；用户手动将音量键调至 0** | `ReplayKit` 采样位于系统音量衰减之前，预期手机无声但音箱照常发声（须真机复核） |
 | **开播授权与指示** | 每次会话弹 `MediaProjection` 授权 + 状态栏图标 | 每次开播点 `RPSystemBroadcastPickerView` 确认 + 红条/灵动岛红点 | 均属操作系统强制隐私提示 |
 | **正在播放与跳转** | 通知监听读任意第三方封面与播控，点封面按包名拉起 | 沙箱不可读取任意第三方会话/图标，按 [UI_SPEC.md](../design/UI_SPEC.md) 降级展示广播状态提示与有限 URL Scheme 跳转 | 不申请越权权限，未知音源静默降级不报错 |
-| **应用更新检测** | `HttpsURLConnection` 拉取公开 `update.json` + L1 `miplay_update_evaluate_json` 裁决 + 强制 SHA-256 与签名校验后 `FileProvider` 调起安装 | 复用同一份 `update.json` 与 L1 C ABI `miplay_update_evaluate_json`（经 `URLSession` 只读 HTTPS + ETag） | App Store 分发版走商店更新（编译宏禁用自更新弹窗遵循审核规范）；自签 / IPA 分发版以 `.sheet` 展示跨版本区间日志并跳转 Safari 打开 `miaocast-releases` 发布页 |
+| **应用更新检测** | `HttpsURLConnection` 拉取公开 `update.json` + L1 `miaocast_update_evaluate_json` 裁决 + 强制 SHA-256 与签名校验后 `FileProvider` 调起安装 | 复用同一份 `update.json` 与 L1 C ABI `miaocast_update_evaluate_json`（经 `URLSession` 只读 HTTPS + ETag） | App Store 分发版走商店更新（编译宏禁用自更新弹窗遵循审核规范）；自签 / IPA 分发版以 `.sheet` 展示跨版本区间日志并跳转 Safari 打开 `miaocast-releases` 发布页 |
 | **运行内存红线** | 主进程内存宽松 | **Extension 进程 50MB Jetsam 强杀上限** | 丢弃 `.video` 帧、严控零拷贝与有界队列，真机 Instruments 必测 |
 
 ---

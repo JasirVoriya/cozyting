@@ -47,4 +47,4 @@ STREAM_MUSIC mute/音量衰减进入 AudioFlinger 的 stream 路径；PlaybackCa
 
 ## 日志对照
 
-`adb logcat -s MiPlaySender:I` 中的 `LOCAL_MUTE status=… isStreamMute=… probeLocked=… policy=… api=… msg=…`
+`adb logcat -s MiaoCast:I` 中的 `LOCAL_MUTE status=… isStreamMute=… probeLocked=… policy=… api=… msg=…`

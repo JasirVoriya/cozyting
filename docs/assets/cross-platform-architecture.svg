@@ -306,8 +306,8 @@
 
   <!-- iOS C ABI Plug -->
   <rect x="888" y="512" width="424" height="52" rx="10" fill="#0d1e33" stroke="#38bdf8" stroke-opacity="0.55"/>
-  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI（miplay_core.h ⇄ ffi_c.rs）</text>
-  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：MiPlayCore.xcframework (staticlib · #7 已就绪)</text>
+  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI（miaocast_core.h ⇄ ffi_c.rs）</text>
+  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：MiaoCastCore.xcframework (staticlib · #7 已就绪)</text>
 
   <!-- ==================== GAP FFI -> L1 (CONVERGING) ==================== -->
   <use href="#p-ffi-and-l1" fill="none" stroke="#fb923c" stroke-width="2.2" marker-end="url(#arr-orange)"/>
@@ -365,5 +365,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="680" y="841" text-anchor="middle" class="sans tile-sub">打包形态：Android APK = android/ (L2+L3) + libmiaocast_core.so (L1)    ｜    未来 iOS IPA = ios/ (L2+L3) + MiPlayCore.xcframework (同一份 L1)</text>
+  <text x="680" y="841" text-anchor="middle" class="sans tile-sub">打包形态：Android APK = android/ (L2+L3) + libmiaocast_core.so (L1)    ｜    未来 iOS IPA = ios/ (L2+L3) + MiaoCastCore.xcframework (同一份 L1)</text>
 </svg>
