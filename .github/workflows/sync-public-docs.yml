@@ -6,6 +6,7 @@ on:
     paths:
       - "README.md"
       - "README_EN.md"
+      - "README_JA.md"
       - "CHANGELOG.md"
       - "SECURITY.md"
       - "CONTRIBUTING.md"
@@ -57,7 +58,7 @@ jobs:
           set -euo pipefail
 
           # 1. 白名单顶层公开文档（绝不拷贝任何源码目录或私有文件）
-          for f in README.md README_EN.md CHANGELOG.md SECURITY.md CONTRIBUTING.md LICENSE; do
+          for f in README.md README_EN.md README_JA.md CHANGELOG.md SECURITY.md CONTRIBUTING.md LICENSE; do
             if [[ -f "src/$f" ]]; then
               cp "src/$f" "dst/$f"
             else
@@ -84,7 +85,7 @@ jobs:
           owner, repo = target_repo.split("/", 1)
           pages_url = f"https://{owner.lower()}.github.io/{repo}/"
 
-          for fname in ("README.md", "README_EN.md"):
+          for fname in ("README.md", "README_EN.md", "README_JA.md"):
               p = dst / fname
               if not p.is_file():
                   continue

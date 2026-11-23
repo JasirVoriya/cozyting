@@ -8,6 +8,17 @@
 
 ---
 
+## [0.9.7-rc.9] - 2026-11-24
+
+> 预发布版本（Pre-release）：面向预览通道用户验证简体中文（`zh-CN`）、英文（`en`）、日文（`ja`）全链路三语支持（Android App 应用内语言切换、L1 结构化更新错误码、三语宣传视频与 `/` / `/en/` / `/ja/` 静态多语言官网），纯局域网运行，不含云端账号或遥测上报。
+
+### Added
+- **Android App 三语本地化与应用内语言切换（零 AppCompat 依赖）**：全量用户可见文案抽离至 `values` / `values-en` / `values-ja`（457 键对齐，覆盖主界面、常用音源管理、设置页、5 步无线调试引导、悬浮配对键盘、前台通知与更新弹窗）；设置页新增「显示语言」4 段切换（跟随系统 / 简体中文 / English / 日本語），Android 13+ 同步系统 `LocaleManager`（`locales_config.xml`），API 29–32 通过 `createConfigurationContext` + `LocaleList` 零依赖生效。
+- **L1 Rust 结构化多语言更新错误码与跨端规范同步**：`core/src/update.rs` 与 `core/include/miaocast_core.h` 新增向后兼容的结构化 `error_code` / `error_detail` / `notes_is_fallback` 字段供各端按当前语言本地化展示；同步更新 `design/UI_SPEC.md` 三语规范与 iOS `Localizable.xcstrings` 边界；`scripts/ui-preview.sh` 扩展 `--locale zh|en|ja|all --export-docs` 支持三语暗/亮实机视图截图导出。
+- **三语宣传视频与静态多路径官网（`/` · `/en/` · `/ja/`）**：`promo/` Remotion 工程实现文案字典化与中/英/日独立字体回退并产出三语 720p MP4 与封面；GitHub Pages 新增 `/en/` 与 `/ja/` 独立静态官网及交互式架构浏览器，补齐双向 `hreflang`、本地化 JSON-LD、`sitemap.xml`、`llms.txt` 与 `README_JA.md`。
+
+---
+
 ## [0.9.7-rc.8] - 2026-11-23
 
 > 预发布版本（Pre-release）：面向预览通道用户验证「常用音源管理页不断投热切」与设置页采集引擎文案精简，纯局域网运行，不含云端账号或遥测上报。
