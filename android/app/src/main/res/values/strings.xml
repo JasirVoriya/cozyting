@@ -1,8 +1,504 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App & Manifest -->
     <string name="app_name">妙投</string>
     <string name="app_brand_name">妙投</string>
     <string name="notification_listener_label">妙投 · 正在播放读取</string>
     <string name="wireless_pairing_accessibility_label">妙投 · 无线调试自动配对助手</string>
     <string name="wireless_pairing_accessibility_desc">仅在首次开启无线调试无感采集配对期间使用：用于在系统「无线调试」页面顶部展示 6 位配对码浮动数字键盘，并自动读取配对码弹窗完成本机配对；配对完成后自动休眠，不收集任何个人数据。</string>
+    <string name="title_app_picker">选择投送的 App</string>
+    <string name="title_settings">设置</string>
+    <string name="title_wireless_guide">无感采集配置向导</string>
+
+    <!-- Common Actions -->
+    <string name="common_back">返回</string>
+    <string name="common_close">关闭</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_got_it">知道了</string>
+    <string name="common_open">打开</string>
+    <string name="common_loading">加载中…</string>
+    <string name="common_auto">自动</string>
+
+    <!-- Language & Theme -->
+    <string name="lang_system">跟随系统</string>
+    <string name="settings_language_title">显示语言</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+
+    <!-- Latency Presets -->
+    <string name="latency_standard_name">标准</string>
+    <string name="latency_standard_short">自动</string>
+    <string name="latency_standard_full">5GHz 800ms / 2.4GHz 1000ms</string>
+    <string name="latency_standard_runway">14 AU（≈299ms）</string>
+    <string name="latency_standard_detail">官方默认基线，抗抖动能力最强，适合穿墙、2.4GHz 或多音箱长时间听歌。</string>
+
+    <string name="latency_balanced_name">均衡</string>
+    <string name="latency_balanced_short">400ms</string>
+    <string name="latency_balanced_full">400ms</string>
+    <string name="latency_balanced_runway">8 AU（≈171ms）</string>
+    <string name="latency_balanced_detail">日常主力档：双音箱同步稳定可用，切歌/暂停响应较默认快约一倍。</string>
+
+    <string name="latency_low_name">低延迟</string>
+    <string name="latency_low_short">250ms</string>
+    <string name="latency_low_full">250ms</string>
+    <string name="latency_low_runway">5 AU（≈107ms）</string>
+    <string name="latency_low_detail">单音箱 5GHz 强信号主力档，切歌与拖动进度条非常跟手。</string>
+
+    <string name="latency_ultra_name">极速</string>
+    <string name="latency_ultra_short">150ms</string>
+    <string name="latency_ultra_full">150ms</string>
+    <string name="latency_ultra_runway">3 AU（≈64ms）</string>
+    <string name="latency_ultra_detail">实验性极低缓冲：仅建议同房间 5GHz 单音箱使用，弱网或多箱易出现卡顿。</string>
+
+    <string name="latency_custom">自定义</string>
+    <string name="latency_switch_desc">切换播放延迟模式</string>
+    <string name="latency_tiers_info">档位说明</string>
+    <string name="latency_details_title">延迟档位说明</string>
+    <string name="latency_details_subtitle">投送中切换档位会通过 TIME_OFFSET 实时热重锚生效，无需断开重连。</string>
+    <string name="latency_preset_current">%1$s · 当前</string>
+    <string name="latency_runway_prefix">冷启动预热：%1$s</string>
+    <string name="latency_go_custom">去设置自定义 ms</string>
+    <string name="latency_switched_live">已切换至「%1$s · %2$s」（实时热生效，免重连）</string>
+    <string name="latency_switched_live_ultra_multi">已切换至「%1$s · %2$s」（多音箱若卡顿建议切均衡）</string>
+    <string name="latency_switched_saved">已设为「%1$s · %2$s」，下次连接音箱时生效</string>
+
+    <!-- Main Activity -->
+    <string name="main_status_this_device">本机出声</string>
+    <string name="main_status_casting_count">投送中 · %1$d 台</string>
+    <string name="main_status_connecting">连接中…</string>
+    <string name="main_status_failed">投送异常</string>
+    <string name="main_status_silent_mode">静音测试模式</string>
+    <string name="main_update_banner">发现新版本 %1$s</string>
+    <string name="main_update_banner_multi">发现新版本 %1$s（%2$d 个版本更新）</string>
+    <string name="main_update_banner_view">查看</string>
+    <string name="main_update_banner_close_desc">关闭更新提示</string>
+
+    <string name="main_open_music_app_desc">打开正在播放的音乐应用</string>
+    <string name="main_unknown_title">未知标题</string>
+    <string name="main_unknown_artist">未知艺人</string>
+    <string name="main_no_now_playing_sub">未取得正在播放</string>
+    <string name="main_prev_track_desc">上一首</string>
+    <string name="main_play_pause_desc">播放或暂停</string>
+    <string name="main_next_track_desc">下一首</string>
+    <string name="main_notif_access_hint">开启通知使用权以显示曲目与自动识别音源</string>
+    <string name="main_idle_playing_with_app">暂未播放 · %1$s</string>
+    <string name="main_idle_playing_none">暂无正在播放</string>
+    <string name="main_idle_hint_with_app">点击左侧封面或播放键启动 %1$s</string>
+    <string name="main_idle_hint_none">打开音乐 App 播放即可同步曲目与播控</string>
+
+    <string name="main_source_unselected">投送音源：未选择</string>
+    <string name="main_source_unselected_sub">点击选择需要投送的音乐或音频 App</string>
+    <string name="main_source_unselected_sub_manage">点击管理常用音源或自动识别正在播放的 App</string>
+    <string name="main_source_selected">音源 · %1$s</string>
+    <string name="main_source_global_title">全局媒体模式（无感采集）</string>
+    <string name="main_source_global_sub">当前将捕获本机所有媒体音频 · 可在设置中切回单 App 隔离</string>
+    <string name="main_source_auto_badge">自动识别</string>
+    <string name="main_source_manage">管理</string>
+
+    <string name="main_output_devices">输出设备</string>
+    <string name="main_multiroom_support">支持多音箱同频投送</string>
+    <string name="main_found_castable_count">发现 %1$d 台可投设备</string>
+    <string name="main_refresh_devices_desc">重新发现输出设备</string>
+    <string name="main_this_device_name">本机播放</string>
+    <string name="main_this_device_active_sub">手机扬声器 · 当前输出</string>
+    <string name="main_this_device_idle_sub">手机扬声器</string>
+    <string name="main_device_reconnecting">%1$s · 重连中…</string>
+    <string name="main_device_error">%1$s · 连接异常</string>
+    <string name="main_device_streaming">%1$s · 投送中</string>
+    <string name="main_device_connecting">%1$s · 连接中…</string>
+
+    <string name="main_err_record_audio_denied">未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）</string>
+    <string name="main_err_record_audio_needed">需要音频捕获权限（仅用于播放捕获，不采集麦克风）</string>
+    <string name="main_err_select_app_first">请先选择要投送的音频 App</string>
+    <string name="main_err_cannot_cast">无法投送：%1$s</string>
+    <string name="main_err_discover_failed">扫描失败，请点击刷新重试</string>
+    <string name="main_err_no_speakers_found">未扫描到在线音箱（可点击刷新或去设置手动添加 IP）</string>
+    <string name="main_status_projection_cancelled">播放捕获授权已取消 · 已切回本机播放</string>
+    <string name="main_status_switching_source">正在切换投送音源为 %1$s…</string>
+    <string name="main_status_switched_standard">已切回标准投屏模式，点击音箱即可投送</string>
+
+    <!-- Volume Safety Guard Dialog -->
+    <string name="volume_guard_title">音量超过安全上限（%1$d%%）</string>
+    <string name="volume_guard_msg_master">确定要将总音量从 %1$d%% 调至 %2$d%% 吗？</string>
+    <string name="volume_guard_msg_speaker">确定要将「%1$s」的音量从 %2$d%% 调至 %3$d%% 吗？</string>
+    <string name="volume_guard_keep">保持原音量（%1$d%%）</string>
+    <string name="volume_guard_confirm">确认调至 %1$d%%</string>
+
+    <!-- Wireless Precheck & Recovery Dialogs -->
+    <string name="wireless_dialog_unsupported_title">当前系统不支持无感采集</string>
+    <string name="wireless_dialog_switch_standard_cast">切回标准模式投送</string>
+    <string name="wireless_dialog_need_pair_title">首次使用无感模式需配对</string>
+    <string name="wireless_dialog_need_pair_footnote">仅需首次按向导自动识别一次 6 位配对码（也支持悬浮键盘与通知栏长按输入）；配置完成后即可免投屏弹窗、免「正在投屏」横幅直接投送。</string>
+    <string name="wireless_dialog_open_5step_guide">打开 5 步配对引导</string>
+    <string name="wireless_dialog_use_standard_first">先用标准模式投送</string>
+    <string name="wireless_dialog_api30_title">Android 11–12 仅支持全局媒体</string>
+    <string name="wireless_dialog_switch_global">切换显式全局媒体</string>
+    <string name="wireless_dialog_use_standard_instead">改用标准模式投送</string>
+    <string name="wireless_dialog_not_ready_title">无感采集未就绪</string>
+    <string name="wireless_dialog_open_guide">打开配置向导</string>
+    <string name="wireless_dialog_recovery_title">无感采集需要检查无线调试</string>
+    <string name="wireless_dialog_recovery_footnote">提示：手机重启后 Android 会自动关闭「无线调试」，只需重新点开开关即可恢复，无需重新输入 6 位配对码。</string>
+    <string name="wireless_dialog_open_wireless_debug">去开启无线调试</string>
+    <string name="wireless_dialog_switch_standard">切回标准模式</string>
+
+    <!-- Protocol & Capture Engine -->
+    <string name="protocol_desc_supported">协议 %1$s</string>
+    <string name="protocol_desc_unsupported">协议 %1$s（本 App 尚未实现投送）</string>
+    <string name="engine_standard">标准投屏模式</string>
+    <string name="engine_wireless_debug">无感模式（无线调试）</string>
+    <string name="scope_single_app">单 App 隔离</string>
+    <string name="scope_global_media">全局媒体（显式）</string>
+    <string name="engine_tier_api33">Android 13+：免投屏弹窗 · 支持单 App 隔离与独立静音</string>
+    <string name="engine_tier_api30">Android 11–12：免投屏弹窗 · 仅支持显式全局媒体（不支持单 App 隔离）</string>
+    <string name="engine_tier_api29">Android 10：不支持无线调试采集，请使用标准投屏模式</string>
+    <string name="engine_reject_api29">当前系统为 Android 10（API %1$d），不支持内置无线调试无感采集，请在设置中切回「标准投屏模式」</string>
+    <string name="engine_reject_unpaired">内置无线调试尚未完成首次配对，请按 5 步向导开启无障碍自动配对并打开无线调试（也支持通知栏长按输入兜底）</string>
+    <string name="engine_reject_single_app_api30">Android 11–12（API %1$d）不支持 shell 单 App 隔离（Fail-Closed 已拒绝静默退化）；请在设置中显式切换为「全局媒体」或改用「标准投屏模式」</string>
+    <string name="capture_layers_hint">选定 App 决定 UID 过滤。系统录屏/捕获授权框只负责授权；其中的测试音源或其它选项不会自动改写本 App 的 UID。</string>
+
+    <!-- Settings Activity -->
+    <string name="settings_section_appearance">外观与发现</string>
+    <string name="settings_theme_title">主题模式</string>
+    <string name="settings_show_all_title">显示全部发现设备</string>
+    <string name="settings_show_all_sub">包含未声明 MiPlay 能力的局域网节点（兜底排查用）</string>
+    <string name="settings_rediscover_btn">立即重新发现局域网设备</string>
+
+    <string name="settings_section_cast">投送与系统权限</string>
+    <string name="settings_capture_engine_title">采集引擎</string>
+    <string name="settings_wireless_unsupported_hint">当前系统不支持内置无线调试免投屏采集，请切换回「标准投屏模式」。</string>
+    <string name="settings_capture_scope_title">捕获范围</string>
+    <string name="settings_scope_api30_hint">提示：Android 11–12 不支持 shell 单 App 隔离（Fail-Closed 会拒绝启动），请选择「全局媒体（显式）」或切回「标准投屏模式」。</string>
+    <string name="settings_wireless_pair_title">无线调试配对</string>
+    <string name="settings_wireless_pair_sub_done">点此查看向导、测试连接或清除配对</string>
+    <string name="settings_wireless_pair_sub_todo">首次需 5 步配对，无需连接电脑</string>
+    <string name="settings_wireless_paired">已配对</string>
+    <string name="settings_wireless_unpaired">未配对</string>
+
+    <string name="settings_local_mute_title">投送时手机静音</string>
+    <string name="settings_local_mute_sub_single">仅静音当前投送的音乐 App，其他 App 照常发声（实际效果以 ROM 为准）</string>
+    <string name="settings_local_mute_sub_standard">静音手机媒体音量，关闭后保留本机出声（标准模式无法单 App 静音）</string>
+    <string name="settings_current_status">当前状态：%1$s</string>
+
+    <string name="settings_volume_guard_title">高音量保护</string>
+    <string name="settings_volume_guard_sub">从安全区调高音量跨过上限时弹窗二次确认，防止误触过吵</string>
+    <string name="settings_volume_limit_title">安全音量上限</string>
+    <string name="settings_volume_limit_hint">从 ≤ %1$d%% 调高超过 %1$d%% 时将弹窗确认，降回安全区后自动重新保护</string>
+
+    <string name="settings_auto_detect_title">自动识别正在播放的音源</string>
+    <string name="settings_auto_detect_sub">自动跟随「常用音源」中开启自动识别且正在播放的 App（需通知使用权，投送中切歌自动热切换）</string>
+    <string name="settings_notif_access_title">通知使用权（正在播放与自动识别）</string>
+    <string name="settings_notif_access_sub">用于读取正在播放曲目、播控及自动识别常用音源，不上传通知内容</string>
+    <string name="settings_status_enabled">已开启</string>
+    <string name="settings_status_disabled">未开启</string>
+    <string name="settings_battery_title">电池优化豁免</string>
+    <string name="settings_battery_sub">减少后台投送被系统休眠中断的概率（不构成跨品牌保活保证）</string>
+    <string name="settings_battery_exempt">已豁免</string>
+    <string name="settings_battery_not_exempt">未豁免</string>
+
+    <string name="settings_section_debug">高级与调试</string>
+    <string name="settings_debug_header">连接参数、手动 IP 与调试选项</string>
+    <string name="settings_debug_sub">默认自动配置即可；排查网络或特殊音箱时再展开</string>
+    <string name="settings_manual_ip_label">手动添加设备 IP（逗号分隔）</string>
+    <string name="settings_manual_ip_hint">例如 192.168.1.100</string>
+    <string name="settings_manual_ip_add">加入</string>
+    <string name="settings_manual_ip_invalid">请输入合法 IPv4 地址（如 192.168.1.100）</string>
+    <string name="settings_manual_ip_prefix">手动 %1$s</string>
+    <string name="settings_manual_ip_added">已加入 %1$s，返回主界面即可勾选投送</string>
+    <string name="settings_source_mode_label">捕获音源模式</string>
+    <string name="settings_source_mode_app">选定 App（UID 过滤）</string>
+    <string name="settings_source_mode_silent">测试静音</string>
+    <string name="settings_delay_label">播放缓冲延迟 ms（留空或 0 为自动：%1$d ms；范围 50–5000）</string>
+    <string name="settings_delay_hint">自动 (%1$d)</string>
+    <string name="settings_delay_apply">生效</string>
+    <string name="settings_delay_invalid">请输入 50–5000 之间的毫秒数（留空或填 0 恢复自动 %1$d ms）</string>
+    <string name="settings_delay_auto_suffix">（自动）</string>
+    <string name="settings_delay_low_hint">；低于 250ms 在弱网或多箱场景可能卡顿</string>
+    <string name="settings_delay_applied_live">已生效：当前投送已热更新为 %1$dms%2$s（无需重连）%3$s</string>
+    <string name="settings_delay_saved">已保存：%1$dms%2$s，下次连接音箱时生效%3$s</string>
+    <string name="settings_ref_label">组网参考模式（ref_function）</string>
+    <string name="settings_ref_auto">自动</string>
+    <string name="settings_ref_single">单箱</string>
+    <string name="settings_ref_multi">多箱</string>
+    <string name="settings_ref_stereo">立体声</string>
+    <string name="settings_auth_label">8899 认证链路</string>
+    <string name="settings_auth_auto">自动</string>
+    <string name="settings_auth_legacy">明文 Legacy</string>
+    <string name="settings_auth_safety">Safety 加密</string>
+    <string name="settings_acceptance_hint">验收默认音箱音量=0（静音测试）；停止投送后不恢复本机 STREAM_MUSIC 索引。</string>
+    <string name="settings_local_probe_idle">本地过滤验收：未运行</string>
+    <string name="settings_local_probe_stop">停止本地过滤验收</string>
+    <string name="settings_local_probe_start">启动本地音频过滤验收</string>
+    <string name="settings_local_probe_stop_cast_first">请先停止音箱投送</string>
+    <string name="settings_local_probe_waiting">本地过滤验收：等待投影授权…</string>
+    <string name="settings_local_probe_stopped">已停止本地探针</string>
+    <string name="settings_local_probe_denied">本地过滤验收：授权被拒绝</string>
+    <string name="settings_local_probe_started">本地过滤验收已启动</string>
+
+    <string name="settings_section_about">关于与更新</string>
+    <string name="settings_ver_acceptance">验收版</string>
+    <string name="settings_ver_preview">预览版</string>
+    <string name="settings_update_checking">正在检查公开更新清单…</string>
+    <string name="settings_update_avail_single">发现新版本 %1$s</string>
+    <string name="settings_update_avail_multi">发现新版本 %1$s（含 %2$d 个版本变更）</string>
+    <string name="settings_update_ignored">发现新版本 %1$s（已跳过提醒）</string>
+    <string name="settings_update_unsupported_os">新版本 %1$s 需要更高系统版本</string>
+    <string name="settings_update_up_to_date">当前已是最新版本 · 上次检查 %1$s</string>
+    <string name="settings_update_parse_err">更新解析异常</string>
+    <string name="settings_update_last_checked">上次检查：%1$s</string>
+    <string name="settings_update_never_checked">尚未检查更新 · 只读静态清单、零遥测</string>
+    <string name="settings_update_pill_checking">检测中…</string>
+    <string name="settings_update_pill_failed">检查失败</string>
+    <string name="settings_update_pill_new">有新版本</string>
+    <string name="settings_update_pill_latest">已是最新</string>
+    <string name="settings_update_btn_checking">正在检查更新…</string>
+    <string name="settings_update_btn_view">查看新版本 %1$s</string>
+    <string name="settings_update_btn_retry">重试检查更新</string>
+    <string name="settings_update_btn_check">立即检查更新</string>
+    <string name="settings_update_auto_title">启动时自动检查更新</string>
+    <string name="settings_update_auto_sub">每 24 小时仅向公开更新清单发起一次只读 HTTPS 请求，不上传任何设备或局域网数据</string>
+    <string name="settings_update_channel_title">更新通道</string>
+    <string name="update_channel_stable">稳定版</string>
+    <string name="update_channel_prerelease">预览版 (RC)</string>
+    <string name="settings_release_page_title">公开版本发布页与完整更新日志</string>
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%1$d 分钟前</string>
+    <string name="time_hours_ago">%1$d 小时前</string>
+
+    <!-- App Picker Activity -->
+    <string name="picker_title">常用音源与选择</string>
+    <string name="picker_info_desc">音源与自动识别说明</string>
+    <string name="picker_info_title">常用音源与自动识别说明</string>
+    <string name="picker_info_message">1. 「常用音源」支持自由添加、移除以及长按拖动排序，排序结果会实时同步至主界面快捷切换栏。\n\n2. 自动识别仅会从「常用音源」且已开启「自动识别」开关的 App 中跟随；即使旧软件未关闭，投送途中切到另一个常用音乐 App 播放也会自动热切换，名单外或关闭开关的应用不会被自动切入。\n\n3. 无论自动识别还是手动点选，开始投送与热切换前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。</string>
+    <string name="picker_search_hint">搜索应用名称或包名…</string>
+    <string name="picker_clear_search_desc">清空搜索</string>
+    <string name="picker_loading_apps">正在加载可启动应用…</string>
+    <string name="picker_status_summary">常用音源 %1$d 个（允许自动识别 %2$d 个）· 点击行设为当前音源</string>
+    <string name="picker_search_empty">没有匹配的可启动应用</string>
+    <string name="picker_search_results">搜索结果 (%1$d)</string>
+    <string name="picker_favorites_header">常用音源 (%1$d)</string>
+    <string name="picker_drag_hint">长按拖动排序</string>
+    <string name="picker_favorites_empty">暂无常用音源 · 在下方点击「+ 常用」添加，只有名单内且开启开关的 App 会参与自动识别</string>
+    <string name="picker_all_launchable">全部可启动应用 (%1$d)</string>
+    <string name="picker_collapse_others">收起其他应用 (%1$d)</string>
+    <string name="picker_expand_others">添加更多应用到常用音源 (%1$d)</string>
+    <string name="picker_auto_detect_on">自动识别：允许</string>
+    <string name="picker_auto_detect_off">自动识别：关闭</string>
+    <string name="picker_remove_favorite">移出常用</string>
+    <string name="picker_add_favorite">+ 常用</string>
+    <string name="picker_verifying">正在校验 %1$s…</string>
+
+    <!-- Update Dialog & Errors -->
+    <string name="update_dialog_title">发现新版本</string>
+    <string name="update_dialog_preview_badge">预览版</string>
+    <string name="update_dialog_published_at">发布于 %1$s</string>
+    <string name="update_dialog_apk_size">安装包 %1$s</string>
+    <string name="update_dialog_versions_behind">跨 %1$d 个版本更新</string>
+    <string name="update_dialog_unsupported_os">当前系统版本低于该新版本最低要求，暂无法直接安装。</string>
+    <string name="update_dialog_acceptance_notice">当前为验收包（%1$s），正式版安装包请通过浏览器独立安装。</string>
+    <string name="update_dialog_changelog_header">自 v%1$s 以来共 %2$d 个版本变更</string>
+    <string name="update_dialog_changelog_truncated">… 更早版本变更已省略，可点击「前往浏览器下载」查看完整历史</string>
+    <string name="update_fallback_empty_notes">本版本包含功能改进与稳定性修复，可前往 Release 页面查看完整变更记录。</string>
+    <string name="update_dialog_need_install_perm">请在系统设置中允许「妙投」安装未知应用，授权后返回再点「立即安装」。</string>
+    <string name="update_dialog_btn_install_after_perm">已授权，立即安装</string>
+    <string name="update_dialog_err_open_installer">无法调起系统安装器，请点击下方「前往浏览器下载」。</string>
+    <string name="update_dialog_btn_download_install">立即下载并安装</string>
+    <string name="update_dialog_btn_cancel_download">取消下载</string>
+    <string name="update_dialog_btn_install_now">立即安装</string>
+    <string name="update_dialog_btn_retry_download">重试下载</string>
+    <string name="update_dialog_progress_connecting">正在连接下载…</string>
+    <string name="update_dialog_progress_checksum">正在获取官方 SHA-256 校验值…</string>
+    <string name="update_dialog_progress_downloading_pct">正在下载安装包… %1$d%%（%2$s / %3$s）</string>
+    <string name="update_dialog_progress_downloading_bytes">正在下载安装包… %1$s</string>
+    <string name="update_dialog_progress_verifying">正在校验 SHA-256 与签名证书…</string>
+    <string name="update_dialog_progress_verified">SHA-256 与签名校验通过，准备安装…</string>
+    <string name="update_dialog_btn_browser_download">前往浏览器下载</string>
+    <string name="update_dialog_btn_release_page">前往发布页查看</string>
+    <string name="update_dialog_remind_later">稍后提醒</string>
+    <string name="update_dialog_skip_version">跳过此版本</string>
+    <string name="update_err_invalid_version">当前版本号格式非法</string>
+    <string name="update_err_invalid_json">更新响应 JSON 格式非法</string>
+    <string name="update_err_remote">远端返回错误：%1$s</string>
+    <string name="update_err_unrecognized_schema">无法识别的更新响应结构</string>
+    <string name="update_err_check_failed">检查更新失败：%1$s</string>
+    <string name="update_err_network">网络异常</string>
+    <string name="update_err_network_connect">网络连接失败</string>
+    <string name="update_err_github_rate_limit">GitHub API 访问受限，请稍后再试</string>
+    <string name="update_err_http_unavailable">服务暂不可用（HTTP %1$d）</string>
+    <string name="update_err_feed_unreachable">无法连接公开更新源</string>
+
+    <!-- Wireless Debug Guide & Onboarding -->
+    <string name="guide_title">无感采集配置向导</string>
+    <string name="guide_badge_unsupported">Android %1$d 不支持</string>
+    <string name="guide_badge_all_done">全部 %1$d 步已完成</string>
+    <string name="guide_badge_progress">配置进度 %1$d / %2$d</string>
+    <string name="guide_btn_back_standard">返回使用标准投屏模式</string>
+    <string name="guide_section_steps">配置步骤</string>
+    <string name="guide_btn_enable_done">完成并启用无感模式</string>
+    <string name="guide_btn_enable_paired">已配对 · 直接启用无感模式</string>
+    <string name="guide_btn_clear_cert">清除本机配对证书</string>
+    <string name="guide_clear_dialog_title">清除本机无线调试配对？</string>
+    <string name="guide_clear_dialog_msg">清除后需重新通过本向导完成 6 位配对码握手，才可继续使用无感模式。</string>
+    <string name="guide_clear_dialog_confirm">确认清除</string>
+    <string name="guide_feedback_cert_cleared">已清除本机无线调试配对证书</string>
+    <string name="guide_feedback_notif_granted">已获得通知权限，请继续完成下一步配置</string>
+    <string name="guide_feedback_notif_denied">通知权限未授予，可点击「立即允许通知」前往系统通知设置开启</string>
+    <string name="guide_testing_conn">正在检测连接…</string>
+    <string name="guide_skip_a11y">跳过，用通知栏</string>
+    <string name="guide_feedback_a11y_skipped">已跳过无障碍：配对时将通过通知栏横幅输入 6 位码（若未看到输入框，请长按本条通知展开）</string>
+    <string name="guide_manual_collapse">收起手动</string>
+    <string name="guide_manual_expand">手动填码</string>
+    <string name="guide_manual_hint">提示：可将本 App 挂为「小窗」或与系统设置「分屏」，直接对照弹窗填入端口与 6 位配对码，无需操作通知栏：</string>
+    <string name="guide_manual_port_hint">配对端口</string>
+    <string name="guide_manual_pin_hint">6位配对码</string>
+    <string name="guide_manual_pair_btn">配对</string>
+    <string name="guide_tips_title">常见问题与重启恢复说明</string>
+    <string name="guide_tip_1">• 为什么推荐无障碍而非悬浮窗：Android 12+ / HyperOS 会在系统「无线调试」与配对码页面自动屏蔽第三方普通悬浮窗；开启「妙投 · 无线调试自动配对助手」无障碍服务后，无需悬浮窗权限即可在 PIN 码页同屏显示顶部数字键盘，并自动读取屏幕上的 6 位配对码完成秒配。</string>
+    <string name="guide_tip_2">• 通知栏长按兜底：若未开启无障碍，点开系统「使用配对码配对设备」后，请下拉通知栏找到妙投通知并点「输入 6 位配对码」；若系统折叠了输入按钮，请直接【长按本条通知】（或单指下滑该通知）展开输入框。</string>
+    <string name="guide_tip_3">• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。</string>
+    <string name="guide_tip_4">• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。</string>
+    <string name="guide_tip_5">• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。</string>
+    <string name="guide_tip_6">• 状态栏小绿点：无感模式会彻底消除投屏弹窗与「正在投屏」横幅；部分 Android 12+ 机型右上角仍可能显示极小的系统录音隐私绿点，属系统隐私机制。</string>
+    <string name="guide_feedback_a11y_ready">无障碍自动配对与顶部悬浮键盘已就绪：点开「无线调试 → 使用配对码配对设备」后将自动识别 6 位码并秒配（也保留通知栏长按输入兜底）</string>
+    <string name="guide_feedback_notif_banner_sent">已发送配对通知栏横幅：点开「无线调试 → 使用配对码配对设备」后下拉通知栏输入 6 位码（若未看到输入按钮，请长按本条通知展开）</string>
+    <string name="guide_feedback_invalid_port">请输入合法配对端口（1–65535）</string>
+    <string name="guide_feedback_pairing_start">正在向 127.0.0.1:%1$d 发起 TLS + SPAKE2 配对…</string>
+    <string name="guide_feedback_pair_success">配对成功，正在自动验证连接…</string>
+    <string name="guide_feedback_need_pair_first">尚未完成第 4 步配对，请先在浮动框输入 6 位配对码</string>
+    <string name="guide_feedback_probing">正在探测本机无线调试端口并校验 uid=2000 权限…</string>
+    <string name="guide_feedback_no_service">未检测到本机无线调试服务：请确认 Wi-Fi 已连接且「开发者选项 → 无线调试」开关已打开</string>
+    <string name="guide_feedback_conn_ok">连通验证通过（127.0.0.1:%1$d · %2$s）</string>
+
+    <!-- Onboarding State Steps -->
+    <string name="onboard_unsupported_headline">当前系统不支持内置无线调试无感采集</string>
+    <string name="onboard_unsupported_sub">Android 10（API %1$d）无原生无线调试配对与 shell 音频捕获权限，请继续使用「标准投屏模式」。</string>
+    <string name="onboard_step1_title">允许通知权限</string>
+    <string name="onboard_step1_detail_done">已允许通知，可用于展示后台投送播控栏及配对码输入兜底横幅</string>
+    <string name="onboard_step1_detail_todo">用于展示前台投送播控栏与通知栏配对码输入兜底横幅，请先允许通知权限</string>
+    <string name="onboard_step1_action">立即允许通知</string>
+    <string name="onboard_step2_title">开启「开发者选项」</string>
+    <string name="onboard_step2_detail_done">已检测到系统「开发者选项」处于开启状态</string>
+    <string name="onboard_step2_detail_todo">前往系统「关于手机」，连续点击「版本号」7 次（小米 / HyperOS 连续点击「OS 版本」），开启后返回本页自动打勾</string>
+    <string name="onboard_step2_action">前往「关于手机」</string>
+    <string name="onboard_step3_title">开启「无障碍自动配对」（推荐）</string>
+    <string name="onboard_step3_detail_enabled">已开启无障碍自动配对：无需悬浮窗权限，在系统「无线调试」PIN 码页顶部直接显示悬浮数字键盘，并自动读取 6 位配对码完成秒配</string>
+    <string name="onboard_step3_detail_skipped">已跳过无障碍，将使用「通知栏横幅」手动输入配对码（若未看到输入按钮，请长按通知展开输入框）；也可随时重新开启自动识别</string>
+    <string name="onboard_step3_detail_todo">无需开启悬浮窗权限！开启「妙投 · 无线调试自动配对助手」后，可在系统设置 PIN 码页同屏显示悬浮数字键盘（不被系统隐藏）并自动读取 6 位配对码秒配；配对完成后自动休眠</string>
+    <string name="onboard_step3_badge_recommended">推荐 · 免手输</string>
+    <string name="onboard_step3_badge_skipped">已跳过</string>
+    <string name="onboard_step3_action_enable">去开启无障碍（推荐）</string>
+    <string name="onboard_step3_action_reenable">改为开启无障碍</string>
+    <string name="onboard_step4_title_a11y">开启「无线调试」并点开配对码弹窗</string>
+    <string name="onboard_step4_title_notif">开启「无线调试」并在通知栏输入 6 位配对码</string>
+    <string name="onboard_step4_detail_done">已保存本机 TLS 配对证书；以后无需重复输入配对码（重启手机后只需重新打开无线调试开关）</string>
+    <string name="onboard_step4_detail_a11y">① 点击下方前往「开发者选项 → 无线调试」并打开开关\n② 点「使用配对码配对设备」弹出 6 位数字弹窗（保持弹窗不关闭）\n③ 顶部悬浮框将自动识别 6 位码并秒配跳回本页（也可直接点悬浮数字键盘或长按通知栏输入）</string>
+    <string name="onboard_step4_detail_notif">① 点击下方前往「开发者选项 → 无线调试」并打开开关\n② 点「使用配对码配对设备」保持 6 位码弹窗不关闭\n③ 下拉通知栏点「输入 6 位配对码」（若未看到输入框，请【长按本条通知】展开）</string>
+    <string name="onboard_step4_action_repair">重新配对</string>
+    <string name="onboard_step4_action_a11y">启动自动配对并前往设置</string>
+    <string name="onboard_step4_action_notif">前往无线调试（通知栏输入）</string>
+    <string name="onboard_step5_title">验证本机连通性并启用</string>
+    <string name="onboard_step5_detail_verified_port">已连通本机无线调试（127.0.0.1:%1$d · uid=2000），现在可零弹窗投送音频</string>
+    <string name="onboard_step5_detail_verified">本机无线调试连通验证通过，现在可零弹窗投送音频</string>
+    <string name="onboard_step5_detail_paired">请确保「无线调试」开关处于开启状态，点击测试连接完成最后一步验证</string>
+    <string name="onboard_step5_detail_todo">完成第 4 步配对后，将自动检测本机无线调试连通性</string>
+    <string name="onboard_step5_action_retest">重新测试连接</string>
+    <string name="onboard_step5_action_test">测试连接</string>
+    <string name="onboard_badge_done">已完成</string>
+    <string name="onboard_badge_todo">待开启</string>
+    <string name="onboard_badge_enabled">已开启</string>
+    <string name="onboard_badge_paired">已配对</string>
+    <string name="onboard_badge_unpaired">待配对</string>
+    <string name="onboard_badge_ready">已就绪</string>
+    <string name="onboard_badge_verify">待验证</string>
+    <string name="onboard_badge_pending">未开始</string>
+    <string name="onboard_headline_ready">无感采集已全部就绪</string>
+    <string name="onboard_sub_ready">点击下方按钮启用无感模式，投送时将不再弹出投屏确认框或常驻「正在投屏」提示</string>
+    <string name="onboard_headline_paired">已完成配对 · 还差最后一步验证</string>
+    <string name="onboard_sub_paired">确认系统「无线调试」已开启后点击「测试连接」，验证通过即可零弹窗投送</string>
+    <string name="onboard_headline_default">5 步开启免投屏无感采集（仅需首次配置）</string>
+    <string name="onboard_sub_default">无需悬浮窗权限或电脑 · 开启无障碍即可自动识别 6 位配对码，同时保留通知栏长按输入兜底</string>
+
+    <!-- Pairing Overlay & Notifications -->
+    <string name="overlay_title_expanded">输入 6 位无线调试配对码</string>
+    <string name="overlay_title_collapsed">妙投 · 等待打开 6 位码弹窗</string>
+    <string name="overlay_port_done">填完端口</string>
+    <string name="overlay_port_locked">端口 %1$d</string>
+    <string name="overlay_port_manual">手填端口</string>
+    <string name="overlay_collapse">收起</string>
+    <string name="overlay_expand">展开键盘</string>
+    <string name="overlay_close_desc">关闭配对浮动框</string>
+    <string name="overlay_collapsed_hint">① 打开下方「无线调试」开关 → ② 点「使用配对码配对设备」（将自动识别 6 位码秒配，也可展开键盘手按）</string>
+    <string name="overlay_port_field_label">配对端口：</string>
+    <string name="overlay_port_field_placeholder">请点数字键输入 5 位端口</string>
+    <string name="overlay_status_port_discovered">已自动锁定配对端口 %1$d · 看到弹窗将自动识别 6 位码（也可直接点按输入）</string>
+    <string name="overlay_status_auto_detected">✓ 已自动识别配对码 %1$s（端口 %2$d）· 正在自动配对…</string>
+    <string name="overlay_status_editing_port">请点下方数字输入弹窗中的配对端口号（IP 冒号后的 5 位数字）</string>
+    <string name="overlay_status_port_ready">已锁定配对端口 %1$d · 点按 6 位配对码自动配对</string>
+    <string name="overlay_status_wait_popup">看到 6 位数字弹窗后直接点按输入（若未自动识别端口，点右上角手填端口）</string>
+    <string name="overlay_status_port_set">已设置端口 %1$d，请继续输入 6 位配对码</string>
+    <string name="overlay_status_pin_incomplete">请先输入完整的 6 位数字配对码（当前已输 %1$d/6 位）</string>
+    <string name="overlay_status_probing_port">正在探测本机无线调试配对端口…</string>
+    <string name="overlay_status_no_port">未自动探测到端口：请先输入系统弹窗 IP 冒号后的 5 位端口号，再点「完成」</string>
+    <string name="overlay_status_success">✓ 配对成功！已保存证书，正在自动返回妙投…</string>
+    <string name="overlay_status_fail_retry">%1$s（点数字可直接重输）</string>
+    <string name="overlay_key_done">完成</string>
+    <string name="overlay_key_pair">配对</string>
+
+    <string name="pairing_notif_input_label">输入 6 位无线调试配对码</string>
+    <string name="pairing_notif_action_input">输入 6 位配对码</string>
+    <string name="pairing_notif_title_ready">无线调试配对就绪（端口 %1$d）</string>
+    <string name="pairing_notif_title_waiting">等待打开「使用配对码配对设备」弹窗…</string>
+    <string name="pairing_notif_text_ready">请点下方「输入 6 位配对码」填入数字。若未看到输入按钮，请【长按本条通知】（或单指下滑本通知）展开输入框，勿切回 App</string>
+    <string name="pairing_notif_text_waiting">进入「无线调试 → 使用配对码配对设备」。若未开启自动识别，下拉通知栏并【长按本条通知】即可展开配对码输入框</string>
+    <string name="pairing_notif_result_ok_title">无线调试配对成功</string>
+    <string name="pairing_notif_result_fail_title">无线调试配对失败</string>
+    <string name="pairing_notif_channel_waiting">无线调试等待提示（静默）</string>
+    <string name="pairing_notif_channel_waiting_desc">进入系统开发者选项前的静默状态提示</string>
+    <string name="pairing_notif_channel_active">无线调试配对码输入横幅</string>
+    <string name="pairing_notif_channel_active_desc">检测到无线调试配对窗口时在顶部弹出 6 位配对码输入按钮</string>
+    <string name="pairing_receiver_no_port">未发现无线调试配对端口，请保持「使用配对码配对设备」弹窗开启后重试</string>
+    <string name="pairing_receiver_saved">已保存本机配对证书，返回妙投即可启用无感采集</string>
+
+    <!-- Cast Service & Foreground Notification -->
+    <string name="cast_channel_name">妙投 · 投送状态</string>
+    <string name="cast_action_pause">暂停</string>
+    <string name="cast_action_resume">恢复</string>
+    <string name="cast_action_stop">停止</string>
+    <string name="cast_notif_silent_paused">已暂停 · 静音测试</string>
+    <string name="cast_notif_silent_connecting">正在连接 · 静音测试</string>
+    <string name="cast_notif_silent_playing">静音测试中</string>
+    <string name="cast_notif_global_media">全局媒体</string>
+    <string name="cast_notif_fallback_audio">音频</string>
+    <string name="cast_notif_title_paused">已暂停投送 · %1$s</string>
+    <string name="cast_notif_title_connecting">正在连接 · %1$s</string>
+    <string name="cast_notif_title_casting">正在投送 · %1$s</string>
+    <string name="cast_notif_preparing">准备中…</string>
+    <string name="cast_notif_single_error">%1$s · 已断开</string>
+    <string name="cast_notif_single_reconnecting">%1$s · 重连中</string>
+    <string name="cast_notif_single_connecting">%1$s · 连接中</string>
+    <string name="cast_notif_multi_connecting">正在连接 %1$d 台设备</string>
+    <string name="cast_notif_multi_paused">%1$d 台设备</string>
+    <string name="cast_notif_multi_synced">%1$d 台设备同步播放</string>
+    <string name="cast_notif_multi_abnormal">%1$d 台设备 · %2$s</string>
+    <string name="cast_notif_part_reconnecting">%1$d 台重连中</string>
+    <string name="cast_notif_part_error">%1$d 台已断开</string>
+    <string name="cast_notif_part_connecting">%1$d 台连接中</string>
+    <string name="cast_notif_status_error">已断开</string>
+    <string name="cast_notif_status_reconnecting">重连中</string>
+    <string name="cast_notif_status_connecting">连接中</string>
+    <string name="cast_notif_status_paused">已暂停</string>
+    <string name="cast_notif_status_playing">播放中</string>
+    <string name="cast_notif_more_devices">…等共 %1$d 台设备</string>
+    <string name="cast_mute_status_idle">本机出声（未尝试静音）</string>
+    <string name="cast_mute_status_stopped">本机出声（已停止投送）</string>
+    <string name="cast_mute_status_single_app">单 App 本机静音已生效（无感环回，不影响其他 App 手机出声）</string>
+    <string name="cast_mute_status_global">全局媒体本机静音已生效（无感环回路由）</string>
+    <string name="cast_err_projection_invalid">录屏/音频捕获授权无效或被拒绝</string>
+    <string name="cast_err_projection_null">系统未能创建 MediaProjection</string>
+    <string name="cast_err_projection_revoked">捕获授权已撤销或被系统终止</string>
+    <string name="cast_err_projection_unavailable">MediaProjection 不可用</string>
+    <string name="cast_hotswitch_ok">已切换投送音源为 %1$s</string>
+    <string name="cast_hotswitch_rejected">无法切换音源：%1$s</string>
+    <string name="cast_hotswitch_reverted">无法热切换至 %1$s，已保持当前音源 %2$s</string>
+    <string name="cast_hotswitch_stopped">无法热切换音源为 %1$s，已停止投送：%2$s</string>
 </resources>

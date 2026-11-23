@@ -18,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.miaocast.app.R
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.UiComponents
 import com.miaocast.app.ui.UiPalette
@@ -67,7 +68,7 @@ object PairingFloatingOverlay {
 
     fun showOrUpdate(context: Context, newDetectedPort: Int): Boolean {
         val a11yService = WirelessPairingAccessibilityService.activeInstance ?: return false
-        val appCtx = context.applicationContext
+        val appCtx = AppLocaleManager.localizedContext(context)
         main.post {
             val portJustDiscovered = newDetectedPort > 0 && newDetectedPort != detectedPort
             if (newDetectedPort > 0) {
@@ -91,7 +92,7 @@ object PairingFloatingOverlay {
                 }
                 editingPort = false
                 if (!pairingInProgress && !pairingSucceeded) {
-                    statusTextZh = "已自动锁定配对端口 $detectedPort · 看到弹窗将自动识别 6 位码（也可直接点按输入）"
+                    statusTextZh = appCtx.getString(R.string.overlay_status_port_discovered, detectedPort)
                     statusTone = StatusTone.ACCENT
                 }
                 rebuildContent(appCtx)
@@ -111,7 +112,7 @@ object PairingFloatingOverlay {
      */
     fun onAutoDetectedPinAndPort(context: Context, pinCode: String, pairingPort: Int) {
         if (pinCode.length != 6 || !pinCode.all { it.isDigit() } || pairingPort !in 1024..65535) return
-        val appCtx = context.applicationContext
+        val appCtx = AppLocaleManager.localizedContext(context)
         main.post {
             if (pairingInProgress || pairingSucceeded) return@post
             val sig = "$pairingPort:$pinCode"
@@ -123,7 +124,7 @@ object PairingFloatingOverlay {
             editingPort = false
             expanded = true
             userManuallyCollapsed = false
-            statusTextZh = "✓ 已自动识别配对码 $pinCode（端口 $pairingPort）· 正在自动配对…"
+            statusTextZh = appCtx.getString(R.string.overlay_status_auto_detected, pinCode, pairingPort)
             statusTone = StatusTone.ACCENT
 
             val a11yService = WirelessPairingAccessibilityService.activeInstance
@@ -199,9 +200,9 @@ object PairingFloatingOverlay {
         val effectivePort = resolveEffectivePort()
         val defaultStatus = when {
             statusTextZh.isNotBlank() -> statusTextZh
-            editingPort -> "请点下方数字输入弹窗中的配对端口号（IP 冒号后的 5 位数字）"
-            effectivePort > 0 -> "已锁定配对端口 $effectivePort · 点按 6 位配对码自动配对"
-            else -> "看到 6 位数字弹窗后直接点按输入（若未自动识别端口，点右上角手填端口）"
+            editingPort -> appCtx.getString(R.string.overlay_status_editing_port)
+            effectivePort > 0 -> appCtx.getString(R.string.overlay_status_port_ready, effectivePort)
+            else -> appCtx.getString(R.string.overlay_status_wait_popup)
         }
         val defaultTone = when {
             statusTextZh.isNotBlank() -> statusTone
@@ -300,13 +301,13 @@ object PairingFloatingOverlay {
         if (editingPort) {
             val port = manualPortBuffer.toIntOrNull() ?: 0
             if (port !in 1..65535) {
-                statusTextZh = "请输入合法配对端口（1–65535）"
+                statusTextZh = appCtx.getString(R.string.guide_feedback_invalid_port)
                 statusTone = StatusTone.WARNING
                 rebuildContent(appCtx)
                 return
             }
             editingPort = false
-            statusTextZh = "已设置端口 $port，请继续输入 6 位配对码"
+            statusTextZh = appCtx.getString(R.string.overlay_status_port_set, port)
             statusTone = StatusTone.ACCENT
             rebuildContent(appCtx)
             if (pinBuffer.length == 6) {
@@ -315,7 +316,7 @@ object PairingFloatingOverlay {
             return
         }
         if (pinBuffer.length < 6) {
-            statusTextZh = "请先输入完整的 6 位数字配对码（当前已输 ${pinBuffer.length}/6 位）"
+            statusTextZh = appCtx.getString(R.string.overlay_status_pin_incomplete, pinBuffer.length)
             statusTone = StatusTone.WARNING
             rebuildContent(appCtx)
             return
@@ -330,9 +331,9 @@ object PairingFloatingOverlay {
         pairingInProgress = true
         val initialPort = resolveEffectivePort()
         statusTextZh = if (initialPort > 0) {
-            "正在向 127.0.0.1:$initialPort 发起 TLS + SPAKE2 配对…"
+            appCtx.getString(R.string.guide_feedback_pairing_start, initialPort)
         } else {
-            "正在探测本机无线调试配对端口…"
+            appCtx.getString(R.string.overlay_status_probing_port)
         }
         statusTone = StatusTone.ACCENT
         rebuildContent(appCtx)
@@ -348,7 +349,7 @@ object PairingFloatingOverlay {
                 main.post {
                     pairingInProgress = false
                     editingPort = true
-                    statusTextZh = "未自动探测到端口：请先输入系统弹窗 IP 冒号后的 5 位端口号，再点「完成端口」"
+                    statusTextZh = appCtx.getString(R.string.overlay_status_no_port)
                     statusTone = StatusTone.WARNING
                     rebuildContent(appCtx)
                 }
@@ -365,7 +366,7 @@ object PairingFloatingOverlay {
                         pairingSucceeded = true
                         store.markPaired()
                         PairingNotificationGuide.stopPairingWatcher()
-                        statusTextZh = "✓ 配对成功！已保存证书，正在自动返回妙投…"
+                        statusTextZh = appCtx.getString(R.string.overlay_status_success)
                         statusTone = StatusTone.SUCCESS
                         rebuildContent(appCtx)
                         main.postDelayed({
@@ -381,7 +382,7 @@ object PairingFloatingOverlay {
                         }, 650L)
                     }
                     is WirelessAdbPairingClient.PairResult.Failure -> {
-                        statusTextZh = "${res.messageZh}（点数字可直接重输）"
+                        statusTextZh = appCtx.getString(R.string.overlay_status_fail_retry, res.messageZh)
                         statusTone = StatusTone.WARNING
                         rebuildContent(appCtx)
                     }
@@ -442,7 +443,7 @@ object PairingFloatingOverlay {
         expanded: Boolean = true,
         detectedPort: Int = 39481,
         pinText: String = "482",
-        statusMessage: String = "已锁定配对端口 39481 · 点按 6 位配对码自动配对",
+        statusMessage: String = context.getString(R.string.overlay_status_port_ready, detectedPort),
     ): View = buildOverlayCard(
         context = context,
         palette = UiPalette.forMode(isDark),
@@ -521,7 +522,11 @@ object PairingFloatingOverlay {
         )
         header.addView(
             TextView(context).apply {
-                text = if (expanded) "输入 6 位无线调试配对码" else "妙投 · 等待打开 6 位码弹窗"
+                text = if (expanded) {
+                    context.getString(R.string.overlay_title_expanded)
+                } else {
+                    context.getString(R.string.overlay_title_collapsed)
+                }
                 textSize = 13f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -532,9 +537,9 @@ object PairingFloatingOverlay {
 
         if (expanded) {
             val portLabel = when {
-                editingPort -> "填完端口"
-                effectivePort > 0 -> "端口 $effectivePort"
-                else -> "手填端口"
+                editingPort -> context.getString(R.string.overlay_port_done)
+                effectivePort > 0 -> context.getString(R.string.overlay_port_locked, effectivePort)
+                else -> context.getString(R.string.overlay_port_manual)
             }
             val portFg = when {
                 editingPort -> Color.WHITE
@@ -577,7 +582,11 @@ object PairingFloatingOverlay {
 
         header.addView(
             TextView(context).apply {
-                text = if (expanded) "收起" else "展开键盘"
+                text = if (expanded) {
+                    context.getString(R.string.overlay_collapse)
+                } else {
+                    context.getString(R.string.overlay_expand)
+                }
                 textSize = 11f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(if (expanded) palette.textSecondary else palette.accentBright)
@@ -604,7 +613,7 @@ object PairingFloatingOverlay {
                 background = UiComponents.rippleSurface(palette.controlSurface, closeSize / 2f, palette.ripple)
                 isClickable = true
                 isFocusable = true
-                contentDescription = "关闭配对浮动框"
+                contentDescription = context.getString(R.string.overlay_close_desc)
                 setOnClickListener { onClose() }
                 addView(
                     ImageView(context).apply {
@@ -620,7 +629,7 @@ object PairingFloatingOverlay {
         if (!expanded) {
             card.addView(
                 TextView(context).apply {
-                    text = "① 打开下方「无线调试」开关 → ② 点「使用配对码配对设备」（将自动识别 6 位码秒配，也可展开键盘手按）"
+                    text = context.getString(R.string.overlay_collapsed_hint)
                     textSize = 11.5f
                     setTextColor(palette.textSecondary)
                     setPadding(0, dp(6), 0, 0)
@@ -648,7 +657,7 @@ object PairingFloatingOverlay {
             }
             portBox.addView(
                 TextView(context).apply {
-                    text = "配对端口："
+                    text = context.getString(R.string.overlay_port_field_label)
                     textSize = 12f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(palette.textSecondary)
@@ -656,7 +665,7 @@ object PairingFloatingOverlay {
             )
             portBox.addView(
                 TextView(context).apply {
-                    text = manualPortText.ifEmpty { "请点数字键输入 5 位端口" }
+                    text = manualPortText.ifEmpty { context.getString(R.string.overlay_port_field_placeholder) }
                     textSize = 13.5f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(if (manualPortText.isEmpty()) palette.textTertiary else palette.accentBright)
@@ -827,7 +836,7 @@ object PairingFloatingOverlay {
         }
         row2.addView(
             buildKey(
-                label = if (editingPort) "完成" else "配对",
+                label = if (editingPort) context.getString(R.string.overlay_key_done) else context.getString(R.string.overlay_key_pair),
                 weight = 1.15f,
                 primary = true,
             ) {

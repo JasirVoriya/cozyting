@@ -1,5 +1,8 @@
 package com.miaocast.app.compat
 
+import android.content.Context
+import com.miaocast.app.R
+
 /**
  * 两层选择必须分开表述，禁止声称「系统 MediaProjection 对话框选了谁」会改写发送端 UID 过滤。
  *
@@ -24,4 +27,7 @@ object CaptureSelectionLayers {
 
     fun settingsHintZh(): String =
         "选定 App 决定 UID 过滤。系统录屏/捕获授权框只负责授权；其中的测试音源或其它选项不会自动改写本 App 的 UID。"
+
+    fun settingsHint(context: Context): String =
+        context.getString(R.string.capture_layers_hint)
 }

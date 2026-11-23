@@ -64,6 +64,108 @@ import java.io.FileOutputStream
 class UiPreviewRenderTest {
 
     private lateinit var outDir: File
+    private lateinit var previewLang: AppLanguage
+
+    private data class PreviewFixtures(
+        val thisDeviceName: String,
+        val speaker2Name: String,
+        val speaker2Room: String,
+        val speaker1Room: String,
+        val tvRoom: String,
+        val noMediaSpeakerName: String,
+        val appMusic: String,
+        val appPodcast: String,
+        val appHifi: String,
+        val appVideo: String,
+        val appReader: String,
+        val trackTitle: String,
+        val trackArtist: String,
+        val castingStatus: String,
+        val noMediaReason: String,
+        val noMediaStatus: String,
+        val bannerStatus: String,
+        val updateNotesV97: String,
+        val updateNotesV96: String,
+        val wirelessReason: String,
+    )
+
+    private fun fixturesFor(lang: AppLanguage): PreviewFixtures = when (lang) {
+        AppLanguage.EN -> PreviewFixtures(
+            thisDeviceName = "This device",
+            speaker2Name = "XiaoAi Speaker Pro-0002",
+            speaker2Room = "Living room",
+            speaker1Room = "Study",
+            tvRoom = "Living room",
+            noMediaSpeakerName = "Living Room Speaker-0001",
+            appMusic = "Cloud Music",
+            appPodcast = "Podcast FM",
+            appHifi = "Hi-Res Player",
+            appVideo = "Video Player",
+            appReader = "Audiobooks",
+            trackTitle = "Night Voyager",
+            trackArtist = "Starlight Ensemble · Lossless LAN",
+            castingStatus = "Multi-room synced · 48kHz AAC · Phone muted",
+            noMediaReason = "Enable Notification Access to display Now Playing and controls",
+            noMediaStatus = "Tap any speaker to start direct LAN casting",
+            bannerStatus = "Playing on phone · Tap a speaker below to cast",
+            updateNotesV97 = "- MiaoCast rebrand & Wireless Debugging silent capture",
+            updateNotesV96 = "- Local LAN read-only miName & room name parsing",
+            wirelessReason = "Built-in Wireless Debugging is not paired yet. Follow the 5-step guide to enable auto-pairing (notification fallback included).",
+        )
+        AppLanguage.JA -> PreviewFixtures(
+            thisDeviceName = "本機再生",
+            speaker2Name = "XiaoAi Speaker Pro-0002",
+            speaker2Room = "リビング",
+            speaker1Room = "書斎",
+            tvRoom = "リビング",
+            noMediaSpeakerName = "リビングスピーカー-0001",
+            appMusic = "クラウド音楽",
+            appPodcast = "ポッドキャスト",
+            appHifi = "ハイレゾ再生",
+            appVideo = "動画プレイヤー",
+            appReader = "オーディオブック",
+            trackTitle = "夜航星 (Night Voyager)",
+            trackArtist = "星海アンサンブル · LAN ロスレス",
+            castingStatus = "マルチ同期キャスト中 · 48kHz AAC · 端末ミュート",
+            noMediaReason = "「通知へのアクセス」を許可して再生中の曲と操作を表示",
+            noMediaStatus = "スピーカーをタップして LAN 直接キャストを開始",
+            bannerStatus = "本機再生中 · 下のスピーカーをタップして開始",
+            updateNotesV97 = "- MiaoCast リブランドとワイヤレスデバッグ収集に対応",
+            updateNotesV96 = "- LAN 読み取り専用 miName・部屋名取得に対応",
+            wirelessReason = "内蔵ワイヤレスデバッグの初回ペアリングが未完了です。5 ステップガイドで自動ペアリングを行ってください。",
+        )
+        else -> PreviewFixtures(
+            thisDeviceName = "本机播放",
+            speaker2Name = "小爱音箱Pro-0002",
+            speaker2Room = "客厅",
+            speaker1Room = "书房",
+            tvRoom = "Living room",
+            noMediaSpeakerName = "客厅小爱音箱-0001",
+            appMusic = "云音乐",
+            appPodcast = "播客电台",
+            appHifi = "无损播放器",
+            appVideo = "视频客户端",
+            appReader = "听书阅读",
+            trackTitle = "夜航星（Night Voyager）",
+            trackArtist = "星海乐团 · 局域网无损音轨",
+            castingStatus = "多音箱同步投送中 · 48kHz AAC · 本机已静音",
+            noMediaReason = "开启「通知使用权」以显示正在播放并启用播控",
+            noMediaStatus = "点击任意音箱开始局域网直连投送",
+            bannerStatus = "本机出声 · 点击下方音箱开始投送",
+            updateNotesV97 = "- 妙投品牌升级与无线调试无感采集",
+            updateNotesV96 = "- 局域网只读 miName 与房间名解析",
+            wirelessReason = "内置无线调试尚未完成首次配对，请按 5 步向导开启无障碍自动配对并打开无线调试（也支持通知栏长按输入兜底）",
+        )
+    }
+
+    private fun resolvePreviewLanguage(): AppLanguage {
+        val raw = System.getProperty("miaocast.uiPreviewLocale")?.trim()?.lowercase().orEmpty()
+        return when (raw) {
+            "en", "en-us", "en_us" -> AppLanguage.EN
+            "ja", "ja-jp", "ja_jp" -> AppLanguage.JA
+            else -> AppLanguage.ZH_CN
+        }
+    }
 
     @Before
     fun setUp() {
@@ -71,6 +173,9 @@ class UiPreviewRenderTest {
             ?.takeIf { it.isNotBlank() }
             ?: "build/ui-previews"
         outDir = File(dirPath).apply { mkdirs() }
+        previewLang = resolvePreviewLanguage()
+        val app = RuntimeEnvironment.getApplication()
+        AppLocaleManager.saveSelectedLanguage(app, previewLang)
         UiIconCache.clearForTest()
         CastService.running.set(false)
         CastService.lastFailMessage = ""
@@ -168,6 +273,7 @@ class UiPreviewRenderTest {
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
+        val fx = fixturesFor(previewLang)
         val controller = Robolectric.buildActivity(
             MainActivity::class.java,
             Intent().putExtra("ui_preview", true),
@@ -177,7 +283,7 @@ class UiPreviewRenderTest {
         val devices = listOf(
             CastRouteSelection.Device(
                 id = "this",
-                name = "本机播放",
+                name = fx.thisDeviceName,
                 kind = Kind.THIS_DEVICE,
                 castable = true,
                 selected = false,
@@ -193,12 +299,12 @@ class UiPreviewRenderTest {
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.11",
-                name = "小爱音箱Pro-0002",
+                name = fx.speaker2Name,
                 kind = Kind.SPEAKER,
                 selected = true,
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
-                roomName = "客厅",
+                roomName = fx.speaker2Room,
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.12",
@@ -207,7 +313,7 @@ class UiPreviewRenderTest {
                 selected = false,
                 castable = true,
                 protocol = CastProtocol.MIPLAY,
-                roomName = "Living room",
+                roomName = fx.tvRoom,
             ),
         )
 
@@ -232,14 +338,14 @@ class UiPreviewRenderTest {
         }
 
         val mockApps = listOf(
-            LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
-            LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
-            LaunchableApp("com.example.hifi", "无损播放器", hasMainLauncher = true),
+            LaunchableApp("com.example.music", fx.appMusic, hasMainLauncher = true),
+            LaunchableApp("com.example.podcast", fx.appPodcast, hasMainLauncher = true),
+            LaunchableApp("com.example.hifi", fx.appHifi, hasMainLauncher = true),
         )
 
         val nowPlaying = NowPlayingInfo(
-            title = "夜航星（Night Voyager）",
-            artist = "星海乐团 · 局域网无损音轨",
+            title = fx.trackTitle,
+            artist = fx.trackArtist,
             durationMs = 248_000L,
             positionMs = 94_000L,
             isPlaying = true,
@@ -263,7 +369,7 @@ class UiPreviewRenderTest {
             previewLaunchableApps = mockApps,
             previewFavoriteSources = mockFavorites,
             previewSelectedPackage = "com.example.music",
-            previewSelectedLabel = "云音乐",
+            previewSelectedLabel = fx.appMusic,
             previewAutoDetected = true,
             previewMasterVolume = 58,
             previewSpeakerVolumes = mapOf(
@@ -272,7 +378,7 @@ class UiPreviewRenderTest {
             ),
             previewCasting = true,
             previewStats = stats,
-            previewStatusText = "多音箱同步投送中 · 48kHz AAC · 本机已静音",
+            previewStatusText = fx.castingStatus,
         )
 
         val bitmap = captureActivityBitmap(activity)
@@ -282,6 +388,7 @@ class UiPreviewRenderTest {
     }
 
     private fun renderMainNoMediaDark(): Bitmap {
+        val fx = fixturesFor(previewLang)
         val controller = Robolectric.buildActivity(
             MainActivity::class.java,
             Intent().putExtra("ui_preview", true),
@@ -291,14 +398,14 @@ class UiPreviewRenderTest {
         val devices = listOf(
             CastRouteSelection.Device(
                 id = "this",
-                name = "本机播放",
+                name = fx.thisDeviceName,
                 kind = Kind.THIS_DEVICE,
                 castable = true,
                 selected = true,
             ),
             CastRouteSelection.Device(
                 id = "192.0.2.10",
-                name = "客厅小爱音箱-0001",
+                name = fx.noMediaSpeakerName,
                 kind = Kind.SPEAKER,
                 selected = false,
                 castable = true,
@@ -308,18 +415,18 @@ class UiPreviewRenderTest {
 
         activity.applyUiPreviewStateForTest(
             isDark = true,
-            previewNowPlaying = NowPlayingInfo.unavailable("开启「通知使用权」以显示正在播放并启用播控"),
+            previewNowPlaying = NowPlayingInfo.unavailable(fx.noMediaReason),
             previewDevices = devices,
             previewLaunchableApps = listOf(
-                LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
-                LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
+                LaunchableApp("com.example.music", fx.appMusic, hasMainLauncher = true),
+                LaunchableApp("com.example.podcast", fx.appPodcast, hasMainLauncher = true),
             ),
             previewSelectedPackage = "",
             previewSelectedLabel = "",
             previewMasterVolume = 40,
             previewCasting = false,
             previewStats = null,
-            previewStatusText = "点击任意音箱开始局域网直连投送",
+            previewStatusText = fx.noMediaStatus,
         )
 
         val bitmap = captureActivityBitmap(activity)
@@ -341,6 +448,7 @@ class UiPreviewRenderTest {
     }
 
     private fun seedMockUpdateAvailable() {
+        val fx = fixturesFor(previewLang)
         val ctx = RuntimeEnvironment.getApplication()
         AppUpdateManager.resetForTest()
         AppUpdateManager.currentVersionProvider = { "0.9.5-release" }
@@ -354,10 +462,10 @@ class UiPreviewRenderTest {
               "latest_version": "0.9.7",
               "is_prerelease": false,
               "published_at": "2026-11-22T08:00:00Z",
-              "release_notes": "v0.9.7\n- 妙投品牌升级与无线调试无感采集\n\nv0.9.6\n- 局域网只读 miName 与房间名解析",
+              "release_notes": "v0.9.7\n${fx.updateNotesV97}\n\nv0.9.6\n${fx.updateNotesV96}",
               "changelog_entries": [
-                {"tag":"v0.9.7","version":"0.9.7","prerelease":false,"published_at":"2026-11-22T08:00:00Z","notes":"- 妙投品牌升级与无线调试无感采集"},
-                {"tag":"v0.9.6","version":"0.9.6","prerelease":false,"published_at":"2026-11-21T14:00:00Z","notes":"- 局域网只读 miName 与房间名解析"}
+                {"tag":"v0.9.7","version":"0.9.7","prerelease":false,"published_at":"2026-11-22T08:00:00Z","notes":"${fx.updateNotesV97}"},
+                {"tag":"v0.9.6","version":"0.9.6","prerelease":false,"published_at":"2026-11-21T14:00:00Z","notes":"${fx.updateNotesV96}"}
               ],
               "versions_behind": 2,
               "changelog_truncated": false,
@@ -406,6 +514,7 @@ class UiPreviewRenderTest {
     }
 
     private fun renderMainWithUpdateBanner(isDark: Boolean): Bitmap {
+        val fx = fixturesFor(previewLang)
         seedMockUpdateAvailable()
         val controller = Robolectric.buildActivity(
             MainActivity::class.java,
@@ -413,20 +522,20 @@ class UiPreviewRenderTest {
         ).setup()
         val activity = controller.get()
         val devices = listOf(
-            CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true, selected = true),
-            CastRouteSelection.Device("192.0.2.10", "小爱音箱Pro-0002", Kind.SPEAKER, castable = true, selected = false, protocol = CastProtocol.MIPLAY, roomName = "客厅"),
+            CastRouteSelection.Device("this", fx.thisDeviceName, Kind.THIS_DEVICE, true, selected = true),
+            CastRouteSelection.Device("192.0.2.10", fx.speaker2Name, Kind.SPEAKER, castable = true, selected = false, protocol = CastProtocol.MIPLAY, roomName = fx.speaker2Room),
         )
         activity.applyUiPreviewStateForTest(
             isDark = isDark,
-            previewNowPlaying = NowPlayingInfo.unavailable("开启「通知使用权」以显示正在播放并启用播控"),
+            previewNowPlaying = NowPlayingInfo.unavailable(fx.noMediaReason),
             previewDevices = devices,
-            previewLaunchableApps = listOf(LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true)),
+            previewLaunchableApps = listOf(LaunchableApp("com.example.music", fx.appMusic, hasMainLauncher = true)),
             previewSelectedPackage = "com.example.music",
-            previewSelectedLabel = "云音乐",
+            previewSelectedLabel = fx.appMusic,
             previewMasterVolume = 40,
             previewCasting = false,
             previewStats = null,
-            previewStatusText = "本机出声 · 点击下方音箱开始投送",
+            previewStatusText = fx.bannerStatus,
         )
         val bitmap = captureActivityBitmap(activity)
         controller.pause().stop().destroy()
@@ -436,17 +545,18 @@ class UiPreviewRenderTest {
     }
 
     private fun renderAppPicker(isDark: Boolean): Bitmap {
+        val fx = fixturesFor(previewLang)
         val controller = Robolectric.buildActivity(
             AppPickerActivity::class.java,
             Intent().putExtra("ui_preview", true),
         ).setup()
         val activity = controller.get()
         val apps = listOf(
-            LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
-            LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
-            LaunchableApp("com.example.hifi", "无损播放器", hasMainLauncher = true),
-            LaunchableApp("com.example.video", "视频客户端", hasMainLauncher = true),
-            LaunchableApp("com.example.reader", "听书阅读", hasMainLauncher = true),
+            LaunchableApp("com.example.music", fx.appMusic, hasMainLauncher = true),
+            LaunchableApp("com.example.podcast", fx.appPodcast, hasMainLauncher = true),
+            LaunchableApp("com.example.hifi", fx.appHifi, hasMainLauncher = true),
+            LaunchableApp("com.example.video", fx.appVideo, hasMainLauncher = true),
+            LaunchableApp("com.example.reader", fx.appReader, hasMainLauncher = true),
         )
         val favorites = listOf(
             FavoriteAudioSource("com.example.music", autoDetectEnabled = true),
@@ -476,6 +586,7 @@ class UiPreviewRenderTest {
             accessibilityEnabled = false,
             paired = false,
             connectionVerified = false,
+            strings = WirelessDebugOnboardingState.Strings.fromContext(activity),
         )
         activity.applyUiPreviewStateForTest(
             isDark = isDark,
@@ -489,15 +600,14 @@ class UiPreviewRenderTest {
     }
 
     private fun renderWirelessPrecheckDialogOverlay(isDark: Boolean): Bitmap {
+        val fx = fixturesFor(previewLang)
         val controller = Robolectric.buildActivity(
             MainActivity::class.java,
             Intent().putExtra("ui_preview", true),
         ).setup()
         val activity = controller.get()
         seedCastingStateOnMain(activity, isDark = isDark)
-        val dialog = activity.openWirelessPrecheckDialogForTest(
-            "内置无线调试尚未完成首次配对，请按 5 步向导开启无障碍自动配对并打开无线调试（也支持通知栏长按输入兜底）",
-        )
+        val dialog = activity.openWirelessPrecheckDialogForTest(fx.wirelessReason)
         val bitmap = captureActivityWithDialogOverlay(activity, dialog, maxWidthFraction = 0.94f)
         runCatching { dialog.dismiss() }
         controller.pause().stop().destroy()
@@ -507,7 +617,7 @@ class UiPreviewRenderTest {
 
     private fun renderWirelessGuideWithFloatingKeypad(isDark: Boolean): Bitmap {
         val base = renderWirelessGuide(isDark = isDark)
-        val ctx = RuntimeEnvironment.getApplication()
+        val ctx = AppLocaleManager.localizedContext(RuntimeEnvironment.getApplication())
         val overlayCard = PairingFloatingOverlay.buildOverlayCardForTest(
             context = ctx,
             isDark = isDark,
@@ -612,11 +722,12 @@ class UiPreviewRenderTest {
     }
 
     private fun seedCastingStateOnMain(activity: MainActivity, isDark: Boolean) {
+        val fx = fixturesFor(previewLang)
         val devices = listOf(
-            CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true, selected = false),
-            CastRouteSelection.Device("192.0.2.10", "Sound Pro-0001", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = "书房"),
-            CastRouteSelection.Device("192.0.2.11", "小爱音箱Pro-0002", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = "客厅"),
-            CastRouteSelection.Device("192.0.2.12", "REDMI G Pro 27U", Kind.TV, selected = false, castable = true, protocol = CastProtocol.MIPLAY, roomName = "Living room"),
+            CastRouteSelection.Device("this", fx.thisDeviceName, Kind.THIS_DEVICE, true, selected = false),
+            CastRouteSelection.Device("192.0.2.10", "Sound Pro-0001", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.speaker1Room),
+            CastRouteSelection.Device("192.0.2.11", fx.speaker2Name, Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.speaker2Room),
+            CastRouteSelection.Device("192.0.2.12", "REDMI G Pro 27U", Kind.TV, selected = false, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.tvRoom),
         )
         val stats = JSONObject().apply {
             put(
@@ -628,13 +739,13 @@ class UiPreviewRenderTest {
             )
         }
         val mockApps = listOf(
-            LaunchableApp("com.example.music", "云音乐", hasMainLauncher = true),
-            LaunchableApp("com.example.podcast", "播客电台", hasMainLauncher = true),
-            LaunchableApp("com.example.hifi", "无损播放器", hasMainLauncher = true),
+            LaunchableApp("com.example.music", fx.appMusic, hasMainLauncher = true),
+            LaunchableApp("com.example.podcast", fx.appPodcast, hasMainLauncher = true),
+            LaunchableApp("com.example.hifi", fx.appHifi, hasMainLauncher = true),
         )
         val nowPlaying = NowPlayingInfo(
-            title = "夜航星（Night Voyager）",
-            artist = "星海乐团 · 局域网无损音轨",
+            title = fx.trackTitle,
+            artist = fx.trackArtist,
             durationMs = 248_000L,
             positionMs = 94_000L,
             isPlaying = true,
@@ -655,13 +766,13 @@ class UiPreviewRenderTest {
                 FavoriteAudioSource("com.example.hifi", autoDetectEnabled = true),
             ),
             previewSelectedPackage = "com.example.music",
-            previewSelectedLabel = "云音乐",
+            previewSelectedLabel = fx.appMusic,
             previewAutoDetected = true,
             previewMasterVolume = 58,
             previewSpeakerVolumes = mapOf("192.0.2.10" to 62, "192.0.2.11" to 48),
             previewCasting = true,
             previewStats = stats,
-            previewStatusText = "多音箱同步投送中 · 48kHz AAC · 本机已静音",
+            previewStatusText = fx.castingStatus,
         )
     }
 

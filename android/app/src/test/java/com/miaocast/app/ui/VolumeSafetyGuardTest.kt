@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.miaocast.app.CastService
 import com.miaocast.app.MainActivity
+import com.miaocast.app.R
 import com.miaocast.app.SettingsActivity
 import com.miaocast.app.cast.CastProtocol
 import com.miaocast.app.cast.CastRouteSelection
@@ -135,7 +136,7 @@ class VolumeSafetyGuardTest {
         assertNull("must not send ACTION_VOLUME before confirmation", nextVolumeIntent(shadowApp))
 
         // 2. 点击「保持原音量（30%）」-> 关闭弹窗且音量保持 30
-        findTextView(d1.window!!.decorView, "保持原音量（30%）")!!.performClick()
+        findTextView(d1.window!!.decorView, activity.getString(R.string.volume_guard_keep, 30))!!.performClick()
         assertFalse(d1.isShowing)
         assertEquals(30, activity.currentMasterVolumeForTest())
         assertNull(nextVolumeIntent(shadowApp))
@@ -143,7 +144,7 @@ class VolumeSafetyGuardTest {
         // 3. 再次 30 -> 80 并点击「确认调至 80%」-> 提交 80 并带 confirmed=true 发给服务
         val d2 = activity.triggerMasterVolumeChangeForTest(80)
         assertNotNull(d2)
-        findTextView(d2!!.window!!.decorView, "确认调至 80%")!!.performClick()
+        findTextView(d2!!.window!!.decorView, activity.getString(R.string.volume_guard_confirm, 80))!!.performClick()
         assertEquals(80, activity.currentMasterVolumeForTest())
         assertEquals(80, activity.currentSpeakerVolumeForTest("192.0.2.10"))
         val sentConfirmed = nextVolumeIntent(shadowApp)
@@ -186,7 +187,7 @@ class VolumeSafetyGuardTest {
         // 总音量拉到 85：因 192.0.2.11 仍在 30%，应弹窗确认；点取消后两台各自保持 75 / 30
         val groupDialog = activity.triggerMasterVolumeChangeForTest(85)
         assertNotNull(groupDialog)
-        findTextView(groupDialog!!.window!!.decorView, "保持原音量（75%）")!!.performClick()
+        findTextView(groupDialog!!.window!!.decorView, activity.getString(R.string.volume_guard_keep, 75))!!.performClick()
         assertEquals(75, activity.currentMasterVolumeForTest())
         assertEquals(75, activity.currentSpeakerVolumeForTest("192.0.2.10"))
         assertEquals(30, activity.currentSpeakerVolumeForTest("192.0.2.11"))
@@ -195,7 +196,7 @@ class VolumeSafetyGuardTest {
         // 单音箱 192.0.2.11 从 30 -> 82 弹窗，确认后仅针对该 IP 下发 confirmed=true
         val singleDialog = activity.triggerSpeakerVolumeChangeForTest("192.0.2.11", "卧室音箱", 82)
         assertNotNull(singleDialog)
-        findTextView(singleDialog!!.window!!.decorView, "确认调至 82%")!!.performClick()
+        findTextView(singleDialog!!.window!!.decorView, activity.getString(R.string.volume_guard_confirm, 82))!!.performClick()
         assertEquals(82, activity.currentSpeakerVolumeForTest("192.0.2.11"))
         val sentSingle = nextVolumeIntent(shadowApp)
         assertNotNull(sentSingle)
@@ -207,9 +208,10 @@ class VolumeSafetyGuardTest {
     @Test
     fun settingsActivityDisplaysVolumeGuardControls() {
         val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
-        val root = controller.get().window.decorView
-        assertNotNull(findTextView(root, "高音量保护"))
-        assertNotNull(findTextView(root, "安全音量上限"))
+        val activity = controller.get()
+        val root = activity.window.decorView
+        assertNotNull(findTextView(root, activity.getString(R.string.settings_volume_guard_title)))
+        assertNotNull(findTextView(root, activity.getString(R.string.settings_volume_limit_title)))
         assertNotNull(findTextView(root, "60%"))
     }
 

@@ -23,6 +23,13 @@ object ProtocolBadge {
     fun contentDescription(protocol: CastProtocol): String =
         "协议 ${protocol.labelZh}" + if (protocol.castImplemented) "" else "（本 App 尚未实现投送）"
 
+    fun contentDescription(context: Context, protocol: CastProtocol): String =
+        if (protocol.castImplemented) {
+            context.getString(R.string.protocol_desc_supported, protocol.labelZh)
+        } else {
+            context.getString(R.string.protocol_desc_unsupported, protocol.labelZh)
+        }
+
     /**
      * 真实设备行应显示的协议：仅真实所属；本机返回 null。
      * 当前发现栈一律 MiPlay；禁止给 MiPlay 设备标成其它协议。
@@ -49,14 +56,14 @@ object ProtocolBadge {
         image.visibility = View.VISIBLE
         image.setImageResource(drawableRes(protocol))
         image.imageTintList = ColorStateList.valueOf(tintColor)
-        image.contentDescription = contentDescription(protocol)
+        image.contentDescription = contentDescription(image.context, protocol)
     }
 
     fun createLegendView(context: Context, protocol: CastProtocol, selectedPreview: Boolean = false): ImageView {
         return ImageView(context).apply {
             setImageResource(drawableRes(protocol))
             imageTintList = ColorStateList.valueOf(tintForRow(selectedPreview))
-            contentDescription = contentDescription(protocol)
+            contentDescription = contentDescription(context, protocol)
         }
     }
 }

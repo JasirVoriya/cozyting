@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import com.miaocast.app.R
 import com.miaocast.app.compat.ShellCaptureCompat
+import com.miaocast.app.ui.AppLocaleManager
 import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 
@@ -90,22 +91,23 @@ object PairingNotificationGuide {
     }
 
     fun postWaitingForCodeNotification(context: Context, detectedPort: Int) {
-        val nm = ensureChannels(context) ?: return
+        val locCtx = AppLocaleManager.localizedContext(context)
+        val nm = ensureChannels(locCtx) ?: return
         val remoteInput = RemoteInput.Builder(KEY_PAIRING_CODE)
-            .setLabel("输入 6 位无线调试配对码")
+            .setLabel(locCtx.getString(R.string.pairing_notif_input_label))
             .build()
 
-        val replyIntent = Intent(context, WirelessPairingReceiver::class.java)
+        val replyIntent = Intent(locCtx, WirelessPairingReceiver::class.java)
             .setAction(ACTION_SUBMIT_PAIRING_CODE)
         val replyPi = PendingIntent.getBroadcast(
-            context,
+            locCtx,
             2021,
             replyIntent,
             ShellCaptureCompat.mutablePendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT),
         )
         val replyAction = Notification.Action.Builder(
             null,
-            "输入 6 位配对码",
+            locCtx.getString(R.string.pairing_notif_action_input),
             replyPi,
         )
             .setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY)
@@ -113,10 +115,10 @@ object PairingNotificationGuide {
             .addRemoteInput(remoteInput)
             .build()
 
-        val cancelIntent = Intent(context, WirelessPairingReceiver::class.java)
+        val cancelIntent = Intent(locCtx, WirelessPairingReceiver::class.java)
             .setAction(ACTION_CANCEL_PAIRING)
         val cancelPi = PendingIntent.getBroadcast(
-            context,
+            locCtx,
             2022,
             cancelIntent,
             ShellCaptureCompat.immutablePendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT),
@@ -131,18 +133,18 @@ object PairingNotificationGuide {
         }
 
         val title = if (isReady) {
-            "无线调试配对就绪（端口 $detectedPort）"
+            locCtx.getString(R.string.pairing_notif_title_ready, detectedPort)
         } else {
-            "等待打开「使用配对码配对设备」弹窗…"
+            locCtx.getString(R.string.pairing_notif_title_waiting)
         }
         val text = if (isReady) {
-            "请点下方「输入 6 位配对码」填入数字。若未看到输入按钮，请【长按本条通知】（或单指下滑本通知）展开输入框，勿切回 App"
+            locCtx.getString(R.string.pairing_notif_text_ready)
         } else {
-            "进入「无线调试 → 使用配对码配对设备」。若未开启自动识别，下拉通知栏并【长按本条通知】即可展开配对码输入框"
+            locCtx.getString(R.string.pairing_notif_text_waiting)
         }
 
         val channelId = if (isReady) CHANNEL_ID else CHANNEL_ID_WAITING
-        val builder = Notification.Builder(context, channelId)
+        val builder = Notification.Builder(locCtx, channelId)
             .setSmallIcon(R.drawable.ic_stat_miplay)
             .setContentTitle(title)
             .setContentText(text)
@@ -151,16 +153,23 @@ object PairingNotificationGuide {
             .setOngoing(true)
             .setOnlyAlertOnce(!shouldTriggerHeadsUp)
             .addAction(replyAction)
-            .addAction(Notification.Action.Builder(null, "取消", cancelPi).build())
+            .addAction(Notification.Action.Builder(null, locCtx.getString(R.string.common_cancel), cancelPi).build())
         nm.notify(NOTIF_ID, builder.build())
     }
 
     fun postResultNotification(context: Context, success: Boolean, messageZh: String) {
-        val nm = ensureChannels(context) ?: return
+        val locCtx = AppLocaleManager.localizedContext(context)
+        val nm = ensureChannels(locCtx) ?: return
         lastHeadsUpPort = 0
-        val notif = Notification.Builder(context, CHANNEL_ID)
+        val notif = Notification.Builder(locCtx, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_miplay)
-            .setContentTitle(if (success) "无线调试配对成功" else "无线调试配对失败")
+            .setContentTitle(
+                if (success) {
+                    locCtx.getString(R.string.pairing_notif_result_ok_title)
+                } else {
+                    locCtx.getString(R.string.pairing_notif_result_fail_title)
+                },
+            )
             .setContentText(messageZh)
             .setStyle(Notification.BigTextStyle().bigText(messageZh))
             .setAutoCancel(true)
@@ -171,14 +180,14 @@ object PairingNotificationGuide {
     private fun ensureChannels(context: Context): NotificationManager? {
         val nm = context.applicationContext.getSystemService(NotificationManager::class.java) ?: return null
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID_WAITING, "无线调试等待提示（静默）", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "进入系统开发者选项前的静默状态提示"
+            NotificationChannel(CHANNEL_ID_WAITING, context.getString(R.string.pairing_notif_channel_waiting), NotificationManager.IMPORTANCE_LOW).apply {
+                description = context.getString(R.string.pairing_notif_channel_waiting_desc)
                 setShowBadge(false)
             },
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "无线调试配对码输入横幅", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "检测到无线调试配对窗口时在顶部弹出 6 位配对码输入按钮"
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.pairing_notif_channel_active), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = context.getString(R.string.pairing_notif_channel_active_desc)
                 enableVibration(false)
             },
         )

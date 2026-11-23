@@ -1,5 +1,7 @@
 package com.miaocast.app.update
 
+import android.content.Context
+import com.miaocast.app.R
 import org.json.JSONObject
 
 /**
@@ -7,10 +9,12 @@ import org.json.JSONObject
  * - `STABLE`：仅追踪正式版；
  * - `PRERELEASE`：同时追踪预览版（RC）与正式版，正式版发布后自动平滑升至正式版。
  */
-enum class UpdateChannel(val id: String, val labelZh: String) {
-    STABLE("stable", "稳定版"),
-    PRERELEASE("prerelease", "预览版 (RC)"),
+enum class UpdateChannel(val id: String, val labelZh: String, val labelRes: Int) {
+    STABLE("stable", "稳定版", R.string.update_channel_stable),
+    PRERELEASE("prerelease", "预览版 (RC)", R.string.update_channel_prerelease),
     ;
+
+    fun label(context: Context): String = context.getString(labelRes)
 
     companion object {
         fun fromId(raw: String?): UpdateChannel? =
@@ -59,9 +63,17 @@ data class ChangelogEntry(
     val prerelease: Boolean,
     val publishedAt: String,
     val notes: String,
+    val notesIsFallback: Boolean = false,
 ) {
     val shortDate: String
         get() = if (publishedAt.length >= 10) publishedAt.substring(0, 10) else publishedAt
+
+    fun displayNotes(context: Context): String =
+        if (notesIsFallback || notes.isBlank()) {
+            context.getString(R.string.update_fallback_empty_notes)
+        } else {
+            notes
+        }
 }
 
 enum class UpdateDecisionStatus(val wire: String) {
@@ -98,6 +110,9 @@ data class UpdateDecision(
     val sha256SumsUrl: String,
     val installable: Boolean,
     val error: String,
+    val errorCode: String = "",
+    val errorDetail: String = "",
+    val notesIsFallback: Boolean = false,
 ) {
     val hasNewerVersion: Boolean
         get() = status == UpdateDecisionStatus.UPDATE_AVAILABLE ||
@@ -106,6 +121,21 @@ data class UpdateDecision(
 
     val shortDate: String
         get() = if (publishedAt.length >= 10) publishedAt.substring(0, 10) else publishedAt
+
+    fun localizedError(context: Context): String = when (errorCode) {
+        "invalid_current_version" -> context.getString(R.string.update_err_invalid_version)
+        "invalid_json" -> context.getString(R.string.update_err_invalid_json)
+        "remote_error" -> context.getString(R.string.update_err_remote, errorDetail.ifBlank { error })
+        "unrecognized_schema" -> context.getString(R.string.update_err_unrecognized_schema)
+        else -> error.ifBlank { context.getString(R.string.settings_update_parse_err) }
+    }
+
+    fun localizedReleaseNotes(context: Context): String =
+        if (notesIsFallback || releaseNotes.isBlank()) {
+            context.getString(R.string.update_fallback_empty_notes)
+        } else {
+            releaseNotes
+        }
 
     companion object {
         fun fromJson(rawJson: String): UpdateDecision {
@@ -122,6 +152,7 @@ data class UpdateDecision(
                         prerelease = item.optBoolean("prerelease", false),
                         publishedAt = item.optString("published_at"),
                         notes = item.optString("notes"),
+                        notesIsFallback = item.optBoolean("notes_is_fallback", false),
                     )
                 }
             }
@@ -144,6 +175,9 @@ data class UpdateDecision(
                 sha256SumsUrl = obj.optString("sha256sums_url"),
                 installable = obj.optBoolean("installable", false),
                 error = obj.optString("error"),
+                errorCode = obj.optString("error_code"),
+                errorDetail = obj.optString("error_detail"),
+                notesIsFallback = obj.optBoolean("notes_is_fallback", false),
             )
         }
 

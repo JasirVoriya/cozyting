@@ -8,6 +8,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.miaocast.app.R
 import com.miaocast.app.SettingsActivity
 import com.miaocast.app.capture.shell.PairingNotificationGuide
 import com.miaocast.app.capture.shell.WirelessDebugGuideActivity
@@ -125,7 +126,7 @@ class SettingsScrollAndSwitchTest {
         assertEquals(targetScrollY, scroll.scrollY)
 
         // 1) 点击非 renderUi 开关（「投送时手机静音」）：圆点移动且不回顶
-        val muteRow = findSwitchRowByTitle(scroll, "投送时手机静音")
+        val muteRow = findSwitchRowByTitle(scroll, activity.getString(R.string.settings_local_mute_title))
         assertNotNull(muteRow)
         val muteKnobBefore = findTrackFrame(muteRow!!).getChildAt(0).left
         muteRow.performClick()
@@ -138,7 +139,7 @@ class SettingsScrollAndSwitchTest {
         assertEquals("点击普通开关后滚动位置应保持不变", targetScrollY, scroll.scrollY)
 
         // 2) 点击会触发 renderUi() 的「高音量保护」：复用同一 ScrollView 且不回顶
-        val guardRow = findSwitchRowByTitle(scroll, "高音量保护")
+        val guardRow = findSwitchRowByTitle(scroll, activity.getString(R.string.settings_volume_guard_title))
         assertNotNull(guardRow)
         guardRow!!.performClick()
         shadowOf(Looper.getMainLooper()).idle()
@@ -153,7 +154,7 @@ class SettingsScrollAndSwitchTest {
         // 3) 点击「更新通道」中的未选中项（会连续触发两次 renderUi）：仍保持当前滚动位置
         val targetScroll2 = minOf(280, newMaxScroll)
         scroll.scrollTo(0, targetScroll2)
-        val previewChannelBtn = findTextViewByText(scroll, "预览版 (RC)")
+        val previewChannelBtn = findTextViewByText(scroll, activity.getString(R.string.update_channel_prerelease))
         assertNotNull(previewChannelBtn)
         previewChannelBtn!!.performClick()
         shadowOf(Looper.getMainLooper()).idle()
@@ -181,18 +182,22 @@ class SettingsScrollAndSwitchTest {
             shadowOf(Looper.getMainLooper()).idle()
 
             val allTexts = collectTexts(activity.window.decorView)
-            val scopeIdx = allTexts.indexOf("捕获范围")
-            val pairingIdx = allTexts.indexOf("无线调试配对")
-            assertTrue("应展示精简标签「捕获范围」", scopeIdx >= 0)
-            assertTrue("应展示单行入口「无线调试配对」", pairingIdx >= 0)
-            assertTrue("「捕获范围」应位于「无线调试配对」之前，避免策略与配对割裂", scopeIdx < pairingIdx)
-            assertTrue("已配对时应显示「已配对」状态胶囊", allTexts.contains("已配对"))
+            val scopeLabel = activity.getString(R.string.settings_capture_scope_title)
+            val pairingLabel = activity.getString(R.string.settings_wireless_pair_title)
+            val pairedBadge = activity.getString(R.string.settings_wireless_paired)
+            val scopeIdx = allTexts.indexOf(scopeLabel)
+            val pairingIdx = allTexts.indexOf(pairingLabel)
+            assertTrue("应展示精简标签「$scopeLabel」", scopeIdx >= 0)
+            assertTrue("应展示单行入口「$pairingLabel」", pairingIdx >= 0)
+            assertTrue("「$scopeLabel」应位于「$pairingLabel」之前，避免策略与配对割裂", scopeIdx < pairingIdx)
+            assertTrue("已配对时应显示「$pairedBadge」状态胶囊", allTexts.contains(pairedBadge))
 
             assertNull("不应再出现重复的「查看向导 / 重新配对」按钮", findTextViewByText(activity.window.decorView, "查看向导 / 重新配对"))
-            assertNull("设置页不应再单独平铺「测试连接」按钮", findTextViewByText(activity.window.decorView, "测试连接"))
-            assertNull("设置页不应再平铺全宽「清除本机配对证书」按钮", findTextViewByText(activity.window.decorView, "清除本机配对证书"))
+            assertNull("设置页不应再单独平铺「测试连接」按钮", findTextViewByText(activity.window.decorView, activity.getString(R.string.onboard_step5_action_test)))
+            assertNull("设置页不应再平铺全宽「清除本机配对证书」按钮", findTextViewByText(activity.window.decorView, activity.getString(R.string.guide_btn_clear_cert)))
 
-            val statusLines = allTexts.filter { it.startsWith("当前状态：") }
+            val statusPrefix = activity.getString(R.string.settings_current_status, "")
+            val statusLines = allTexts.filter { it.startsWith(statusPrefix) }
             assertEquals("投送时手机静音下方应保留一行实时状态", 1, statusLines.size)
             assertFalse("不应在实时状态下方追加重复说明行", statusLines.first().contains("\n说明："))
 
@@ -221,13 +226,14 @@ class SettingsScrollAndSwitchTest {
                     paired = true,
                     connectionVerified = true,
                     connectedPort = 41235,
+                    strings = WirelessDebugOnboardingState.Strings.fromContext(activity),
                 ),
                 expandTips = false,
             )
             shadowOf(Looper.getMainLooper()).idle()
 
-            val clearBtn = findTextViewByText(activity.window.decorView, "清除本机配对证书")
-            assertNotNull("向导页在已配对状态下应提供「清除本机配对证书」入口", clearBtn)
+            val clearBtn = findTextViewByText(activity.window.decorView, activity.getString(R.string.guide_btn_clear_cert))
+            assertNotNull("向导页在已配对状态下应提供清除本机配对证书入口", clearBtn)
             clearBtn!!.performClick()
             shadowOf(Looper.getMainLooper()).idle()
 
@@ -235,8 +241,8 @@ class SettingsScrollAndSwitchTest {
             assertNotNull("点击清除证书应弹出 Style B 二次确认弹窗", dialog)
             assertTrue("点击确认前尚未清除证书", keyStore.isPaired())
 
-            val confirmBtn = findTextViewByText(dialog!!.window!!.decorView, "确认清除")
-            assertNotNull("确认弹窗应包含「确认清除」按钮", confirmBtn)
+            val confirmBtn = findTextViewByText(dialog!!.window!!.decorView, activity.getString(R.string.guide_clear_dialog_confirm))
+            assertNotNull("确认弹窗应包含确认清除按钮", confirmBtn)
             confirmBtn!!.performClick()
             shadowOf(Looper.getMainLooper()).idle()
 

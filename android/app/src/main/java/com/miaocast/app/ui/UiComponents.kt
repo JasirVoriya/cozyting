@@ -758,7 +758,7 @@ object UiComponents {
                 context = activity,
                 palette = palette,
                 iconRes = R.drawable.ic_ui_close,
-                contentDesc = "关闭",
+                contentDesc = activity.getString(R.string.common_close),
                 sizeDp = 30,
                 iconDp = 15,
             ) {

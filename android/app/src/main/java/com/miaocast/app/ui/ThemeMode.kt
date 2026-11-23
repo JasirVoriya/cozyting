@@ -3,6 +3,7 @@ package com.miaocast.app.ui
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import com.miaocast.app.R
 import com.miaocast.app.capture.CaptureEngineMode
 import com.miaocast.app.capture.CaptureScopeMode
 import com.miaocast.app.update.UpdateChannel
@@ -10,11 +11,13 @@ import com.miaocast.app.update.UpdateChannel
 /**
  * 跨端主题模式（与 `design/tokens.json` 和后续 iOS SwiftUI 对齐）。
  */
-enum class ThemeMode(val id: String, val labelZh: String) {
-    SYSTEM("system", "跟随系统"),
-    LIGHT("light", "浅色"),
-    DARK("dark", "深色"),
+enum class ThemeMode(val id: String, val labelZh: String, val labelRes: Int) {
+    SYSTEM("system", "跟随系统", R.string.theme_system),
+    LIGHT("light", "浅色", R.string.theme_light),
+    DARK("dark", "深色", R.string.theme_dark),
     ;
+
+    fun label(context: Context): String = context.getString(labelRes)
 
     companion object {
         fun fromId(raw: String?): ThemeMode =
@@ -150,9 +153,14 @@ class PrefsCastSettingsStore(context: Context) {
     fun isDark(context: Context): Boolean =
         ThemeMode.resolveIsDark(themeMode, ThemeMode.isSystemNight(context))
 
+    var appLanguage: AppLanguage
+        get() = AppLanguage.fromId(prefs.getString(KEY_APP_LANGUAGE, AppLanguage.SYSTEM.id))
+        set(value) = prefs.edit().putString(KEY_APP_LANGUAGE, value.id).apply()
+
     companion object {
         private const val PREFS = "miaocast_ui_settings"
         private const val KEY_THEME = "theme_mode"
+        private const val KEY_APP_LANGUAGE = "app_language"
         private const val KEY_KEEP_LOCAL = "keep_local_output"
         private const val KEY_AUTO_DETECT_SOURCE = "auto_detect_audio_source"
         private const val KEY_VOLUME_GUARD_ENABLED = "volume_guard_enabled"

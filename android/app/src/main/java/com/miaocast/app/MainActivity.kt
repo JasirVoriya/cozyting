@@ -71,6 +71,7 @@ import com.miaocast.app.compat.AcceptanceAudioDefaults
 import com.miaocast.app.compat.BlurCompat
 import com.miaocast.app.compat.NotificationPermissionCompat
 import com.miaocast.app.compat.WindowInsetsApplyCompat
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.LatencyModePreset
 import com.miaocast.app.ui.LatencyModeSelection
 import com.miaocast.app.ui.LatencyModeTone
@@ -192,6 +193,7 @@ class MainActivity : Activity() {
     private var pendingDeviceListRender: Boolean = false
     private var refreshAnim: ObjectAnimator? = null
     private var lastRenderedDark: Boolean = true
+    private var appliedLanguageId: String = ""
     private var lastPromptedWirelessError: String = ""
     private var lastStatusMessage: String = ""
     private var lastStatusKind: StatusBannerKind = StatusBannerKind.HIDDEN
@@ -242,9 +244,15 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
+        appliedLanguageId = AppLocaleManager.readSelectedLanguage(this).id
+        nowPlaying = NowPlayingInfo.unavailable(getString(R.string.common_loading))
         store = PrefsTargetAppStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
         settingsStore = PrefsCastSettingsStore(this)
@@ -252,7 +260,7 @@ class MainActivity : Activity() {
         masterVolume = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
         val cachedDevices = deviceStore.loadDevices()
         routeState = CastRouteSelection.initial(
-            listOf(CastRouteSelection.Device("this", "本机播放", Kind.THIS_DEVICE, true)) + cachedDevices,
+            listOf(CastRouteSelection.Device("this", getString(R.string.main_this_device_name), Kind.THIS_DEVICE, true)) + cachedDevices,
         )
         syncCastStateFromService(forceSyncRoute = true)
         buildUi()
@@ -328,6 +336,11 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (!::settingsStore.isInitialized) return
+        val currentLangId = AppLocaleManager.readSelectedLanguage(this).id
+        if (appliedLanguageId.isNotEmpty() && currentLangId != appliedLanguageId) {
+            recreate()
+            return
+        }
         if (store.hasInitializedFavoriteSources()) {
             favoriteSources = store.loadFavoriteSources()
         }
@@ -371,7 +384,7 @@ class MainActivity : Activity() {
         permissions.forEachIndexed { i, p ->
             val ok = grantResults.getOrNull(i) == PackageManager.PERMISSION_GRANTED
             if (p == Manifest.permission.RECORD_AUDIO && !ok) {
-                showAlertStatus("未授予 RECORD_AUDIO：无法进行播放捕获（不采集麦克风）")
+                showAlertStatus(getString(R.string.main_err_record_audio_denied))
             }
         }
     }
@@ -388,12 +401,11 @@ class MainActivity : Activity() {
         if (bannerDecision == null) {
             banner.visibility = View.GONE
         } else {
-            val suffix = if (bannerDecision.versionsBehind > 1) {
-                "（${bannerDecision.versionsBehind} 个版本更新）"
+            updateBannerText?.text = if (bannerDecision.versionsBehind > 1) {
+                getString(R.string.main_update_banner_multi, bannerDecision.latestTag, bannerDecision.versionsBehind)
             } else {
-                ""
+                getString(R.string.main_update_banner, bannerDecision.latestTag)
             }
-            updateBannerText?.text = "发现新版本 ${bannerDecision.latestTag}$suffix"
             banner.visibility = View.VISIBLE
         }
     }
@@ -541,7 +553,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(dotSize, dotSize).apply { marginEnd = dp(6) }
         }
         headerStatusLabel = TextView(this).apply {
-            text = "本机出声"
+            text = getString(R.string.main_status_this_device)
             textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(palette.textPrimary)
@@ -570,7 +582,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             isClickable = true
             isFocusable = true
-            contentDescription = "切换播放延迟模式"
+            contentDescription = getString(R.string.latency_switch_desc)
             setPadding(dp(10), 0, dp(8), 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -586,7 +598,7 @@ class MainActivity : Activity() {
         updateLatencyCapsuleUi()
         topBar.addView(latencyPill)
 
-        val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, "设置") {
+        val settingsBtn = UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_settings, getString(R.string.title_settings)) {
             startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
         }
         val settingsBadgeSize = dp(8)
@@ -632,7 +644,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
         }
         val bannerAction = TextView(this).apply {
-            text = "查看"
+            text = getString(R.string.main_update_banner_view)
             textSize = 11.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(palette.accentBright)
@@ -645,7 +657,7 @@ class MainActivity : Activity() {
         val bannerClose = ImageView(this).apply {
             setImageResource(R.drawable.ic_ui_close)
             setColorFilter(palette.textSecondary)
-            contentDescription = "关闭更新提示"
+            contentDescription = getString(R.string.main_update_banner_close_desc)
             setPadding(dp(6), dp(6), dp(2), dp(6))
             layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginStart = dp(4) }
             setOnClickListener {
@@ -744,7 +756,7 @@ class MainActivity : Activity() {
             foreground = UiComponents.rippleSurface(Color.TRANSPARENT, artRadius, palette.ripple)
             isClickable = true
             isFocusable = true
-            contentDescription = "打开正在播放的音乐应用"
+            contentDescription = getString(R.string.main_open_music_app_desc)
             setOnClickListener { openNowPlayingApp() }
             addView(albumArt)
             addView(albumAppBadgeWrap)
@@ -759,7 +771,7 @@ class MainActivity : Activity() {
             }
         }
         titleView = TextView(this).apply {
-            text = "未知标题"
+            text = getString(R.string.main_unknown_title)
             setTextColor(palette.textPrimary)
             textSize = 17.5f
             setTypeface(null, Typeface.BOLD)
@@ -772,7 +784,7 @@ class MainActivity : Activity() {
             )
         }
         artistView = TextView(this).apply {
-            text = "未取得正在播放"
+            text = getString(R.string.main_no_now_playing_sub)
             setTextColor(palette.textSecondary)
             textSize = 12.5f
             gravity = Gravity.CENTER_HORIZONTAL
@@ -819,7 +831,7 @@ class MainActivity : Activity() {
                 )
             }
         }
-        controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, "上一首") { nowPlayingTracker?.skipPrevious() })
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, getString(R.string.main_prev_track_desc)) { nowPlayingTracker?.skipPrevious() })
         val playWrapSize = dp(42)
         playBtnIcon = ImageView(this).apply {
             setImageResource(R.drawable.ic_ui_play)
@@ -838,7 +850,7 @@ class MainActivity : Activity() {
             )
             isClickable = true
             isFocusable = true
-            contentDescription = "播放或暂停"
+            contentDescription = getString(R.string.main_play_pause_desc)
             setOnClickListener {
                 if (nowPlayingTracker?.playPause() != true) {
                     openNowPlayingApp()
@@ -847,7 +859,7 @@ class MainActivity : Activity() {
             addView(playBtnIcon)
         }
         controls.addView(playWrap)
-        controls.addView(transportBtn(R.drawable.ic_ui_skip_next, "下一首") { nowPlayingTracker?.skipNext() })
+        controls.addView(transportBtn(R.drawable.ic_ui_skip_next, getString(R.string.main_next_track_desc)) { nowPlayingTracker?.skipNext() })
         meta.addView(controls)
 
         mediaRow.addView(albumArtContainer)
@@ -945,7 +957,7 @@ class MainActivity : Activity() {
             )
             addView(
                 TextView(this@MainActivity).apply {
-                    text = "开启通知使用权以显示曲目与自动识别音源"
+                    text = getString(R.string.main_notif_access_hint)
                     textSize = 12.5f
                     setTextColor(palette.textSecondary)
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -1056,7 +1068,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
         mainTargetTitle = TextView(this).apply {
-            text = "投送音源：未选择"
+            text = getString(R.string.main_source_unselected)
             setTextColor(palette.textPrimary)
             textSize = 14f
             setTypeface(null, Typeface.BOLD)
@@ -1068,7 +1080,7 @@ class MainActivity : Activity() {
             )
         }
         mainTargetAutoBadge = TextView(this).apply {
-            text = "自动识别"
+            text = getString(R.string.main_source_auto_badge)
             textSize = 10f
             setTypeface(null, Typeface.BOLD)
             setTextColor(palette.accentBright)
@@ -1083,7 +1095,7 @@ class MainActivity : Activity() {
         sourceTitleRow.addView(mainTargetTitle)
         sourceTitleRow.addView(mainTargetAutoBadge)
         mainTargetSubtitle = TextView(this).apply {
-            text = "点击选择需要投送的音乐或音频 App"
+            text = getString(R.string.main_source_unselected_sub)
             setTextColor(palette.textSecondary)
             textSize = 11.5f
             maxLines = 1
@@ -1096,7 +1108,7 @@ class MainActivity : Activity() {
             context = this,
             bgColor = palette.accentSoftBg,
             textColor = palette.accentBright,
-            label = "管理",
+            label = getString(R.string.main_source_manage),
         ).apply {
             setOnClickListener { openAppPicker() }
         }
@@ -1154,7 +1166,7 @@ class MainActivity : Activity() {
         }
         devHeader.addView(
             TextView(this).apply {
-                text = "输出设备"
+                text = getString(R.string.main_output_devices)
                 textSize = 12f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textSecondary)
@@ -1162,7 +1174,7 @@ class MainActivity : Activity() {
             },
         )
         deviceCountView = TextView(this).apply {
-            text = "支持多音箱同频投送"
+            text = getString(R.string.main_multiroom_support)
             textSize = 11f
             setTextColor(palette.textTertiary)
         }
@@ -1180,7 +1192,7 @@ class MainActivity : Activity() {
             )
             isClickable = true
             isFocusable = true
-            contentDescription = "重新发现输出设备"
+            contentDescription = getString(R.string.main_refresh_devices_desc)
             setOnClickListener { discover(forceRefreshNames = true) }
             addView(
                 ImageView(this@MainActivity).apply {
@@ -1269,12 +1281,12 @@ class MainActivity : Activity() {
         val activeCount = if (running) maxOf(selectedCount, CastService.activeReceiverIps().size) else selectedCount
         val failed = CastService.lastFailMessage.isNotBlank() && !running && !castRequested
         val (dotColor, label) = when {
-            failed -> palette.statusError to "投送异常"
-            running && activeCount > 0 -> palette.statusSuccess to "投送中 · $activeCount 台"
-            running -> palette.statusWarning to "连接中…"
-            castRequested && selectedCount > 0 -> palette.statusWarning to "连接中…"
-            settingsStore.sourceMode == "silent" -> palette.textTertiary to "静音测试模式"
-            else -> palette.textTertiary to "本机出声"
+            failed -> palette.statusError to getString(R.string.main_status_failed)
+            running && activeCount > 0 -> palette.statusSuccess to getString(R.string.main_status_casting_count, activeCount)
+            running -> palette.statusWarning to getString(R.string.main_status_connecting)
+            castRequested && selectedCount > 0 -> palette.statusWarning to getString(R.string.main_status_connecting)
+            settingsStore.sourceMode == "silent" -> palette.textTertiary to getString(R.string.main_status_silent_mode)
+            else -> palette.textTertiary to getString(R.string.main_status_this_device)
         }
         headerStatusDot.background = UiComponents.roundedDrawable(dotColor, dp(7) / 2f)
         headerStatusLabel.text = label
@@ -1307,7 +1319,7 @@ class MainActivity : Activity() {
         )
         latencyPillIcon.setImageResource(sel.iconRes)
         latencyPillIcon.setColorFilter(fg)
-        latencyPillLabel.text = sel.capsuleLabelZh
+        latencyPillLabel.text = sel.capsuleLabel(this)
         latencyPillLabel.setTextColor(fg)
         latencyPillChevron.setColorFilter(fg)
     }
@@ -1416,8 +1428,8 @@ class MainActivity : Activity() {
             panel.addView(
                 buildMenuRow(
                     iconRes = preset.iconRes,
-                    title = preset.nameZh,
-                    trailing = preset.shortMsZh,
+                    title = preset.name(this),
+                    trailing = preset.shortMs(this),
                     active = active,
                     tone = preset.tone,
                 ) {
@@ -1443,7 +1455,7 @@ class MainActivity : Activity() {
             panel.addView(
                 buildMenuRow(
                     iconRes = sel.iconRes,
-                    title = "自定义",
+                    title = getString(R.string.latency_custom),
                     trailing = "${sel.delayMs}ms",
                     active = true,
                     tone = sel.tone,
@@ -1493,7 +1505,7 @@ class MainActivity : Activity() {
                 )
                 addView(
                     TextView(this@MainActivity).apply {
-                        text = "档位说明"
+                        text = getString(R.string.latency_tiers_info)
                         textSize = 12f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(palette.textSecondary)
@@ -1527,20 +1539,22 @@ class MainActivity : Activity() {
         settingsStore.delayMs = preset.delayMs
         updateLatencyCapsuleUi()
         val effectiveMs = if (preset.delayMs > 0) preset.delayMs else CastService.autoDelayMs(this)
+        val pName = preset.name(this)
+        val pShort = preset.shortMs(this)
         if (CastService.running.get()) {
             startService(
                 Intent(this, CastService::class.java)
                     .setAction(CastService.ACTION_SET_DELAY)
                     .putExtra(CastService.EXTRA_DELAY, effectiveMs),
             )
-            val multiWarn = if (preset == LatencyModePreset.ULTRA && routeState.selectedSpeakerIds.size >= 2) {
-                "（多音箱若卡顿建议切均衡）"
+            val msg = if (preset == LatencyModePreset.ULTRA && routeState.selectedSpeakerIds.size >= 2) {
+                getString(R.string.latency_switched_live_ultra_multi, pName, pShort)
             } else {
-                "（实时热生效，免重连）"
+                getString(R.string.latency_switched_live, pName, pShort)
             }
-            showTransientStatus("已切换至「${preset.nameZh} · ${preset.shortMsZh}」$multiWarn")
+            showTransientStatus(msg)
         } else {
-            showTransientStatus("已设为「${preset.nameZh} · ${preset.shortMsZh}」，下次连接音箱时生效")
+            showTransientStatus(getString(R.string.latency_switched_saved, pName, pShort))
         }
     }
 
@@ -1569,7 +1583,7 @@ class MainActivity : Activity() {
         }
         header.addView(
             TextView(this).apply {
-                text = "延迟档位说明"
+                text = getString(R.string.latency_details_title)
                 textSize = 16f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
@@ -1583,7 +1597,7 @@ class MainActivity : Activity() {
                 background = UiComponents.rippleSurface(palette.controlSurface, sz / 2f, palette.ripple)
                 isClickable = true
                 isFocusable = true
-                contentDescription = "关闭"
+                contentDescription = getString(R.string.common_close)
                 setOnClickListener { dialog.dismiss() }
                 addView(
                     ImageView(this@MainActivity).apply {
@@ -1597,7 +1611,7 @@ class MainActivity : Activity() {
         card.addView(header)
         card.addView(
             TextView(this).apply {
-                text = "投送中切换档位会通过 TIME_OFFSET 实时热重锚生效，无需断开重连。"
+                text = getString(R.string.latency_details_subtitle)
                 textSize = 11.5f
                 setTextColor(palette.textSecondary)
                 setLineSpacing(dpf(2f), 1f)
@@ -1639,7 +1653,8 @@ class MainActivity : Activity() {
             )
             titleRow.addView(
                 TextView(this).apply {
-                    text = if (active) "${preset.nameZh} · 当前" else preset.nameZh
+                    val pName = preset.name(this@MainActivity)
+                    text = if (active) getString(R.string.latency_preset_current, pName) else pName
                     textSize = 13f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(palette.textPrimary)
@@ -1648,7 +1663,7 @@ class MainActivity : Activity() {
             )
             titleRow.addView(
                 TextView(this).apply {
-                    text = preset.fullMsZh
+                    text = preset.fullMs(this@MainActivity)
                     textSize = 11f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(iconCol)
@@ -1657,7 +1672,7 @@ class MainActivity : Activity() {
             itemBox.addView(titleRow)
             itemBox.addView(
                 TextView(this).apply {
-                    text = preset.detailZh
+                    text = preset.detail(this@MainActivity)
                     textSize = 11.5f
                     setTextColor(palette.textSecondary)
                     setLineSpacing(dpf(1.5f), 1f)
@@ -1666,7 +1681,7 @@ class MainActivity : Activity() {
             )
             itemBox.addView(
                 TextView(this).apply {
-                    text = "冷启动预热：${preset.runwaySummaryZh}"
+                    text = getString(R.string.latency_runway_prefix, preset.runwaySummary(this@MainActivity))
                     textSize = 10.5f
                     setTextColor(palette.textTertiary)
                     setPadding(dp(23), dp(2), 0, 0)
@@ -1680,7 +1695,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(4), 0, 0)
         }
         btnRow.addView(
-            UiComponents.tonalButton(this, palette, "去设置自定义 ms") {
+            UiComponents.tonalButton(this, palette, getString(R.string.latency_go_custom)) {
                 dialog.dismiss()
                 startActivityForResult(Intent(this, SettingsActivity::class.java), REQ_SETTINGS)
             }.apply {
@@ -1690,7 +1705,7 @@ class MainActivity : Activity() {
             },
         )
         btnRow.addView(
-            UiComponents.tonalButton(this, palette, "知道了", primary = true) {
+            UiComponents.tonalButton(this, palette, getString(R.string.common_got_it), primary = true) {
                 dialog.dismiss()
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -1717,7 +1732,11 @@ class MainActivity : Activity() {
 
     private fun isNotificationListenerEnabled(): Boolean {
         if (intent?.getBooleanExtra("ui_preview", false) == true) {
-            return nowPlaying.available || !nowPlaying.placeholderReasonZh.contains("通知使用权")
+            val r = nowPlaying.placeholderReasonZh
+            val missingAccess = r.contains("通知使用权") ||
+                r.contains("Notification Access", ignoreCase = true) ||
+                r.contains("通知へのアクセス")
+            return nowPlaying.available || !missingAccess
         }
         val flat = runCatching {
             Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
@@ -1759,11 +1778,15 @@ class MainActivity : Activity() {
         }
 
         if (!available) {
-            titleView.text = if (selectedLabel.isNotBlank()) "暂未播放 · $selectedLabel" else "暂无正在播放"
-            artistView.text = if (selectedLabel.isNotBlank()) {
-                "点击左侧封面或播放键启动 $selectedLabel"
+            titleView.text = if (selectedLabel.isNotBlank()) {
+                getString(R.string.main_idle_playing_with_app, selectedLabel)
             } else {
-                "打开音乐 App 播放即可同步曲目与播控"
+                getString(R.string.main_idle_playing_none)
+            }
+            artistView.text = if (selectedLabel.isNotBlank()) {
+                getString(R.string.main_idle_hint_with_app, selectedLabel)
+            } else {
+                getString(R.string.main_idle_hint_none)
             }
             playBtnIcon.setImageResource(R.drawable.ic_ui_play)
             posView.text = "—:—"
@@ -1772,8 +1795,8 @@ class MainActivity : Activity() {
             return
         }
 
-        titleView.text = NowPlayingInfo.displayTitle(nowPlaying)
-        artistView.text = NowPlayingInfo.displayArtist(nowPlaying)
+        titleView.text = NowPlayingInfo.displayTitle(this, nowPlaying)
+        artistView.text = NowPlayingInfo.displayArtist(this, nowPlaying)
         playBtnIcon.setImageResource(
             if (nowPlaying.isPlaying == true) R.drawable.ic_ui_pause else R.drawable.ic_ui_play,
         )
@@ -1822,7 +1845,11 @@ class MainActivity : Activity() {
             settingsStore.showAllDiscovered,
         )
         val castableSinks = visible.count { it.isCastSink && it.castable }
-        deviceCountView.text = if (castableSinks > 0) "发现 $castableSinks 台可投设备" else "支持多音箱同频投送"
+        deviceCountView.text = if (castableSinks > 0) {
+            getString(R.string.main_found_castable_count, castableSinks)
+        } else {
+            getString(R.string.main_multiroom_support)
+        }
         visible.forEachIndexed { idx, d ->
             deviceList.addView(deviceRow(d, isLast = idx == visible.lastIndex))
         }
@@ -1885,7 +1912,7 @@ class MainActivity : Activity() {
                 marginEnd = dp(8)
             }
         }
-        val displayName = if (d.kind == Kind.THIS_DEVICE) "本机播放" else d.name
+        val displayName = if (d.kind == Kind.THIS_DEVICE) getString(R.string.main_this_device_name) else d.name
         val displayRoom = if (d.kind == Kind.THIS_DEVICE) "" else d.roomName.trim()
         val name = TextView(this).apply {
             text = formatDeviceTitle(displayName, displayRoom, subColor)
@@ -1896,7 +1923,11 @@ class MainActivity : Activity() {
         }
         val sub = TextView(this).apply {
             text = when {
-                d.kind == Kind.THIS_DEVICE -> if (selected) "手机扬声器 · 当前输出" else "手机扬声器"
+                d.kind == Kind.THIS_DEVICE -> if (selected) {
+                    getString(R.string.main_this_device_active_sub)
+                } else {
+                    getString(R.string.main_this_device_idle_sub)
+                }
                 !d.castable && d.detail.isNotBlank() -> d.detail
                 else -> d.id
             }
@@ -2104,7 +2135,7 @@ class MainActivity : Activity() {
                     clearStatusBanner()
                 }
                 is Effect.RejectNonCastable -> {
-                    showAlertStatus("无法投送：${e.reason}")
+                    showAlertStatus(getString(R.string.main_err_cannot_cast, e.reason))
                 }
             }
         }
@@ -2132,17 +2163,18 @@ class MainActivity : Activity() {
             )
         }
         if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
-            showAlertStatus(validation.messageZh)
+            val localizedReason = validation.message(this)
+            showAlertStatus(localizedReason)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
-            showWirelessPrecheckGuideDialog(speakerIds, validation.messageZh)
+            showWirelessPrecheckGuideDialog(speakerIds, localizedReason)
             return
         }
         val allowed = validation as CaptureEngineCapabilities.ValidationResult.Allowed
         val needsTargetApp = appMode && allowed.effectiveScope == CaptureScopeMode.SINGLE_APP
 
         if (needsTargetApp && selectedPackage.isBlank()) {
-            showAlertStatus("请先选择要投送的音频 App")
+            showAlertStatus(getString(R.string.main_err_select_app_first))
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             openAppPicker()
@@ -2152,7 +2184,7 @@ class MainActivity : Activity() {
             allowed.effectiveEngine == CaptureEngineMode.STANDARD &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
         ) {
-            showAlertStatus("需要音频捕获权限（仅用于播放捕获，不采集麦克风）")
+            showAlertStatus(getString(R.string.main_err_record_audio_needed))
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_PERMS)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
@@ -2230,14 +2262,14 @@ class MainActivity : Activity() {
                 UiComponents.showStyleBDialog(
                     activity = this,
                     palette = palette,
-                    title = "当前系统不支持无感采集",
+                    title = getString(R.string.wireless_dialog_unsupported_title),
                     message = reasonZh,
-                    primaryLabel = "切回标准模式投送",
+                    primaryLabel = getString(R.string.wireless_dialog_switch_standard_cast),
                     onPrimary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
                     },
-                    tertiaryLabel = "取消",
+                    tertiaryLabel = getString(R.string.common_cancel),
                     onDismissed = { wirelessPromptDialog = null },
                 )
             }
@@ -2245,19 +2277,19 @@ class MainActivity : Activity() {
                 UiComponents.showStyleBDialog(
                     activity = this,
                     palette = palette,
-                    title = "首次使用无感模式需配对",
+                    title = getString(R.string.wireless_dialog_need_pair_title),
                     message = reasonZh,
-                    footnote = "仅需首次按向导自动识别一次 6 位配对码（也支持悬浮键盘与通知栏长按输入）；配置完成后即可免投屏弹窗、免「正在投屏」横幅直接投送。",
-                    primaryLabel = "打开 5 步配对引导",
+                    footnote = getString(R.string.wireless_dialog_need_pair_footnote),
+                    primaryLabel = getString(R.string.wireless_dialog_open_5step_guide),
                     onPrimary = {
                         startActivity(Intent(this, WirelessDebugGuideActivity::class.java))
                     },
-                    secondaryLabel = "先用标准模式投送",
+                    secondaryLabel = getString(R.string.wireless_dialog_use_standard_first),
                     onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
                     },
-                    tertiaryLabel = "取消",
+                    tertiaryLabel = getString(R.string.common_cancel),
                     onDismissed = { wirelessPromptDialog = null },
                 )
             }
@@ -2265,20 +2297,20 @@ class MainActivity : Activity() {
                 UiComponents.showStyleBDialog(
                     activity = this,
                     palette = palette,
-                    title = "Android 11–12 仅支持全局媒体",
+                    title = getString(R.string.wireless_dialog_api30_title),
                     message = reasonZh,
-                    primaryLabel = "切换显式全局媒体",
+                    primaryLabel = getString(R.string.wireless_dialog_switch_global),
                     onPrimary = {
                         settingsStore.captureScopeMode = CaptureScopeMode.GLOBAL_MEDIA
                         refreshTargetFromStore()
                         retrySpeakersAfterModeChange(speakerIds)
                     },
-                    secondaryLabel = "改用标准模式投送",
+                    secondaryLabel = getString(R.string.wireless_dialog_use_standard_instead),
                     onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
                     },
-                    tertiaryLabel = "取消",
+                    tertiaryLabel = getString(R.string.common_cancel),
                     onDismissed = { wirelessPromptDialog = null },
                 )
             }
@@ -2286,21 +2318,21 @@ class MainActivity : Activity() {
                 UiComponents.showStyleBDialog(
                     activity = this,
                     palette = palette,
-                    title = "无感采集未就绪",
+                    title = getString(R.string.wireless_dialog_not_ready_title),
                     message = reasonZh,
-                    primaryLabel = "打开配置向导",
+                    primaryLabel = getString(R.string.wireless_dialog_open_guide),
                     onPrimary = {
                         startActivity(
                             Intent(this, WirelessDebugGuideActivity::class.java)
                                 .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
                         )
                     },
-                    secondaryLabel = "先用标准模式投送",
+                    secondaryLabel = getString(R.string.wireless_dialog_use_standard_first),
                     onSecondary = {
                         settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                         retrySpeakersAfterModeChange(speakerIds)
                     },
-                    tertiaryLabel = "取消",
+                    tertiaryLabel = getString(R.string.common_cancel),
                     onDismissed = { wirelessPromptDialog = null },
                 )
             }
@@ -2326,7 +2358,10 @@ class MainActivity : Activity() {
         if (isFinishing || isDestroyed || intent?.getBooleanExtra("ui_preview", false) == true) return
         if (settingsStore.captureEngineMode != CaptureEngineMode.WIRELESS_DEBUG) return
         if (failMessage == lastPromptedWirelessError) return
-        val isWirelessError = failMessage.contains("无线调试") || failMessage.contains("无感采集")
+        val isWirelessError = failMessage.contains("无线调试") ||
+            failMessage.contains("无感采集") ||
+            failMessage.contains("Wireless Debugging", ignoreCase = true) ||
+            failMessage.contains("ワイヤレスデバッグ")
         if (!isWirelessError) return
         lastPromptedWirelessError = failMessage
 
@@ -2334,16 +2369,16 @@ class MainActivity : Activity() {
         wirelessPromptDialog = UiComponents.showStyleBDialog(
             activity = this,
             palette = palette,
-            title = "无感采集需要检查无线调试",
+            title = getString(R.string.wireless_dialog_recovery_title),
             message = failMessage,
-            footnote = "提示：手机重启后 Android 会自动关闭「无线调试」，只需重新点开开关即可恢复，无需重新输入 6 位配对码。",
-            primaryLabel = "去开启无线调试",
+            footnote = getString(R.string.wireless_dialog_recovery_footnote),
+            primaryLabel = getString(R.string.wireless_dialog_open_wireless_debug),
             onPrimary = {
                 CastService.lastFailMessage = ""
                 runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)) }
                     .onFailure { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } }
             },
-            secondaryLabel = "打开配置向导",
+            secondaryLabel = getString(R.string.wireless_dialog_open_guide),
             onSecondary = {
                 CastService.lastFailMessage = ""
                 startActivity(
@@ -2351,12 +2386,12 @@ class MainActivity : Activity() {
                         .putExtra(WirelessDebugGuideActivity.EXTRA_AUTO_VERIFY, true),
                 )
             },
-            tertiaryLabel = "切回标准模式",
+            tertiaryLabel = getString(R.string.wireless_dialog_switch_standard),
             onTertiary = {
                 CastService.lastFailMessage = ""
                 settingsStore.captureEngineMode = CaptureEngineMode.STANDARD
                 refreshTargetFromStore()
-                showTransientStatus("已切回标准投屏模式，点击音箱即可投送")
+                showTransientStatus(getString(R.string.main_status_switched_standard))
             },
             onDismissed = { wirelessPromptDialog = null },
         )
@@ -2373,19 +2408,19 @@ class MainActivity : Activity() {
             val globalWireless = settingsStore.captureEngineMode == CaptureEngineMode.WIRELESS_DEBUG &&
                 settingsStore.captureScopeMode == CaptureScopeMode.GLOBAL_MEDIA
             if (globalWireless) {
-                mainTargetTitle.text = "全局媒体模式（无感采集）"
-                mainTargetSubtitle.text = "当前将捕获本机所有媒体音频 · 可在设置中切回单 App 隔离"
+                mainTargetTitle.text = getString(R.string.main_source_global_title)
+                mainTargetSubtitle.text = getString(R.string.main_source_global_sub)
                 mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)
                 mainTargetIcon.setColorFilter(palette.accentBright)
                 if (::mainTargetAutoBadge.isInitialized) mainTargetAutoBadge.visibility = View.GONE
             } else if (selectedPackage.isBlank()) {
-                mainTargetTitle.text = "投送音源：未选择"
-                mainTargetSubtitle.text = "点击管理常用音源或自动识别正在播放的 App"
+                mainTargetTitle.text = getString(R.string.main_source_unselected)
+                mainTargetSubtitle.text = getString(R.string.main_source_unselected_sub_manage)
                 mainTargetIcon.setImageResource(R.drawable.ic_ui_music_note)
                 mainTargetIcon.setColorFilter(palette.accentBright)
                 if (::mainTargetAutoBadge.isInitialized) mainTargetAutoBadge.visibility = View.GONE
             } else {
-                mainTargetTitle.text = "音源 · $selectedLabel"
+                mainTargetTitle.text = getString(R.string.main_source_selected, selectedLabel)
                 mainTargetSubtitle.text = selectedPackage
                 UiIconCache.bindAppIcon(this, mainTargetIcon, selectedPackage)
                 if (::mainTargetAutoBadge.isInitialized) {
@@ -2676,7 +2711,7 @@ class MainActivity : Activity() {
                     putExtra(CastService.EXTRA_TARGET_LABEL, selection.label)
                     putExtra(CastService.EXTRA_MANUAL_OVERRIDE_BLOCKED_PKG, manualOverrideBlockedPkg.orEmpty())
                 }
-                showTransientStatus("正在切换投送音源为 ${selection.label}…")
+                showTransientStatus(getString(R.string.main_status_switching_source, selection.label))
                 renderQuickSwitchRow()
             }
             ManualSourceSwitchPolicy.Action.KEEP_ACTIVE_TARGET -> {
@@ -2739,7 +2774,7 @@ class MainActivity : Activity() {
                 val parsed = CastRouteSelection.parseDiscoverJsonResult(r)
                 if (parsed == null || parsed.error != null) {
                     if (!CastService.running.get() || stopRequested) {
-                        showAlertStatus("扫描失败，请点击刷新重试")
+                        showAlertStatus(getString(R.string.main_err_discover_failed))
                     }
                     return@post
                 }
@@ -2774,7 +2809,11 @@ class MainActivity : Activity() {
                 )
                 val castableSinks = nextVisible.count { it.isCastSink && it.castable }
                 if (::deviceCountView.isInitialized) {
-                    deviceCountView.text = if (castableSinks > 0) "发现 $castableSinks 台可投设备" else "支持多音箱同频投送"
+                    deviceCountView.text = if (castableSinks > 0) {
+                        getString(R.string.main_found_castable_count, castableSinks)
+                    } else {
+                        getString(R.string.main_multiroom_support)
+                    }
                 }
                 val listChanged = hadPendingIps ||
                     prevVisible != nextVisible ||
@@ -2793,7 +2832,7 @@ class MainActivity : Activity() {
                 val foundCount = parsed.rows.size
                 if (!CastService.running.get() || stopRequested) {
                     if (foundCount == 0 && next.devices.none { it.isCastSink }) {
-                        showAlertStatus("未扫描到在线音箱（可点击刷新或去设置手动添加 IP）")
+                        showAlertStatus(getString(R.string.main_err_no_speakers_found))
                     } else if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
                         clearStatusBanner()
                     }
@@ -2887,7 +2926,7 @@ class MainActivity : Activity() {
                 pendingStart = null
                 if (resultCode != RESULT_OK || data == null) {
                     castRequested = false
-                    showTransientStatus("播放捕获授权已取消 · 已切回本机播放")
+                    showTransientStatus(getString(R.string.main_status_projection_cancelled))
                     routeState = CastRouteSelection.selectThisDevice(routeState).state
                     renderDevices()
                     lastGrantSession = null
@@ -3096,18 +3135,18 @@ class MainActivity : Activity() {
         if (isFinishing || isDestroyed) return
         runCatching { volumeConfirmDialog?.dismiss() }
         val msg = if (speakerName.isNullOrBlank()) {
-            "确定要将总音量从 $currentVolume% 调至 $targetVolume% 吗？"
+            getString(R.string.volume_guard_msg_master, currentVolume, targetVolume)
         } else {
-            "确定要将「$speakerName」的音量从 $currentVolume% 调至 $targetVolume% 吗？"
+            getString(R.string.volume_guard_msg_speaker, speakerName, currentVolume, targetVolume)
         }
         volumeConfirmDialog = UiComponents.showStyleBDialog(
             activity = this,
             palette = palette,
-            title = "音量超过安全上限（$safeLimit%）",
+            title = getString(R.string.volume_guard_title, safeLimit),
             message = msg,
-            primaryLabel = "保持原音量（$currentVolume%）",
+            primaryLabel = getString(R.string.volume_guard_keep, currentVolume),
             onPrimary = {},
-            secondaryLabel = "确认调至 $targetVolume%",
+            secondaryLabel = getString(R.string.volume_guard_confirm, targetVolume),
             onSecondary = onConfirm,
             onDismissed = { volumeConfirmDialog = null },
         )
@@ -3146,10 +3185,10 @@ class MainActivity : Activity() {
                 if (device != null && device.castable) {
                     sub.text = when {
                         !selected || !isCasting -> device.id
-                        uiState == "reconnecting" -> "${device.id} · 重连中…"
-                        uiState == "error" -> "${device.id} · 连接异常"
-                        uiState == "streaming" -> "${device.id} · 投送中"
-                        else -> "${device.id} · 连接中…"
+                        uiState == "reconnecting" -> getString(R.string.main_device_reconnecting, device.id)
+                        uiState == "error" -> getString(R.string.main_device_error, device.id)
+                        uiState == "streaming" -> getString(R.string.main_device_streaming, device.id)
+                        else -> getString(R.string.main_device_connecting, device.id)
                     }
                 }
             }

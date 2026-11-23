@@ -828,8 +828,18 @@ fn parse_gh_release_item(item: &JsonVal, platform: &str, abi: &str) -> Option<Pa
     })
 }
 
-fn parse_feed(raw_json: &str, platform: &str, abi: &str) -> Result<Vec<ParsedRelease>, String> {
-    let root = parse_json(raw_json).ok_or_else(|| "更新响应 JSON 格式非法".to_string())?;
+struct FeedError {
+    code: &'static str,
+    message: String,
+    detail: String,
+}
+
+fn parse_feed(raw_json: &str, platform: &str, abi: &str) -> Result<Vec<ParsedRelease>, FeedError> {
+    let root = parse_json(raw_json).ok_or_else(|| FeedError {
+        code: "invalid_json",
+        message: "更新响应 JSON 格式非法".to_string(),
+        detail: String::new(),
+    })?;
     let mut list: Vec<ParsedRelease> = Vec::new();
 
     if root.get("schema_version").is_some() || root.get("channels").is_some() {
@@ -876,9 +886,17 @@ fn parse_feed(raw_json: &str, platform: &str, abi: &str) -> Result<Vec<ParsedRel
             list.push(r);
         }
     } else if let Some(msg) = root.get("message").and_then(|v| v.as_str()) {
-        return Err(format!("远端返回错误：{}", msg));
+        return Err(FeedError {
+            code: "remote_error",
+            message: format!("远端返回错误：{}", msg),
+            detail: msg.to_string(),
+        });
     } else {
-        return Err("无法识别的更新响应结构".to_string());
+        return Err(FeedError {
+            code: "unrecognized_schema",
+            message: "无法识别的更新响应结构".to_string(),
+            detail: String::new(),
+        });
     }
 
     // 去重并按 SemVer 从高到低排序
@@ -972,11 +990,13 @@ fn render_combined_notes(entries: &[&ParsedRelease]) -> String {
     blocks.join("\n\n")
 }
 
-fn error_decision_json(current_version: &str, msg: &str) -> String {
+fn error_decision_json(current_version: &str, code: &str, msg: &str, detail: &str) -> String {
     format!(
-        "{{\"status\":\"error\",\"current_version\":\"{}\",\"latest_tag\":\"\",\"latest_version\":\"\",\"is_prerelease\":false,\"published_at\":\"\",\"release_notes\":\"\",\"changelog_entries\":[],\"versions_behind\":0,\"changelog_truncated\":false,\"release_url\":\"\",\"asset_name\":\"\",\"download_url\":\"\",\"asset_size_bytes\":0,\"sha256\":\"\",\"sha256sums_url\":\"\",\"installable\":false,\"error\":\"{}\"}}",
+        "{{\"status\":\"error\",\"current_version\":\"{}\",\"latest_tag\":\"\",\"latest_version\":\"\",\"is_prerelease\":false,\"published_at\":\"\",\"release_notes\":\"\",\"notes_is_fallback\":false,\"changelog_entries\":[],\"versions_behind\":0,\"changelog_truncated\":false,\"release_url\":\"\",\"asset_name\":\"\",\"download_url\":\"\",\"asset_size_bytes\":0,\"sha256\":\"\",\"sha256sums_url\":\"\",\"installable\":false,\"error\":\"{}\",\"error_code\":\"{}\",\"error_detail\":\"{}\"}}",
         json_escape(current_version),
         json_escape(msg),
+        json_escape(code),
+        json_escape(detail),
     )
 }
 
@@ -991,7 +1011,12 @@ pub fn evaluate_update_json(
     raw_response_json: &str,
 ) -> String {
     let Some(current_sv) = parse_semver(current_version) else {
-        return error_decision_json(current_version, "当前版本号格式非法");
+        return error_decision_json(
+            current_version,
+            "invalid_current_version",
+            "当前版本号格式非法",
+            "",
+        );
     };
     let current_norm = current_sv.normalized_string();
 
@@ -1009,7 +1034,7 @@ pub fn evaluate_update_json(
 
     let releases = match parse_feed(raw_response_json, platform, abi) {
         Ok(r) => r,
-        Err(e) => return error_decision_json(&current_norm, &e),
+        Err(e) => return error_decision_json(&current_norm, e.code, &e.message, &e.detail),
     };
 
     let candidate = releases.iter().find(|r| {
@@ -1022,7 +1047,7 @@ pub fn evaluate_update_json(
 
     let Some(target) = candidate else {
         return format!(
-            "{{\"status\":\"up_to_date\",\"current_version\":\"{}\",\"latest_tag\":\"\",\"latest_version\":\"\",\"is_prerelease\":false,\"published_at\":\"\",\"release_notes\":\"\",\"changelog_entries\":[],\"versions_behind\":0,\"changelog_truncated\":false,\"release_url\":\"\",\"asset_name\":\"\",\"download_url\":\"\",\"asset_size_bytes\":0,\"sha256\":\"\",\"sha256sums_url\":\"\",\"installable\":false,\"error\":\"\"}}",
+            "{{\"status\":\"up_to_date\",\"current_version\":\"{}\",\"latest_tag\":\"\",\"latest_version\":\"\",\"is_prerelease\":false,\"published_at\":\"\",\"release_notes\":\"\",\"notes_is_fallback\":false,\"changelog_entries\":[],\"versions_behind\":0,\"changelog_truncated\":false,\"release_url\":\"\",\"asset_name\":\"\",\"download_url\":\"\",\"asset_size_bytes\":0,\"sha256\":\"\",\"sha256sums_url\":\"\",\"installable\":false,\"error\":\"\",\"error_code\":\"\",\"error_detail\":\"\"}}",
             json_escape(&current_norm),
         );
     };
@@ -1064,28 +1089,32 @@ pub fn evaluate_update_json(
     } else {
         String::new()
     };
+    let notes_is_fallback = is_newer
+        && (entries.is_empty() || entries.iter().all(|e| e.notes.trim().is_empty()));
 
     let entries_json: Vec<String> = entries
         .iter()
         .map(|e| {
-            let body = if e.notes.trim().is_empty() {
+            let empty_notes = e.notes.trim().is_empty();
+            let body = if empty_notes {
                 FALLBACK_EMPTY_NOTES
             } else {
                 e.notes.trim()
             };
             format!(
-                "{{\"tag\":\"{}\",\"version\":\"{}\",\"prerelease\":{},\"published_at\":\"{}\",\"notes\":\"{}\"}}",
+                "{{\"tag\":\"{}\",\"version\":\"{}\",\"prerelease\":{},\"published_at\":\"{}\",\"notes\":\"{}\",\"notes_is_fallback\":{}}}",
                 json_escape(&e.tag),
                 json_escape(&e.semver.normalized_string()),
                 e.prerelease,
                 json_escape(&e.published_at),
                 json_escape(body),
+                empty_notes,
             )
         })
         .collect();
 
     format!(
-        "{{\"status\":\"{}\",\"current_version\":\"{}\",\"latest_tag\":\"{}\",\"latest_version\":\"{}\",\"is_prerelease\":{},\"published_at\":\"{}\",\"release_notes\":\"{}\",\"changelog_entries\":[{}],\"versions_behind\":{},\"changelog_truncated\":{},\"release_url\":\"{}\",\"asset_name\":\"{}\",\"download_url\":\"{}\",\"asset_size_bytes\":{},\"sha256\":\"{}\",\"sha256sums_url\":\"{}\",\"installable\":{},\"error\":\"\"}}",
+        "{{\"status\":\"{}\",\"current_version\":\"{}\",\"latest_tag\":\"{}\",\"latest_version\":\"{}\",\"is_prerelease\":{},\"published_at\":\"{}\",\"release_notes\":\"{}\",\"notes_is_fallback\":{},\"changelog_entries\":[{}],\"versions_behind\":{},\"changelog_truncated\":{},\"release_url\":\"{}\",\"asset_name\":\"{}\",\"download_url\":\"{}\",\"asset_size_bytes\":{},\"sha256\":\"{}\",\"sha256sums_url\":\"{}\",\"installable\":{},\"error\":\"\",\"error_code\":\"\",\"error_detail\":\"\"}}",
         status,
         json_escape(&current_norm),
         json_escape(&target.tag),
@@ -1093,6 +1122,7 @@ pub fn evaluate_update_json(
         target.prerelease,
         json_escape(&target.published_at),
         json_escape(&combined_notes),
+        notes_is_fallback,
         entries_json.join(","),
         versions_behind,
         truncated,
@@ -1303,5 +1333,42 @@ mod tests {
 
         let up_to_date = evaluate_update_json("1.0.0-release", "stable", "android", "arm64-v8a", "34", "", manifest);
         assert_eq!(parse_json(&up_to_date).unwrap().str_field("status"), "up_to_date");
+    }
+
+    #[test]
+    fn structured_error_codes_and_fallback_flag_are_emitted_for_i18n() {
+        let bad_ver = evaluate_update_json("not-a-ver", "stable", "android", "arm64-v8a", "34", "", "{}");
+        let parsed_bad_ver = parse_json(&bad_ver).unwrap();
+        assert_eq!(parsed_bad_ver.str_field("error_code"), "invalid_current_version");
+
+        let bad_json = evaluate_update_json("0.9.7", "stable", "android", "arm64-v8a", "34", "", "{bad");
+        let parsed_bad_json = parse_json(&bad_json).unwrap();
+        assert_eq!(parsed_bad_json.str_field("error_code"), "invalid_json");
+
+        let remote_err = evaluate_update_json(
+            "0.9.7",
+            "stable",
+            "android",
+            "arm64-v8a",
+            "34",
+            "",
+            r#"{"message":"API rate limit exceeded"}"#,
+        );
+        let parsed_remote = parse_json(&remote_err).unwrap();
+        assert_eq!(parsed_remote.str_field("error_code"), "remote_error");
+        assert_eq!(parsed_remote.str_field("error_detail"), "API rate limit exceeded");
+
+        let empty_notes = evaluate_update_json(
+            "0.9.7",
+            "stable",
+            "android",
+            "arm64-v8a",
+            "34",
+            "",
+            r#"{"schema_version":1,"channels":{"stable":{"tag":"v1.0.0","prerelease":false,"notes":""}}}"#,
+        );
+        let parsed_empty = parse_json(&empty_notes).unwrap();
+        assert_eq!(parsed_empty.bool_field("notes_is_fallback"), Some(true));
+        assert_eq!(parsed_empty.str_field("error_code"), "");
     }
 }

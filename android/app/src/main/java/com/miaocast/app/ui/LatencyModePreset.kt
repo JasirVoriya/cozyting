@@ -1,5 +1,6 @@
 package com.miaocast.app.ui
 
+import android.content.Context
 import com.miaocast.app.R
 
 /**
@@ -25,6 +26,11 @@ enum class LatencyModePreset(
     val fullMsZh: String,
     val runwaySummaryZh: String,
     val detailZh: String,
+    val nameRes: Int,
+    val shortMsRes: Int,
+    val fullMsRes: Int,
+    val runwaySummaryRes: Int,
+    val detailRes: Int,
     val tone: LatencyModeTone,
     val iconRes: Int,
 ) {
@@ -35,6 +41,11 @@ enum class LatencyModePreset(
         fullMsZh = "5GHz 800ms / 2.4GHz 1000ms",
         runwaySummaryZh = "14 AU（≈299ms）",
         detailZh = "官方默认基线，抗抖动能力最强，适合穿墙、2.4GHz 或多音箱长时间听歌。",
+        nameRes = R.string.latency_standard_name,
+        shortMsRes = R.string.latency_standard_short,
+        fullMsRes = R.string.latency_standard_full,
+        runwaySummaryRes = R.string.latency_standard_runway,
+        detailRes = R.string.latency_standard_detail,
         tone = LatencyModeTone.NEUTRAL,
         iconRes = R.drawable.ic_ui_latency_standard,
     ),
@@ -45,6 +56,11 @@ enum class LatencyModePreset(
         fullMsZh = "400ms",
         runwaySummaryZh = "8 AU（≈171ms）",
         detailZh = "日常主力档：双音箱同步稳定可用，切歌/暂停响应较默认快约一倍。",
+        nameRes = R.string.latency_balanced_name,
+        shortMsRes = R.string.latency_balanced_short,
+        fullMsRes = R.string.latency_balanced_full,
+        runwaySummaryRes = R.string.latency_balanced_runway,
+        detailRes = R.string.latency_balanced_detail,
         tone = LatencyModeTone.ACCENT,
         iconRes = R.drawable.ic_ui_latency_balanced,
     ),
@@ -55,6 +71,11 @@ enum class LatencyModePreset(
         fullMsZh = "250ms",
         runwaySummaryZh = "5 AU（≈107ms）",
         detailZh = "单音箱 5GHz 强信号主力档，切歌与拖动进度条非常跟手。",
+        nameRes = R.string.latency_low_name,
+        shortMsRes = R.string.latency_low_short,
+        fullMsRes = R.string.latency_low_full,
+        runwaySummaryRes = R.string.latency_low_runway,
+        detailRes = R.string.latency_low_detail,
         tone = LatencyModeTone.ACCENT,
         iconRes = R.drawable.ic_ui_latency_low,
     ),
@@ -65,10 +86,21 @@ enum class LatencyModePreset(
         fullMsZh = "150ms",
         runwaySummaryZh = "3 AU（≈64ms）",
         detailZh = "实验性极低缓冲：仅建议同房间 5GHz 单音箱使用，弱网或多箱易出现卡顿。",
+        nameRes = R.string.latency_ultra_name,
+        shortMsRes = R.string.latency_ultra_short,
+        fullMsRes = R.string.latency_ultra_full,
+        runwaySummaryRes = R.string.latency_ultra_runway,
+        detailRes = R.string.latency_ultra_detail,
         tone = LatencyModeTone.WARNING,
         iconRes = R.drawable.ic_ui_latency_ultra,
     ),
     ;
+
+    fun name(context: Context): String = context.getString(nameRes)
+    fun shortMs(context: Context): String = context.getString(shortMsRes)
+    fun fullMs(context: Context): String = context.getString(fullMsRes)
+    fun runwaySummary(context: Context): String = context.getString(runwaySummaryRes)
+    fun detail(context: Context): String = context.getString(detailRes)
 
     companion object {
         const val CUSTOM_LOW_WARNING_THRESHOLD_MS = 250
@@ -90,10 +122,13 @@ sealed class LatencyModeSelection {
     abstract val tone: LatencyModeTone
     abstract val iconRes: Int
 
+    abstract fun capsuleLabel(context: Context): String
+
     data class Preset(val preset: LatencyModePreset) : LatencyModeSelection() {
         override val capsuleLabelZh: String get() = preset.nameZh
         override val tone: LatencyModeTone get() = preset.tone
         override val iconRes: Int get() = preset.iconRes
+        override fun capsuleLabel(context: Context): String = preset.name(context)
     }
 
     data class Custom(val delayMs: Int) : LatencyModeSelection() {
@@ -105,5 +140,6 @@ sealed class LatencyModeSelection {
                 LatencyModeTone.ACCENT
             }
         override val iconRes: Int get() = R.drawable.ic_ui_latency_custom
+        override fun capsuleLabel(context: Context): String = "${delayMs}ms"
     }
 }

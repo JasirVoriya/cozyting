@@ -6,6 +6,8 @@ import android.os.Handler
 import android.os.Looper
 import com.miaocast.app.BuildConfig
 import com.miaocast.app.NativeBridge
+import com.miaocast.app.R
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
@@ -214,10 +216,11 @@ object AppUpdateManager {
                 }
             }
         } catch (e: Exception) {
-            primaryError = e.message ?: "网络异常"
+            primaryError = e.message ?: AppLocaleManager.localizedContext(context).getString(R.string.update_err_network)
         }
 
         // 2. 兜底：公开分发仓 GitHub Releases REST API（最近 30 条，同样支持跨版本区间日志）
+        val locCtx = AppLocaleManager.localizedContext(context)
         try {
             when (val res = transport.getText(UpdateConfig.RELEASES_FALLBACK_API_URL, null)) {
                 is UpdateHttpClient.FetchResult.Ok -> {
@@ -228,11 +231,15 @@ object AppUpdateManager {
                         settings.lastUpdateCheckMs = now
                         return UpdateCheckState.Ready(decision, now, fromCache = false)
                     } else {
-                        return UpdateCheckState.Failed(decision.error.ifBlank { "解析更新数据失败" }, now)
+                        return UpdateCheckState.Failed(decision.localizedError(locCtx), now)
                     }
                 }
                 is UpdateHttpClient.FetchResult.HttpError -> {
-                    val detail = if (res.code == 403) "GitHub API 访问受限，请稍后再试" else "服务暂不可用（HTTP ${res.code}）"
+                    val detail = if (res.code == 403) {
+                        locCtx.getString(R.string.update_err_github_rate_limit)
+                    } else {
+                        locCtx.getString(R.string.update_err_http_unavailable, res.code)
+                    }
                     return UpdateCheckState.Failed(detail, now)
                 }
                 UpdateHttpClient.FetchResult.NotModified -> {
@@ -240,11 +247,17 @@ object AppUpdateManager {
                 }
             }
         } catch (e: Exception) {
-            val detail = e.message ?: primaryError ?: "网络连接失败"
-            return UpdateCheckState.Failed("检查更新失败：$detail", now)
+            val detail = e.message ?: primaryError ?: locCtx.getString(R.string.update_err_network_connect)
+            return UpdateCheckState.Failed(locCtx.getString(R.string.update_err_check_failed, detail), now)
         }
 
-        return UpdateCheckState.Failed("检查更新失败：${primaryError ?: "无法连接公开更新源"}", now)
+        return UpdateCheckState.Failed(
+            locCtx.getString(
+                R.string.update_err_check_failed,
+                primaryError ?: locCtx.getString(R.string.update_err_feed_unreachable),
+            ),
+            now,
+        )
     }
 
     private fun evaluateRaw(

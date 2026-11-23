@@ -42,6 +42,7 @@ import com.miaocast.app.cast.NowPlayingTracker
 import com.miaocast.app.cast.PrefsDiscoveredDeviceStore
 import com.miaocast.app.compat.AcceptanceAudioDefaults
 import com.miaocast.app.compat.CaptureSelectionLayers
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.VolumeSafetyGuard
 import org.json.JSONArray
@@ -123,7 +124,13 @@ class CastService : Service() {
         /** 本机 STREAM_MUSIC 静音状态文案（估计/回退说明，非听感保证）。 */
         @Volatile var localMuteStatusZh: String = "本机出声（未尝试静音）"
         @Volatile var localMuteStatus: LocalOutputMute.Status = LocalOutputMute.Status.IDLE
+        @Volatile var localMuteStatusResId: Int = R.string.cast_mute_status_idle
         val running = AtomicBoolean(false)
+
+        fun localizedLocalMuteStatus(context: Context): String {
+            val res = localMuteStatusResId
+            return if (res != 0) context.getString(res) else localMuteStatusZh
+        }
 
         /** 一次性读取并清空最近一次投送中热切音源反馈（成功或失败回滚原音源）。 */
         fun consumeHotSwitchFeedback(): String? =
@@ -514,7 +521,7 @@ class CastService : Service() {
                 event(CaptureSelectionLayers.statusLine(targetPackage, captureUid))
             } else {
                 targetPackage = ""
-                targetLabel = "全局媒体（无感采集）"
+                targetLabel = AppLocaleManager.localizedContext(this).getString(R.string.cast_notif_global_media)
                 targetAutoDetected = false
                 initialBlockedPackage = null
                 captureUid = -1
@@ -534,7 +541,7 @@ class CastService : Service() {
                     code != Activity.RESULT_OK || data == null
                 ) {
                     event("缺少或无效的 MediaProjection 授权（每次会话需重新授权）")
-                    lastFailMessage = "录屏/音频捕获授权无效或被拒绝"
+                    lastFailMessage = AppLocaleManager.localizedContext(this).getString(R.string.cast_err_projection_invalid)
                     abortEarlyStart()
                     return START_NOT_STICKY
                 }
@@ -543,14 +550,14 @@ class CastService : Service() {
                 projection = getSystemService(MediaProjectionManager::class.java).getMediaProjection(code, data)
                 if (projection == null) {
                     event("getMediaProjection 返回 null")
-                    lastFailMessage = "系统未能创建 MediaProjection"
+                    lastFailMessage = AppLocaleManager.localizedContext(this).getString(R.string.cast_err_projection_null)
                     abortEarlyStart()
                     return START_NOT_STICKY
                 }
                 projection?.registerCallback(object : MediaProjection.Callback() {
                     override fun onStop() {
                         event("MediaProjection 已停止/撤销，正在清理")
-                        lastFailMessage = "捕获授权已撤销或被系统终止"
+                        lastFailMessage = AppLocaleManager.localizedContext(this@CastService).getString(R.string.cast_err_projection_revoked)
                         stopCast()
                         stopSelf()
                     }
@@ -701,8 +708,9 @@ class CastService : Service() {
             .associate { it.id to it.name }
     }.getOrDefault(emptyMap())
 
-    private fun formatNotificationCopy(): CastNotificationFormatter.NotificationCopy =
-        CastNotificationFormatter.format(
+    private fun formatNotificationCopy(): CastNotificationFormatter.NotificationCopy {
+        val locCtx = com.miaocast.app.ui.AppLocaleManager.localizedContext(this)
+        return CastNotificationFormatter.format(
             source = source,
             scopeMode = activeScopeMode,
             targetLabel = targetLabel,
@@ -711,9 +719,12 @@ class CastService : Service() {
             statsJson = lastStats,
             fallbackIps = activeInitialIps,
             deviceNamesByIp = cachedDeviceNamesByIp(),
+            strings = CastNotificationFormatter.Strings.fromContext(locCtx),
         )
+    }
 
     private fun buildNotification(copy: CastNotificationFormatter.NotificationCopy = formatNotificationCopy()): Notification {
+        val locCtx = com.miaocast.app.ui.AppLocaleManager.localizedContext(this)
         val pi = { action: String, code: Int ->
             PendingIntent.getService(
                 this, code,
@@ -732,11 +743,11 @@ class CastService : Service() {
             .addAction(
                 Notification.Action.Builder(
                     null,
-                    if (paused) "恢复" else "暂停",
+                    if (paused) locCtx.getString(R.string.cast_action_resume) else locCtx.getString(R.string.cast_action_pause),
                     pi(if (paused) ACTION_RESUME else ACTION_PAUSE, 2),
                 ).build(),
             )
-            .addAction(Notification.Action.Builder(null, "停止", pi(ACTION_STOP, 1)).build())
+            .addAction(Notification.Action.Builder(null, locCtx.getString(R.string.cast_action_stop), pi(ACTION_STOP, 1)).build())
             .setOnlyAlertOnce(true)
             .setOngoing(true)
         if (!copy.expandedText.isNullOrBlank()) {
@@ -857,19 +868,23 @@ class CastService : Service() {
             AudioCaptureBackend.LocalMuteHandling.ISOLATED_APP_LOOPBACK -> {
                 localMute.skip("isolated single-app loopback mute")
                 localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
+                localMuteStatusResId = R.string.cast_mute_status_single_app
                 localMuteStatusZh = "单 App 本机静音已生效（无感环回，不影响其他 App 手机出声）"
                 Log.i(TAG, "LOCAL_MUTE mode=ISOLATED_APP_LOOPBACK msg=$localMuteStatusZh")
             }
             AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK -> {
                 localMute.skip("system route loopback")
                 localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
+                localMuteStatusResId = R.string.cast_mute_status_global
                 localMuteStatusZh = "全局媒体本机静音已生效（无感环回路由）"
                 Log.i(TAG, "LOCAL_MUTE mode=SYSTEM_ROUTE_LOOPBACK msg=$localMuteStatusZh")
             }
             AudioCaptureBackend.LocalMuteHandling.KEEP_LOCAL_OUTPUT -> {
+                localMuteStatusResId = 0
                 publishMute(localMute.beginMuteForCast(LocalOutputMute.Policy.KEEP_LOCAL_OUTPUT))
             }
             AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE -> {
+                localMuteStatusResId = 0
                 publishMute(localMute.beginMuteForCast(LocalOutputMute.Policy.GLOBAL_STREAM_MUTE))
             }
         }
@@ -885,6 +900,7 @@ class CastService : Service() {
             if (!running.get() || source != "app" || activeScopeMode != CaptureScopeMode.SINGLE_APP) return
             if (newPackage.isBlank() || newPackage == targetPackage) return
 
+            val locCtx = com.miaocast.app.ui.AppLocaleManager.localizedContext(this)
             val modeLabel = if (autoDetected) "自动" else "手动"
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
             val resolved = when (val r = resolver.resolveForCapture(newPackage)) {
@@ -892,7 +908,7 @@ class CastService : Service() {
                 is CaptureTargetResult.Fail -> {
                     event("${modeLabel}切换音源被拒绝[${r.reason}]: ${r.messageZh}")
                     if (!autoDetected) {
-                        hotSwitchFeedback.set("无法切换音源：${r.messageZh}")
+                        hotSwitchFeedback.set(locCtx.getString(R.string.cast_hotswitch_rejected, r.messageZh))
                         main.post { targetChangeListener?.invoke() }
                     }
                     return
@@ -920,7 +936,7 @@ class CastService : Service() {
                         ),
                     )
                     if (!autoDetected) {
-                        hotSwitchFeedback.set("已切换投送音源为 $newLabel")
+                        hotSwitchFeedback.set(locCtx.getString(R.string.cast_hotswitch_ok, newLabel))
                     }
                     event(
                         if (autoDetected) {
@@ -939,14 +955,14 @@ class CastService : Service() {
                         lastFailMessage = ""
                         event("无法热切换至 $newLabel，已保持当前音源 $prevLabel：${switched.messageZh}")
                         if (!autoDetected) {
-                            hotSwitchFeedback.set("无法热切换至 $newLabel，已保持当前音源 $prevLabel")
+                            hotSwitchFeedback.set(locCtx.getString(R.string.cast_hotswitch_reverted, newLabel, prevLabel))
                         }
                         main.post {
                             updateNotification()
                             targetChangeListener?.invoke()
                         }
                     } else {
-                        lastFailMessage = "无法热切换音源为 $newLabel，已停止投送：${switched.messageZh}"
+                        lastFailMessage = locCtx.getString(R.string.cast_hotswitch_stopped, newLabel, switched.messageZh)
                         event(lastFailMessage)
                         main.post {
                             stopCast()
@@ -972,7 +988,7 @@ class CastService : Service() {
             CaptureEngineMode.STANDARD -> {
                 val proj = projection
                 if (proj == null) {
-                    lastFailMessage = "MediaProjection 不可用"
+                    lastFailMessage = AppLocaleManager.localizedContext(this).getString(R.string.cast_err_projection_unavailable)
                     event(lastFailMessage)
                     return false
                 }
@@ -1095,8 +1111,10 @@ class CastService : Service() {
         if (wasLoopbackMute) {
             localMute.skip("stopped")
             localMuteStatus = LocalOutputMute.Status.IDLE
+            localMuteStatusResId = R.string.cast_mute_status_stopped
             localMuteStatusZh = "本机出声（已停止投送）"
         } else {
+            localMuteStatusResId = 0
             publishMute(localMute.restore())
         }
         activeMuteHandling = AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE
@@ -1161,8 +1179,9 @@ class CastService : Service() {
     }
 
     private fun startForegroundCompat() {
+        val locCtx = com.miaocast.app.ui.AppLocaleManager.localizedContext(this)
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "妙投 · 投送状态", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, locCtx.getString(R.string.cast_channel_name), NotificationManager.IMPORTANCE_LOW))
         val type = if (projectionType) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
         } else {

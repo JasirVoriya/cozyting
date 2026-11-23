@@ -2,6 +2,7 @@ package com.miaocast.app
 
 import android.app.Activity
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -35,6 +36,7 @@ import com.miaocast.app.capture.PrefsTargetAppStore
 import com.miaocast.app.capture.TargetAppSelection
 import com.miaocast.app.compat.CaptureSelectionLayers
 import com.miaocast.app.compat.WindowInsetsApplyCompat
+import com.miaocast.app.ui.AppLocaleManager
 import com.miaocast.app.ui.LinearDragReorderController
 import com.miaocast.app.ui.PrefsCastSettingsStore
 import com.miaocast.app.ui.ThemeMode
@@ -73,6 +75,10 @@ class AppPickerActivity : Activity() {
     private var expandOthers = false
     private var previewMode = false
     private var infoDialog: Dialog? = null
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocaleManager.wrapContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,13 +133,13 @@ class AppPickerActivity : Activity() {
             setPadding(0, 0, 0, dp(12))
         }
         headerRow.addView(
-            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, "返回") {
+            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_back, getString(R.string.common_back)) {
                 finish()
             },
         )
         headerRow.addView(
             TextView(this).apply {
-                text = "常用音源与选择"
+                text = getString(R.string.picker_title)
                 textSize = 19f
                 setTextColor(palette.textPrimary)
                 setTypeface(null, Typeface.BOLD)
@@ -142,17 +148,15 @@ class AppPickerActivity : Activity() {
             },
         )
         headerRow.addView(
-            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_info, "音源与自动识别说明") {
+            UiComponents.iconCircleButton(this, palette, R.drawable.ic_ui_info, getString(R.string.picker_info_desc)) {
                 runCatching { infoDialog?.dismiss() }
                 infoDialog = UiComponents.showStyleBDialog(
                     activity = this,
                     palette = palette,
-                    title = "常用音源与自动识别说明",
-                    message = "1. 「常用音源」支持自由添加、移除以及长按拖动排序，排序结果会实时同步至主界面快捷切换栏。\n\n" +
-                        "2. 自动识别仅会从「常用音源」且已开启「自动识别」开关的 App 中跟随；即使旧软件未关闭，投送途中切到另一个常用音乐 App 播放也会自动热切换，名单外或关闭开关的应用不会被自动切入。\n\n" +
-                        "3. 无论自动识别还是手动点选，开始投送与热切换前都会实时校验独立 UID 与签名，绝不退化为全系统捕获。",
-                    footnote = CaptureSelectionLayers.settingsHintZh(),
-                    primaryLabel = "知道了",
+                    title = getString(R.string.picker_info_title),
+                    message = getString(R.string.picker_info_message),
+                    footnote = CaptureSelectionLayers.settingsHint(this),
+                    primaryLabel = getString(R.string.common_got_it),
                 ) {
                     infoDialog = null
                 }
@@ -180,7 +184,7 @@ class AppPickerActivity : Activity() {
             },
         )
         filter = EditText(this).apply {
-            hint = "搜索应用名称或包名…"
+            hint = getString(R.string.picker_search_hint)
             textSize = 14f
             setTextColor(palette.textPrimary)
             setHintTextColor(palette.textTertiary)
@@ -198,7 +202,7 @@ class AppPickerActivity : Activity() {
             visibility = View.GONE
             isClickable = true
             isFocusable = true
-            contentDescription = "清空搜索"
+            contentDescription = getString(R.string.picker_clear_search_desc)
             setOnClickListener { filter.setText("") }
         }
         filter.addTextChangedListener(object : TextWatcher {
@@ -214,7 +218,7 @@ class AppPickerActivity : Activity() {
         root.addView(searchBox)
 
         status = TextView(this).apply {
-            text = "正在加载可启动应用…"
+            text = getString(R.string.picker_loading_apps)
             setTextColor(palette.textSecondary)
             textSize = 12f
             setPadding(dp(4), dp(10), dp(4), dp(4))
@@ -278,7 +282,7 @@ class AppPickerActivity : Activity() {
             selfPackage = packageName,
         )
         val autoCount = cat.favorites.count { it.second.autoDetectEnabled }
-        status.text = "常用音源 ${cat.favorites.size} 个（允许自动识别 $autoCount 个）· 点击行设为当前音源"
+        status.text = getString(R.string.picker_status_summary, cat.favorites.size, autoCount)
     }
 
     private fun render() {
@@ -308,7 +312,7 @@ class AppPickerActivity : Activity() {
             if (shown.isEmpty()) {
                 list.addView(
                     TextView(this).apply {
-                        text = "没有匹配的可启动应用"
+                        text = getString(R.string.picker_search_empty)
                         setTextColor(palette.textSecondary)
                         textSize = 13f
                         setPadding(dp(4), dp(18), 0, dp(12))
@@ -316,7 +320,7 @@ class AppPickerActivity : Activity() {
                 )
                 return
             }
-            list.addView(UiComponents.sectionTitle(this, palette, "搜索结果 (${shown.size})"))
+            list.addView(UiComponents.sectionTitle(this, palette, getString(R.string.picker_search_results, shown.size)))
             shown.forEach { app ->
                 val fav = favByPkg[app.packageName]
                 if (fav != null) {
@@ -342,7 +346,7 @@ class AppPickerActivity : Activity() {
         }
         favHeader.addView(
             TextView(this).apply {
-                text = "常用音源 (${cat.favorites.size})"
+                text = getString(R.string.picker_favorites_header, cat.favorites.size)
                 textSize = 12f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textSecondary)
@@ -352,7 +356,7 @@ class AppPickerActivity : Activity() {
         if (allowDrag) {
             favHeader.addView(
                 TextView(this).apply {
-                    text = "长按拖动排序"
+                    text = getString(R.string.picker_drag_hint)
                     textSize = 11f
                     setTextColor(palette.textTertiary)
                 },
@@ -362,7 +366,7 @@ class AppPickerActivity : Activity() {
         if (cat.favorites.isEmpty()) {
             list.addView(
                 TextView(this).apply {
-                    text = "暂无常用音源 · 在下方点击「+ 常用」添加，只有名单内且开启开关的 App 会参与自动识别"
+                    text = getString(R.string.picker_favorites_empty)
                     setTextColor(palette.textSecondary)
                     textSize = 12.5f
                     background = UiComponents.roundedDrawable(
@@ -394,7 +398,7 @@ class AppPickerActivity : Activity() {
         if (cat.others.isNotEmpty()) {
             val showDirectly = cat.favorites.isEmpty()
             if (showDirectly) {
-                list.addView(UiComponents.sectionTitle(this, palette, "全部可启动应用 (${cat.others.size})"))
+                list.addView(UiComponents.sectionTitle(this, palette, getString(R.string.picker_all_launchable, cat.others.size)))
                 cat.others.forEach { app -> list.addView(otherAppRow(app, app.packageName == currentPkg)) }
             } else {
                 val toggle = LinearLayout(this).apply {
@@ -425,9 +429,9 @@ class AppPickerActivity : Activity() {
                 toggle.addView(
                     TextView(this).apply {
                         text = if (expandOthers) {
-                            "收起其他应用 (${cat.others.size})"
+                            getString(R.string.picker_collapse_others, cat.others.size)
                         } else {
-                            "添加更多应用到常用音源 (${cat.others.size})"
+                            getString(R.string.picker_expand_others, cat.others.size)
                         }
                         setTextColor(palette.textPrimary)
                         textSize = 13f
@@ -557,7 +561,7 @@ class AppPickerActivity : Activity() {
                 setPadding(hp, hp, hp, hp)
                 layoutParams = LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginEnd = dp(4) }
                 tag = LinearDragReorderController.TAG_HANDLE
-                contentDescription = "长按拖动排序"
+                contentDescription = getString(R.string.picker_drag_hint)
             }
             mainRow.addView(dragHandle)
         }
@@ -581,7 +585,11 @@ class AppPickerActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
         val autoLabel = TextView(this).apply {
-            text = if (fav.autoDetectEnabled) "自动识别：允许" else "自动识别：关闭"
+            text = if (fav.autoDetectEnabled) {
+                getString(R.string.picker_auto_detect_on)
+            } else {
+                getString(R.string.picker_auto_detect_off)
+            }
             textSize = 12f
             setTypeface(null, if (fav.autoDetectEnabled) Typeface.BOLD else Typeface.NORMAL)
             setTextColor(
@@ -621,7 +629,7 @@ class AppPickerActivity : Activity() {
             addView(autoLabel)
         }
         val removeBtn = TextView(this).apply {
-            text = "移出常用"
+            text = getString(R.string.picker_remove_favorite)
             textSize = 11.5f
             setTextColor(subColor)
             background = UiComponents.rippleSurface(
@@ -709,7 +717,7 @@ class AppPickerActivity : Activity() {
             },
         )
         val addFavBtn = TextView(this).apply {
-            text = "+ 常用"
+            text = getString(R.string.picker_add_favorite)
             textSize = 11.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(palette.accentBright)
@@ -741,7 +749,7 @@ class AppPickerActivity : Activity() {
     }
 
     private fun select(app: LaunchableApp) {
-        status.text = "正在校验 ${app.label}…"
+        status.text = getString(R.string.picker_verifying, app.label)
         Thread {
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
             when (val r = resolver.resolveForCapture(app.packageName)) {
