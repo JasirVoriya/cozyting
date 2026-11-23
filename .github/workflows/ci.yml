@@ -162,8 +162,28 @@ jobs:
 
       - name: Verify 16KB ELF alignment on libmiaocast_core.so
         run: |
-          readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiaocast_core.so | grep -E 'Type|LOAD|Align'
-          readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiaocast_core.so | grep -q '0x4000'
+          READELF_OUT="$(readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiaocast_core.so)"
+          printf '%s\n' "$READELF_OUT" | grep -E 'Type|LOAD|Align'
+          printf '%s\n' "$READELF_OUT" | awk '
+            function hex2dec(s,    i, c, n, d) {
+              sub(/^0[xX]/, "", s)
+              if (length(s) == 0) return -1
+              n = 0
+              for (i = 1; i <= length(s); i++) {
+                c = tolower(substr(s, i, 1))
+                d = index("0123456789abcdef", c) - 1
+                if (d < 0) return -1
+                n = n * 16 + d
+              }
+              return n
+            }
+            $1 == "LOAD" {
+              seen++
+              val = hex2dec($NF)
+              if (val < 16384 || (val % 16384) != 0) bad = 1
+            }
+            END { exit (seen > 0 && !bad) ? 0 : 1 }
+          '
 
       - name: Install Android API 36 platform and build-tools
         run: |

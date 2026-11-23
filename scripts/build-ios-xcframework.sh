@@ -9,8 +9,9 @@ OUT_DIR="${1:-$ROOT/ios/Frameworks}"
 XCFRAMEWORK="$OUT_DIR/MiaoCastCore.xcframework"
 TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/target}"
 
+INSTALLED_TARGETS="$(rustup target list --installed)"
 for t in aarch64-apple-ios aarch64-apple-ios-sim; do
-  if ! rustup target list --installed | grep -qx "$t"; then
+  if ! printf '%s\n' "$INSTALLED_TARGETS" | awk -v target="$t" '$0 == target { found = 1 } END { exit !found }'; then
     echo "缺少 Rust target: $t"
     echo "请先运行: rustup target add aarch64-apple-ios aarch64-apple-ios-sim"
     exit 1
