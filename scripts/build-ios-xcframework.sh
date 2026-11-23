@@ -21,18 +21,18 @@ cd "$ROOT"
 cargo test --workspace
 
 echo "==> Building staticlib for aarch64-apple-ios..."
-CARGO_TARGET_DIR="$TARGET_DIR" cargo build --release -p miplay-sender-core --lib --target aarch64-apple-ios
+CARGO_TARGET_DIR="$TARGET_DIR" cargo build --release -p miaocast-core --lib --target aarch64-apple-ios
 
 echo "==> Building staticlib for aarch64-apple-ios-sim..."
-CARGO_TARGET_DIR="$TARGET_DIR" cargo build --release -p miplay-sender-core --lib --target aarch64-apple-ios-sim
+CARGO_TARGET_DIR="$TARGET_DIR" cargo build --release -p miaocast-core --lib --target aarch64-apple-ios-sim
 
 mkdir -p "$OUT_DIR"
 rm -rf "$XCFRAMEWORK"
 
 xcodebuild -create-xcframework \
-  -library "$TARGET_DIR/aarch64-apple-ios/release/libmiplay_sender_core.a" \
+  -library "$TARGET_DIR/aarch64-apple-ios/release/libmiaocast_core.a" \
   -headers "$ROOT/core/include" \
-  -library "$TARGET_DIR/aarch64-apple-ios-sim/release/libmiplay_sender_core.a" \
+  -library "$TARGET_DIR/aarch64-apple-ios-sim/release/libmiaocast_core.a" \
   -headers "$ROOT/core/include" \
   -output "$XCFRAMEWORK"
 

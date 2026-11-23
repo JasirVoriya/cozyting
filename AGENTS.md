@@ -1,4 +1,4 @@
-# Project Rules (`miplay-sender`)
+# Project Rules (`miaocast` / 妙投)
 
 ## 0. 变更审批与 Git 分支工作流（最高优先级 · 强制）
 

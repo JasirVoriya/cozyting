@@ -105,7 +105,7 @@
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `android/app/src/main/java/com/miplay/sender/NativeBridge.kt` | Kotlin 侧 `external` 接口声明与 `libmiplay_sender_core.so` 加载器（支持 `-Dmiplay.lib` 供 `app_process` 直接调试） |
+| `android/app/src/main/java/com/miplay/sender/NativeBridge.kt` | Kotlin 侧 `external` 接口声明与 `libmiaocast_core.so` 加载器（支持 `-Dmiplay.lib` 供 `app_process` 直接调试） |
 | `core/src/ffi.rs` | Android JNI 薄导出层：仅做 JVM 字符串/字节数组转换，全部会话、协调与设备目录逻辑委托给 `core/src/engine.rs` 与 `device_catalog.rs` |
 | `core/src/ffi_c.rs` | iOS / 跨平台 C ABI 薄导出层：导出 18 个 `miplay_*` C 函数与 `miplay_string_free` 内存释放入口，供 Swift / Objective-C 直接调用 |
 | `core/include/miplay_core.h` / `module.modulemap` | 标准 C11 头文件与 Clang Module 映射定义（可直接打包进 `MiPlayCore.xcframework` 供 Xcode `import MiPlayCore`） |
@@ -114,7 +114,7 @@
 
 | 文件路径 | 核心职责与关键机制 |
 | --- | --- |
-| `core/src/lib.rs` | `miplay-sender-core` 模块总入口与统一 `Error` / `Result` 错误类型 |
+| `core/src/lib.rs` | `miaocast-core` 模块总入口与统一 `Error` / `Result` 错误类型 |
 | `core/src/engine.rs` | 平台无关核心门面：全局句柄表、`FEED_QUEUE_AUS = 96`（≈2s）有界喂入队列、多箱并发协调器（吸收首台建连期并发点选与延迟音量、串行 reconcile、中途取消与重试、`connecting` 叠加输出）及先 `drop(feed)` 无死锁停止 |
 | `core/src/device_catalog.rs` | 跨端共享设备目录与路由状态机：6 列发现解析、TV 启发式、默认非 MiPlay 节点过滤、历史缓存合并（上限 16 台）、本机↔多箱路由互斥切换、认证模式解析与零依赖 JSON 编解码 |
 | `core/src/discovery.rs` | mDNS 组播（`224.0.0.251:5353`）PTR 构造与响应解析、`_mi-connect` (`apps=[5]` 优先) / `_lyra-mdns` 同 IP 合并与 6 列 TSV 输出 |

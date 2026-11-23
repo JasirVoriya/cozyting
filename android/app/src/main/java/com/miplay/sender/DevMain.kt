@@ -2,7 +2,7 @@ package com.miplay.sender
 
 /**
  * 不安装 APK 也能在手机上验证 Kotlin↔JNI↔Rust 整条链路（adb shell app_process）。
- *   CLASSPATH=/data/local/tmp/miplay-sender.apk app_process -Dmiplay.lib=/data/local/tmp/libmiplay_sender_core.so \
+ *   CLASSPATH=/data/local/tmp/miaocast.apk app_process -Dmiplay.lib=/data/local/tmp/libmiaocast_core.so \
  *     /system/bin com.miplay.sender.DevMain <mode> [ips] [secs] [ref] [extra]
  * mode:
  *   discover                      发现音箱

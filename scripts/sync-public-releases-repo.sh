@@ -62,18 +62,12 @@ for fname in ("README.md", "README_EN.md"):
         continue
     text = p.read_text(encoding="utf-8")
     # 将指向私仓 CI 的徽章替换为公开仓 Pages 状态徽章
-    for old_ci in (
+    text = text.replace(
         '<a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>',
-        '<a href="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miplay-sender/actions/workflows/ci.yml/badge.svg"></a>',
-    ):
-        text = text.replace(
-            old_ci,
-            f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="Pages & Update Feed" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
-        )
-    # 兜底修正可能残留的旧私仓 Pages / Releases 链接
-    text = text.replace("https://jasirvoriya.github.io/miplay-sender/", pages_url)
+        f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="Pages & Update Feed" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
+    )
+    # 兜底修正可能残留的私仓 Pages / Releases 链接
     text = text.replace("https://jasirvoriya.github.io/miaocast/", pages_url)
-    text = text.replace("https://github.com/JasirVoriya/miplay-sender/releases", f"https://github.com/{target_repo}/releases")
     text = text.replace("https://github.com/JasirVoriya/miaocast/releases", f"https://github.com/{target_repo}/releases")
     p.write_text(text, encoding="utf-8")
 PY

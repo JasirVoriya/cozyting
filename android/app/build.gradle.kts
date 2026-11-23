@@ -1,5 +1,5 @@
 // Rust 核心先编译进 jniLibs：
-//   cd .. && cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p miplay-sender-core --features jni
+//   cd .. && cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p miaocast-core --features jni
 import java.util.Properties
 
 plugins {

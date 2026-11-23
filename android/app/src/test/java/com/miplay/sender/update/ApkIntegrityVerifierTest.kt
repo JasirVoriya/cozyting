@@ -25,18 +25,18 @@ class ApkIntegrityVerifierTest {
 
     @Test
     fun sha256SumsExtractionAndFileVerificationWork() {
-        val f = tmp.newFile("miplay-sender-v0.9.8-arm64-v8a.apk")
+        val f = tmp.newFile("miaocast-v0.9.8-arm64-v8a.apk")
         f.writeBytes("miaocast-test-apk-payload".toByteArray())
         val realHash = ApkIntegrityVerifier.computeFileSha256Hex(f)
         assertTrue(ApkIntegrityVerifier.isValidSha256Hex(realHash))
 
         val sumsTxt = """
             0000000000000000000000000000000000000000000000000000000000000000  miplay-cli-v0.9.8-linux-x86_64.tar.gz
-            $realHash  miplay-sender-v0.9.8-arm64-v8a.apk
+            $realHash  miaocast-v0.9.8-arm64-v8a.apk
         """.trimIndent()
         assertEquals(
             realHash,
-            ApkIntegrityVerifier.extractSha256ForAsset(sumsTxt, "miplay-sender-v0.9.8-arm64-v8a.apk"),
+            ApkIntegrityVerifier.extractSha256ForAsset(sumsTxt, "miaocast-v0.9.8-arm64-v8a.apk"),
         )
         assertNull(ApkIntegrityVerifier.extractSha256ForAsset(sumsTxt, "missing.apk"))
 

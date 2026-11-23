@@ -383,16 +383,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
-name = "miplay-cli"
-version = "0.1.0"
-dependencies = [
- "env_logger",
- "log",
- "miplay-sender-core",
-]
-
-[[package]]
-name = "miplay-sender-core"
+name = "miaocast-core"
 version = "0.1.0"
 dependencies = [
  "aes",
@@ -407,6 +398,15 @@ dependencies = [
  "sha1",
  "sha2",
  "thiserror",
+]
+
+[[package]]
+name = "miplay-cli"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "log",
+ "miaocast-core",
 ]
 
 [[package]]

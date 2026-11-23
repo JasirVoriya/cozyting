@@ -128,7 +128,7 @@
   <g transform="translate(36, 22)">
     <rect x="0" y="4" width="6" height="42" rx="3" fill="url(#jni-bar)"/>
     <text x="18" y="24" class="sans title">妙投（MiaoCast）· 软件运行时整体架构（进程 · 线程 · 队列 · 网络拓扑）</text>
-    <text x="18" y="44" class="mono sub">Single Android Process (ART + libmiplay_sender_core.so) · Bounded Queues (96 / 256) · Per-Receiver 5 Threads &amp; 6 Network Paths</text>
+    <text x="18" y="44" class="mono sub">Single Android Process (ART + libmiaocast_core.so) · Bounded Queues (96 / 256) · Per-Receiver 5 Threads &amp; 6 Network Paths</text>
   </g>
 
   <!-- ==================== LEFT: ANDROID APP PROCESS ==================== -->

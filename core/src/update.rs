@@ -1139,8 +1139,8 @@ mod tests {
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miplay-sender-v0.9.7-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.7/miplay-sender-v0.9.7-arm64-v8a.apk",
+                    "name": "miaocast-v0.9.7-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.7/miaocast-v0.9.7-arm64-v8a.apk",
                     "size_bytes": 6800000,
                     "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                     "signed": true
@@ -1160,8 +1160,8 @@ mod tests {
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miplay-sender-v0.9.8-rc.2-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8-rc.2/miplay-sender-v0.9.8-rc.2-arm64-v8a.apk",
+                    "name": "miaocast-v0.9.8-rc.2-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8-rc.2/miaocast-v0.9.8-rc.2-arm64-v8a.apk",
                     "size_bytes": 6900000,
                     "sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
                     "signed": true
@@ -1283,8 +1283,8 @@ mod tests {
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miplay-sender-v1.0.0-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v1.0.0/miplay-sender-v1.0.0-arm64-v8a.apk",
+                    "name": "miaocast-v1.0.0-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v1.0.0/miaocast-v1.0.0-arm64-v8a.apk",
                     "size_bytes": 7000000,
                     "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                     "signed": true

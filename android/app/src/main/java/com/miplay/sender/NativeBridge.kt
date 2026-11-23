@@ -3,9 +3,9 @@ package com.miplay.sender
 /** 对应 core/src/ffi.rs。所有阻塞调用（discover/probe/start/setVolume/addReceiver）都必须在后台线程调用。 */
 object NativeBridge {
     init {
-        // app_process 调试时没有 APK 的 nativeLibraryDir，可用 -Dmiplay.lib=/绝对路径/libmiplay_sender_core.so
+        // app_process 调试时没有 APK 的 nativeLibraryDir，可用 -Dmiplay.lib=/绝对路径/libmiaocast_core.so
         val explicit = System.getProperty("miplay.lib")
-        if (explicit != null) System.load(explicit) else System.loadLibrary("miplay_sender_core")
+        if (explicit != null) System.load(explicit) else System.loadLibrary("miaocast_core")
         init()
     }
 
