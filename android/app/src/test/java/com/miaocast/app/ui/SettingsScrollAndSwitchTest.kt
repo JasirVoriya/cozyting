@@ -9,16 +9,23 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.miaocast.app.SettingsActivity
+import com.miaocast.app.capture.shell.PairingNotificationGuide
+import com.miaocast.app.capture.shell.WirelessDebugGuideActivity
+import com.miaocast.app.capture.shell.WirelessDebugOnboardingState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * 回归测试：
@@ -160,6 +167,99 @@ class SettingsScrollAndSwitchTest {
         )
 
         controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun settingsCaptureEngineUsesCompactPlanBLayoutWithoutRedundantButtons() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val keyStore = PairingNotificationGuide.keyStore(ctx)
+        keyStore.getOrCreateIdentity()
+        keyStore.markPaired()
+        try {
+            val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+            val activity = controller.get()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            val allTexts = collectTexts(activity.window.decorView)
+            val scopeIdx = allTexts.indexOf("捕获范围")
+            val pairingIdx = allTexts.indexOf("无线调试配对")
+            assertTrue("应展示精简标签「捕获范围」", scopeIdx >= 0)
+            assertTrue("应展示单行入口「无线调试配对」", pairingIdx >= 0)
+            assertTrue("「捕获范围」应位于「无线调试配对」之前，避免策略与配对割裂", scopeIdx < pairingIdx)
+            assertTrue("已配对时应显示「已配对」状态胶囊", allTexts.contains("已配对"))
+
+            assertNull("不应再出现重复的「查看向导 / 重新配对」按钮", findTextViewByText(activity.window.decorView, "查看向导 / 重新配对"))
+            assertNull("设置页不应再单独平铺「测试连接」按钮", findTextViewByText(activity.window.decorView, "测试连接"))
+            assertNull("设置页不应再平铺全宽「清除本机配对证书」按钮", findTextViewByText(activity.window.decorView, "清除本机配对证书"))
+
+            val statusLines = allTexts.filter { it.startsWith("当前状态：") }
+            assertEquals("投送时手机静音下方应保留一行实时状态", 1, statusLines.size)
+            assertFalse("不应在实时状态下方追加重复说明行", statusLines.first().contains("\n说明："))
+
+            controller.pause().stop().destroy()
+        } finally {
+            keyStore.clearPairing()
+        }
+    }
+
+    @Test
+    fun wirelessGuideProvidesClearPairingWithConfirmationDialog() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val keyStore = PairingNotificationGuide.keyStore(ctx)
+        keyStore.getOrCreateIdentity()
+        keyStore.markPaired()
+        try {
+            val controller = Robolectric.buildActivity(WirelessDebugGuideActivity::class.java).setup()
+            val activity = controller.get()
+            activity.applyUiPreviewStateForTest(
+                isDark = true,
+                state = WirelessDebugOnboardingState.evaluate(
+                    sdkInt = 34,
+                    notificationsGranted = true,
+                    developerOptionsEnabled = true,
+                    accessibilityEnabled = true,
+                    paired = true,
+                    connectionVerified = true,
+                    connectedPort = 41235,
+                ),
+                expandTips = false,
+            )
+            shadowOf(Looper.getMainLooper()).idle()
+
+            val clearBtn = findTextViewByText(activity.window.decorView, "清除本机配对证书")
+            assertNotNull("向导页在已配对状态下应提供「清除本机配对证书」入口", clearBtn)
+            clearBtn!!.performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            val dialog = ShadowDialog.getLatestDialog()
+            assertNotNull("点击清除证书应弹出 Style B 二次确认弹窗", dialog)
+            assertTrue("点击确认前尚未清除证书", keyStore.isPaired())
+
+            val confirmBtn = findTextViewByText(dialog!!.window!!.decorView, "确认清除")
+            assertNotNull("确认弹窗应包含「确认清除」按钮", confirmBtn)
+            confirmBtn!!.performClick()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertFalse("点击「确认清除」后应清除本机配对证书", keyStore.isPaired())
+            controller.pause().stop().destroy()
+        } finally {
+            keyStore.clearPairing()
+        }
+    }
+
+    private fun collectTexts(root: View): List<String> {
+        val out = mutableListOf<String>()
+        fun walk(v: View) {
+            if (v is TextView) {
+                val t = v.text?.toString().orEmpty()
+                if (t.isNotBlank()) out.add(t)
+            }
+            if (v is ViewGroup) {
+                for (i in 0 until v.childCount) walk(v.getChildAt(i))
+            }
+        }
+        walk(root)
+        return out
     }
 
     private fun layoutView(view: View, widthPx: Int, heightPx: Int) {
