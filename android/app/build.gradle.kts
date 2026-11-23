@@ -143,10 +143,10 @@ dependencies {
     compileOnly(project(":hiddenapi-stubs"))
     implementation("androidx.core:core-ktx:1.13.1")
     // 纯 Java/Dex 放行 android.media.audiopolicy 等隐藏系统 API（无任何 native .so，保持 16KB 页对齐）
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.2")
     testImplementation("junit:junit:4.13.2")
     // 单元测试使用真实 org.json（平台 stub 会抛 Method not mocked）
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
     // JVM 本地 UI 截图预览与界面冒烟渲染（仅测试依赖，不打入正式 APK）
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("org.robolectric:robolectric:4.18.1")
 }
