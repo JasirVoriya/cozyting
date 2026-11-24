@@ -10,6 +10,10 @@ object NativeBridge {
     }
 
     @JvmStatic external fun init()
+    /** 配置 Rust 核心层的本地轮转日志文件路径与时区偏移（秒）；空路径则停用文件写入。 */
+    @JvmStatic external fun initLogFile(path: String, maxBytes: Long, tzOffsetSecs: Int)
+    /** 清空 Rust 核心层内存日志与已配置的落盘日志文件。 */
+    @JvmStatic external fun clearCoreLogs()
     /** 每行 "ip\tname\tmodel\tadvertises_miplay\tservice\tapps"；出错时 "ERROR\t原因"。 */
     @JvmStatic external fun discover(localIp: String, timeoutMs: Int): String
     /** 跨端结构化发现 JSON（由 Rust core 统一分类、过滤并合并历史缓存）。 */

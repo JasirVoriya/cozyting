@@ -38,6 +38,9 @@ import com.cozyting.app.cast.PrefsDiscoveredDeviceStore
 import com.cozyting.app.compat.CaptureSelectionLayers
 import com.cozyting.app.compat.LocaleCompat
 import com.cozyting.app.compat.WindowInsetsApplyCompat
+import com.cozyting.app.diag.AppLog
+import com.cozyting.app.diag.AppLogStore
+import com.cozyting.app.diag.LogViewerActivity
 import com.cozyting.app.ui.AppLanguage
 import com.cozyting.app.ui.AppLocaleManager
 import com.cozyting.app.ui.PrefsCastSettingsStore
@@ -113,6 +116,7 @@ class SettingsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
+        AppLog.init(applicationContext)
         settingsStore = PrefsCastSettingsStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
         targetStore = PrefsTargetAppStore(this)
@@ -340,9 +344,60 @@ class SettingsActivity : Activity() {
         )
         root.addView(castCard)
 
-        // —— 卡片 3：连接与调试（默认折叠） ——
+        // —— 卡片 3：连接与调试（运行日志直达 + 高级调试默认折叠） ——
         root.addView(UiComponents.sectionTitle(this, palette, getString(R.string.settings_section_debug)))
         val debugCard = UiComponents.panelCard(this, palette, padDp = 14)
+
+        val logSizeLabel = AppLogStore.formatSize(AppLog.totalSizeBytes(this))
+        val logRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(2), 0, dp(10))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                startActivity(Intent(this@SettingsActivity, LogViewerActivity::class.java))
+            }
+        }
+        val logMeta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        logMeta.addView(
+            TextView(this).apply {
+                text = getString(R.string.settings_logs_title)
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+            },
+        )
+        logMeta.addView(
+            TextView(this).apply {
+                text = getString(R.string.settings_logs_sub_fmt, logSizeLabel)
+                textSize = 11.5f
+                setTextColor(palette.textSecondary)
+                setPadding(0, dp(2), 0, 0)
+            },
+        )
+        logRow.addView(logMeta)
+        logRow.addView(
+            ImageView(this).apply {
+                setImageResource(R.drawable.ic_ui_chevron_right)
+                setColorFilter(palette.textSecondary)
+                layoutParams = LinearLayout.LayoutParams(dp(18), dp(18))
+            },
+        )
+        debugCard.addView(logRow)
+        debugCard.addView(
+            View(this).apply {
+                setBackgroundColor(palette.panelBorder)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(1).coerceAtLeast(1),
+                ).apply { bottomMargin = dp(10) }
+            },
+        )
+
         val debugBody = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = if (debugExpanded) View.VISIBLE else View.GONE

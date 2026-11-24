@@ -3,7 +3,7 @@ package com.cozyting.app.capture.shell
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.concurrent.CountDownLatch
@@ -55,7 +55,7 @@ class WirelessAdbDiscovery(context: Context) {
         val localIps = collectLocalIpv4Addresses()
         val listener = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(regType: String) {
-                Log.i(TAG, "NSD startWatching: $regType")
+                AppLog.i(TAG, "NSD startWatching: $regType")
             }
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
@@ -65,7 +65,7 @@ class WirelessAdbDiscovery(context: Context) {
                         serviceInfo,
                         object : NsdManager.ResolveListener {
                             override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) {
-                                Log.w(TAG, "NSD resolve failed ($serviceType): code=$errorCode")
+                                AppLog.w(TAG, "NSD resolve failed ($serviceType): code=$errorCode")
                             }
 
                             override fun onServiceResolved(info: NsdServiceInfo) {
@@ -74,12 +74,12 @@ class WirelessAdbDiscovery(context: Context) {
                                 if (port !in 1..65535) return
                                 // 仅接受本机地址，避免同 Wi-Fi 下其他开启无线调试的设备干扰
                                 if (host !in localIps) {
-                                    Log.i(TAG, "NSD skip non-local $serviceType at $host:$port")
+                                    AppLog.i(TAG, "NSD skip non-local $serviceType at $host:$port")
                                     return
                                 }
                                 val ep = Endpoint("127.0.0.1", port, info.serviceName.orEmpty())
                                 latestEndpoint.set(ep)
-                                Log.i(TAG, "NSD resolved local $serviceType -> 127.0.0.1:$port")
+                                AppLog.i(TAG, "NSD resolved local $serviceType -> 127.0.0.1:$port")
                                 onFound(ep)
                             }
                         },
@@ -97,7 +97,7 @@ class WirelessAdbDiscovery(context: Context) {
             override fun onDiscoveryStopped(serviceType: String) {}
             override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
                 active.set(false)
-                Log.w(TAG, "NSD start failed ($serviceType): code=$errorCode")
+                AppLog.w(TAG, "NSD start failed ($serviceType): code=$errorCode")
             }
 
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {

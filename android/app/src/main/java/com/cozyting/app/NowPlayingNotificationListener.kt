@@ -2,7 +2,7 @@ package com.cozyting.app
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -11,7 +11,8 @@ import java.util.concurrent.CopyOnWriteArraySet
  */
 class NowPlayingNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
-        Log.i(TAG, "notification listener connected")
+        AppLog.init(applicationContext)
+        AppLog.i(TAG, "notification listener connected")
         sessionChangeCallbacks.forEach { cb ->
             runCatching { cb() }
         }

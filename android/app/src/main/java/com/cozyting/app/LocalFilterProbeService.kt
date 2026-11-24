@@ -16,7 +16,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import com.cozyting.app.capture.AndroidPackageIdentityLookup
 import com.cozyting.app.capture.CaptureFailReason
 import com.cozyting.app.capture.CaptureTargetResolver
@@ -71,7 +71,7 @@ class LocalFilterProbeService : Service() {
 
     private fun event(s: String) {
         lastEvent = s.take(120)
-        Log.i(TAG, s)
+        AppLog.i(TAG, s)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -255,7 +255,7 @@ class LocalFilterProbeService : Service() {
                         "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
                             "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
                             "⇒ ${snap.dominant} | ${snap.verdictZh}$silenceNote"
-                    Log.i(TAG, "PCM_PROBE $lastProbe")
+                    AppLog.i(TAG, "PCM_PROBE $lastProbe")
                     main.post { updateNotification() }
                 }
             }

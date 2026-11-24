@@ -26,7 +26,7 @@ import android.text.TextUtils
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -251,6 +251,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
+        AppLog.init(applicationContext)
         appliedLanguageId = AppLocaleManager.readSelectedLanguage(this).id
         nowPlaying = NowPlayingInfo.unavailable(getString(R.string.common_loading))
         store = PrefsTargetAppStore(this)
@@ -2767,7 +2768,7 @@ class MainActivity : Activity() {
             } finally {
                 lock.release()
             }
-            Log.i(CastService.TAG, "discoverJsonEx(force=$forceRefreshNames): $r")
+            AppLog.i(CastService.TAG, "discoverJsonEx(force=$forceRefreshNames): $r")
             main.post {
                 discovering = false
                 stopRefreshSpinner()
@@ -2779,7 +2780,7 @@ class MainActivity : Activity() {
                     return@post
                 }
                 parsed.rows.forEach { row ->
-                    if (row.logLine.isNotBlank()) Log.i(CastService.TAG, row.logLine)
+                    if (row.logLine.isNotBlank()) AppLog.i(CastService.TAG, row.logLine)
                 }
                 val mergedDevices = parsed.merged
                 deviceStore.saveDevices(parsed.cacheable)

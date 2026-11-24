@@ -4,4 +4,8 @@
     <cache-path
         name="updates"
         path="updates/" />
+    <!-- 仅暴露用户主动导出时生成的临时诊断日志快照 -->
+    <cache-path
+        name="logs"
+        path="logs/" />
 </paths>

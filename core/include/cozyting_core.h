@@ -123,6 +123,15 @@ char *cozyting_update_evaluate_json(
     const char *raw_response_json
 );
 
+/* 初始化核心日志器并配置本地轮转日志文件路径（path 为 NULL 或空串时仅使用内存缓冲）。 */
+void cozyting_init_log_file(const char *path, uint64_t max_bytes, int32_t tz_offset_secs);
+
+/* 读取核心层内存环形缓冲中的近期日志文本（返回字符串需用 cozyting_string_free 释放）。 */
+char *cozyting_recent_logs(void);
+
+/* 清空核心层内存日志与已配置的落盘日志文件。 */
+void cozyting_clear_logs(void);
+
 #ifdef __cplusplus
 }
 #endif

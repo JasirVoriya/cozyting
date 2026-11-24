@@ -5,6 +5,7 @@
 //! 必须调用 [`cozyting_string_free`] 释放。
 
 use crate::device_catalog;
+use crate::diag_log;
 use crate::engine;
 use crate::update;
 use std::ffi::{CStr, CString};
@@ -297,6 +298,28 @@ pub unsafe extern "C" fn cozyting_update_evaluate_json(
     ))
 }
 
+/// 初始化核心日志器并配置本地轮转日志文件路径（传 NULL 或空串仅保留内存环形缓冲）。
+#[no_mangle]
+pub unsafe extern "C" fn cozyting_init_log_file(
+    path: *const c_char,
+    max_bytes: u64,
+    tz_offset_secs: i32,
+) {
+    diag_log::configure_log_file(cstr_to_str(path), max_bytes, tz_offset_secs);
+}
+
+/// 获取核心层内存环形缓冲中的近期日志文本（调用方需用 `cozyting_string_free` 释放）。
+#[no_mangle]
+pub extern "C" fn cozyting_recent_logs() -> *mut c_char {
+    into_c_string(diag_log::recent_logs())
+}
+
+/// 清空核心层内存日志与已配置的落盘日志文件。
+#[no_mangle]
+pub extern "C" fn cozyting_clear_logs() {
+    diag_log::clear_logs();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -385,6 +408,11 @@ mod tests {
             assert!(vq.contains("\"volume\":85"));
             assert!(vq.contains("\"clamped\":false"));
             cozyting_engine_stop(vh);
+
+            cozyting_init_log_file(std::ptr::null(), 0, 0);
+            cozyting_clear_logs();
+            let empty_logs = take_str(cozyting_recent_logs());
+            assert!(empty_logs.is_empty());
         }
     }
 }

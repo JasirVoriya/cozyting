@@ -52,6 +52,10 @@
             android:name=".capture.shell.WirelessDebugGuideActivity"
             android:exported="false"
             android:label="@string/title_wireless_guide" />
+        <activity
+            android:name=".diag.LogViewerActivity"
+            android:exported="false"
+            android:label="@string/title_log_viewer" />
         <service
             android:name=".CastService"
             android:foregroundServiceType="mediaProjection|mediaPlayback"

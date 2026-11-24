@@ -10,7 +10,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import com.cozyting.app.NowPlayingNotificationListener
 
 /**
@@ -60,7 +60,7 @@ class NowPlayingTracker(
         runCatching {
             refreshControllers(msm?.getActiveSessions(cn))
         }.onFailure {
-            Log.i(TAG, "MediaSession 不可用: ${it.message}")
+            AppLog.i(TAG, "MediaSession 不可用: ${it.message}")
             listenerRegistered = false
             if (publishMetadata) {
                 onUpdate(

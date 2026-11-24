@@ -96,3 +96,16 @@
   - **≥ 2 台设备**：统一简洁纯计数（正常：`N 台设备同步播放`；全部连接中：`正在连接 N 台设备`；已暂停：`N 台设备`；存在异常时聚合提醒：`N 台设备 · K 台重连中` / `M 台已断开`）。
 - **下拉展开态（`BigTextStyle`）**：≥ 2 台设备时列出具体音箱明细（`• 设备名 · 状态`），异常设备置顶排序，最多展示前 5 台，超出末尾折叠为 `…等共 N 台设备`；操作按钮保留 `暂停/恢复` 与 `停止`。通知渠道名称统一为 `窝爱听 · 投送状态`。
 - **iOS 边界说明**：iOS 无 Android 前台服务常驻通知，播控与连接状态由 App 内顶栏胶囊及系统「控制中心 / 正在播放」（或后续 Live Activities）承载，文案沿用同等去工程化口径。
+
+## 6. 本地运行日志浏览与导出（设置页 · 连接与调试）
+
+- **入口位置**：设置页「连接与调试」卡片顶部直出「**运行日志**」入口行（无需展开折叠调试区），副标题展示当前本地日志总占用体积，右侧为 `ic_ui_chevron_right`，点击进入独立日志浏览页。
+- **日志采集与容量边界（L1 + L2 协同）**：
+  - L1 Rust 核心（`core/src/diag_log.rs`）通过 `cozyting_init_log_file` / `NativeBridge.initLogFile` 异步轮转写入本地 `core.log`（256 KB × 2 = 512 KB 封顶）并维护内存环形缓冲（`cozyting_recent_logs`），同时保留原有系统日志输出（Android `CozyTingCore` Logcat）。
+  - L2 客户端异步轮转写入 `runtime.log`（256 KB × 2 = 512 KB 封顶），并兼容保留 `cast_ops.log`（64 KB × 2 = 128 KB 封顶）；全量日志仅存应用私有沙箱，零自动上传，不含音频数据。
+- **独立日志浏览页（Android `LogViewerActivity` / iOS SwiftUI `LogViewerView`）**：
+  - 顶栏：返回按钮 + 标题与摘要（行数 · 本地占用）+ 刷新按钮（`ic_ui_refresh`）。
+  - 分段筛选：`[全部 | 告警/错误 | 核心协议 | 操作流水]`。
+  - 正文区：Style B 面板卡片内嵌等宽字体滚动视图，支持选中文本，打开/刷新默认定位至最新日志（底部）。
+  - 底部操作栏：`导出分享`（主按钮，生成含诊断头的临时 `.txt` 并调起系统分享）、`复制`、`清空`（二次确认弹窗后调用 `clearAll` + `cozyting_clear_logs`）。
+- **iOS SwiftUI 对齐实现**：使用 `NavigationLink` 进入 `LogViewerView`，通过 C ABI `cozyting_init_log_file` 将 Rust 核心日志落盘到 App Group / `Library/Caches` 或 `Application Support` 私有目录，导出采用 SwiftUI 原生 `ShareLink(item: url)` 分享临时诊断快照 `.txt`。
