@@ -8,6 +8,21 @@
 
 ---
 
+## [0.9.9-rc.1] - 2026-11-24
+
+> 预发版（Pre-release）：新增应用内本地运行日志落盘、浏览与一键导出分享，并修复无线调试已配对设备默认名称。
+
+### Added
+- **应用内本地运行日志落盘与浏览/导出（L1 Rust + Android + iOS 规范同步）**：
+  - L1 Rust 核心新增异步轮转日志转发模块（`core/src/diag_log.rs`），在保留原有 `CozyTingCore` Logcat 输出的同时异步落盘至应用私有目录 `core.log`（256 KB × 2 轮转，封顶 512 KB），并同步暴露 Android JNI 与 iOS C ABI（`cozyting_init_log_file` / `cozyting_recent_logs` / `cozyting_clear_logs`）。
+  - Android 侧新增统一日志入口 `AppLog` / `AppLogStore`（异步轮转写入 `runtime.log`，封顶 512 KB，并兼容合并 `cast_ops.log`），纯本地沙箱存储、不含音频数据、零自动上传。
+  - 设置页「连接与调试」卡片新增直达「**运行日志**」入口及独立浏览页（支持按「全部 / 告警与错误 / 核心协议 / 操作流水」筛选、刷新、复制、清空及附带诊断头的一键系统分享导出），同步补齐中/英/日三语资源与 `design/UI_SPEC.md`。
+
+### Fixed
+- **无线调试默认配对名称同步品牌名**：将 `AdbCrypto.encodeAndroidPublicKeyLine` 默认 `userHost` 从 `miplay@android` 更正为 `cozyting@android`（新配对后在系统「无线调试 → 已配对设备」中正确显示）。
+
+---
+
 ## [0.9.8] - 2026-11-24
 
 > 正式版（Stable Release）：**窝爱听（CozyTing）**全新品牌名与全新「深夜亮灯小屋 · 垂尾听歌小猫」桌面图标正式发布，全链路同步三语官网、设计规范与 60 秒宣传片。纯局域网运行，零云端、零账号、零遥测。

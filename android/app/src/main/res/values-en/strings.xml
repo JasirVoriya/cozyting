@@ -501,4 +501,27 @@
     <string name="cast_hotswitch_rejected">Cannot switch source: %1$s</string>
     <string name="cast_hotswitch_reverted">Could not hot-switch to %1$s; kept %2$s</string>
     <string name="cast_hotswitch_stopped">Failed to hot-switch to %1$s, casting stopped: %2$s</string>
+
+    <!-- Runtime Log Viewer -->
+    <string name="title_log_viewer">Runtime Logs</string>
+    <string name="settings_logs_title">Runtime Logs</string>
+    <string name="settings_logs_sub_fmt">Local only · %1$s used · Browse or export</string>
+    <string name="log_viewer_loading">Loading local logs…</string>
+    <string name="log_viewer_summary_fmt">%1$d lines · %2$s on device</string>
+    <string name="log_viewer_empty">No log entries yet</string>
+    <string name="log_viewer_refresh">Refresh logs</string>
+    <string name="log_viewer_filter_all">All</string>
+    <string name="log_viewer_filter_warn_error">Warn/Err</string>
+    <string name="log_viewer_filter_core">Core</string>
+    <string name="log_viewer_filter_ops">Ops</string>
+    <string name="log_viewer_export">Export</string>
+    <string name="log_viewer_export_chooser">Export CozyTing Logs</string>
+    <string name="log_viewer_export_failed">Failed to export logs</string>
+    <string name="log_viewer_copy">Copy</string>
+    <string name="log_viewer_copied">Visible logs copied to clipboard</string>
+    <string name="log_viewer_clear">Clear</string>
+    <string name="log_viewer_clear_title">Clear local logs?</string>
+    <string name="log_viewer_clear_msg">This permanently removes saved runtime logs, core protocol logs, and operation history on this device.</string>
+    <string name="log_viewer_clear_confirm">Clear</string>
+    <string name="log_viewer_cleared">Local logs cleared</string>
 </resources>

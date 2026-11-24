@@ -17,7 +17,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
-import android.util.Log
+import com.cozyting.app.diag.AppLog
 import com.cozyting.app.capture.AndroidPackageIdentityLookup
 import com.cozyting.app.capture.AudioCaptureBackend
 import com.cozyting.app.capture.AutoSourceSelectionPolicy
@@ -325,6 +325,7 @@ class CastService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        AppLog.init(applicationContext)
         settingsStore = PrefsCastSettingsStore(applicationContext)
         targetStore = PrefsTargetAppStore(applicationContext)
         deviceStore = PrefsDiscoveredDeviceStore(applicationContext)
@@ -339,7 +340,7 @@ class CastService : Service() {
     private fun publishMute(snap: LocalOutputMute.Snapshot) {
         localMuteStatus = snap.status
         localMuteStatusZh = snap.messageZh
-        Log.i(
+        AppLog.i(
             TAG,
             "LOCAL_MUTE status=${snap.status} isStreamMute=${snap.streamMuted} " +
                 "probeLocked=${snap.probeLocked} policy=${snap.policy} api=${snap.api} msg=${snap.messageZh}",
@@ -350,7 +351,7 @@ class CastService : Service() {
         lastEvent = s.substringBefore('{').trim().trimEnd('：', ':').take(80).ifEmpty { s.take(80) }
         val opsFile = runCatching { applicationContext?.filesDir?.let { File(it, "cast_ops.log") } }.getOrNull()
         val stamped = recordOperationEvent(s, opsFile)
-        Log.i(TAG, "OP_EVENT $stamped")
+        AppLog.i(TAG, "OP_EVENT $stamped")
     }
 
     private fun bg(name: String, f: () -> Unit) = Thread(f, name).start()
@@ -668,11 +669,11 @@ class CastService : Service() {
                     val rawStats = NativeBridge.stats(h)
                     if (!running.get() || handle != h) return@bg
                     lastStats = rawStats
-                    Log.i(TAG, "STATS pushed=$pushed dropped=$dropped " + lastStats)
+                    AppLog.i(TAG, "STATS pushed=$pushed dropped=$dropped " + lastStats)
                     runCatching {
                         val lat = JSONObject(lastStats).optJSONObject("latency")
                         if (lat != null) {
-                            Log.i(
+                            AppLog.i(
                                 TAG,
                                 "LATENCY kind=${lat.optString("kind")} e2e=${lat.opt("e2e_est_ms")} " +
                                     "ahead=${lat.opt("schedule_ahead_ms")} delay_ms=${lat.optLong("playback_delay_ms")} " +
@@ -870,14 +871,14 @@ class CastService : Service() {
                 localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
                 localMuteStatusResId = R.string.cast_mute_status_single_app
                 localMuteStatusZh = "单 App 本机静音已生效（无感环回，不影响其他 App 手机出声）"
-                Log.i(TAG, "LOCAL_MUTE mode=ISOLATED_APP_LOOPBACK msg=$localMuteStatusZh")
+                AppLog.i(TAG, "LOCAL_MUTE mode=ISOLATED_APP_LOOPBACK msg=$localMuteStatusZh")
             }
             AudioCaptureBackend.LocalMuteHandling.SYSTEM_ROUTE_LOOPBACK -> {
                 localMute.skip("system route loopback")
                 localMuteStatus = LocalOutputMute.Status.ACTIVE_VERIFIED
                 localMuteStatusResId = R.string.cast_mute_status_global
                 localMuteStatusZh = "全局媒体本机静音已生效（无感环回路由）"
-                Log.i(TAG, "LOCAL_MUTE mode=SYSTEM_ROUTE_LOOPBACK msg=$localMuteStatusZh")
+                AppLog.i(TAG, "LOCAL_MUTE mode=SYSTEM_ROUTE_LOOPBACK msg=$localMuteStatusZh")
             }
             AudioCaptureBackend.LocalMuteHandling.KEEP_LOCAL_OUTPUT -> {
                 localMuteStatusResId = 0
@@ -1070,7 +1071,7 @@ class CastService : Service() {
                     "RMS=${"%.0f".format(snap.rms)} peak=${snap.peak} " +
                         "A=${"%.2e".format(snap.energyA)} B=${"%.2e".format(snap.energyB)} " +
                         "⇒ ${snap.dominant} | ${snap.verdictZh}"
-                Log.i(TAG, "PCM_PROBE $lastPcmProbe")
+                AppLog.i(TAG, "PCM_PROBE $lastPcmProbe")
             }
             if (activeMuteHandling == AudioCaptureBackend.LocalMuteHandling.MANAGED_BY_GLOBAL_STREAM_MUTE) {
                 val prevLocked = localMute.snapshot().probeLocked
@@ -1082,7 +1083,7 @@ class CastService : Service() {
             }
         }
         if (blocks % 470 == 0L) {
-            Log.i(TAG, "capture blocks=$blocks peak=$pcmPeak aacProduced=${enc.produced}")
+            AppLog.i(TAG, "capture blocks=$blocks peak=$pcmPeak aacProduced=${enc.produced}")
             pcmPeak = 0
         }
         enc.encode(buf, len)
@@ -1133,7 +1134,7 @@ class CastService : Service() {
         if (h != 0L) {
             Thread {
                 val finalStats = NativeBridge.stats(h)
-                Log.i(TAG, "FINAL $finalStats")
+                AppLog.i(TAG, "FINAL $finalStats")
                 NativeBridge.stop(h)
             }.start()
         }
@@ -1163,7 +1164,7 @@ class CastService : Service() {
             .apply { setReferenceCounted(false); acquire(6 * 60 * 60 * 1000L) }
         val pm = getSystemService(PowerManager::class.java)
         val exempt = pm.isIgnoringBatteryOptimizations(packageName)
-        Log.i(
+        AppLog.i(
             TAG,
             "locks acquired; wakeHeld=${wakeLock?.isHeld} wifiHeld=${wifiLock?.isHeld} battery-exempt=$exempt" +
                 if (exempt) "" else "（部分品牌后台仍可能冻结，省电豁免≠保活保证）",
@@ -1175,7 +1176,7 @@ class CastService : Service() {
         runCatching { if (wakeLock?.isHeld == true) wakeLock?.release() }
         wifiLock = null
         wakeLock = null
-        Log.i(TAG, "locks released")
+        AppLog.i(TAG, "locks released")
     }
 
     private fun startForegroundCompat() {

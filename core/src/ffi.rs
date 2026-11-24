@@ -6,6 +6,7 @@
 #[cfg(feature = "jni")]
 mod android {
     use crate::device_catalog;
+    use crate::diag_log;
     use crate::engine;
     use crate::update;
     use jni::objects::{JByteArray, JClass, JString};
@@ -22,12 +23,29 @@ mod android {
 
     #[no_mangle]
     pub extern "system" fn Java_com_cozyting_app_NativeBridge_init(_e: JNIEnv, _c: JClass) {
-        #[cfg(target_os = "android")]
-        android_logger::init_once(
-            android_logger::Config::default()
-                .with_tag("CozyTingCore")
-                .with_max_level(log::LevelFilter::Info),
-        );
+        diag_log::init_logger();
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_initLogFile(
+        mut env: JNIEnv,
+        _c: JClass,
+        path: JString,
+        max_bytes: jlong,
+        tz_offset_secs: jint,
+    ) {
+        let p = jstr(&mut env, &path);
+        let limit = if max_bytes <= 0 {
+            diag_log::DEFAULT_MAX_LOG_BYTES
+        } else {
+            max_bytes as u64
+        };
+        diag_log::configure_log_file(&p, limit, tz_offset_secs);
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_clearCoreLogs(_e: JNIEnv, _c: JClass) {
+        diag_log::clear_logs();
     }
 
     #[no_mangle]

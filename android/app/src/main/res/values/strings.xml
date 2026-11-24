@@ -501,4 +501,27 @@
     <string name="cast_hotswitch_rejected">无法切换音源：%1$s</string>
     <string name="cast_hotswitch_reverted">无法热切换至 %1$s，已保持当前音源 %2$s</string>
     <string name="cast_hotswitch_stopped">无法热切换音源为 %1$s，已停止投送：%2$s</string>
+
+    <!-- Runtime Log Viewer -->
+    <string name="title_log_viewer">运行日志</string>
+    <string name="settings_logs_title">运行日志</string>
+    <string name="settings_logs_sub_fmt">本地记录 · 当前占用 %1$s · 点击浏览或导出</string>
+    <string name="log_viewer_loading">正在读取本地日志…</string>
+    <string name="log_viewer_summary_fmt">%1$d 行 · 本地占用 %2$s</string>
+    <string name="log_viewer_empty">暂无日志记录</string>
+    <string name="log_viewer_refresh">刷新日志</string>
+    <string name="log_viewer_filter_all">全部</string>
+    <string name="log_viewer_filter_warn_error">告警/错误</string>
+    <string name="log_viewer_filter_core">核心协议</string>
+    <string name="log_viewer_filter_ops">操作流水</string>
+    <string name="log_viewer_export">导出分享</string>
+    <string name="log_viewer_export_chooser">导出 CozyTing 运行日志</string>
+    <string name="log_viewer_export_failed">导出日志失败</string>
+    <string name="log_viewer_copy">复制</string>
+    <string name="log_viewer_copied">已复制当前日志到剪贴板</string>
+    <string name="log_viewer_clear">清空</string>
+    <string name="log_viewer_clear_title">清空本地日志？</string>
+    <string name="log_viewer_clear_msg">将删除本机保存的运行日志、核心协议日志与操作流水记录，且无法恢复。</string>
+    <string name="log_viewer_clear_confirm">确认清空</string>
+    <string name="log_viewer_cleared">已清空本地日志</string>
 </resources>

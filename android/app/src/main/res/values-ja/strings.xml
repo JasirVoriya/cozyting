@@ -501,4 +501,27 @@
     <string name="cast_hotswitch_rejected">音源を切り替えできません：%1$s</string>
     <string name="cast_hotswitch_reverted">%1$s へ切り替えできませんでした（%2$s を維持）</string>
     <string name="cast_hotswitch_stopped">%1$s への切替に失敗しキャストを停止しました：%2$s</string>
+
+    <!-- Runtime Log Viewer -->
+    <string name="title_log_viewer">実行ログ</string>
+    <string name="settings_logs_title">実行ログ</string>
+    <string name="settings_logs_sub_fmt">ローカル保存 · 使用量 %1$s · 閲覧またはエクスポート</string>
+    <string name="log_viewer_loading">ローカルログを読み込み中…</string>
+    <string name="log_viewer_summary_fmt">%1$d 行 · 端末使用量 %2$s</string>
+    <string name="log_viewer_empty">ログはまだありません</string>
+    <string name="log_viewer_refresh">ログを更新</string>
+    <string name="log_viewer_filter_all">すべて</string>
+    <string name="log_viewer_filter_warn_error">警告/エラー</string>
+    <string name="log_viewer_filter_core">コア</string>
+    <string name="log_viewer_filter_ops">操作履歴</string>
+    <string name="log_viewer_export">エクスポート</string>
+    <string name="log_viewer_export_chooser">CozyTing 実行ログをエクスポート</string>
+    <string name="log_viewer_export_failed">ログのエクスポートに失敗しました</string>
+    <string name="log_viewer_copy">コピー</string>
+    <string name="log_viewer_copied">表示中のログをコピーしました</string>
+    <string name="log_viewer_clear">消去</string>
+    <string name="log_viewer_clear_title">ローカルログを消去しますか？</string>
+    <string name="log_viewer_clear_msg">端末に保存された実行ログ、コアプロトコルログ、操作履歴を完全に削除します。元に戻せません。</string>
+    <string name="log_viewer_clear_confirm">消去する</string>
+    <string name="log_viewer_cleared">ローカルログを消去しました</string>
 </resources>
