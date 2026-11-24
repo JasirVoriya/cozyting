@@ -12,20 +12,19 @@
 - **Category**: Open-Source LAN Multi-Room Audio Casting App / Third-Party MiPlay Sender Client
 - **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
 - **Supported App & Website Languages**: Simplified Chinese (`zh-CN`), English (`en`), Japanese (`ja`) — follow system language or switch in-app / via top-bar switcher
-- **Official Source Code, Issues & PRs Repo**: https://github.com/JasirVoriya/cozyting
-- **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/cozyting-releases
+- **Official GitHub Repository (Source, Issues, Releases & Docs)**: https://github.com/JasirVoriya/cozyting
 - **Official Website (GitHub Pages)**:
-  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/
-  - English: https://jasirvoriya.github.io/cozyting-releases/en/
-  - 日本語: https://jasirvoriya.github.io/cozyting-releases/ja/
-- **Downloads (Android APK & `cozyting-cli`)**: https://github.com/JasirVoriya/cozyting-releases/releases
+  - 简体中文: https://jasirvoriya.github.io/cozyting/
+  - English: https://jasirvoriya.github.io/cozyting/en/
+  - 日本語: https://jasirvoriya.github.io/cozyting/ja/
+- **Downloads (Android APK & `cozyting-cli`)**: https://github.com/JasirVoriya/cozyting/releases
 - **Interactive Architecture Explorer**:
-  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/architecture.html
-  - English: https://jasirvoriya.github.io/cozyting-releases/en/architecture.html
-  - 日本語: https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html
+  - 简体中文: https://jasirvoriya.github.io/cozyting/architecture.html
+  - English: https://jasirvoriya.github.io/cozyting/en/architecture.html
+  - 日本語: https://jasirvoriya.github.io/cozyting/ja/architecture.html
 - **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`cozyting-cli`)
 - **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
-- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://raw.githubusercontent.com/JasirVoriya/cozyting-releases/main/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
+- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://raw.githubusercontent.com/JasirVoriya/cozyting/main/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
 
 ## Key Problems Solved (Pain Points)
 
@@ -44,18 +43,18 @@
 
 ## Canonical Documentation Links
 
-- [README (简体中文)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
-- [README (English)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README_EN.md): Complete English product & developer documentation.
-- [README (日本語)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README_JA.md): Complete Japanese product & developer documentation.
-- [Product Website (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting-releases/): Multilingual landing pages with comparison table, localized screenshots, localized promo videos, download CTA, and structured FAQ.
-- [CozyTing in 1 Minute Videos (MP4, 1280x720, 60s)](https://jasirvoriya.github.io/cozyting-releases/#video):
-  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo.mp4
-  - English: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-en.mp4
-  - 日本語: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja.mp4
-- [Interactive Architecture Explorer (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting-releases/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
-- [Device Compatibility Matrix](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
-- [Known Limitations](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.
-- [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
-- [Changelog](https://github.com/JasirVoriya/cozyting-releases/blob/main/CHANGELOG.md): Version release history.
-- [Security Policy](https://github.com/JasirVoriya/cozyting-releases/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
-- [Releases & APK Downloads](https://github.com/JasirVoriya/cozyting-releases/releases): Signed Android APKs, `cozyting-cli` binaries, and `SHA256SUMS.txt`.
+- [README (简体中文)](https://github.com/JasirVoriya/cozyting/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
+- [README (English)](https://github.com/JasirVoriya/cozyting/blob/main/README_EN.md): Complete English product & developer documentation.
+- [README (日本語)](https://github.com/JasirVoriya/cozyting/blob/main/README_JA.md): Complete Japanese product & developer documentation.
+- [Product Website (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting/): Multilingual landing pages with comparison table, localized screenshots, localized promo videos, download CTA, and structured FAQ.
+- [CozyTing in 1 Minute Videos (MP4, 1280x720, 60s)](https://jasirvoriya.github.io/cozyting/#video):
+  - 简体中文: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4
+  - English: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4
+  - 日本語: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4
+- [Interactive Architecture Explorer (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
+- [Device Compatibility Matrix](https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
+- [Known Limitations](https://github.com/JasirVoriya/cozyting/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.
+- [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/cozyting/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
+- [Changelog](https://github.com/JasirVoriya/cozyting/blob/main/CHANGELOG.md): Version release history.
+- [Security Policy](https://github.com/JasirVoriya/cozyting/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
+- [Releases & APK Downloads](https://github.com/JasirVoriya/cozyting/releases): Signed Android APKs, `cozyting-cli` binaries, and `SHA256SUMS.txt`.

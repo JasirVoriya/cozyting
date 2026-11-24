@@ -12,20 +12,19 @@
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> · <a href="README_JA.md">日本語</a> ·
-  <a href="https://github.com/JasirVoriya/cozyting">源码仓库</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/">产品官网</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/#video">演示视频</a> ·
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases">下载安装包</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/">产品官网</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/#video">演示视频</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/releases">下载安装包</a> ·
   <a href="https://github.com/JasirVoriya/cozyting/issues">问题反馈</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/architecture.html">交互式架构图</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/architecture.html">交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
-  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -38,8 +37,7 @@
 > **窝爱听（CozyTing）是什么？**
 > **窝爱听（CozyTing）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
 >
-> 📦 **立即获取**：前往 **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `cozyting-cli`。
-> 🗂️ **仓库分工**：源码、Issue 与 Pull Request 托管在 **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**；签名 APK / CLI 产物、产品官网与应用内更新清单托管在 **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)**。
+> 📦 **立即获取**：前往 **[GitHub Releases](https://github.com/JasirVoriya/cozyting/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `cozyting-cli`。
 > 📑 **快速导航**：[一分钟看懂窝爱听](#-一分钟看懂窝爱听) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
 
 ---
@@ -47,12 +45,12 @@
 ## 🎬 一分钟看懂窝爱听
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/cozyting-releases/#video" title="点击前往产品官网在线观看：一分钟看懂窝爱听（CozyTing）">
+  <a href="https://jasirvoriya.github.io/cozyting/#video" title="点击前往产品官网在线观看：一分钟看懂窝爱听（CozyTing）">
     <img src="docs/assets/video/cozyting-promo-poster.jpg" alt="一分钟看懂窝爱听（CozyTing）产品演示视频封面：演示任意安卓手机投音到多台小米 / 小爱音箱、单 App 音频隔离、最多 63 台同频与 4 档延迟热切" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/cozyting-releases/#video"><strong>▶ 在产品官网在线观看</strong></a> ·
-    <a href="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo.mp4">直接播放 / 下载 MP4（1280×720）</a>
+    <a href="https://jasirvoriya.github.io/cozyting/#video"><strong>▶ 在产品官网在线观看</strong></a> ·
+    <a href="https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4">直接播放 / 下载 MP4（1280×720）</a>
   </p>
 </div>
 
@@ -160,7 +158,7 @@
 
 1. **下载并安装 Android 应用**
    - 要求：**Android 10（API 29）及以上**（`arm64-v8a` 设备）。
-   - 前往 **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** 下载最新的 `cozyting-*-arm64-v8a.apk` 安装到手机。
+   - 前往 **[GitHub Releases（cozyting）](https://github.com/JasirVoriya/cozyting/releases)** 下载最新的 `cozyting-*-arm64-v8a.apk` 安装到手机。
 2. **连接同一家庭 Wi-Fi，自动发现音箱**
    - 确保手机与小米 / 小爱音箱处于同一局域网（同路由器 Wi-Fi）。
    - 打开窝爱听，几秒内即可在「输出设备」列表看到局域网内支持 MiPlay 的音箱。
@@ -216,7 +214,7 @@
 ### 2. 架构可视化总览
 
 > 🧭 **深入探索源码与模块上下游**：
-> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/cozyting-releases/architecture.html](https://jasirvoriya.github.io/cozyting-releases/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
+> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/cozyting/architecture.html](https://jasirvoriya.github.io/cozyting/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
 > - **全仓源码深度手册**：查阅 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**（含 41 个 Android 源码、24 个 Rust 核心模块、19 组 JVM 契约单测与 6 阶段生命周期不变量详表）。
 
 #### （1）跨端三层架构（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
@@ -262,7 +260,7 @@ cozyting/
 
 ### 1. 使用 `cozyting-cli` 只读诊断局域网音箱
 
-可在 **[GitHub Releases](https://github.com/JasirVoriya/cozyting-releases/releases)** 直接下载预编译三端 `cozyting-cli`，或在源码仓库本地运行：
+可在 **[GitHub Releases](https://github.com/JasirVoriya/cozyting/releases)** 直接下载预编译三端 `cozyting-cli`，或在源码仓库本地运行：
 
 ```sh
 # 扫描局域网 MiPlay / 小爱音箱（输出 6 列 TSV：IP、名称、型号、MiPlay 能力声明等）
@@ -316,7 +314,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **不把编译通过等同于全机型兼容**：各厂商后台冻结策略（如 HyperOS Greeze）及部分音箱固件协议差异（如 LX06 晚加入扩组，见 [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)）需按机型实测核验。
 
 📚 **延伸文档索引**：
-- [产品官网（GitHub Pages）](https://jasirvoriya.github.io/cozyting-releases/) · [在线交互式架构浏览器](https://jasirvoriya.github.io/cozyting-releases/architecture.html)（[本地 HTML](docs/architecture.html)） · [AI / LLM 索引（llms.txt）](docs/llms.txt)
+- [产品官网（GitHub Pages）](https://jasirvoriya.github.io/cozyting/) · [在线交互式架构浏览器](https://jasirvoriya.github.io/cozyting/architecture.html)（[本地 HTML](docs/architecture.html)） · [AI / LLM 索引（llms.txt）](docs/llms.txt)
 - [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [音箱与发送端设备兼容矩阵](docs/COMPATIBILITY.md) · [未测限制与已知缺口](docs/LIMITATIONS.md)
 - [Android 内置无线调试无感采集方案](docs/ANDROID_WIRELESS_DEBUG_CAPTURE_DESIGN.md) · [iOS 客户端设计方案（规划）](docs/IOS_CLIENT_DESIGN.md) · [局域网 AirPlay 2 网关设计方案（保留）](docs/AIRPLAY_BRIDGE_DESIGN.md)
 - [更新日志 (CHANGELOG)](CHANGELOG.md) · [参与贡献 (CONTRIBUTING)](CONTRIBUTING.md) · [安全策略 (SECURITY)](SECURITY.md) · [本机静音边界](docs/LOCAL_MUTE.md) · [延迟预算模型](docs/LATENCY_BUDGET.md)

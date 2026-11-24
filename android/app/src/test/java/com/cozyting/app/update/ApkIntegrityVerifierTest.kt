@@ -17,7 +17,7 @@ class ApkIntegrityVerifierTest {
     fun httpsPolicyRejectsPlainHttpAndInvalidUrls() {
         assertTrue(UpdateConfig.isAllowedHttpsUrl(UpdateConfig.MANIFEST_PRIMARY_URL))
         assertTrue(UpdateConfig.isAllowedHttpsUrl(UpdateConfig.RELEASES_FALLBACK_API_URL))
-        assertFalse(UpdateConfig.isAllowedHttpsUrl("http://raw.githubusercontent.com/JasirVoriya/cozyting-releases/main/update.json"))
+        assertFalse(UpdateConfig.isAllowedHttpsUrl("http://raw.githubusercontent.com/JasirVoriya/cozyting/main/update.json"))
         assertFalse(UpdateConfig.isAllowedHttpsUrl("ftp://example.com/app.apk"))
         assertFalse(UpdateConfig.isAllowedHttpsUrl("file:///tmp/app.apk"))
         assertFalse(UpdateConfig.isAllowedHttpsUrl(""))

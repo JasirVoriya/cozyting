@@ -1162,7 +1162,7 @@ mod tests {
               "version": "0.9.7",
               "prerelease": false,
               "published_at": "2026-11-25T10:00:00Z",
-              "release_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.7",
+              "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.7",
               "notes": "- 0.9.7 正式版汇总：无线调试无感采集与窝爱听品牌升级",
               "android": {
                 "min_sdk": 29,
@@ -1170,7 +1170,7 @@ mod tests {
                   {
                     "abi": "arm64-v8a",
                     "name": "cozyting-v0.9.7-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.7/cozyting-v0.9.7-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.7/cozyting-v0.9.7-arm64-v8a.apk",
                     "size_bytes": 6800000,
                     "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                     "signed": true
@@ -1183,7 +1183,7 @@ mod tests {
               "version": "0.9.8-rc.2",
               "prerelease": true,
               "published_at": "2026-11-26T10:00:00Z",
-              "release_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.8-rc.2",
+              "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.8-rc.2",
               "notes": "- rc2 增量修复",
               "android": {
                 "min_sdk": 29,
@@ -1191,7 +1191,7 @@ mod tests {
                   {
                     "abi": "arm64-v8a",
                     "name": "cozyting-v0.9.8-rc.2-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8-rc.2/cozyting-v0.9.8-rc.2-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.8-rc.2/cozyting-v0.9.8-rc.2-arm64-v8a.apk",
                     "size_bytes": 6900000,
                     "sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
                     "signed": true
@@ -1269,22 +1269,22 @@ mod tests {
             "prerelease": false,
             "draft": false,
             "published_at": "2026-11-26T08:00:00Z",
-            "html_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.8",
-            "body": "<!-- auto comment -->\n\n- 新增应用内更新检测\n\n**Full Changelog**: https://github.com/JasirVoriya/cozyting-releases/compare/v0.9.7...v0.9.8",
+            "html_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.8",
+            "body": "<!-- auto comment -->\n\n- 新增应用内更新检测\n\n**Full Changelog**: https://github.com/JasirVoriya/cozyting/compare/v0.9.7...v0.9.8",
             "assets": [
               {
                 "name": "cozyting-v0.9.8-arm64-v8a-unsigned.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a-unsigned.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a-unsigned.apk",
                 "size": 6500000
               },
               {
                 "name": "cozyting-v0.9.8-arm64-v8a.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a.apk",
                 "size": 6600000
               },
               {
                 "name": "SHA256SUMS.txt",
-                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/SHA256SUMS.txt",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.8/SHA256SUMS.txt",
                 "size": 512
               }
             ]
@@ -1314,7 +1314,7 @@ mod tests {
                   {
                     "abi": "arm64-v8a",
                     "name": "cozyting-v1.0.0-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v1.0.0/cozyting-v1.0.0-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v1.0.0/cozyting-v1.0.0-arm64-v8a.apk",
                     "size_bytes": 7000000,
                     "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                     "signed": true

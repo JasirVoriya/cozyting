@@ -8,11 +8,11 @@
   <meta name="description" content="CozyTing は無料・オープンソース（AGPL-3.0）のサードパーティ製 MiPlay 完全 LAN オーディオ送信アプリ（Android 10+）。Samsung・Pixel・OnePlus・OPPO・vivo・Huawei など端末メーカー不問・Root 不要・Xiaomi アカウント不要で、選んだ 1 つの音楽アプリだけを最大 63 台の Xiaomi / XiaoAi スピーカーへミリ秒同期再生します。">
   <meta name="keywords" content="CozyTing,窝爱听,MiPlay,Xiaomi スピーカー,XiaoAi スピーカー,マルチルーム同期,Android オーディオキャスト,単一アプリ音声分離,完全 LAN,オープンソース,Rust 同期エンジン">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://jasirvoriya.github.io/cozyting-releases/ja/">
-  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting-releases/">
-  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/cozyting-releases/en/">
-  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/cozyting-releases/ja/">
-  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/cozyting-releases/">
+  <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/ja/">
+  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/">
+  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/cozyting/en/">
+  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/cozyting/ja/">
+  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/cozyting/">
   <link rel="alternate" type="text/plain" href="../llms.txt" title="CozyTing LLM-friendly summary (llms.txt)">
   <link rel="icon" type="image/svg+xml" href="../assets/logo.svg" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/svg+xml" href="../assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
@@ -25,12 +25,12 @@
   <meta property="og:site_name" content="CozyTing">
   <meta property="og:title" content="CozyTing — 端末メーカー不問・完全 LAN 動作の MiPlay マルチルーム音声送信">
   <meta property="og:description" content="選んだ音楽アプリだけを、あらゆる Android 10+ 端末から最大 63 台の Xiaomi / XiaoAi スピーカーへ自宅 Wi-Fi でミリ秒同期送信。クラウド不要・アカウント不要・Root 不要。">
-  <meta property="og:url" content="https://jasirvoriya.github.io/cozyting-releases/ja/">
-  <meta property="og:image" content="https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png">
+  <meta property="og:url" content="https://jasirvoriya.github.io/cozyting/ja/">
+  <meta property="og:image" content="https://jasirvoriya.github.io/cozyting/assets/social-preview.png">
   <meta property="og:image:width" content="1280">
   <meta property="og:image:height" content="640">
   <meta property="og:image:alt" content="CozyTing — MiPlay プロトコル準拠の完全 LAN マルチルーム音声送信エンジン">
-  <meta property="og:video" content="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja.mp4">
+  <meta property="og:video" content="https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4">
   <meta property="og:video:type" content="video/mp4">
   <meta property="og:video:width" content="1280">
   <meta property="og:video:height" content="720">
@@ -39,7 +39,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CozyTing — 完全 LAN 動作のオープンソース MiPlay 音声送信アプリ">
   <meta name="twitter:description" content="あらゆる Android 10+ 端末から最大 63 台の Xiaomi / XiaoAi スピーカーへ LAN 直結。単一アプリ分離・4 段階遅延切替・クラウド不要・Root 不要。">
-  <meta name="twitter:image" content="https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/cozyting/assets/social-preview.png">
 
   <!-- Structured Data (JSON-LD) for Search Engines & AI Generative Engines (GEO) -->
   <script type="application/ld+json">
@@ -48,8 +48,8 @@
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://jasirvoriya.github.io/cozyting-releases/ja/#website",
-        "url": "https://jasirvoriya.github.io/cozyting-releases/ja/",
+        "@id": "https://jasirvoriya.github.io/cozyting/ja/#website",
+        "url": "https://jasirvoriya.github.io/cozyting/ja/",
         "name": "CozyTing（窝爱听）",
         "alternateName": ["CozyTing", "窝爱听", "MiPlay Sender"],
         "inLanguage": ["ja", "zh-CN", "en"],
@@ -57,19 +57,19 @@
       },
       {
         "@type": "SoftwareApplication",
-        "@id": "https://jasirvoriya.github.io/cozyting-releases/ja/#app",
+        "@id": "https://jasirvoriya.github.io/cozyting/ja/#app",
         "name": "CozyTing",
         "alternateName": "窝爱听",
         "applicationCategory": "MultimediaApplication",
         "operatingSystem": "Android 10+ (API 29-36), iOS (計画中)",
         "softwareRequirements": "Android 10 (API 29) 以上、arm64-v8a、MiPlay 対応 Xiaomi / XiaoAi スピーカーと同一の自宅 Wi-Fi LAN",
         "isAccessibleForFree": true,
-        "license": "https://github.com/JasirVoriya/cozyting-releases/blob/main/LICENSE",
-        "url": "https://jasirvoriya.github.io/cozyting-releases/ja/",
-        "downloadUrl": "https://github.com/JasirVoriya/cozyting-releases/releases",
-        "releaseNotes": "https://github.com/JasirVoriya/cozyting-releases/blob/main/CHANGELOG.md",
-        "screenshot": "https://jasirvoriya.github.io/cozyting-releases/assets/screenshots/ja/01-main-casting-dark-vs-light.png",
-        "image": "https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png",
+        "license": "https://github.com/JasirVoriya/cozyting/blob/main/LICENSE",
+        "url": "https://jasirvoriya.github.io/cozyting/ja/",
+        "downloadUrl": "https://github.com/JasirVoriya/cozyting/releases",
+        "releaseNotes": "https://github.com/JasirVoriya/cozyting/blob/main/CHANGELOG.md",
+        "screenshot": "https://jasirvoriya.github.io/cozyting/assets/screenshots/ja/01-main-casting-dark-vs-light.png",
+        "image": "https://jasirvoriya.github.io/cozyting/assets/social-preview.png",
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -86,19 +86,19 @@
       },
       {
         "@type": "VideoObject",
-        "@id": "https://jasirvoriya.github.io/cozyting-releases/ja/#video",
+        "@id": "https://jasirvoriya.github.io/cozyting/ja/#video",
         "name": "1 分でわかる CozyTing：あらゆる Android 端末から Xiaomi スピーカーへ LAN 送信",
         "description": "ナレーションなしのビジュアルデモ：端末メーカー不問の接続、音楽アプリの自動切替追従、ショート動画再生とスピーカー音楽の分離、最大 63 台同期・4 段階遅延切替、完全 LAN プライバシー設計を紹介。",
-        "thumbnailUrl": "https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja-poster.jpg",
-        "contentUrl": "https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja.mp4",
+        "thumbnailUrl": "https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja-poster.jpg",
+        "contentUrl": "https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4",
         "uploadDate": "2026-11-24",
         "duration": "PT1M",
         "inLanguage": "ja",
-        "about": { "@id": "https://jasirvoriya.github.io/cozyting-releases/ja/#app" }
+        "about": { "@id": "https://jasirvoriya.github.io/cozyting/ja/#app" }
       },
       {
         "@type": "FAQPage",
-        "@id": "https://jasirvoriya.github.io/cozyting-releases/ja/#faq",
+        "@id": "https://jasirvoriya.github.io/cozyting/ja/#faq",
         "mainEntity": [
           {
             "@type": "Question",
@@ -890,8 +890,8 @@
             Root 不要・Xiaomi アカウント不要で、選んだ 1 つの音楽アプリだけを最大 63 台の Xiaomi / XiaoAi スピーカーへミリ秒単位で同期再生。通知音やボイスメッセージはスマホ本体に留まり音漏れしません。
           </p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="https://github.com/JasirVoriya/cozyting-releases/releases">最新 APK をダウンロード</a>
-            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/cozyting-releases">GitHub リポジトリ</a>
+            <a class="btn btn-primary" href="https://github.com/JasirVoriya/cozyting/releases">最新 APK をダウンロード</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/cozyting">GitHub リポジトリ</a>
             <a class="btn btn-secondary" href="architecture.html">アーキテクチャ図を見る</a>
           </div>
           <ul class="hero-meta" aria-label="主な特徴">
@@ -1104,7 +1104,7 @@
           <article class="step-item">
             <span class="step-num">1</span>
             <h3>Android APK をインストール</h3>
-            <p>Android 10（API 29）以上の <code>arm64-v8a</code> 端末に対応。<a href="https://github.com/JasirVoriya/cozyting-releases/releases">GitHub Releases</a> から署名済み APK を入手します。</p>
+            <p>Android 10（API 29）以上の <code>arm64-v8a</code> 端末に対応。<a href="https://github.com/JasirVoriya/cozyting/releases">GitHub Releases</a> から署名済み APK を入手します。</p>
           </article>
           <article class="step-item">
             <span class="step-num">2</span>
@@ -1132,7 +1132,7 @@
         <div class="accordion">
           <details open>
             <summary>Xiaomi 以外のスマホ（Pixel・Galaxy・Xperia・OPPO・vivo・Huawei など）でも使えますか？</summary>
-            <div class="faq-answer">はい。Android 10 以上でスピーカーと同じ Wi-Fi LAN に接続していれば、Xiaomi 端末や Xiaomi アカウントなしで直接送信できます。実機検証状況は <a href="https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/COMPATIBILITY.md">機器互換マトリクス</a> をご覧ください。</div>
+            <div class="faq-answer">はい。Android 10 以上でスピーカーと同じ Wi-Fi LAN に接続していれば、Xiaomi 端末や Xiaomi アカウントなしで直接送信できます。実機検証状況は <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md">機器互換マトリクス</a> をご覧ください。</div>
           </details>
 
           <details>
@@ -1176,7 +1176,7 @@
           </div>
           <div class="cta-row" style="margin-block-end: 0;">
             <a class="btn btn-primary" href="architecture.html">アーキテクチャブラウザを開く</a>
-            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/ARCHITECTURE.md">詳細設計マニュアルを読む</a>
+            <a class="btn btn-secondary" href="https://github.com/JasirVoriya/cozyting/blob/main/docs/ARCHITECTURE.md">詳細設計マニュアルを読む</a>
           </div>
         </div>
       </div>
@@ -1186,11 +1186,11 @@
   <footer class="site-footer">
     <div class="container">
       <div class="footer-links">
-        <a href="https://github.com/JasirVoriya/cozyting-releases">GitHub リポジトリ</a>
-        <a href="https://github.com/JasirVoriya/cozyting-releases/releases">リリース・APK</a>
-        <a href="https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/COMPATIBILITY.md">機器互換マトリクス</a>
-        <a href="https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/LIMITATIONS.md">既知の制限</a>
-        <a href="https://github.com/JasirVoriya/cozyting-releases/blob/main/SECURITY.md">セキュリティとプライバシー</a>
+        <a href="https://github.com/JasirVoriya/cozyting">GitHub リポジトリ</a>
+        <a href="https://github.com/JasirVoriya/cozyting/releases">リリース・APK</a>
+        <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md">機器互換マトリクス</a>
+        <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/LIMITATIONS.md">既知の制限</a>
+        <a href="https://github.com/JasirVoriya/cozyting/blob/main/SECURITY.md">セキュリティとプライバシー</a>
         <a href="architecture.html">アーキテクチャ図</a>
         <a href="../llms.txt">llms.txt</a>
       </div>

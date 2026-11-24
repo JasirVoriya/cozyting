@@ -13,5 +13,5 @@ contact_links:
     url: https://github.com/JasirVoriya/cozyting/blob/main/docs/LIMITATIONS.md
     about: 查看明确不承诺的边界（禁止捕获的第三方 App、厂商后台冻结、未实测机型等）
   - name: 🗺️ 产品官网与在线交互式架构浏览器
-    url: https://jasirvoriya.github.io/cozyting-releases/
+    url: https://jasirvoriya.github.io/cozyting/
     about: 浏览产品功能亮点、常见问题 FAQ 及交互式架构与模块数据流视图

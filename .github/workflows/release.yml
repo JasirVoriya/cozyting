@@ -210,51 +210,18 @@ jobs:
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
 
-      - name: Check PUBLIC_RELEASE_TOKEN configured
-        id: public_sync_guard
+      - name: Generate and Push Root update.json to main
         env:
-          TOKEN_PRESENT: ${{ secrets.PUBLIC_RELEASE_TOKEN != '' }}
-        run: |
-          if [[ "$TOKEN_PRESENT" == "true" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::未配置 PUBLIC_RELEASE_TOKEN，跳过同步至公开分发仓 JasirVoriya/cozyting-releases。"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Mirror Release to Public Repo (JasirVoriya/cozyting-releases)
-        if: steps.public_sync_guard.outputs.enabled == 'true'
-        uses: softprops/action-gh-release@v3
-        with:
-          repository: JasirVoriya/cozyting-releases
-          token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          name: CozyTing (窝爱听) ${{ inputs.tag || github.ref_name }}
-          body_path: release-notes.md
-          prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
-          files: release-assets/*
-
-      - name: Checkout Public Repo (main) for update.json
-        if: steps.public_sync_guard.outputs.enabled == 'true'
-        uses: actions/checkout@v7
-        with:
-          repository: JasirVoriya/cozyting-releases
-          token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
-          ref: main
-          path: public-release-repo
-
-      - name: Generate and Push Root update.json to Public Repo (main)
-        if: steps.public_sync_guard.outputs.enabled == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
           python3 scripts/generate-update-manifest.py \
-            --repo JasirVoriya/cozyting-releases \
-            --out public-release-repo/update.json
+            --repo JasirVoriya/cozyting \
+            --out update.json
 
-          cd public-release-repo
           git add update.json
           if git diff --cached --quiet; then
             echo "update.json is already up to date; nothing to push."
