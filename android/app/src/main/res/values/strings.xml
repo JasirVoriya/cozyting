@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Manifest -->
-    <string name="app_name">妙投</string>
-    <string name="app_brand_name">妙投</string>
-    <string name="notification_listener_label">妙投 · 正在播放读取</string>
-    <string name="wireless_pairing_accessibility_label">妙投 · 无线调试自动配对助手</string>
+    <string name="app_name">窝爱听</string>
+    <string name="app_brand_name">窝爱听</string>
+    <string name="notification_listener_label">窝爱听 · 正在播放读取</string>
+    <string name="wireless_pairing_accessibility_label">窝爱听 · 无线调试自动配对助手</string>
     <string name="wireless_pairing_accessibility_desc">仅在首次开启无线调试无感采集配对期间使用：用于在系统「无线调试」页面顶部展示 6 位配对码浮动数字键盘，并自动读取配对码弹窗完成本机配对；配对完成后自动休眠，不收集任何个人数据。</string>
     <string name="title_app_picker">选择投送的 App</string>
     <string name="title_settings">设置</string>
@@ -299,7 +299,7 @@
     <string name="update_dialog_changelog_header">自 v%1$s 以来共 %2$d 个版本变更</string>
     <string name="update_dialog_changelog_truncated">… 更早版本变更已省略，可点击「前往浏览器下载」查看完整历史</string>
     <string name="update_fallback_empty_notes">本版本包含功能改进与稳定性修复，可前往 Release 页面查看完整变更记录。</string>
-    <string name="update_dialog_need_install_perm">请在系统设置中允许「妙投」安装未知应用，授权后返回再点「立即安装」。</string>
+    <string name="update_dialog_need_install_perm">请在系统设置中允许「窝爱听」安装未知应用，授权后返回再点「立即安装」。</string>
     <string name="update_dialog_btn_install_after_perm">已授权，立即安装</string>
     <string name="update_dialog_err_open_installer">无法调起系统安装器，请点击下方「前往浏览器下载」。</string>
     <string name="update_dialog_btn_download_install">立即下载并安装</string>
@@ -353,8 +353,8 @@
     <string name="guide_manual_pin_hint">6位配对码</string>
     <string name="guide_manual_pair_btn">配对</string>
     <string name="guide_tips_title">常见问题与重启恢复说明</string>
-    <string name="guide_tip_1">• 为什么推荐无障碍而非悬浮窗：Android 12+ / HyperOS 会在系统「无线调试」与配对码页面自动屏蔽第三方普通悬浮窗；开启「妙投 · 无线调试自动配对助手」无障碍服务后，无需悬浮窗权限即可在 PIN 码页同屏显示顶部数字键盘，并自动读取屏幕上的 6 位配对码完成秒配。</string>
-    <string name="guide_tip_2">• 通知栏长按兜底：若未开启无障碍，点开系统「使用配对码配对设备」后，请下拉通知栏找到妙投通知并点「输入 6 位配对码」；若系统折叠了输入按钮，请直接【长按本条通知】（或单指下滑该通知）展开输入框。</string>
+    <string name="guide_tip_1">• 为什么推荐无障碍而非悬浮窗：Android 12+ / HyperOS 会在系统「无线调试」与配对码页面自动屏蔽第三方普通悬浮窗；开启「窝爱听 · 无线调试自动配对助手」无障碍服务后，无需悬浮窗权限即可在 PIN 码页同屏显示顶部数字键盘，并自动读取屏幕上的 6 位配对码完成秒配。</string>
+    <string name="guide_tip_2">• 通知栏长按兜底：若未开启无障碍，点开系统「使用配对码配对设备」后，请下拉通知栏找到窝爱听通知并点「输入 6 位配对码」；若系统折叠了输入按钮，请直接【长按本条通知】（或单指下滑该通知）展开输入框。</string>
     <string name="guide_tip_3">• 手机重启后：Android 会自动关闭「无线调试」，只需重新点开「无线调试」开关即可恢复，无需重新输入 6 位配对码。</string>
     <string name="guide_tip_4">• 音箱听歌 + 手机刷视频互不打断：Android 13+ 独立单 App 无感投送会自动开启双区音频焦点隔离（仅投送期间生效，停止即自动还原），刷短视频不会暂停音箱音乐。</string>
     <string name="guide_tip_5">• 必须连接 Wi-Fi：无线调试与小米音箱局域网投送均需在同一 Wi-Fi 下使用。</string>
@@ -383,7 +383,7 @@
     <string name="onboard_step3_title">开启「无障碍自动配对」（推荐）</string>
     <string name="onboard_step3_detail_enabled">已开启无障碍自动配对：无需悬浮窗权限，在系统「无线调试」PIN 码页顶部直接显示悬浮数字键盘，并自动读取 6 位配对码完成秒配</string>
     <string name="onboard_step3_detail_skipped">已跳过无障碍，将使用「通知栏横幅」手动输入配对码（若未看到输入按钮，请长按通知展开输入框）；也可随时重新开启自动识别</string>
-    <string name="onboard_step3_detail_todo">无需开启悬浮窗权限！开启「妙投 · 无线调试自动配对助手」后，可在系统设置 PIN 码页同屏显示悬浮数字键盘（不被系统隐藏）并自动读取 6 位配对码秒配；配对完成后自动休眠</string>
+    <string name="onboard_step3_detail_todo">无需开启悬浮窗权限！开启「窝爱听 · 无线调试自动配对助手」后，可在系统设置 PIN 码页同屏显示悬浮数字键盘（不被系统隐藏）并自动读取 6 位配对码秒配；配对完成后自动休眠</string>
     <string name="onboard_step3_badge_recommended">推荐 · 免手输</string>
     <string name="onboard_step3_badge_skipped">已跳过</string>
     <string name="onboard_step3_action_enable">去开启无障碍（推荐）</string>
@@ -420,7 +420,7 @@
 
     <!-- Pairing Overlay & Notifications -->
     <string name="overlay_title_expanded">输入 6 位无线调试配对码</string>
-    <string name="overlay_title_collapsed">妙投 · 等待打开 6 位码弹窗</string>
+    <string name="overlay_title_collapsed">窝爱听 · 等待打开 6 位码弹窗</string>
     <string name="overlay_port_done">填完端口</string>
     <string name="overlay_port_locked">端口 %1$d</string>
     <string name="overlay_port_manual">手填端口</string>
@@ -439,7 +439,7 @@
     <string name="overlay_status_pin_incomplete">请先输入完整的 6 位数字配对码（当前已输 %1$d/6 位）</string>
     <string name="overlay_status_probing_port">正在探测本机无线调试配对端口…</string>
     <string name="overlay_status_no_port">未自动探测到端口：请先输入系统弹窗 IP 冒号后的 5 位端口号，再点「完成」</string>
-    <string name="overlay_status_success">✓ 配对成功！已保存证书，正在自动返回妙投…</string>
+    <string name="overlay_status_success">✓ 配对成功！已保存证书，正在自动返回窝爱听…</string>
     <string name="overlay_status_fail_retry">%1$s（点数字可直接重输）</string>
     <string name="overlay_key_done">完成</string>
     <string name="overlay_key_pair">配对</string>
@@ -457,10 +457,10 @@
     <string name="pairing_notif_channel_active">无线调试配对码输入横幅</string>
     <string name="pairing_notif_channel_active_desc">检测到无线调试配对窗口时在顶部弹出 6 位配对码输入按钮</string>
     <string name="pairing_receiver_no_port">未发现无线调试配对端口，请保持「使用配对码配对设备」弹窗开启后重试</string>
-    <string name="pairing_receiver_saved">已保存本机配对证书，返回妙投即可启用无感采集</string>
+    <string name="pairing_receiver_saved">已保存本机配对证书，返回窝爱听即可启用无感采集</string>
 
     <!-- Cast Service & Foreground Notification -->
-    <string name="cast_channel_name">妙投 · 投送状态</string>
+    <string name="cast_channel_name">窝爱听 · 投送状态</string>
     <string name="cast_action_pause">暂停</string>
     <string name="cast_action_resume">恢复</string>
     <string name="cast_action_stop">停止</string>

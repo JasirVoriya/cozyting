@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从 GitHub Releases 聚合生成静态更新清单 `update.json`（schema_version = 1）。
 
-输出供 Android / iOS 共享 L1 Rust 核心 `miaocast_update_evaluate_json` 消费：
+输出供 Android / iOS 共享 L1 Rust 核心 `cozyting_update_evaluate_json` 消费：
 - `channels.stable`：最新正式版及其已签名 Android APK + SHA-256 + iOS 信息；
 - `channels.prerelease`：最新最高 SemVer 版本（含预发布 RC 与正式版）资产信息；
 - `releases[]`：按 SemVer 倒序保存最近 30 个版本的精简变更日志，支持客户端跨版本区间聚合。
@@ -113,7 +113,7 @@ def parse_sha256sums(text: str) -> Dict[str, str]:
 def http_get_text(url: str, token: str = "") -> str:
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "MiaoCast-Update-Manifest-Generator",
+        "User-Agent": "CozyTing-Update-Manifest-Generator",
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -291,8 +291,8 @@ def generate_manifest(
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="生成妙投（MiaoCast）静态更新清单 update.json")
-    parser.add_argument("--repo", required=True, help="公开 Release 仓库，例如 JasirVoriya/miaocast-releases")
+    parser = argparse.ArgumentParser(description="生成窝爱听（CozyTing）静态更新清单 update.json")
+    parser.add_argument("--repo", required=True, help="公开 Release 仓库，例如 JasirVoriya/cozyting-releases")
     parser.add_argument("--out", required=True, help="输出 update.json 路径")
     parser.add_argument("--input-json", default="", help="可选：离线测试用 Releases JSON 文件路径")
     parser.add_argument("--min-android-sdk", type=int, default=29)

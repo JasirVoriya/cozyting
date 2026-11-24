@@ -1,4 +1,4 @@
-# Project Rules (`miaocast` / 妙投)
+# Project Rules (`cozyting` / 窝爱听)
 
 ## 0. 变更审批与 Git 分支工作流（最高优先级 · 强制）
 
@@ -38,7 +38,7 @@
   1. 执行 `git worktree list` 并只读扫描 `agent-sessions/*.txt`，查看是否存在其他进行中的会话。
   2. 将本会话信息写入 `agent-sessions/<type>-<topic>.txt`，内容包含：分支名、worktree 路径、创建时间、任务简述、**预计修改的目录/高冲突文件**、**是否需要占用 ADB 真机**。
   3. **冲突预警（先报后做）**：若发现与其他活跃会话存在以下重叠，必须先暂停并向用户报告、等待确认后再继续：
-     - 共同修改高冲突公共契约文件（如 `AGENTS.md`、`core/src/ffi.rs`、`core/src/ffi_c.rs`、`core/include/miaocast_core.h`、`design/UI_SPEC.md`、`design/tokens.json`、`README.md`、`README_EN.md`）。
+     - 共同修改高冲突公共契约文件（如 `AGENTS.md`、`core/src/ffi.rs`、`core/src/ffi_c.rs`、`core/include/cozyting_core.h`、`design/UI_SPEC.md`、`design/tokens.json`、`README.md`、`README_EN.md`）。
      - 共同需要占用同一台 ADB 真机。
 
 #### 4. 本地忽略文件挂载（项目构建初始化）
@@ -107,7 +107,7 @@
 本项目采用「**L1 共享 Rust 核心 + L2/L3 Android 与 iOS 双端原生**」架构。**后续所有功能、架构、协议、状态机与 UI/交互改动，必须同时兼顾 Android 与 iOS 两套工程**，严禁只考虑单端导致双端分裂：
 
 1. **业务逻辑、协议与状态机（L1 优先下沉）**：
-   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/miaocast_core.h`），保证 C11 头文件与 Rust 单测双通过。
+   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/cozyting_core.h`），保证 C11 头文件与 Rust 单测双通过。
 2. **UI 布局、视觉与交互（`design/` 同步更新）**：
    - 任何界面排版、组件尺寸、滑块/按钮样式、色板 Token、图标或交互流改动，**必须同步更新跨端单一事实来源 `design/`**（`design/UI_SPEC.md`、`design/tokens.json`、`design/icons/*.svg`）。
    - 若某项能力存在平台差异（例如 Android 可按包名读取任意第三方 App 图标并 `getLaunchIntentForPackage` 跳转，而 iOS 受沙箱限制需按已知音源/URL Scheme 降级），必须在 `design/UI_SPEC.md` 中**明确写清 iOS 端对应的 SwiftUI 实现与降级边界**。
@@ -141,7 +141,7 @@
 1. **基线语言与可扩展架构**：
    - 默认基线至少同步维护 **简体中文（`zh-CN`）**、**英文（`en`）** 与 **日文（`ja`）** 三种语言，且数据结构与目录组织须便于后续无痛扩展其他语种。
    - 任何新增或变更功能、页面或分镜时，必须**同步补全全部已支持语言（至少中/英/日）的文案与资源**，禁止仅更新单一语言导致多语种漂移。
-   - 品牌与协议专有名词（如 `MiaoCast`、`MiPlay`、`AGPL-3.0`）保持统一规范，其余面向用户的文本禁止跨语种混杂或残留未翻译占位符。
+   - 品牌与协议专有名词（如 `CozyTing`、`MiPlay`、`AGPL-3.0`）保持统一规范，其余面向用户的文本禁止跨语种混杂或残留未翻译占位符。
 
 2. **App 双端（Android & iOS + `design/`）**：
    - **禁止硬编码文案**：Android 端所有用户可见文本统一放入 `res/values/`、`res/values-en/`、`res/values-ja/` 等 `strings.xml`（正确处理格式化占位符与复数）；iOS 端同步使用 `Localizable.xcstrings`（或 `.lproj`），并与 `design/UI_SPEC.md` 保持文案键与交互一致。
@@ -155,7 +155,7 @@
 
 4. **宣传视频与视觉物料（`promo/`）**：
    - **文案字典化**：`promo/`（Remotion 工程）中所有大字标题、功能标签、对比卡片、搜索演示与片尾文案须抽离至独立多语言字典（至少包含 `zh-CN` / `en` / `ja`），禁止在 `scenes/` 中硬编码单语种字符串。
-   - **实机素材与成片按语种独立产出**：`<UiSlice>` / 实机界面截图素材按语种隔离管理，支持按语言参数或独立 Composition 分别渲染对应语种完整成片（如 `miaocast-promo-zh.mp4`、`miaocast-promo-en.mp4`、`miaocast-promo-ja.mp4`），并校验中/英/日字体回退（避免缺字或异体字混用）与画面留白；若后续引入字幕或配音，须按语种同步提供（如 `.vtt`/`.srt` 或独立音轨）。
+   - **实机素材与成片按语种独立产出**：`<UiSlice>` / 实机界面截图素材按语种隔离管理，支持按语言参数或独立 Composition 分别渲染对应语种完整成片（如 `cozyting-promo-zh.mp4`、`cozyting-promo-en.mp4`、`cozyting-promo-ja.mp4`），并校验中/英/日字体回退（避免缺字或异体字混用）与画面留白；若后续引入字幕或配音，须按语种同步提供（如 `.vtt`/`.srt` 或独立音轨）。
 
 5. **提交前多语言自检**：
    - 涉及 App UI、Pages 或 `promo/` 的改动，提交前须核对中/英/日及所有已支持语言的文案键完整、无硬编码遗漏、无排版溢出，且所有示例数据仍遵守第 1 节隐私红线。

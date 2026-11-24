@@ -6,9 +6,9 @@ import path from "node:path";
 import { mkdirSync } from "node:fs";
 
 const COMP_MAP = {
-  zh: "MiaoCastPromo",
-  en: "MiaoCastPromoEn",
-  ja: "MiaoCastPromoJa",
+  zh: "CozyTingPromo",
+  en: "CozyTingPromoEn",
+  ja: "CozyTingPromoJa",
 };
 
 const args = process.argv.slice(2);

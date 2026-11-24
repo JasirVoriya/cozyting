@@ -24,7 +24,7 @@
 
 ## 合规与安全检查
 
-- [ ] 已评估并兼顾 Android 与 iOS 双端影响（公共逻辑同步 C ABI / `miaocast_core.h`，UI 或交互改动已同步更新 `design/UI_SPEC.md` 及相关设计资产）
+- [ ] 已评估并兼顾 Android 与 iOS 双端影响（公共逻辑同步 C ABI / `cozyting_core.h`，UI 或交互改动已同步更新 `design/UI_SPEC.md` 及相关设计资产）
 - [ ] 未提交任何签名密钥、口令、`local.properties`、`keystore.properties`、私有日志或原始抓包文件
 - [ ] 已检查变更不包含个人开发环境配置（NAS/ADB/本机绝对路径）、真实姓名、家庭局域网真实 IP 或临时会话记录（此类信息仅存本地 `.local/`，不入库）
 - [ ] 变更符合本项目 `AGPL-3.0-only` 开源许可，且不引入云端依赖或破坏单 UID 音频捕获 fail-closed 边界

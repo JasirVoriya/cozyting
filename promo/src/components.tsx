@@ -119,7 +119,7 @@ export const Eyebrow: React.FC<{ text: string; start: number; color?: string; ou
   );
 };
 
-/** The MiaoCast driver mark, drawn in parts so it can be built up. */
+/** The CozyTing driver mark, drawn in parts so it can be built up. */
 export const LogoMark: React.FC<{
   size: number;
   rings: number;

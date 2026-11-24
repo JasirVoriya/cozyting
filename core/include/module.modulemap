@@ -1,4 +1,4 @@
-module MiaoCastCore {
-    header "miaocast_core.h"
+module CozyTingCore {
+    header "cozyting_core.h"
     export *
 }

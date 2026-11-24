@@ -22,7 +22,7 @@ body:
         - 本机静音异常（未静音 / 切歌短暂双出声 / 停止后未恢复）
         - 音量控制 / 暂停恢复 / 正在播放信息异常
         - App 闪退 / 后台被杀 / UI 显示异常
-        - miaocast-cli 命令行工具问题
+        - cozyting-cli 命令行工具问题
         - 其他问题
     validations:
       required: true
@@ -69,7 +69,7 @@ body:
       label: 复现步骤与现象对比
       description: 请按顺序描述如何触发问题、实际现象以及预期行为
       placeholder: |
-        1. 打开妙投（MiaoCast），选择音源为「...」
+        1. 打开窝爱听（CozyTing），选择音源为「...」
         2. 勾选音箱「...」并点击开始投送
         3. 实际现象：...
         4. 预期现象：...
@@ -83,7 +83,7 @@ body:
       description: |
         可提供以下任意一项帮助快速定位：
         - 应用内操作日志片段（`files/cast_ops.log`）或 `adb logcat` 崩溃栈
-        - 使用桌面端只读命令 `miaocast-cli inspect <音箱IP> --auth legacy` 的输出（注：只读安全，不发送 CLOSE；请勿用旧 `probe`）
+        - 使用桌面端只读命令 `cozyting-cli inspect <音箱IP> --auth legacy` 的输出（注：只读安全，不发送 CLOSE；请勿用旧 `probe`）
         - 也可以直接把截图或录屏拖入本输入框
       placeholder: 粘贴关键日志片段...
       render: text

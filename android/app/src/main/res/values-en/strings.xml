@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Manifest -->
-    <string name="app_name">MiaoCast</string>
-    <string name="app_brand_name">MiaoCast</string>
-    <string name="notification_listener_label">MiaoCast · Now Playing</string>
-    <string name="wireless_pairing_accessibility_label">MiaoCast · Wireless Pairing Helper</string>
+    <string name="app_name">CozyTing</string>
+    <string name="app_brand_name">CozyTing</string>
+    <string name="notification_listener_label">CozyTing · Now Playing</string>
+    <string name="wireless_pairing_accessibility_label">CozyTing · Wireless Pairing Helper</string>
     <string name="wireless_pairing_accessibility_desc">Used only during first-time Wireless Debugging pairing: shows a floating 6-digit keypad over the system Wireless Debugging screen and automatically reads the pairing code dialog to complete local pairing. Sleeps automatically once paired and collects no personal data.</string>
     <string name="title_app_picker">Audio Sources</string>
     <string name="title_settings">Settings</string>
@@ -299,7 +299,7 @@
     <string name="update_dialog_changelog_header">%2$d releases since v%1$s</string>
     <string name="update_dialog_changelog_truncated">… Older entries omitted. Open in browser to view the full changelog.</string>
     <string name="update_fallback_empty_notes">This release includes improvements and stability fixes. Visit the Release page for full details.</string>
-    <string name="update_dialog_need_install_perm">Allow MiaoCast to install unknown apps in system settings, then return and tap Install Now.</string>
+    <string name="update_dialog_need_install_perm">Allow CozyTing to install unknown apps in system settings, then return and tap Install Now.</string>
     <string name="update_dialog_btn_install_after_perm">Allowed, Install Now</string>
     <string name="update_dialog_err_open_installer">Could not open system installer. Please download via browser below.</string>
     <string name="update_dialog_btn_download_install">Download &amp; Install</string>
@@ -348,12 +348,12 @@
     <string name="guide_feedback_a11y_skipped">Accessibility skipped: enter the 6-digit code via the notification banner (long-press notification if collapsed)</string>
     <string name="guide_manual_collapse">Hide Manual</string>
     <string name="guide_manual_expand">Manual Entry</string>
-    <string name="guide_manual_hint">Tip: Open MiaoCast in split-screen or floating window beside Settings to type the port and 6-digit code directly:</string>
+    <string name="guide_manual_hint">Tip: Open CozyTing in split-screen or floating window beside Settings to type the port and 6-digit code directly:</string>
     <string name="guide_manual_port_hint">Port</string>
     <string name="guide_manual_pin_hint">6-digit code</string>
     <string name="guide_manual_pair_btn">Pair</string>
     <string name="guide_tips_title">FAQ &amp; Reboot Recovery</string>
-    <string name="guide_tip_1">• Why Accessibility instead of Overlay: Android 12+ / HyperOS hides regular overlays on Wireless Debugging screens. Enabling the MiaoCast Pairing Helper shows a top keypad without overlay permission and auto-reads the 6-digit code.</string>
+    <string name="guide_tip_1">• Why Accessibility instead of Overlay: Android 12+ / HyperOS hides regular overlays on Wireless Debugging screens. Enabling the CozyTing Pairing Helper shows a top keypad without overlay permission and auto-reads the 6-digit code.</string>
     <string name="guide_tip_2">• Notification Fallback: Without Accessibility, open \"Pair device with pairing code\", pull down the shade, and tap \"Enter 6-digit code\" (long-press or swipe down the notification if collapsed).</string>
     <string name="guide_tip_3">• After Reboot: Android turns off Wireless Debugging automatically. Just toggle Wireless Debugging back on—no re-pairing required.</string>
     <string name="guide_tip_4">• Watch Videos Without Interrupting Music: Android 13+ Single-App Silent Cast enables dual-zone audio focus isolation during casting, so short videos will not pause your speaker music.</string>
@@ -383,7 +383,7 @@
     <string name="onboard_step3_title">Enable Auto-Pairing Helper (Recommended)</string>
     <string name="onboard_step3_detail_enabled">Enabled: displays a floating keypad on the Wireless Debugging screen without overlay permission and auto-reads the 6-digit code</string>
     <string name="onboard_step3_detail_skipped">Skipped: you will enter the code via the notification banner (long-press notification if collapsed); you can re-enable anytime</string>
-    <string name="onboard_step3_detail_todo">No overlay permission needed! Enabling MiaoCast Wireless Pairing Helper shows a keypad on the PIN screen and auto-reads the 6-digit code, then sleeps automatically</string>
+    <string name="onboard_step3_detail_todo">No overlay permission needed! Enabling CozyTing Wireless Pairing Helper shows a keypad on the PIN screen and auto-reads the 6-digit code, then sleeps automatically</string>
     <string name="onboard_step3_badge_recommended">Recommended</string>
     <string name="onboard_step3_badge_skipped">Skipped</string>
     <string name="onboard_step3_action_enable">Enable Accessibility</string>
@@ -420,7 +420,7 @@
 
     <!-- Pairing Overlay & Notifications -->
     <string name="overlay_title_expanded">Enter 6-Digit Pairing Code</string>
-    <string name="overlay_title_collapsed">MiaoCast · Waiting for Code Dialog</string>
+    <string name="overlay_title_collapsed">CozyTing · Waiting for Code Dialog</string>
     <string name="overlay_port_done">Done Port</string>
     <string name="overlay_port_locked">Port %1$d</string>
     <string name="overlay_port_manual">Manual Port</string>
@@ -439,7 +439,7 @@
     <string name="overlay_status_pin_incomplete">Enter all 6 digits (%1$d/6 entered)</string>
     <string name="overlay_status_probing_port">Detecting local Wireless Debugging pairing port…</string>
     <string name="overlay_status_no_port">Port not detected: enter the 5-digit port from the system dialog, then tap Done</string>
-    <string name="overlay_status_success">✓ Paired! Certificate saved, returning to MiaoCast…</string>
+    <string name="overlay_status_success">✓ Paired! Certificate saved, returning to CozyTing…</string>
     <string name="overlay_status_fail_retry">%1$s (tap digits to retry)</string>
     <string name="overlay_key_done">Done</string>
     <string name="overlay_key_pair">Pair</string>
@@ -457,10 +457,10 @@
     <string name="pairing_notif_channel_active">Wireless Pairing Input Banner</string>
     <string name="pairing_notif_channel_active_desc">Heads-up 6-digit pairing code input when pairing dialog opens</string>
     <string name="pairing_receiver_no_port">Pairing port not found. Keep \"Pair device with pairing code\" open and retry.</string>
-    <string name="pairing_receiver_saved">Local certificate saved. Return to MiaoCast to enable Silent Capture.</string>
+    <string name="pairing_receiver_saved">Local certificate saved. Return to CozyTing to enable Silent Capture.</string>
 
     <!-- Cast Service & Foreground Notification -->
-    <string name="cast_channel_name">MiaoCast · Casting Status</string>
+    <string name="cast_channel_name">CozyTing · Casting Status</string>
     <string name="cast_action_pause">Pause</string>
     <string name="cast_action_resume">Resume</string>
     <string name="cast_action_stop">Stop</string>

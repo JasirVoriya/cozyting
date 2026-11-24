@@ -88,13 +88,13 @@ jobs:
           TAG="${{ steps.meta.outputs.tag }}"
           if [[ "${{ steps.signing.outputs.signed }}" == "true" ]]; then
             cp android/app/build/outputs/apk/standard/release/app-standard-release.apk \
-              "dist/miaocast-${TAG}-arm64-v8a.apk"
+              "dist/cozyting-${TAG}-arm64-v8a.apk"
           else
             cp android/app/build/outputs/apk/standard/release/app-standard-release-unsigned.apk \
-              "dist/miaocast-${TAG}-arm64-v8a-unsigned.apk"
+              "dist/cozyting-${TAG}-arm64-v8a-unsigned.apk"
             (cd android && ./gradlew --no-daemon assembleStandardDebug)
             cp android/app/build/outputs/apk/standard/debug/app-standard-debug.apk \
-              "dist/miaocast-${TAG}-arm64-v8a-debug.apk"
+              "dist/cozyting-${TAG}-arm64-v8a-debug.apk"
           fi
 
       - name: Clean up temporary keystore
@@ -108,7 +108,7 @@ jobs:
           path: dist/*
 
   build-cli:
-    name: Build miaocast-cli (${{ matrix.label }})
+    name: Build cozyting-cli (${{ matrix.label }})
     strategy:
       fail-fast: false
       matrix:
@@ -116,15 +116,15 @@ jobs:
           - os: ubuntu-latest
             label: linux-x86_64
             ext: tar.gz
-            bin: miaocast-cli
+            bin: cozyting-cli
           - os: macos-latest
             label: macos-arm64
             ext: tar.gz
-            bin: miaocast-cli
+            bin: cozyting-cli
           - os: windows-latest
             label: windows-x86_64
             ext: zip
-            bin: miaocast-cli.exe
+            bin: cozyting-cli.exe
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -136,14 +136,14 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Build miaocast-cli
-        run: cargo build --release -p miaocast-cli
+      - name: Build cozyting-cli
+        run: cargo build --release -p cozyting-cli
 
-      - name: Package miaocast-cli archive
+      - name: Package cozyting-cli archive
         shell: bash
         run: |
           TAG="${{ inputs.tag || github.ref_name }}"
-          OUT="miaocast-cli-${TAG}-${{ matrix.label }}"
+          OUT="cozyting-cli-${TAG}-${{ matrix.label }}"
           mkdir -p "dist/${OUT}"
           cp "target/release/${{ matrix.bin }}" "dist/${OUT}/"
           cp LICENSE README.md "dist/${OUT}/"
@@ -196,7 +196,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
-          name: MiaoCast (妙投) ${{ inputs.tag || github.ref_name }}
+          name: CozyTing (窝爱听) ${{ inputs.tag || github.ref_name }}
           body_path: release-notes.md
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
@@ -209,18 +209,18 @@ jobs:
           if [[ "$TOKEN_PRESENT" == "true" ]]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::未配置 PUBLIC_RELEASE_TOKEN，跳过同步至公开分发仓 JasirVoriya/miaocast-releases。"
+            echo "::notice::未配置 PUBLIC_RELEASE_TOKEN，跳过同步至公开分发仓 JasirVoriya/cozyting-releases。"
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Mirror Release to Public Repo (JasirVoriya/miaocast-releases)
+      - name: Mirror Release to Public Repo (JasirVoriya/cozyting-releases)
         if: steps.public_sync_guard.outputs.enabled == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          repository: JasirVoriya/miaocast-releases
+          repository: JasirVoriya/cozyting-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           tag_name: ${{ inputs.tag || github.ref_name }}
-          name: MiaoCast (妙投) ${{ inputs.tag || github.ref_name }}
+          name: CozyTing (窝爱听) ${{ inputs.tag || github.ref_name }}
           body_path: release-notes.md
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
@@ -229,7 +229,7 @@ jobs:
         if: steps.public_sync_guard.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
-          repository: JasirVoriya/miaocast-releases
+          repository: JasirVoriya/cozyting-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           ref: main
           path: public-release-repo
@@ -242,7 +242,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/generate-update-manifest.py \
-            --repo JasirVoriya/miaocast-releases \
+            --repo JasirVoriya/cozyting-releases \
             --out public-release-repo/update.json
 
           cd public-release-repo

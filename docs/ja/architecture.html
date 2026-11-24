@@ -5,41 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
   <link rel="icon" type="image/svg+xml" href="../assets/logo-dark.svg">
-  <title>インタラクティブ・アーキテクチャブラウザ | MiaoCast Rust MiPlay エンジン</title>
-  <meta name="description" content="MiaoCast のクロスプラットフォーム 3 層アーキテクチャ（L1 純 Rust 同期コア・JNI/C ABI・L2/L3 Android Kotlin / iOS SwiftUI）、4 系統の LAN データフロー、最大 63 台リアルタイムスレッド構成と全ファイル一覧を対話的に探索できます。">
+  <title>インタラクティブ・アーキテクチャブラウザ | CozyTing Rust MiPlay エンジン</title>
+  <meta name="description" content="CozyTing のクロスプラットフォーム 3 層アーキテクチャ（L1 純 Rust 同期コア・JNI/C ABI・L2/L3 Android Kotlin / iOS SwiftUI）、4 系統の LAN データフロー、最大 63 台リアルタイムスレッド構成と全ファイル一覧を対話的に探索できます。">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html">
-  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
-  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">
-  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html">
-  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">
-  <link rel="alternate" type="text/plain" href="../llms.txt" title="MiaoCast LLM-friendly summary">
+  <link rel="canonical" href="https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting-releases/architecture.html">
+  <link rel="alternate" hreflang="en" href="https://jasirvoriya.github.io/cozyting-releases/en/architecture.html">
+  <link rel="alternate" hreflang="ja" href="https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html">
+  <link rel="alternate" hreflang="x-default" href="https://jasirvoriya.github.io/cozyting-releases/architecture.html">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="CozyTing LLM-friendly summary">
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
-  <meta property="og:site_name" content="MiaoCast">
-  <meta property="og:title" content="インタラクティブ・アーキテクチャブラウザ | MiaoCast">
-  <meta property="og:description" content="任意のモジュールをクリックして MiaoCast の Rust L1 同期エンジンとネイティブ層の上流・下流データフローを追跡できます。">
-  <meta property="og:url" content="https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html">
-  <meta property="og:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta property="og:site_name" content="CozyTing">
+  <meta property="og:title" content="インタラクティブ・アーキテクチャブラウザ | CozyTing">
+  <meta property="og:description" content="任意のモジュールをクリックして CozyTing の Rust L1 同期エンジンとネイティブ層の上流・下流データフローを追跡できます。">
+  <meta property="og:url" content="https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html">
+  <meta property="og:image" content="https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="インタラクティブ・アーキテクチャブラウザ | MiaoCast">
-  <meta name="twitter:description" content="任意のモジュールをクリックして MiaoCast の Rust L1 同期エンジンとネイティブ層の上流・下流データフローを追跡できます。">
-  <meta name="twitter:image" content="https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png">
+  <meta name="twitter:title" content="インタラクティブ・アーキテクチャブラウザ | CozyTing">
+  <meta name="twitter:description" content="任意のモジュールをクリックして CozyTing の Rust L1 同期エンジンとネイティブ層の上流・下流データフローを追跡できます。">
+  <meta name="twitter:image" content="https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "TechArticle",
-    "headline": "MiaoCast インタラクティブ・アーキテクチャ＆ランタイムブラウザ",
-    "description": "MiaoCast のクロスプラットフォーム 3 層アーキテクチャ（L1 純 Rust 同期コア・JNI/C ABI・L2/L3 Android Kotlin / iOS SwiftUI）、4 系統の LAN データフロー、最大 63 台リアルタイムスレッド構成と全ファイル一覧を対話的に探索できます。",
-    "url": "https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html",
-    "image": "https://jasirvoriya.github.io/miaocast-releases/assets/social-preview.png",
+    "headline": "CozyTing インタラクティブ・アーキテクチャ＆ランタイムブラウザ",
+    "description": "CozyTing のクロスプラットフォーム 3 層アーキテクチャ（L1 純 Rust 同期コア・JNI/C ABI・L2/L3 Android Kotlin / iOS SwiftUI）、4 系統の LAN データフロー、最大 63 台リアルタイムスレッド構成と全ファイル一覧を対話的に探索できます。",
+    "url": "https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html",
+    "image": "https://jasirvoriya.github.io/cozyting-releases/assets/social-preview.png",
     "inLanguage": "ja",
     "about": {
       "@type": "SoftwareApplication",
-      "name": "MiaoCast",
-      "url": "https://jasirvoriya.github.io/miaocast-releases/ja/"
+      "name": "CozyTing",
+      "url": "https://jasirvoriya.github.io/cozyting-releases/ja/"
     }
   }
   </script>
@@ -838,8 +838,8 @@
       <div class="brand-title">
         <img src="../assets/logo-dark.svg" alt="" width="40" height="40" style="border-radius: 10px; flex-shrink: 0; display: block;">
         <div>
-          <h1>MiaoCast・インタラクティブ・アーキテクチャブラウザ</h1>
-          <p class="site-subtitle">Android (Kotlin · JNI) &amp; iOS (Swift · C ABI) ⇄ Rust L1 Core (miaocast-core) · Pure LAN Multi-Speaker</p>
+          <h1>CozyTing・インタラクティブ・アーキテクチャブラウザ</h1>
+          <p class="site-subtitle">Android (Kotlin · JNI) &amp; iOS (Swift · C ABI) ⇄ Rust L1 Core (cozyting-core) · Pure LAN Multi-Speaker</p>
         </div>
       </div>
       <ul class="kpi-row" aria-label="アーキテクチャ主要指標">
@@ -934,7 +934,7 @@
                   <g id="ov-edges"></g>
                   <g id="ov-nodes"></g>
                 </svg>
-                <figcaption class="visually-hidden">MiaoCast の 5 バンド構成と 4 系統のデータフロー図</figcaption>
+                <figcaption class="visually-hidden">CozyTing の 5 バンド構成と 4 系統のデータフロー図</figcaption>
               </figure>
 
               <aside class="inspector" id="overview-inspector" aria-label="選択ノード詳細">
@@ -982,7 +982,7 @@
                   <rect width="1060" height="660" rx="12" fill="url(#rt-dots)"/>
 
                   <rect x="16" y="16" width="690" height="628" rx="14" fill="#0d1527" stroke="#243554" stroke-width="1.2"/>
-                  <text x="32" y="40" fill="#93c5fd" font-family="var(--font-mono)" font-size="11" font-weight="700">ANDROID PROCESS · com.miaocast.app (ART + libmiaocast_core.so)</text>
+                  <text x="32" y="40" fill="#93c5fd" font-family="var(--font-mono)" font-size="11" font-weight="700">ANDROID PROCESS · com.cozyting.app (ART + libcozyting_core.so)</text>
 
                   <rect x="30" y="54" width="662" height="170" rx="10" fill="#111c33" stroke="#1e293b"/>
                   <text x="44" y="74" fill="#7dd3fc" font-family="var(--font-mono)" font-size="10.5" font-weight="700">KOTLIN / ART スレッド群</text>
@@ -1000,7 +1000,7 @@
                   <g id="rt-edges"></g>
                   <g id="rt-nodes"></g>
                 </svg>
-                <figcaption class="visually-hidden">MiaoCast ランタイムスレッドと 6 系統 LAN 通信トポロジ</figcaption>
+                <figcaption class="visually-hidden">CozyTing ランタイムスレッドと 6 系統 LAN 通信トポロジ</figcaption>
               </figure>
 
               <aside class="inspector" id="runtime-inspector" aria-label="ランタイム段階とスレッド詳細">
@@ -1050,7 +1050,7 @@
     </main>
 
     <footer class="site-footer">
-      <span>MiaoCast・MiPlay プロトコル・AGPL-3.0-only・完全 LAN 音声送信アーキテクチャドキュメント</span>
+      <span>CozyTing・MiPlay プロトコル・AGPL-3.0-only・完全 LAN 音声送信アーキテクチャドキュメント</span>
       <span>静的 SVG 図：<a href="../assets/architecture-overview.svg">architecture-overview.svg</a> · <a href="../assets/runtime-architecture.svg">runtime-architecture.svg</a></span>
     </footer>
   </div>
@@ -1198,18 +1198,18 @@
   {
     "id": "jni",
     "layer": "FFI・言語間ブリッジ",
-    "title": "FFI Bridge (Android JNI ffi.rs・iOS C ABI ffi_c.rs / miaocast_core.h)",
+    "title": "FFI Bridge (Android JNI ffi.rs・iOS C ABI ffi_c.rs / cozyting_core.h)",
     "sub": "薄いパラメータ転送 → core::engine & device_catalog・16KB ELF .so / .xcframework",
     "x": 138,
     "y": 322,
     "w": 886,
     "h": 42,
-    "desc": "薄いクロス言語ブリッジ：Android は JNI (.so)、iOS は C11 ABI (miaocast_core.h / .xcframework) で共通の L1 core::engine と device_catalog へ委譲します。",
+    "desc": "薄いクロス言語ブリッジ：Android は JNI (.so)、iOS は C11 ABI (cozyting_core.h / .xcframework) で共通の L1 core::engine と device_catalog へ委譲します。",
     "files": [
       "android/.../NativeBridge.kt",
       "core/src/ffi.rs",
       "core/src/ffi_c.rs",
-      "core/include/miaocast_core.h"
+      "core/include/cozyting_core.h"
     ]
   },
   {
@@ -1304,12 +1304,12 @@
     "id": "aux_tools",
     "layer": "開発支援・検証",
     "title": "CLI / プローブ / testtones",
-    "sub": "miaocast-cli・DevMain・A/B/deny",
+    "sub": "cozyting-cli・DevMain・A/B/deny",
     "x": 778,
     "y": 612,
     "w": 246,
     "h": 108,
-    "desc": "独立診断ツール miaocast-cli（CLOSE を送らない読み取り専用 inspect）、app_process 検証ハーネス DevMain、acceptance ローカル分離プローブ、3 種の正弦波テスト APK。",
+    "desc": "独立診断ツール cozyting-cli（CLOSE を送らない読み取り専用 inspect）、app_process 検証ハーネス DevMain、acceptance ローカル分離プローブ、3 種の正弦波テスト APK。",
     "files": [
       "cli/src/main.rs",
       "android/.../DevMain.kt",
@@ -1751,7 +1751,7 @@
   [
     "FFI・ブリッジ",
     "android/.../NativeBridge.kt",
-    "Kotlin external JNI 宣言および 16KB ページ整列 libmiaocast_core.so ローダー"
+    "Kotlin external JNI 宣言および 16KB ページ整列 libcozyting_core.so ローダー"
   ],
   [
     "FFI・ブリッジ",
@@ -1760,8 +1760,8 @@
   ],
   [
     "FFI・ブリッジ",
-    "core/src/ffi_c.rs & core/include/miaocast_core.h",
-    "iOS / クロスプラットフォーム C11 ABI と module.modulemap（MiaoCastCore.xcframework 収録）"
+    "core/src/ffi_c.rs & core/include/cozyting_core.h",
+    "iOS / クロスプラットフォーム C11 ABI と module.modulemap（CozyTingCore.xcframework 収録）"
   ],
   [
     "L1・Rust コア",
@@ -1811,7 +1811,7 @@
   [
     "ツール・検証",
     "cli/src/main.rs",
-    "LAN 検出・読み取り専用 inspect・キャスト・障害注入デバッグ用独立 CLI miaocast-cli"
+    "LAN 検出・読み取り専用 inspect・キャスト・障害注入デバッグ用独立 CLI cozyting-cli"
   ],
   [
     "ツール・検証",

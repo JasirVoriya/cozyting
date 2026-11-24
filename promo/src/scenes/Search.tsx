@@ -4,7 +4,7 @@ import { C, FONT_EN, FONT_MONO, fontForLocale, prog, easeInOut, easeOut, sceneFa
 import { GitHubIcon, LogoMark, MouseCursor } from "../components";
 import { getCopy } from "../i18n";
 
-const QUERY = "MiaoCast";
+const QUERY = "CozyTing";
 
 export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, locale }) => {
   const f = useCurrentFrame();
@@ -167,7 +167,7 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <span style={{ fontFamily: FONT_MONO, fontSize: 30, fontWeight: 700, color: "#FFFFFF" }}>
-                    JasirVoriya / miaocast-releases
+                    JasirVoriya / cozyting-releases
                   </span>
                   <span
                     style={{

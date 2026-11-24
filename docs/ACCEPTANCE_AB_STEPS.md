@@ -7,16 +7,16 @@
 
 | APK | applicationId | 说明 |
 |---|---|---|
-| `妙投·验收` | `com.miaocast.app.acceptance` | 独立验收签名 |
+| `窝爱听·验收` | `com.cozyting.app.acceptance` | 独立验收签名 |
 | `受控音源A·1kHz` | `com.miplay.testtone.a` | 可捕获，1000Hz |
 | `受控音源B·2kHz` | `com.miplay.testtone.b` | 可捕获，2000Hz |
 | `受控音源·禁止捕获` | `com.miplay.testtone.deny` | `allowAudioPlaybackCapture=false`，1500Hz |
 
-三者不同 UID（系统安装时分配）。发送端正式包名 `com.miaocast.app` 不变。
+三者不同 UID（系统安装时分配）。发送端正式包名 `com.cozyting.app` 不变。
 
 ## 量化判据（发送端 PCM 探针）
 
-验收 UI / logcat 标签 `MiaoCast` 的 `PCM_PROBE`：
+验收 UI / logcat 标签 `CozyTing` 的 `PCM_PROBE`：
 
 - **选 A 且仅 A 播放**：主导应为 `A`，且 `energyA ≫ energyB`
 - **选 A 且仅 B 播放**：主导不应为 `B`（期望静音或 OTHER，且无稳定 2kHz 主导）
@@ -25,7 +25,7 @@
 
 ## 推荐操作顺序（虚拟屏；本地过滤可不连音箱）
 
-1. 打开验收 App「妙投·验收」→ **选择投送的 App** → 选 `受控音源A`（须已安装并正在播放）。
+1. 打开验收 App「窝爱听·验收」→ **选择投送的 App** → 选 `受控音源A`（须已安装并正在播放）。
 2. 点 **「本地音频过滤验收（不连接音箱）」**（不要被「请勾选音箱」挡住；此入口不要求音箱）。
 3. 在**系统投影授权框**由你确认（不可复用旧 token；勿用 adb appops）。
 4. 看界面/通知/`PCM_PROBE`：选 A 且 A 在播时应主导 `A`。

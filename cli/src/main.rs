@@ -3,8 +3,8 @@
 //! 状态调查请用 **`inspect`**（认证后仅 GET_*，结束 TCP shutdown，**不**发协议 CLOSE）。
 //! 旧 `probe` / `devinfo` / `channel` 结束会发 `CLOSE(0x0002)`，不能称为无副作用只读。
 
-use miaocast_core::control::SourceIdentity;
-use miaocast_core::session::{self, CastConfig, CastSession, SilenceSource};
+use cozyting_core::control::SourceIdentity;
+use cozyting_core::session::{self, CastConfig, CastSession, SilenceSource};
 use std::net::Ipv4Addr;
 use std::time::{Duration, Instant};
 
@@ -15,18 +15,18 @@ fn arg(args: &[String], k: &str) -> Option<String> {
 fn print_help() {
     eprintln!(
         "usage:\n\
-         \tmiaocast-cli inspect IP [--auth legacy]\n\
+         \tcozyting-cli inspect IP [--auth legacy]\n\
          \t  显式只查询：legacy 挑战应答后仅 GET_DEVICE_INFO / GET_MIRROR_MODE / GET_VOLUME /\n\
          \t  GET_MEDIA_INFO / GET_STATE / GET_CHANNEL；结束 TCP shutdown，不发 CLOSE/Open/\n\
          \t  SetPlaySource/SetChannel/SetVolume/SetLocalDeviceInfo。media.status=\n\
          \t  not_received|empty_payload|parse_error|ok；仅 ok 时 source_name 为\n\
          \t  absent|empty|nonempty，否则 source_name=null（从不用 \"\"）。设备\n\
          \t  mirror/state/volume 在顶层专用 GET；GET_CHANNEL 用 get_channel_received。\n\
-         \tmiaocast-cli discover [--local IP] [--secs N]\n\
-         \tmiaocast-cli probe IP          # 引导后发协议 CLOSE — 非无副作用只查询\n\
-         \tmiaocast-cli mute IP [--volume 0]\n\
-         \tmiaocast-cli cast IP[,IP...] [--auth auto|legacy|safety] [--secs N] [--delay-ms auto|N] [--ref single_room|multi_room]\n\
-         \tmiaocast-cli help"
+         \tcozyting-cli discover [--local IP] [--secs N]\n\
+         \tcozyting-cli probe IP          # 引导后发协议 CLOSE — 非无副作用只查询\n\
+         \tcozyting-cli mute IP [--volume 0]\n\
+         \tcozyting-cli cast IP[,IP...] [--auth auto|legacy|safety] [--secs N] [--delay-ms auto|N] [--ref single_room|multi_room]\n\
+         \tcozyting-cli help"
     );
 }
 
@@ -72,7 +72,7 @@ fn main() {
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(Ipv4Addr::UNSPECIFIED);
             let secs: u64 = arg(&args, "--secs").and_then(|s| s.parse().ok()).unwrap_or(3);
-            match miaocast_core::discovery::browse(local, Duration::from_secs(secs)) {
+            match cozyting_core::discovery::browse(local, Duration::from_secs(secs)) {
                 Ok(list) => {
                     for s in list {
                         println!("{s:?}");
@@ -95,13 +95,13 @@ fn main() {
         "devinfo" => {
             eprintln!("warning: legacy devinfo ends with protocol CLOSE; prefer `inspect`");
             let ip: Ipv4Addr = args[2].parse().expect("ip");
-            let mode = miaocast_core::session::AuthMode::parse(
+            let mode = cozyting_core::session::AuthMode::parse(
                 &arg(&args, "--auth").unwrap_or_else(|| "legacy".into()),
             );
             match session::connect_bootstrapped(ip, &id, mode) {
                 Ok((ctl, route)) => {
                     let p = ctl.status.device_info.clone().unwrap_or_default();
-                    let kv = miaocast_core::frame::decode_kv(&p);
+                    let kv = cozyting_core::frame::decode_kv(&p);
                     let shown: Vec<_> = kv
                         .iter()
                         .filter(|(k, _)| {
@@ -124,7 +124,7 @@ fn main() {
                     println!(
                         "DEVINFO {ip} route={route} len={} channel={:?} fields={} {:?}",
                         p.len(),
-                        miaocast_core::frame::device_info_channel(&p),
+                        cozyting_core::frame::device_info_channel(&p),
                         kv.len(),
                         shown
                     );
@@ -139,7 +139,7 @@ fn main() {
         "safety" => {
             let ip: Ipv4Addr = args[2].parse().expect("ip");
             let ver = arg(&args, "--version")
-                .unwrap_or_else(|| miaocast_core::control::SAFETY_NATIVE_VERSION.to_string());
+                .unwrap_or_else(|| cozyting_core::control::SAFETY_NATIVE_VERSION.to_string());
             let post: Vec<u32> = arg(&args, "--post-auth")
                 .map(|v| {
                     v.split(',')
@@ -201,7 +201,7 @@ fn main() {
             let ips: Vec<Ipv4Addr> = args[2].split(',').map(|s| s.parse().expect("ip")).collect();
             let secs: u64 = arg(&args, "--secs").and_then(|s| s.parse().ok()).unwrap_or(20);
             let (delay_us, freq) = match arg(&args, "--delay-ms").as_deref() {
-                None | Some("auto") => miaocast_core::netinfo::auto_playback_delay_us(),
+                None | Some("auto") => cozyting_core::netinfo::auto_playback_delay_us(),
                 Some(v) => (v.parse::<i64>().expect("delay-ms") * 1000, None),
             };
             println!("DELAY {delay_us} us (wifi freq {freq:?})");
@@ -224,7 +224,7 @@ fn main() {
                     Some(0)
                 },
                 volume_after_play: Some(vap),
-                auth: miaocast_core::session::AuthMode::parse(
+                auth: cozyting_core::session::AuthMode::parse(
                     &arg(&args, "--auth").unwrap_or_default(),
                 ),
                 ..Default::default()

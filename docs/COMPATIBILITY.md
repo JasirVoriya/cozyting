@@ -4,7 +4,7 @@
 
 📣 **欢迎共建**：如果你手上有小米 / MiPlay 音箱或不同系统版本的 Android / iOS 发送端设备，无论测试结果是 **可用 ✅** 还是 **异常 ❌**，都欢迎点此提交实测反馈：
 
-👉 **[提交你的设备兼容实测报告（GitHub 表单）](https://github.com/JasirVoriya/miaocast-releases/issues/new)**
+👉 **[提交你的设备兼容实测报告（GitHub 表单）](https://github.com/JasirVoriya/cozyting-releases/issues/new)**
 
 ---
 
@@ -34,7 +34,7 @@
 ## 二、发送端（Android / iOS 设备与系统版本）
 
 > **Android 端**：最低要求 **Android 10（API 29）**，当前正式包构建 **`arm64-v8a`**（支持 16KB ELF 页对齐）。  
-> **iOS 端**：L1 Rust C ABI（`ffi_c.rs` / `miaocast_core.h` / `build-ios-xcframework.sh`）与跨端共享设计规范 `design/` 已就绪，L2/L3 原生客户端（`ReplayKit` / `AudioToolbox` / `SwiftUI`）规划推进中。
+> **iOS 端**：L1 Rust C ABI（`ffi_c.rs` / `cozyting_core.h` / `build-ios-xcframework.sh`）与跨端共享设计规范 `design/` 已就绪，L2/L3 原生客户端（`ReplayKit` / `AudioToolbox` / `SwiftUI`）规划推进中。
 
 | 设备型号 / 平台 | 系统 / ROM | 版本 / API | 冷启动与发现 | 投送实测 | 后台保活 / 备注 |
 | --- | --- | :---: | :---: | :---: | --- |
@@ -57,11 +57,11 @@
 
 ## 四、如何快速采集只读设备信息？
 
-如果你希望帮助适配一款新的小米音箱，可在同一局域网的电脑上使用 `miaocast-cli` 执行**只读查询**（仅发 `GET_*` 并以 TCP shutdown 退出，不会打断音箱当前状态）：
+如果你希望帮助适配一款新的小米音箱，可在同一局域网的电脑上使用 `cozyting-cli` 执行**只读查询**（仅发 `GET_*` 并以 TCP shutdown 退出，不会打断音箱当前状态）：
 
 ```bash
-miaocast-cli discover
-miaocast-cli inspect <音箱IP> --auth legacy
+cozyting-cli discover
+cozyting-cli inspect <音箱IP> --auth legacy
 ```
 
-将脱敏后的输出附在 [设备兼容实测报告](https://github.com/JasirVoriya/miaocast-releases/issues/new) 中即可。
+将脱敏后的输出附在 [设备兼容实测报告](https://github.com/JasirVoriya/cozyting-releases/issues/new) 中即可。

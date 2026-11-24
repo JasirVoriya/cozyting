@@ -8,7 +8,7 @@
 ## 一、问题背景与候选方案调研结论
 
 ### 1. 当前痛点与根因
-当前 Android 端采用普通应用权限下的 `MediaProjection` + `AudioPlaybackCaptureConfiguration.addMatchingUid(uid)`（见 `android/app/src/main/java/com/miaocast/app/capture/PlaybackCaptureFactory.kt`）。虽然严格做到了单 App 捕获且不采集画面，但由于 Android 框架将 `AudioPlaybackCapture` 强绑定在 `MediaProjection`（屏幕录制/投屏体系）上，存在三项系统级硬限制：
+当前 Android 端采用普通应用权限下的 `MediaProjection` + `AudioPlaybackCaptureConfiguration.addMatchingUid(uid)`（见 `android/app/src/main/java/com/cozyting/app/capture/PlaybackCaptureFactory.kt`）。虽然严格做到了单 App 捕获且不采集画面，但由于 Android 框架将 `AudioPlaybackCapture` 强绑定在 `MediaProjection`（屏幕录制/投屏体系）上，存在三项系统级硬限制：
 1. **每次会话必须重新弹窗授权**：Android 14+ 硬性禁止跨会话复用 `MediaProjection` 授权 Token（见 `ProjectionSessionPolicy.kt`）；
 2. **全程常驻「正在投屏」系统提示**：只要 `MediaProjection` 处于活跃状态，SystemUI 即强制展示投屏/录屏图标或状态栏胶囊，普通第三方权限无法隐藏；
 3. **无法实现真正的单 App 本机静音**：普通权限只能全局静音 `STREAM_MUSIC`（见 [LOCAL_MUTE.md](LOCAL_MUTE.md)），导致投歌期间在手机刷短视频或听微信语音也一同无声。
@@ -64,7 +64,7 @@
    - 执行单条 `shell` 命令拉起内置采集 Helper：
      ```sh
      CLASSPATH=<our_apk_path> setsid /system/bin/app_process /system/bin \
-       com.miaocast.app.capture.shell.ShellAudioHelperMain \
+       com.cozyting.app.capture.shell.ShellAudioHelperMain \
        --ctl-port <ephemeral_loopback_port> --pcm-port <ephemeral_loopback_port> \
        --token <random_256bit_hex> </dev/null >/dev/null 2>&1 &
      ```
@@ -75,7 +75,7 @@
 
 ## 四、L2 可插拔采集架构（对 L1 Rust 核心零侵入）
 
-本方案完全落在 L2 Android 采集层，**不改动 L1 共享 Rust 核心（`core/`）、JNI 接口（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` / `core/include/miaocast_core.h`）**。多音箱毫秒级同频、双认证、15 秒看门狗、`PcmProbe`、`AacEncoder` 与 `CastService` 热切源状态机全部原样复用。
+本方案完全落在 L2 Android 采集层，**不改动 L1 共享 Rust 核心（`core/`）、JNI 接口（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` / `core/include/cozyting_core.h`）**。多音箱毫秒级同频、双认证、15 秒看门狗、`PcmProbe`、`AacEncoder` 与 `CastService` 热切源状态机全部原样复用。
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -109,7 +109,7 @@
 
 ### 2. 待新增的 Android 侧模块规划（不破坏现有分层）
 ```text
-android/app/src/main/java/com/miaocast/app/
+android/app/src/main/java/com/cozyting/app/
 ├── capture/
 │   ├── AudioCaptureBackend.kt               # 统一采集后端接口与状态/能力声明
 │   ├── MediaProjectionBackend.kt            # 从 CastService 抽离的现有标准后端（零行为回归）

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Manifest -->
-    <string name="app_name">MiaoCast</string>
-    <string name="app_brand_name">MiaoCast</string>
-    <string name="notification_listener_label">MiaoCast · 再生中メディア取得</string>
-    <string name="wireless_pairing_accessibility_label">MiaoCast · ワイヤレスデバッグ自動ペアリング補助</string>
+    <string name="app_name">CozyTing</string>
+    <string name="app_brand_name">CozyTing</string>
+    <string name="notification_listener_label">CozyTing · 再生中メディア取得</string>
+    <string name="wireless_pairing_accessibility_label">CozyTing · ワイヤレスデバッグ自動ペアリング補助</string>
     <string name="wireless_pairing_accessibility_desc">初回のワイヤレスデバッグによるサイレントキャプチャ設定時のみ使用します。システムの「ワイヤレスデバッグ」画面上部に 6 桁ペアリングコード入力パッドを表示し、コードを読み取ってローカルペアリングを完了します。完了後は自動で休止し、個人データは収集しません。</string>
     <string name="title_app_picker">音源アプリを選択</string>
     <string name="title_settings">設定</string>
@@ -299,7 +299,7 @@
     <string name="update_dialog_changelog_header">v%1$s 以降の %2$d 件の変更点</string>
     <string name="update_dialog_changelog_truncated">… それ以前の変更は省略されています。「ブラウザで開く」から全履歴を確認できます。</string>
     <string name="update_fallback_empty_notes">機能改善と安定性向上を含みます。詳細はリリースページをご確認ください。</string>
-    <string name="update_dialog_need_install_perm">システム設定で MiaoCast からの提供元不明アプリインストールを許可し、戻ってから「今すぐインストール」をタップしてください。</string>
+    <string name="update_dialog_need_install_perm">システム設定で CozyTing からの提供元不明アプリインストールを許可し、戻ってから「今すぐインストール」をタップしてください。</string>
     <string name="update_dialog_btn_install_after_perm">許可済・今すぐインストール</string>
     <string name="update_dialog_err_open_installer">システムインストーラーを起動できませんでした。下の「ブラウザでダウンロード」をご利用ください。</string>
     <string name="update_dialog_btn_download_install">ダウンロードしてインストール</string>
@@ -353,7 +353,7 @@
     <string name="guide_manual_pin_hint">6 桁コード</string>
     <string name="guide_manual_pair_btn">ペアリング</string>
     <string name="guide_tips_title">よくある質問と再起動後の復旧</string>
-    <string name="guide_tip_1">• オーバーレイではなくユーザー補助を推奨する理由：Android 12+ / HyperOS ではワイヤレスデバッグ画面上で通常のオーバーレイがブロックされます。「MiaoCast · 自動ペアリング補助」を有効にするとオーバーレイ権限なしで入力パッドを表示し、6 桁コードを自動読取できます。</string>
+    <string name="guide_tip_1">• オーバーレイではなくユーザー補助を推奨する理由：Android 12+ / HyperOS ではワイヤレスデバッグ画面上で通常のオーバーレイがブロックされます。「CozyTing · 自動ペアリング補助」を有効にするとオーバーレイ権限なしで入力パッドを表示し、6 桁コードを自動読取できます。</string>
     <string name="guide_tip_2">• 通知欄からのフォールバック入力：ユーザー補助がオフでも、「ペア設定コードによるデバイスのペア設定」を開いた後、通知シェードから「6 桁コードを入力」で入力できます（折り畳まれている場合は通知を長押し）。</string>
     <string name="guide_tip_3">• 端末再起動後：Android によりワイヤレスデバッグは自動オフになります。スイッチを再度オンにするだけで復旧し、再ペアリングは不要です。</string>
     <string name="guide_tip_4">• 音楽と動画視聴を両立：Android 13+ の単一アプリ・サイレントキャストでは再生中のみデュアルゾーン・オーディオフォーカス分離が有効になり、スマホで動画を再生してもスピーカーの音楽が止まりません。</string>
@@ -383,7 +383,7 @@
     <string name="onboard_step3_title">「自動ペアリング補助」を有効化（推奨）</string>
     <string name="onboard_step3_detail_enabled">有効化済：オーバーレイ権限なしでワイヤレスデバッグ画面上部にパッドを表示し、6 桁コードを自動読取します</string>
     <string name="onboard_step3_detail_skipped">スキップ済：通知バナーから手動で 6 桁コードを入力します（いつでも有効化可能）</string>
-    <string name="onboard_step3_detail_todo">オーバーレイ権限不要！「MiaoCast · 自動ペアリング補助」を有効にすると PIN 画面にパッドを重ねて 6 桁コードを自動読取し、完了後は自動で休止します</string>
+    <string name="onboard_step3_detail_todo">オーバーレイ権限不要！「CozyTing · 自動ペアリング補助」を有効にすると PIN 画面にパッドを重ねて 6 桁コードを自動読取し、完了後は自動で休止します</string>
     <string name="onboard_step3_badge_recommended">推奨 · 自動読取</string>
     <string name="onboard_step3_badge_skipped">スキップ済</string>
     <string name="onboard_step3_action_enable">ユーザー補助を有効化</string>
@@ -420,7 +420,7 @@
 
     <!-- Pairing Overlay & Notifications -->
     <string name="overlay_title_expanded">6 桁のペアリングコードを入力</string>
-    <string name="overlay_title_collapsed">MiaoCast · コード表示待ち</string>
+    <string name="overlay_title_collapsed">CozyTing · コード表示待ち</string>
     <string name="overlay_port_done">ポート確定</string>
     <string name="overlay_port_locked">ポート %1$d</string>
     <string name="overlay_port_manual">ポート手動</string>
@@ -439,7 +439,7 @@
     <string name="overlay_status_pin_incomplete">6 桁すべて入力してください（現在 %1$d/6 桁）</string>
     <string name="overlay_status_probing_port">ペアリングポートを検出中…</string>
     <string name="overlay_status_no_port">ポートを自動検出できませんでした：5 桁のポート番号を入力し「完了」をタップ</string>
-    <string name="overlay_status_success">✓ ペアリング成功！証明書を保存し MiaoCast へ戻ります…</string>
+    <string name="overlay_status_success">✓ ペアリング成功！証明書を保存し CozyTing へ戻ります…</string>
     <string name="overlay_status_fail_retry">%1$s（数字タップで再入力）</string>
     <string name="overlay_key_done">完了</string>
     <string name="overlay_key_pair">実行</string>
@@ -457,10 +457,10 @@
     <string name="pairing_notif_channel_active">ワイヤレスペアリング入力バナー</string>
     <string name="pairing_notif_channel_active_desc">ペアリング画面検出時に 6 桁コード入力バナーを表示</string>
     <string name="pairing_receiver_no_port">ペアリングポートが見つかりません。コード表示ダイアログを開いたまま再試行してください。</string>
-    <string name="pairing_receiver_saved">証明書を保存しました。MiaoCast に戻ってサイレントキャプチャを有効化できます。</string>
+    <string name="pairing_receiver_saved">証明書を保存しました。CozyTing に戻ってサイレントキャプチャを有効化できます。</string>
 
     <!-- Cast Service & Foreground Notification -->
-    <string name="cast_channel_name">MiaoCast · キャスト状態</string>
+    <string name="cast_channel_name">CozyTing · キャスト状態</string>
     <string name="cast_action_pause">一時停止</string>
     <string name="cast_action_resume">再開</string>
     <string name="cast_action_stop">停止</string>

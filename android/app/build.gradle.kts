@@ -1,5 +1,5 @@
 // Rust 核心先编译进 jniLibs：
-//   cd .. && cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p miaocast-core --features jni
+//   cd .. && cargo ndk -t arm64-v8a -o android/app/src/main/jniLibs build --release -p cozyting-core --features jni
 import java.util.Properties
 
 plugins {
@@ -22,10 +22,10 @@ fun signingProp(envKey: String, propKey: String, default: String = ""): String =
         ?: default
 
 android {
-    namespace = "com.miaocast.app"
+    namespace = "com.cozyting.app"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.miaocast.app"
+        applicationId = "com.cozyting.app"
         minSdk = 29
         targetSdk = 36
         versionCode = 26
@@ -68,7 +68,7 @@ android {
         }
         create("acceptance") {
             dimension = "channel"
-            applicationId = "com.miaocast.app.acceptance"
+            applicationId = "com.cozyting.app.acceptance"
             versionNameSuffix = "-acceptance"
             buildConfigField("boolean", "IS_ACCEPTANCE", "true")
             signingConfig = signingConfigs.getByName("acceptance")
@@ -101,12 +101,12 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.systemProperty(
-                "miaocast.uiPreviewDir",
-                System.getProperty("miaocast.uiPreviewDir")
+                "cozyting.uiPreviewDir",
+                System.getProperty("cozyting.uiPreviewDir")
                     ?: layout.buildDirectory.dir("ui-previews").get().asFile.absolutePath,
             )
-            System.getProperty("miaocast.uiPreviewLocale")?.let { loc ->
-                it.systemProperty("miaocast.uiPreviewLocale", loc)
+            System.getProperty("cozyting.uiPreviewLocale")?.let { loc ->
+                it.systemProperty("cozyting.uiPreviewLocale", loc)
             }
             // Robolectric Native Graphics 在 JDK 17+ 需要开放部分模块访问
             it.jvmArgs("-Xmx2g")

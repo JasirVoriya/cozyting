@@ -3,7 +3,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories { google(); mavenCentral() }
 }
-rootProject.name = "MiaoCast"
+rootProject.name = "CozyTing"
 include(":app")
 include(":hiddenapi-stubs")
 include(":testtones")
