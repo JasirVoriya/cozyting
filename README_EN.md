@@ -265,3 +265,11 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **Resources**: [Product Website](https://jasirvoriya.github.io/cozyting-releases/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting-releases/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 - **License**: Released under **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)**.
 - **Non-Affiliation Disclaimer**: Independent third-party open-source implementation for LAN interoperability research. Not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
+
+### Contributors
+
+Thank you to everyone contributing code, device compatibility reports, and feedback!
+
+<a href="https://github.com/JasirVoriya/cozyting/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JasirVoriya/cozyting" alt="CozyTing Contributors" />
+</a>

@@ -1,0 +1,50 @@
+rust-core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "core/**"
+          - "Cargo.toml"
+          - "Cargo.lock"
+
+android:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "android/**"
+          - "hiddenapi-stubs/**"
+
+ios:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "ios/**"
+          - "core/src/ffi_c.rs"
+          - "core/include/**"
+          - "scripts/build-ios-xcframework.sh"
+
+cli:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "cli/**"
+
+design:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "design/**"
+
+promo:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "promo/**"
+
+i18n:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "android/app/src/*/res/values*/strings.xml"
+          - "README*.md"
+          - "docs/en/**"
+          - "docs/ja/**"
+          - "promo/src/i18n/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "*.md"
