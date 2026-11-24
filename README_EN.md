@@ -12,9 +12,11 @@
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="README_JA.md">日本語</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting">Source Code</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/en/">Website</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video">Video Demo</a> ·
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases">Download APK</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/en/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
   <a href="CHANGELOG.md">Changelog</a>
@@ -23,6 +25,7 @@
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -36,6 +39,7 @@
 > **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
 > 📦 **Download**: Grab the latest Android APK and cross-platform `cozyting-cli` binaries from **[GitHub Releases (cozyting-releases)](https://github.com/JasirVoriya/cozyting-releases/releases)**.
+> 🗂️ **Dual-Repo Layout**: Source code, issues, and pull requests live in **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**; signed APK / CLI binaries, the product site, and the in-app update manifest are published in **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)**.
 > 📑 **Jump to**: [CozyTing in 1 Minute](#-cozyting-in-1-minute) · [Problems Solved](#1-what-problems-does-cozyting-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
 
 ---

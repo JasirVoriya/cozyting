@@ -12,6 +12,7 @@
 - **Category**: Open-Source LAN Multi-Room Audio Casting App / Third-Party MiPlay Sender Client
 - **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
 - **Supported App & Website Languages**: Simplified Chinese (`zh-CN`), English (`en`), Japanese (`ja`) — follow system language or switch in-app / via top-bar switcher
+- **Official Source Code, Issues & PRs Repo**: https://github.com/JasirVoriya/cozyting
 - **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/cozyting-releases
 - **Official Website (GitHub Pages)**:
   - 简体中文: https://jasirvoriya.github.io/cozyting-releases/

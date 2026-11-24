@@ -12,9 +12,11 @@
 
 <p>
   <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a> · <strong>日本語</strong> ·
+  <a href="https://github.com/JasirVoriya/cozyting">ソースコード</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/ja/">製品サイト</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/ja/#video">デモ動画</a> ·
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases">APK ダウンロード</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html">アーキテクチャ図</a> ·
   <a href="docs/COMPATIBILITY.md">互換マトリクス</a> ·
   <a href="CHANGELOG.md">変更履歴</a>
@@ -23,6 +25,7 @@
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -36,6 +39,7 @@
 > **CozyTing** は無料・オープンソースのサードパーティ製 **MiPlay 完全 LAN 音声送信アプリ**（Android 10+ 対応、共通 Rust コア上の iOS SwiftUI 版を計画中）です。**Pixel・Galaxy・Xperia・OnePlus・OPPO・vivo・Huawei・Xiaomi など端末メーカーを問わず**、Root 不要・Xiaomi アカウント不要・クラウド不要で、選んだ 1 つの音楽・ポッドキャストアプリ（Spotify、Apple Music、YouTube Music、NetEase Cloud Music など）の音声だけを自宅 Wi-Fi 経由で最大 63 台の **Xiaomi / XiaoAi スピーカー** へミリ秒同期再生します。日本語・英語・簡体字中国語の 3 言語にネイティブ対応しています。
 >
 > 📦 **ダウンロード**：最新の署名済み Android APK およびクロスプラットフォーム診断 CLI `cozyting-cli` は **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** から入手できます。
+> 🗂️ **リポジトリ構成**：ソースコード・Issue・PR は **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**、署名済み APK / CLI 配布物・製品サイト・アプリ内更新マニフェストは **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)** で管理しています。
 > 📑 **目次**：[1 分でわかる CozyTing](#-1-分でわかる-cozyting) · [解決する課題](#1-解決する-4-つの課題) · [主な機能](#2-主な機能) · [画面プレビュー](#3-画面プレビューダークライト両対応) · [3 ステップ導入](#4-3-ステップ導入ガイド) · [よくある質問](#5-よくある質問faq) · [技術アーキテクチャ](#6-技術アーキテクチャとコア設計)
 
 ---
