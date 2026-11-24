@@ -151,21 +151,64 @@ class SettingsScrollAndSwitchTest {
         val expectedScroll = targetScrollY.coerceIn(0, newMaxScroll)
         assertEquals("点击「高音量保护」重建内容后不应自动滚回顶部", expectedScroll, scroll.scrollY)
 
-        // 3) 点击「更新通道」中的未选中项（会连续触发两次 renderUi）：仍保持当前滚动位置
+        // 3) 再次点击「高音量保护」恢复开启（连续触发 renderUi）：仍保持当前滚动位置
         val targetScroll2 = minOf(280, newMaxScroll)
         scroll.scrollTo(0, targetScroll2)
-        val previewChannelBtn = findTextViewByText(scroll, activity.getString(R.string.update_channel_prerelease))
-        assertNotNull(previewChannelBtn)
-        previewChannelBtn!!.performClick()
+        val guardRowAgain = findSwitchRowByTitle(scroll, activity.getString(R.string.settings_volume_guard_title))
+        assertNotNull(guardRowAgain)
+        guardRowAgain!!.performClick()
         shadowOf(Looper.getMainLooper()).idle()
         layoutView(activity.window.decorView, 1080, 1600)
 
-        val maxAfterChannel = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(0)
+        val maxAfterToggle = (scroll.getChildAt(0).height - scroll.height).coerceAtLeast(0)
         assertEquals(
             "连续触发 renderUi 时也应保持滚动位置不回顶",
-            targetScroll2.coerceIn(0, maxAfterChannel),
+            targetScroll2.coerceIn(0, maxAfterToggle),
             scroll.scrollY,
         )
+
+        // 4) 设置首页「关于与更新」收口为单入口，不再展示已移除的自动检查开关
+        val allTexts = collectTexts(activity.window.decorView)
+        assertTrue(
+            "设置页底部应展示单入口「关于窝爱听」",
+            allTexts.contains(activity.getString(R.string.title_about)),
+        )
+        assertTrue(
+            "设置页不应再展示已移除的自动检查开关",
+            !allTexts.contains(activity.getString(R.string.settings_update_auto_title)),
+        )
+
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun aboutActivityRendersHeroAndTogglesBetaUpdateChannel() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val settings = PrefsCastSettingsStore(ctx)
+        settings.updateChannelRaw = "stable"
+
+        val controller = Robolectric.buildActivity(com.cozyting.app.AboutActivity::class.java).setup()
+        val activity = controller.get()
+        shadowOf(Looper.getMainLooper()).idle()
+        layoutView(activity.window.decorView, 1080, 1920)
+
+        val allTexts = collectTexts(activity.window.decorView)
+        assertTrue(allTexts.contains(activity.getString(R.string.app_brand_name)))
+        assertTrue(allTexts.contains(activity.getString(R.string.about_check_updates_title)))
+        assertTrue(allTexts.contains(activity.getString(R.string.about_beta_updates_title)))
+        assertTrue(allTexts.contains(activity.getString(R.string.about_releases_title)))
+
+        val betaRow = findSwitchRowByTitle(activity.window.decorView, activity.getString(R.string.about_beta_updates_title))
+        assertNotNull(betaRow)
+        betaRow!!.performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals("prerelease", settings.updateChannelRaw)
+
+        val betaRowAfter = findSwitchRowByTitle(activity.window.decorView, activity.getString(R.string.about_beta_updates_title))
+        assertNotNull(betaRowAfter)
+        betaRowAfter!!.performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals("stable", settings.updateChannelRaw)
 
         controller.pause().stop().destroy()
     }

@@ -236,6 +236,13 @@
     <string name="settings_local_probe_started">Local filter probe started</string>
 
     <string name="settings_section_about">About &amp; Updates</string>
+    <string name="title_about">About CozyTing</string>
+    <string name="about_check_updates_title">Check for Updates</string>
+    <string name="about_beta_updates_title">Receive Beta Updates</string>
+    <string name="about_beta_updates_sub">Get early access to preview (RC) builds before stable release</string>
+    <string name="about_releases_title">Releases &amp; Changelog</string>
+    <string name="about_releases_sub">GitHub Releases · AGPL-3.0</string>
+    <string name="about_footer_note">Local LAN only · Zero cloud · AGPL-3.0</string>
     <string name="settings_ver_acceptance">QA</string>
     <string name="settings_ver_preview">Preview</string>
     <string name="settings_update_checking">Checking public update manifest…</string>

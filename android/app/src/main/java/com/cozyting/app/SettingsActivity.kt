@@ -82,19 +82,9 @@ class SettingsActivity : Activity() {
     private var localProbeBtn: TextView? = null
     private var devicesChanged = false
     private var triggerDiscover = false
-    private var pendingOpenDialogAfterManualCheck = false
-    private var updateDialog: Dialog? = null
-    private val updateListener: (UpdateCheckState) -> Unit = { st ->
+    private val updateListener: (UpdateCheckState) -> Unit = {
         if (!isFinishing && !isDestroyed) {
             renderUi()
-            if (pendingOpenDialogAfterManualCheck && st is UpdateCheckState.Ready) {
-                pendingOpenDialogAfterManualCheck = false
-                if (st.decision.hasNewerVersion) {
-                    showUpdateDialog(st.decision)
-                }
-            } else if (st is UpdateCheckState.Failed) {
-                pendingOpenDialogAfterManualCheck = false
-            }
         }
     }
 
@@ -132,8 +122,6 @@ class SettingsActivity : Activity() {
 
     override fun onDestroy() {
         AppUpdateManager.removeListener(updateListener)
-        runCatching { updateDialog?.dismiss() }
-        updateDialog = null
         main.removeCallbacks(probeTicker)
         super.onDestroy()
     }
@@ -1017,67 +1005,43 @@ class SettingsActivity : Activity() {
     private fun buildAboutAndUpdateCard(card: LinearLayout) {
         val state = AppUpdateManager.state
         val displayVer = AppUpdateManager.currentDisplayVersion()
-        val isPre = UpdateChannel.isPrereleaseVersion(displayVer)
         val readyDecision = (state as? UpdateCheckState.Ready)?.decision
         val hasNew = readyDecision?.hasNewerVersion == true
+        val isChecking = state is UpdateCheckState.Checking
 
-        // 顶部版本信息行 + 状态胶囊
-        val versionRow = LinearLayout(this).apply {
+        card.setPadding(dp(14), dp(4), dp(14), dp(4))
+        val aboutRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(2), 0, dp(2), dp(10))
+            background = UiComponents.rippleSurface(
+                fillColor = Color.TRANSPARENT,
+                radiusPx = UiComponents.dpf(this@SettingsActivity, 10f),
+                rippleColor = palette.ripple,
+            )
+            setPadding(dp(2), dp(12), dp(2), dp(12))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                startActivity(Intent(this@SettingsActivity, AboutActivity::class.java))
+            }
         }
-        val verMeta = LinearLayout(this).apply {
+        val meta = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginEnd = dp(8)
             }
         }
-        val verTitle = buildString {
-            append(getString(R.string.app_brand_name))
-            append(" v").append(displayVer)
-            if (BuildConfig.IS_ACCEPTANCE) {
-                append(" · ").append(getString(R.string.settings_ver_acceptance))
-            } else if (isPre) {
-                append(" · ").append(getString(R.string.settings_ver_preview))
-            }
-        }
-        verMeta.addView(
+        meta.addView(
             TextView(this).apply {
-                text = verTitle
-                textSize = 14.5f
+                text = getString(R.string.title_about)
+                textSize = 14f
                 setTypeface(null, Typeface.BOLD)
                 setTextColor(palette.textPrimary)
             },
         )
-        val subLine = when (state) {
-            is UpdateCheckState.Checking -> getString(R.string.settings_update_checking)
-            is UpdateCheckState.Failed -> state.message
-            is UpdateCheckState.Ready -> when (state.decision.status) {
-                UpdateDecisionStatus.UPDATE_AVAILABLE -> {
-                    if (state.decision.versionsBehind > 1) {
-                        getString(R.string.settings_update_avail_multi, state.decision.latestTag, state.decision.versionsBehind)
-                    } else {
-                        getString(R.string.settings_update_avail_single, state.decision.latestTag)
-                    }
-                }
-                UpdateDecisionStatus.IGNORED -> getString(R.string.settings_update_ignored, state.decision.latestTag)
-                UpdateDecisionStatus.UNSUPPORTED_OS -> getString(R.string.settings_update_unsupported_os, state.decision.latestTag)
-                UpdateDecisionStatus.UP_TO_DATE -> getString(R.string.settings_update_up_to_date, formatCheckTime(state.checkedAtMs))
-                UpdateDecisionStatus.ERROR -> state.decision.localizedError(this)
-            }
-            UpdateCheckState.Idle -> {
-                val last = settingsStore.lastUpdateCheckMs
-                if (last > 0L) {
-                    getString(R.string.settings_update_last_checked, formatCheckTime(last))
-                } else {
-                    getString(R.string.settings_update_never_checked)
-                }
-            }
-        }
-        verMeta.addView(
+        meta.addView(
             TextView(this).apply {
-                text = subLine
+                text = AboutActivity.formatUpdateSubtitle(this@SettingsActivity, settingsStore, state)
                 textSize = 11.5f
                 setTextColor(
                     when {
@@ -1089,176 +1053,67 @@ class SettingsActivity : Activity() {
                 setPadding(0, dp(2), 0, 0)
             },
         )
-        versionRow.addView(verMeta)
+        aboutRow.addView(meta)
 
-        val (pillText, pillFg, pillBg) = when {
-            state is UpdateCheckState.Checking -> Triple(getString(R.string.settings_update_pill_checking), palette.accentBright, palette.accentSoftBg)
-            state is UpdateCheckState.Failed -> Triple(
-                getString(R.string.settings_update_pill_failed),
-                palette.statusWarning,
-                Color.argb(30, Color.red(palette.statusWarning), Color.green(palette.statusWarning), Color.blue(palette.statusWarning)),
-            )
-            hasNew -> Triple(getString(R.string.settings_update_pill_new), palette.accentBright, palette.accentSoftBg)
-            state is UpdateCheckState.Ready && state.decision.status == UpdateDecisionStatus.UP_TO_DATE -> Triple(
-                getString(R.string.settings_update_pill_latest),
-                palette.statusSuccess,
-                Color.argb(28, Color.red(palette.statusSuccess), Color.green(palette.statusSuccess), Color.blue(palette.statusSuccess)),
-            )
-            else -> Triple("v$displayVer", palette.textSecondary, palette.controlSurface)
-        }
-        versionRow.addView(
-            TextView(this).apply {
-                text = pillText
-                textSize = 11f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(pillFg)
-                background = UiComponents.roundedDrawable(pillBg, UiComponents.dpf(this@SettingsActivity, 999f))
-                setPadding(dp(9), dp(4), dp(9), dp(4))
-            },
-        )
-        card.addView(versionRow)
-
-        // 主操作按钮：检查更新 / 查看新版本
-        val isChecking = state is UpdateCheckState.Checking
-        val actionLabel = when {
-            isChecking -> getString(R.string.settings_update_btn_checking)
-            hasNew -> getString(R.string.settings_update_btn_view, readyDecision!!.latestTag)
-            state is UpdateCheckState.Failed -> getString(R.string.settings_update_btn_retry)
-            else -> getString(R.string.settings_update_btn_check)
-        }
-        val actionBtn = UiComponents.tonalButton(
-            context = this,
-            palette = palette,
-            label = actionLabel,
-            primary = hasNew,
-        ) {
-            if (isChecking) return@tonalButton
-            if (hasNew) {
-                showUpdateDialog(readyDecision!!)
-            } else {
-                pendingOpenDialogAfterManualCheck = true
-                AppUpdateManager.checkManually(this)
+        when {
+            isChecking -> {
+                aboutRow.addView(
+                    UiComponents.pillBadge(
+                        this,
+                        palette.accentSoftBg,
+                        palette.accentBright,
+                        getString(R.string.settings_update_pill_checking),
+                    ).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ).apply { marginEnd = dp(4) }
+                    },
+                )
             }
-        }.apply {
-            isEnabled = !isChecking
-            alpha = if (isChecking) 0.6f else 1f
-        }
-        card.addView(actionBtn)
-        card.addView(spacer(10))
-
-        // 启动时自动检查开关（默认开启，可一键关闭以 100% 零外网请求）
-        card.addView(
-            UiComponents.switchRow(
-                context = this,
-                palette = palette,
-                title = getString(R.string.settings_update_auto_title),
-                subtitle = getString(R.string.settings_update_auto_sub),
-                initialChecked = settingsStore.autoCheckUpdates,
-            ) { checked ->
-                settingsStore.autoCheckUpdates = checked
-            },
-        )
-        card.addView(spacer(10))
-
-        // 更新通道分段选择：[稳定版 | 预览版 (RC)]
-        card.addView(fieldLabel(getString(R.string.settings_update_channel_title)))
-        val channels = listOf(UpdateChannel.STABLE, UpdateChannel.PRERELEASE)
-        val currentCh = settingsStore.resolvedUpdateChannel(BuildConfig.VERSION_NAME)
-        val chIdx = channels.indexOf(currentCh).coerceAtLeast(0)
-        card.addView(
-            UiComponents.segmentedControl(
-                context = this,
-                palette = palette,
-                labels = channels.map { it.label(this) },
-                initialIndex = chIdx,
-            ) { idx ->
-                settingsStore.updateChannelRaw = channels[idx].id
-                AppUpdateManager.reevaluateFromCache(this, manual = false)
-                renderUi()
-            },
-        )
-        card.addView(spacer(10))
-
-        // 公开 Release 与完整更新日志外链行（无权限绿点，简洁右箭头）
-        card.addView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                background = UiComponents.rippleSurface(
-                    fillColor = palette.rowIdleBg,
-                    radiusPx = UiComponents.dpf(this@SettingsActivity, UiPalette.RADIUS_CONTROL_DP.toFloat()),
-                    rippleColor = palette.ripple,
-                    strokeColor = palette.rowIdleBorder,
-                    strokeWidthPx = dp(1).coerceAtLeast(1),
-                )
-                setPadding(dp(12), dp(11), dp(12), dp(11))
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    runCatching {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(UpdateConfig.PUBLIC_RELEASES_WEB_URL)))
-                    }
-                }
-                val meta = LinearLayout(this@SettingsActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        marginEnd = dp(8)
-                    }
-                }
-                meta.addView(
-                    TextView(this@SettingsActivity).apply {
-                        text = getString(R.string.settings_release_page_title)
-                        textSize = 14f
-                        setTypeface(null, Typeface.BOLD)
-                        setTextColor(palette.textPrimary)
+            hasNew -> {
+                val dotSize = dp(7)
+                aboutRow.addView(
+                    View(this).apply {
+                        background = UiComponents.roundedDrawable(palette.accentBright, dotSize / 2f)
+                        layoutParams = LinearLayout.LayoutParams(dotSize, dotSize).apply {
+                            marginEnd = dp(6)
+                        }
                     },
                 )
-                meta.addView(
-                    TextView(this@SettingsActivity).apply {
-                        text = "github.com/${UpdateConfig.PUBLIC_RELEASE_REPO}/releases"
-                        textSize = 11.5f
-                        setTextColor(palette.textSecondary)
-                        setPadding(0, dp(2), 0, 0)
+                aboutRow.addView(
+                    UiComponents.pillBadge(
+                        this,
+                        palette.accent,
+                        Color.WHITE,
+                        readyDecision!!.latestTag.ifBlank { "v${readyDecision.latestVersion}" },
+                    ).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ).apply { marginEnd = dp(4) }
                     },
                 )
-                addView(meta)
-                addView(
-                    TextView(this@SettingsActivity).apply {
-                        text = getString(R.string.common_open)
-                        textSize = 11.5f
-                        setTypeface(null, Typeface.BOLD)
+            }
+            else -> {
+                aboutRow.addView(
+                    TextView(this).apply {
+                        text = "v$displayVer"
+                        textSize = 12f
                         setTextColor(palette.textSecondary)
                         setPadding(0, 0, dp(4), 0)
                     },
                 )
-                addView(
-                    ImageView(this@SettingsActivity).apply {
-                        setImageResource(R.drawable.ic_ui_chevron_right)
-                        setColorFilter(palette.textTertiary)
-                        layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
-                    },
-                )
+            }
+        }
+        aboutRow.addView(
+            ImageView(this).apply {
+                setImageResource(R.drawable.ic_ui_chevron_right)
+                setColorFilter(palette.textTertiary)
+                layoutParams = LinearLayout.LayoutParams(dp(16), dp(16))
             },
         )
-    }
-
-    private fun showUpdateDialog(decision: com.cozyting.app.update.UpdateDecision) {
-        runCatching { updateDialog?.dismiss() }
-        updateDialog = UpdateDialogController.show(this, palette, decision) {
-            updateDialog = null
-            if (!isFinishing && !isDestroyed) renderUi()
-        }
-    }
-
-    private fun formatCheckTime(tsMs: Long): String {
-        if (tsMs <= 0L) return getString(R.string.time_just_now)
-        val diff = (System.currentTimeMillis() - tsMs).coerceAtLeast(0L)
-        return when {
-            diff < 60_000L -> getString(R.string.time_just_now)
-            diff < 3_600_000L -> getString(R.string.time_minutes_ago, diff / 60_000L)
-            diff < 86_400_000L -> getString(R.string.time_hours_ago, diff / 3_600_000L)
-            else -> SimpleDateFormat("MM-dd HH:mm", AppLocaleManager.activeLocale(this)).format(Date(tsMs))
-        }
+        card.addView(aboutRow)
     }
 
     private fun fieldLabel(textStr: String): TextView = TextView(this).apply {

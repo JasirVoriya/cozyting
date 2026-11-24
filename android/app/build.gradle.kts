@@ -28,8 +28,8 @@ android {
         applicationId = "com.cozyting.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 28
-        versionName = "0.9.9-rc.1"
+        versionCode = 29
+        versionName = "0.9.9"
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")

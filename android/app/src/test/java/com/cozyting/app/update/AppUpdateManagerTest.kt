@@ -115,7 +115,7 @@ class AppUpdateManagerTest {
     }
 
     @Test
-    fun bannerHiddenWhileCastingOrAcceptanceOrDismissedOrIgnored() {
+    fun bannerVisibleWhileCastingAndHiddenOnlyWhenDismissedIgnoredOrAcceptance() {
         AppUpdateManager.currentVersionProvider = { "0.9.4-release" }
         AppUpdateManager.isAcceptanceProvider = { false }
         AppUpdateManager.evaluator = AppUpdateManager.Evaluator { _, _, _, _, _, ignored, _ ->
@@ -134,12 +134,13 @@ class AppUpdateManagerTest {
         AppUpdateManager.reevaluateFromCache(ctx, manual = false)
         assertTrue(AppUpdateManager.shouldShowUpdateBadge())
         assertNotNull(AppUpdateManager.activeBannerDecision(isCastingNow = false))
-        // 投送中绝不显示更新横幅
-        assertNull(AppUpdateManager.activeBannerDecision(isCastingNow = true))
+        // 投送中同样展示非阻塞轻提示条，仅在跳过该版本或本次手动关闭后隐藏
+        assertNotNull(AppUpdateManager.activeBannerDecision(isCastingNow = true))
 
         // 手动关闭横幅后本次会话隐藏，但设置红点仍保留
         AppUpdateManager.dismissBannerForTag("v0.9.6")
         assertNull(AppUpdateManager.activeBannerDecision(isCastingNow = false))
+        assertNull(AppUpdateManager.activeBannerDecision(isCastingNow = true))
         assertTrue(AppUpdateManager.shouldShowUpdateBadge())
 
         // 跳过此版本后红点也消失
