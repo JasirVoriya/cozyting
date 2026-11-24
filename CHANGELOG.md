@@ -8,6 +8,20 @@
 
 ---
 
+## [0.9.8] - 2026-11-24
+
+> 正式版（Stable Release）：**窝爱听（CozyTing）**全新品牌名与全新「深夜亮灯小屋 · 垂尾听歌小猫」桌面图标正式发布，全链路同步三语官网、设计规范与 60 秒宣传片。纯局域网运行，零云端、零账号、零遥测。
+
+### Added
+- **全新「深夜亮灯小屋与垂尾听歌小猫」App 图标（浅/深双版 + Android 13+ 单色版）**：采用纯扁平绘本几何色块，提供暖燕麦奶油浅色底（`#FDF4E6`）、深夜暖炭深色底（`#1B1F2B`）与 Android 13+ `evenOdd` 真镂空单色主题图标，严格落入 `66dp` 圆形安全区并同步沉淀 iOS `1024px` 浅/深/Tinted 跨端规范至 `design/UI_SPEC.md` 与 `design/tokens.json`。
+- **三语 60 秒产品宣传片重构升级**：同步更新中/英/日三语宣传片（极简痛点开场 + 品牌实机定格 + 全新小屋 Logo 动态构建），并发布压缩版 Web 视频与三语封面图至官网。
+
+### Changed
+- **全链路品牌正式更名为「窝爱听 / CozyTing」**：规避既有重名风险，中文名统一为「窝爱听」，英文与日文统一为「CozyTing」；Android 包名升级为 `com.cozyting.app`，Rust 核心与命令行工具统一为 `cozyting-core` / `cozyting-cli`，公开分发仓与更新清单迁至 `JasirVoriya/cozyting-releases`（仅底层局域网协议保留 `MiPlay` 标识；从 `0.9.7` 旧包名 `com.miaocast.app` 升级的用户需单独安装新包）。
+- **全品牌主色统一为暖珊瑚 `#E56D48`**：同步统一 Android 图标、README 徽章、三语官网、社交预览图（`social-preview.png`）与宣传片视觉主色。
+
+---
+
 ## [0.9.7] - 2026-11-24
 
 > 正式版（Stable Release）：**妙投（MiaoCast）**首个完整品牌正式版。支持任意 Android 10+ 手机在纯家庭局域网内将指定单个音乐 App 的声音毫秒级同频投送至最多 63 台小米 / 小爱 Wi-Fi 音箱（AGPL-3.0-only，零云端、零小米账号、零遥测）。
