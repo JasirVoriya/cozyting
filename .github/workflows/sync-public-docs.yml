@@ -37,7 +37,7 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout private source repository
+      - name: Checkout source repository
         if: steps.guard.outputs.enabled == 'true'
         uses: actions/checkout@v7
         with:
@@ -75,7 +75,7 @@ jobs:
           cp src/scripts/generate-update-manifest.py dst/scripts/generate-update-manifest.py
           chmod +x dst/scripts/generate-update-manifest.py
 
-          # 4. 将公开仓 README 中指向私仓 CI 徽章的链接替换为公开仓 Pages 徽章
+          # 4. 在公开分发仓 README 顶部保留源码仓 CI 徽章并追加公开仓 Pages 徽章
           python3 - dst JasirVoriya/cozyting-releases <<'PY'
           import sys
           from pathlib import Path
@@ -85,15 +85,16 @@ jobs:
           owner, repo = target_repo.split("/", 1)
           pages_url = f"https://{owner.lower()}.github.io/{repo}/"
 
+          ci_badge = '<a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>'
+          pages_badge = f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>'
+
           for fname in ("README.md", "README_EN.md", "README_JA.md"):
               p = dst / fname
               if not p.is_file():
                   continue
               text = p.read_text(encoding="utf-8")
-              text = text.replace(
-                  '<a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>',
-                  f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
-              )
+              if ci_badge in text and pages_badge not in text:
+                  text = text.replace(ci_badge, f"{ci_badge}\n  {pages_badge}")
               text = text.replace("https://jasirvoriya.github.io/cozyting/", pages_url)
               text = text.replace("https://github.com/JasirVoriya/cozyting/releases", f"https://github.com/{target_repo}/releases")
               p.write_text(text, encoding="utf-8")

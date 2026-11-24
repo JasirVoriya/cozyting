@@ -6,10 +6,12 @@
 
 ## 一、最快参与方式
 
-1. **上报音箱 / 手机兼容实测**：前往 [设备兼容实测模板](https://github.com/JasirVoriya/cozyting-releases/issues/new?template=device_compatibility.yml) 提交你的测试结果（可用或不可用都同样宝贵），帮助完善 [设备兼容矩阵](docs/COMPATIBILITY.md)。
-2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/cozyting-releases/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `cozyting-cli inspect <IP> --auth legacy` 的脱敏输出。
-3. **提交功能建议**：使用 [功能建议模板](https://github.com/JasirVoriya/cozyting-releases/issues/new?template=feature_request.yml) 描述真实使用场景。
-4. **提交代码或文档 PR**：按下方指南配好开发环境后发起 Pull Request。
+> **双仓分工说明**：源码、Issue、Discussions 与 Pull Request 均在 **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)** 进行；签名 APK / CLI 发行包、产品官网与应用内更新清单由 **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)** 分发托管。
+
+1. **上报音箱 / 手机兼容实测**：前往 [设备兼容实测模板](https://github.com/JasirVoriya/cozyting/issues/new?template=device_compatibility.yml) 提交你的测试结果（可用或不可用都同样宝贵），帮助完善 [设备兼容矩阵](docs/COMPATIBILITY.md)。
+2. **反馈 Bug 或排查协议**：使用 [Bug 反馈模板](https://github.com/JasirVoriya/cozyting/issues/new?template=bug_report.yml)，如方便请附带 `files/cast_ops.log` 或只读命令 `cozyting-cli inspect <IP> --auth legacy` 的脱敏输出。
+3. **提交功能建议**：使用 [功能建议模板](https://github.com/JasirVoriya/cozyting/issues/new?template=feature_request.yml) 描述真实使用场景。
+4. **提交代码或文档 PR**：按下方指南配好开发环境后在 **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)** 发起 Pull Request。
 
 ---
 

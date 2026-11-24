@@ -12,9 +12,11 @@
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> · <a href="README_JA.md">日本語</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting">源码仓库</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/">产品官网</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/#video">演示视频</a> ·
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases">下载安装包</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/issues">问题反馈</a> ·
   <a href="https://jasirvoriya.github.io/cozyting-releases/architecture.html">交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
   <a href="CHANGELOG.md">更新日志</a>
@@ -23,6 +25,7 @@
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -36,6 +39,7 @@
 > **窝爱听（CozyTing）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
 >
 > 📦 **立即获取**：前往 **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `cozyting-cli`。
+> 🗂️ **仓库分工**：源码、Issue 与 Pull Request 托管在 **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**；签名 APK / CLI 产物、产品官网与应用内更新清单托管在 **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)**。
 > 📑 **快速导航**：[一分钟看懂窝爱听](#-一分钟看懂窝爱听) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
 
 ---
