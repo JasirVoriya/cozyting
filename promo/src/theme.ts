@@ -7,17 +7,18 @@ export const BEAT = 30; // frames @120 BPM
 export const BAR = 120;
 
 // Scene boundaries (frames). Every cut lands on a bar line of the 120 BPM soundtrack.
+// Intro: 0-3s (0..180) = 4 rapid 0.75s (45f) hook cuts; 3-6s (180..360) = brand lockup card.
 export const T = {
-  intro: [0, 4 * BAR],
-  anyPhone: [4 * BAR, 7 * BAR],
-  oneApp: [7 * BAR, 12 * BAR],
-  multiRoomLatency: [12 * BAR, 19 * BAR],
-  lan: [19 * BAR, 22 * BAR],
-  ui: [22 * BAR, 25 * BAR],
-  search: [25 * BAR, 27 * BAR],
-  outro: [27 * BAR, 31 * BAR],
+  intro: [0, 3 * BAR],
+  anyPhone: [3 * BAR, 6 * BAR],
+  oneApp: [6 * BAR, 11 * BAR],
+  multiRoomLatency: [11 * BAR, 18 * BAR],
+  lan: [18 * BAR, 21 * BAR],
+  ui: [21 * BAR, 24 * BAR],
+  search: [24 * BAR, 26 * BAR],
+  outro: [26 * BAR, 30 * BAR],
 } as const;
-export const TOTAL_FRAMES = 31 * BAR;
+export const TOTAL_FRAMES = 30 * BAR;
 
 export const C = {
   bg: "#0B0D12",

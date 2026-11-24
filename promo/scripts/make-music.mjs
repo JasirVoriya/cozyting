@@ -1,13 +1,14 @@
 // Procedurally synthesises the promo soundtrack (no samples, no voice).
-// 120 BPM, 31 bars (62 s). Bar boundaries line up with scene cuts in src/theme.ts.
+// 120 BPM, 30 bars (60 s). Bar boundaries line up with scene cuts in src/theme.ts.
+// Bar 0-2 (0-6s): Instant groove from beat 1 with 4 rapid 0.75s hook impacts + crisp 3.0s brand drop.
 import { writeFileSync, mkdirSync } from "node:fs";
 
 const SR = 48000;
 const BPM = 120;
 const BEAT = 60 / BPM; // 0.5 s
 const BAR = BEAT * 4; // 2 s
-const BARS = 31;
-const TOTAL = BARS * BAR; // 62 s
+const BARS = 30;
+const TOTAL = BARS * BAR; // 60 s
 const N = Math.ceil(TOTAL * SR);
 const L = new Float32Array(N);
 const R = new Float32Array(N);
@@ -73,14 +74,15 @@ const CHORDS = [
 ];
 const chordAt = (bar) => CHORDS[((bar % 4) + 4) % 4];
 
-// section intensities by bar (31 bars total = 62s)
-// 0-3 intro, 4-6 anyPhone, 7-11 oneApp, 12-18 multiRoom+latency, 19-21 lan breakdown, 22-24 uiShowcase, 25-26 search, 27-30 outro
+// section intensities by bar (30 bars total = 60s)
+// 0-2 intro (0-3s 4-cut hook + 3-6s brand lockup), 3-5 anyPhone, 6-10 oneApp, 11-17 multiRoom+latency,
+// 18-20 lan breakdown, 21-23 uiShowcase, 24-25 search, 26-29 outro
 const has = {
-  kick: (b) => (b >= 4 && b <= 18) || (b >= 22 && b <= 26),
-  hat: (b) => (b >= 7 && b <= 18) || (b >= 22 && b <= 26),
-  clap: (b) => (b >= 12 && b <= 18) || (b >= 22 && b <= 24),
-  bass: (b) => (b >= 4 && b <= 26 && !(b >= 19 && b <= 21)),
-  arp: (b) => b >= 4 && b <= 28,
+  kick: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
+  hat: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
+  clap: (b) => b === 0 || b === 1 || (b >= 11 && b <= 17) || (b >= 21 && b <= 23),
+  bass: (b) => (b >= 0 && b <= 25 && !(b >= 18 && b <= 20)),
+  arp: (b) => b >= 0 && b <= 27,
 };
 
 // ---- PAD
@@ -89,7 +91,7 @@ function renderPad() {
     const ch = chordAt(bar);
     const t0 = bar * BAR;
     const dur = BAR + 0.6;
-    const level = bar < 4 ? 0.05 + 0.03 * (bar / 3) : bar >= 19 && bar <= 21 ? 0.085 : bar >= 27 ? 0.09 : 0.075;
+    const level = bar < 3 ? 0.072 : bar >= 18 && bar <= 20 ? 0.085 : bar >= 26 ? 0.09 : 0.075;
     const notes = ch.notes;
     notes.forEach((m, ni) => {
       for (let v = 0; v < 3; v++) {
@@ -97,17 +99,17 @@ function renderPad() {
         const f = mtof(m + det);
         const pan = clamp(0.5 + (v - 1) * 0.35 + (ni - 2) * 0.06, 0, 1);
         let ph = Math.random();
-        const filt = lp1(900);
+        const filt = lp1(1200);
         const s0 = Math.floor(t0 * SR);
         const s1 = Math.min(N, Math.floor((t0 + dur) * SR));
         for (let s = s0; s < s1; s++) {
           const t = (s - s0) / SR;
-          const att = clamp(t / 0.45, 0, 1);
+          const att = clamp(t / (bar === 0 ? 0.04 : 0.35), 0, 1);
           const rel = clamp((dur - t) / 0.6, 0, 1);
           const env = Math.sin((att * Math.PI) / 2) * Math.sin((rel * Math.PI) / 2);
-          // filter opens over the track
+          // filter opens immediately so 0.0s hook feels bright and alive
           const gt = s / SR;
-          const cutBase = gt < 8 ? 500 + gt * 120 : 1400;
+          const cutBase = gt < 3 ? 1250 + gt * 110 : 1450;
           const cut = cutBase + 500 * Math.sin(2 * Math.PI * gt * 0.07 + ni);
           ph += f / SR;
           const x = filt(lookup(sawSoft, ph), cut) * env * level * 0.32;
@@ -239,8 +241,16 @@ function renderArp() {
   for (let bar = 0; bar < BARS; bar++) {
     if (!has.arp(bar)) continue;
     const ch = chordAt(bar);
-    const steps = bar >= 12 && bar <= 18 ? 16 : bar >= 22 && bar <= 24 ? 16 : 8;
-    const g = bar >= 27 ? 0.05 * (1 - (bar - 27) / 2) : bar >= 19 && bar <= 21 ? 0.075 : 0.06;
+    const steps =
+      bar <= 1 || (bar >= 11 && bar <= 17) || (bar >= 21 && bar <= 23) ? 16 : 8;
+    const g =
+      bar >= 26
+        ? 0.05 * (1 - (bar - 26) / 2)
+        : bar >= 18 && bar <= 20
+        ? 0.075
+        : bar <= 2
+        ? 0.068
+        : 0.06;
     for (let st = 0; st < steps; st++) {
       const t = bar * BAR + st * (BAR / steps);
       const idx = pattern[st % pattern.length];
@@ -325,50 +335,63 @@ for (let bar = 0; bar < BARS; bar++) {
   for (let b = 0; b < 4; b++) {
     const t = bar * BAR + b * BEAT;
     if (has.kick(bar)) {
-      // groove A: half-time-ish feel bars 4-6
-      if (bar >= 7 || b % 2 === 0) kickAt(t, bar < 7 ? 0.85 : 1);
+      // Bar 0-2: driving four-on-the-floor from beat 1! Bar 3-5: crisp half-time groove before full drop at bar 6
+      if (bar <= 2 || bar >= 6 || b % 2 === 0) {
+        const gain = bar <= 1 ? 1.05 : bar >= 3 && bar <= 5 ? 0.85 : 1.0;
+        kickAt(t, gain);
+      }
     }
-    if (has.clap(bar) && (b === 1 || b === 3)) clapAt(t);
+    if (has.clap(bar) && (b === 1 || b === 3)) clapAt(t, bar <= 1 ? 0.85 : 1.0);
     if (has.hat(bar)) {
-      hatAt(t + BEAT / 2, 1, b === 3 && bar % 2 === 1);
-      if (bar >= 12) {
+      hatAt(t + BEAT / 2, bar <= 2 ? 0.95 : 1.0, b === 3 && bar % 2 === 1);
+      if (bar <= 1 || bar >= 11) {
         hatAt(t + BEAT / 4, 0.45);
         hatAt(t + (3 * BEAT) / 4, 0.45);
       }
     }
   }
 }
-// breath before big sections
-riser(4 * BAR, 2.0, 0.8);
-riser(12 * BAR, 2.0, 1.1);
-riser(22 * BAR, 3.0, 1.1);
-riser(27 * BAR, 2.0, 1.0);
-impact(4 * BAR, 0.5);
-impact(12 * BAR, 0.8);
-impact(22 * BAR, 0.8);
-impact(27 * BAR, 1.0);
 
-// logo build chimes in intro (beat-aligned)
-chime(1 * BAR, 76, 0.05, 0.45);
-chime(1 * BAR + BEAT * 1.5, 79, 0.04, 0.55);
-chime(2 * BAR + BEAT * 2, 84, 0.05, 0.5);
+// 0.00s - 3.00s: 4 rapid hook cuts (0.00, 0.75, 1.50, 2.25s) with punchy syncopated hits + climbing chimes
+[0.0, 0.75, 1.5, 2.25].forEach((t, idx) => {
+  if (idx > 0) kickAt(t, 0.95);
+  tick(t, 0.08);
+  chime(t + 0.005, [72, 76, 79, 83][idx], 0.06, 0.3 + idx * 0.14);
+});
+// Tight lift into the 3.00s brand lockup snap
+riser(3.0, 0.65, 0.85);
+impact(3.0, 0.85);
+clapAt(3.0, 1.05);
+chime(3.0, 84, 0.07, 0.46);
+chime(3.03, 88, 0.055, 0.58);
+
+// breath before big sections (all shifted -1 bar for 30-bar / 60s cut)
+riser(3 * BAR, 1.5, 0.75);
+riser(11 * BAR, 2.0, 1.1);
+riser(21 * BAR, 3.0, 1.1);
+riser(26 * BAR, 2.0, 1.0);
+impact(3 * BAR, 0.55);
+impact(11 * BAR, 0.8);
+impact(21 * BAR, 0.8);
+impact(26 * BAR, 1.0);
+
 // auto-switch chimes (NetEase -> QQ Music -> Soda Music)
-chime(7 * BAR + 1.9, 79, 0.04, 0.5);
-chime(7 * BAR + 3.55, 84, 0.045, 0.55);
-// multi-room: speakers light up one per beat starting bar 12.5
-[0, 1, 2, 3].forEach((k) => chime(12 * BAR + 0.9 + k * BEAT, [72, 76, 79, 83][k], 0.045, 0.25 + k * 0.16));
-// latency hot-switch ticks across bars 15..18
-for (let bar = 15; bar <= 18; bar++) {
-  const rate = [4, 8, 8, 16][bar - 15];
+chime(6 * BAR + 1.9, 79, 0.04, 0.5);
+chime(6 * BAR + 3.55, 84, 0.045, 0.55);
+// multi-room: speakers light up one per beat starting bar 11.5
+[0, 1, 2, 3].forEach((k) => chime(11 * BAR + 0.9 + k * BEAT, [72, 76, 79, 83][k], 0.045, 0.25 + k * 0.16));
+// latency hot-switch ticks across bars 14..17
+for (let bar = 14; bar <= 17; bar++) {
+  const rate = [4, 8, 8, 16][bar - 14];
   for (let i = 0; i < rate; i++) tick(bar * BAR + i * (BAR / rate), 0.03);
 }
 // search click chime
-tick(25 * BAR + 2.77, 0.06);
-chime(25 * BAR + 2.8, 86, 0.045, 0.5);
+tick(24 * BAR + 2.77, 0.06);
+chime(24 * BAR + 2.8, 86, 0.045, 0.5);
 // final logo & CTA click chime
-chime(27 * BAR + 0.02, 84, 0.06, 0.5);
-chime(27 * BAR + BEAT, 88, 0.04, 0.6);
-tick(27 * BAR + 4.1, 0.055);
+chime(26 * BAR + 0.02, 84, 0.06, 0.5);
+chime(26 * BAR + BEAT, 88, 0.04, 0.6);
+tick(26 * BAR + 4.1, 0.055);
 
 renderPad();
 renderBass();
@@ -434,7 +457,7 @@ for (let s = 0; s < N; s++) peak = Math.max(peak, Math.abs(mixL[s]), Math.abs(mi
 const norm = 0.92 / Math.tanh(peak * 1.15 / peak) / peak;
 for (let s = 0; s < N; s++) {
   const t = s / SR;
-  const fadeIn = clamp(t / 0.8, 0, 1);
+  const fadeIn = clamp(t / 0.015, 0, 1);
   const fadeOut = clamp((TOTAL - t) / 3.5, 0, 1);
   const g = fadeIn * Math.pow(fadeOut, 1.5);
   const l = Math.tanh(mixL[s] * norm * 1.15) * 0.95 * g;
