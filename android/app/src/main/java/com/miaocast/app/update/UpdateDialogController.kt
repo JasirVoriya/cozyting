@@ -234,7 +234,17 @@ object UpdateDialogController {
             )
         }
 
-        val notesScroll = ScrollView(activity).apply {
+        // 在 onMeasure 阶段直接钳制日志区最大高度（<= 230dp 且 <= 屏高 36%），
+        // 避免在 onLayoutChange 中同步改 layoutParams 被 Dialog 窗口吞掉而将底部下载按钮顶出屏幕。
+        val screenHeightPx = activity.resources.displayMetrics.heightPixels
+        val maxScrollHeight = if (screenHeightPx > 0) {
+            minOf(dp(230), (screenHeightPx * 0.36f).toInt().coerceAtLeast(dp(120)))
+        } else {
+            dp(230)
+        }
+        val notesScroll = MaxHeightScrollView(activity, maxScrollHeight).apply {
+            isVerticalScrollBarEnabled = true
+            isScrollbarFadingEnabled = false
             background = UiComponents.roundedDrawable(
                 fillColor = palette.rowIdleBg,
                 radiusPx = dpf(UiPalette.RADIUS_CONTROL_DP.toFloat()),
@@ -249,13 +259,6 @@ object UpdateDialogController {
                 bottomMargin = dp(12)
             }
             addView(notesContainer)
-        }
-        // 限制日志区最大高度约 230dp，防止跨多版本内容撑出屏幕
-        val maxScrollHeight = dp(230)
-        notesScroll.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-            if (v.height > maxScrollHeight) {
-                v.layoutParams = (v.layoutParams as LinearLayout.LayoutParams).apply { height = maxScrollHeight }
-            }
         }
         card.addView(notesScroll)
 
@@ -517,6 +520,23 @@ object UpdateDialogController {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = UiComponents.dp(activity, 10) }
+        }
+    }
+
+    private class MaxHeightScrollView(
+        context: android.content.Context,
+        private val maxHeightPx: Int,
+    ) : ScrollView(context) {
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val clampedHeightSpec = if (maxHeightPx > 0) {
+                val mode = MeasureSpec.getMode(heightMeasureSpec)
+                val size = MeasureSpec.getSize(heightMeasureSpec)
+                val bounded = if (mode == MeasureSpec.UNSPECIFIED) maxHeightPx else minOf(size, maxHeightPx)
+                MeasureSpec.makeMeasureSpec(bounded, MeasureSpec.AT_MOST)
+            } else {
+                heightMeasureSpec
+            }
+            super.onMeasure(widthMeasureSpec, clampedHeightSpec)
         }
     }
 

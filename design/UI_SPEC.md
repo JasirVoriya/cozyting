@@ -62,7 +62,7 @@
 4. **关于与更新（Android & iOS 双端对齐）**：
    - 展示品牌名 + 当前版本号（自动剥离 `-release` 构建后缀，预览版/验收版附状态标注）+ 上次检查时间与右侧状态胶囊（`已是最新` / `有新版本` / `检测中…` / `检查失败`）。
    - 主操作按钮（`立即检查更新` / `查看新版本 vX.Y.Z`）、`启动时自动检查更新` 开关（默认开启、每 24h 向公开静态清单发起一次只读 HTTPS 请求、零遥测，关闭后 100% 零外网请求）、更新通道分段 `[稳定版 | 预览版 (RC)]` 与公开 Release 页面直达入口。
-   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `miaocast_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
+   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `miaocast_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；中部更新日志滚动区必须硬性限高（`≤ 230dp/pt` 且 `≤ 屏高 36%`；Android 通过自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮即完成钳制，iOS SwiftUI 使用 `ScrollView { ... }.frame(maxHeight: 230)`），确保长日志绝不将底部操作按钮顶出屏幕；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
 
 ## 4. 图标规范（`design/icons/`）
 
