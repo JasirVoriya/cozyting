@@ -75,7 +75,7 @@ export const UiShowcase: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur
     <AbsoluteFill style={{ background: bg, opacity: sceneFade(f, dur, 8, 18), overflow: "hidden" }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(ellipse 52% 45% at 50% 70%, rgba(76,141,255,${lerp(0.18, 0.22, theme)}) 0%, rgba(76,141,255,0) 70%), radial-gradient(ellipse 30% 30% at 30% 60%, rgba(255,92,108,0.11) 0%, rgba(255,92,108,0) 70%)`,
+          background: `radial-gradient(ellipse 52% 45% at 50% 70%, rgba(76,141,255,${lerp(0.18, 0.22, theme)}) 0%, rgba(76,141,255,0) 70%), radial-gradient(ellipse 30% 30% at 30% 60%, rgba(229,109,72,0.11) 0%, rgba(229,109,72,0) 70%)`,
         }}
       />
       <AbsoluteFill style={{ perspective: 2200, perspectiveOrigin: "50% 40%" }}>

@@ -1,35 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 窝爱听（CozyTing）原创矢量图标前景（浅色版：扁平同心扬声器 + 浅珊瑚红核心与声弧） -->
+<!-- 窝爱听（CozyTing）原创矢量图标前景（浅色版：深夜亮灯小屋 + 垂尾小猫 + F2 节拍摇摆音符） -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 外圈框体 -->
-    <path
-        android:fillColor="#272B35"
-        android:pathData="M49.55,54.00 m-16.33,0 a16.33,16.33 0 1,0 32.66,0 a16.33,16.33 0 1,0 -32.66,0" />
-    <!-- 悬边凹槽 -->
-    <path
-        android:fillColor="#151820"
-        android:pathData="M49.55,54.00 m-13.80,0 a13.80,13.80 0 1,0 27.60,0 a13.80,13.80 0 1,0 -27.60,0" />
-    <!-- 锥盆面 -->
-    <path
-        android:fillColor="#2C313D"
-        android:pathData="M49.55,54.00 m-10.69,0 a10.69,10.69 0 1,0 21.38,0 a10.69,10.69 0 1,0 -21.38,0" />
-    <!-- 浅珊瑚红中心球顶 -->
-    <path
-        android:fillColor="#FF5C6C"
-        android:pathData="M49.55,54.00 m-6.23,0 a6.23,6.23 0 1,0 12.46,0 a6.23,6.23 0 1,0 -12.46,0" />
-    <!-- 中心纯白圆角播放三角 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M47.84,51.70 L47.84,56.30 Q47.84,57.49 48.95,56.85 L52.66,54.64 Q53.78,54.00 52.66,53.36 L48.95,51.15 Q47.84,50.51 47.84,51.70 Z" />
-    <!-- 右侧同心浅珊瑚红声弧 -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FF5C6C"
-        android:strokeWidth="5.64"
-        android:strokeLineCap="round"
-        android:pathData="M64.63,37.82 A22.12,22.12 0 0,1 64.63,70.18" />
+    <group
+        android:translateX="18"
+        android:translateY="18"
+        android:scaleX="0.140625"
+        android:scaleY="0.140625">
+        <!-- 左上饱满小弯月 -->
+        <group
+            android:translateX="141"
+            android:translateY="128"
+            android:scaleX="1.38"
+            android:scaleY="1.38">
+            <group
+                android:translateX="-156"
+                android:translateY="-142">
+                <path
+                    android:fillColor="#F2B84B"
+                    android:pathData="M155,107 C134,111 122,131 128,151 C134,171 155,182 175,176 C181,174 186,170 190,166 C176,168 162,161 155,149 C148,136 151,120 160,110 C161,108 158,106 155,107 Z" />
+            </group>
+        </group>
+
+        <!-- 主双音符 ♫（F2 左歪 -10°） -->
+        <group
+            android:translateX="312"
+            android:translateY="122"
+            android:rotation="-10"
+            android:scaleX="1.66"
+            android:scaleY="1.66">
+            <group
+                android:translateX="-24"
+                android:translateY="-26">
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#E56D48"
+                    android:strokeWidth="9"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:pathData="M13,47 L13,12 L45,4 L45,39" />
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#E56D48"
+                    android:strokeWidth="13"
+                    android:strokeLineCap="round"
+                    android:pathData="M13,12 L45,4" />
+                <group
+                    android:rotation="-18"
+                    android:pivotX="4.5"
+                    android:pivotY="49.5">
+                    <path
+                        android:fillColor="#E56D48"
+                        android:pathData="M-7.5,49.5 A12,9 0 1,0 16.5,49.5 A12,9 0 1,0 -7.5,49.5 Z" />
+                </group>
+                <group
+                    android:rotation="-18"
+                    android:pivotX="36.5"
+                    android:pivotY="41.5">
+                    <path
+                        android:fillColor="#E56D48"
+                        android:pathData="M24.5,41.5 A12,9 0 1,0 48.5,41.5 A12,9 0 1,0 24.5,41.5 Z" />
+                </group>
+            </group>
+        </group>
+
+        <!-- 伴随单音符 ♪（F2 右斜 +16°） -->
+        <group
+            android:translateX="387"
+            android:translateY="98"
+            android:rotation="16"
+            android:scaleX="1.12"
+            android:scaleY="1.12">
+            <group
+                android:translateX="-14"
+                android:translateY="-24">
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#E56D48"
+                    android:strokeWidth="9"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:pathData="M12,40 L12,4 C24,6 32,15 29,26" />
+                <group
+                    android:rotation="-18"
+                    android:pivotX="4"
+                    android:pivotY="42.5">
+                    <path
+                        android:fillColor="#E56D48"
+                        android:pathData="M-8,42.5 A12,9 0 1,0 16,42.5 A12,9 0 1,0 -8,42.5 Z" />
+                </group>
+            </group>
+        </group>
+
+        <!-- 暖灯小屋与窗台垂尾小猫 -->
+        <group
+            android:translateX="256"
+            android:translateY="296"
+            android:scaleX="0.92"
+            android:scaleY="0.92">
+            <group
+                android:translateX="-256"
+                android:translateY="-256">
+                <!-- 小屋墙体（浅色版：暖可可灰） -->
+                <path
+                    android:fillColor="#5E5665"
+                    android:pathData="M128,242 L256,154 L384,242 L384,374 Q384,422 336,422 L176,422 Q128,422 128,374 Z" />
+                <!-- 烟囱 -->
+                <path
+                    android:fillColor="#E56D48"
+                    android:pathData="M332,156 L349,156 Q358,156 358,165 L358,215 Q358,224 349,224 L332,224 Q323,224 323,215 L323,165 Q323,156 332,156 Z" />
+                <!-- 厚实圆润暖珊瑚屋顶 -->
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#E56D48"
+                    android:strokeWidth="38"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:pathData="M107,254 L236,160 Q256,146 276,160 L405,254" />
+                <!-- 暖黄拱窗与暖木窗台 -->
+                <path
+                    android:fillColor="#FFD166"
+                    android:pathData="M184,304 A72,72 0 0,1 328,304 L328,360 Q328,374 314,374 L198,374 Q184,374 184,360 Z" />
+                <path
+                    android:fillColor="#EE9B48"
+                    android:pathData="M184,355 L328,355 L328,360 Q328,374 314,374 L198,374 Q184,374 184,360 Z" />
+                <!-- 窗内安睡小猫 -->
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M232,314 C256,303 290,306 304,323 C313,333 313,347 311,356 L222,356 Z" />
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M204,318 L207,297 Q209,287 220,293 L233,304 Z" />
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M260,318 L257,297 Q255,287 244,293 L231,304 Z" />
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M200.5,328 A31.5,24 0 1,0 263.5,328 A31.5,24 0 1,0 200.5,328 Z" />
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M203.5,355.5 A11.5,9.5 0 1,0 226.5,355.5 A11.5,9.5 0 1,0 203.5,355.5 Z" />
+                <path
+                    android:fillColor="#20232F"
+                    android:pathData="M231.5,356 A11.5,9.5 0 1,0 254.5,356 A11.5,9.5 0 1,0 231.5,356 Z" />
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#FFD166"
+                    android:strokeWidth="4.2"
+                    android:strokeLineCap="round"
+                    android:pathData="M212,327 Q218,334 224,327" />
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#FFD166"
+                    android:strokeWidth="4.2"
+                    android:strokeLineCap="round"
+                    android:pathData="M240,327 Q246,334 252,327" />
+                <path
+                    android:fillColor="#EF8B65"
+                    android:pathData="M228.5,334.5 A3.5,2.3 0 1,0 235.5,334.5 A3.5,2.3 0 1,0 228.5,334.5 Z" />
+                <!-- 垂出窗台的悠闲小尾巴 -->
+                <path
+                    android:fillColor="#00000000"
+                    android:strokeColor="#20232F"
+                    android:strokeWidth="15.5"
+                    android:strokeLineCap="round"
+                    android:pathData="M301,344 C314,352 316,377 307,392 C299,404 280,404 273,394" />
+            </group>
+        </group>
+    </group>
 </vector>

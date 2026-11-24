@@ -35,7 +35,7 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(circle at 50% 46%, rgba(255,92,108,0.16) 0%, rgba(255,92,108,0) 46%), radial-gradient(circle at 30% 62%, rgba(76,141,255,0.14) 0%, rgba(76,141,255,0) 42%)",
+            "radial-gradient(circle at 50% 46%, rgba(229,109,72,0.16) 0%, rgba(229,109,72,0) 46%), radial-gradient(circle at 30% 62%, rgba(76,141,255,0.14) 0%, rgba(76,141,255,0) 42%)",
         }}
       />
 
@@ -74,8 +74,8 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
             height: 112,
             borderRadius: 999,
             background: "rgba(22,28,40,0.94)",
-            border: `2.5px solid ${typedCount > 0 ? "rgba(255,92,108,0.78)" : "rgba(255,255,255,0.22)"}`,
-            boxShadow: `0 34px 90px rgba(0,0,0,0.62), 0 0 ${32 + hovering * 24}px rgba(255,92,108,${0.18 + hovering * 0.14})`,
+            border: `2.5px solid ${typedCount > 0 ? "rgba(229,109,72,0.78)" : "rgba(255,255,255,0.22)"}`,
+            boxShadow: `0 34px 90px rgba(0,0,0,0.62), 0 0 ${32 + hovering * 24}px rgba(229,109,72,${0.18 + hovering * 0.14})`,
             display: "flex",
             alignItems: "center",
             padding: "0 16px 0 42px",
@@ -123,7 +123,7 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
               padding: "0 44px",
               borderRadius: 999,
               background: hovering > 0.3 ? "#FF6B7A" : C.coral,
-              boxShadow: `0 12px 34px rgba(255,92,108,${0.42 + hovering * 0.28})`,
+              boxShadow: `0 12px 34px rgba(229,109,72,${0.42 + hovering * 0.28})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

@@ -22,7 +22,7 @@
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-FF5C6C?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">

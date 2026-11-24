@@ -39,7 +39,7 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
         <AbsoluteFill
           style={{
             background:
-              "radial-gradient(circle at 50% 42%, rgba(255,92,108,0.10) 0%, rgba(76,141,255,0.04) 36%, rgba(11,13,18,0) 68%)",
+              "radial-gradient(circle at 50% 42%, rgba(229,109,72,0.10) 0%, rgba(76,141,255,0.04) 36%, rgba(11,13,18,0) 68%)",
           }}
         />
 
@@ -123,9 +123,9 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
                     width: 58,
                     height: 58,
                     borderRadius: 999,
-                    background: "rgba(255,92,108,0.14)",
-                    border: `2.5px solid rgba(255,92,108,${0.65 + 0.3 * blockedPulse})`,
-                    boxShadow: `0 0 ${18 + 14 * blockedPulse}px rgba(255,92,108,0.32)`,
+                    background: "rgba(229,109,72,0.14)",
+                    border: `2.5px solid rgba(229,109,72,${0.65 + 0.3 * blockedPulse})`,
+                    boxShadow: `0 0 ${18 + 14 * blockedPulse}px rgba(229,109,72,0.32)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -154,8 +154,8 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
                   marginTop: 16,
                   padding: "6px 18px",
                   borderRadius: 999,
-                  background: "rgba(255,92,108,0.12)",
-                  border: "1px solid rgba(255,92,108,0.45)",
+                  background: "rgba(229,109,72,0.12)",
+                  border: "1px solid rgba(229,109,72,0.45)",
                   fontFamily: fontMain,
                   fontSize: 19,
                   fontWeight: 600,
@@ -262,7 +262,7 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
       {/* Dual ambient glow: coral behind brand, album blue behind real hero phone */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 24% 46%, rgba(255,92,108,${0.14 * snapBrand}) 0%, rgba(255,92,108,0) 38%), radial-gradient(circle at 73% 54%, rgba(46,108,246,${0.24 * phoneSnap}) 0%, rgba(46,108,246,0) 44%)`,
+          background: `radial-gradient(circle at 24% 46%, rgba(229,109,72,${0.14 * snapBrand}) 0%, rgba(229,109,72,0) 38%), radial-gradient(circle at 73% 54%, rgba(46,108,246,${0.24 * phoneSnap}) 0%, rgba(46,108,246,0) 44%)`,
         }}
       />
 
@@ -479,7 +479,7 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
         <AbsoluteFill
           style={{
             pointerEvents: "none",
-            background: `radial-gradient(circle at 24% 38%, rgba(255,92,108,${0.18 * dropFlash}) 0%, rgba(255,255,255,${0.08 * dropFlash}) 28%, rgba(0,0,0,0) 68%)`,
+            background: `radial-gradient(circle at 24% 38%, rgba(229,109,72,${0.18 * dropFlash}) 0%, rgba(255,255,255,${0.08 * dropFlash}) 28%, rgba(0,0,0,0) 68%)`,
           }}
         />
       )}
