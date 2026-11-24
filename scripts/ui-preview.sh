@@ -95,7 +95,7 @@ for loc in "${LOCALES[@]}"; do
   LAST_OUT="${LOC_OUT}"
   mkdir -p "${LOC_OUT}"
 
-  GRADLE_ARGS=("-Dmiaocast.uiPreviewDir=${LOC_OUT}" "-Dmiaocast.uiPreviewLocale=${loc}")
+  GRADLE_ARGS=("-Dcozyting.uiPreviewDir=${LOC_OUT}" "-Dcozyting.uiPreviewLocale=${loc}")
   if [[ "${#GRADLE_BASE_ARGS[@]}" -gt 0 ]]; then
     GRADLE_ARGS=("${GRADLE_BASE_ARGS[@]}" "${GRADLE_ARGS[@]}")
   fi
@@ -103,7 +103,7 @@ for loc in "${LOCALES[@]}"; do
     cd "${ANDROID_DIR}"
     ./gradlew "${GRADLE_ARGS[@]}" \
       :app:testStandardDebugUnitTest \
-      --tests 'com.miaocast.app.ui.UiPreviewRenderTest' \
+      --tests 'com.cozyting.app.ui.UiPreviewRenderTest' \
       --rerun
   )
 

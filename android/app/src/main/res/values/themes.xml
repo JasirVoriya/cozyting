@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MiaoCast" parent="android:Theme.DeviceDefault.Light.NoActionBar">
-        <item name="android:windowBackground">@color/miaocast_window_bg</item>
+    <style name="Theme.CozyTing" parent="android:Theme.DeviceDefault.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cozyting_window_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
-    <color name="miaocast_window_bg">#F4F6FA</color>
+    <color name="cozyting_window_bg">#F4F6FA</color>
 </resources>

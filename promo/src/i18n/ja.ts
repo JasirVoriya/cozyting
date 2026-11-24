@@ -4,7 +4,7 @@ import type { PromoCopy } from "./types";
 export const COPY_JA: PromoCopy = {
   locale: "ja",
   intro: {
-    brandPrimary: "MiaoCast",
+    brandPrimary: "CozyTing",
     brandSecondary: "",
     headline: "スマホの音楽を、家じゅうのスピーカーへ。",
     headlineSize: 40,
@@ -73,7 +73,7 @@ export const COPY_JA: PromoCopy = {
     statusStandby: "待機中",
     pillAutoFollow: (appName) => `🎵 自動追従：${appName}`,
     pillSwitchedTo: (appName) => `⚡ 自動切替 → ${appName}`,
-    act1Footnote: "アプリ移動も全自動・MiaoCast へ戻る必要なし",
+    act1Footnote: "アプリ移動も全自動・CozyTing へ戻る必要なし",
     speakerCastingPrefix: "♫ キャスト中：",
     act2Eyebrow: "Dual-Channel Isolation · Zero Interruption",
     act2Headline: "動画やボイス再生中も、音楽は止まらない。",
@@ -203,14 +203,14 @@ export const COPY_JA: PromoCopy = {
     badges: ["よく使う音源・自動切替", "マルチルーム・個別音量", "4 段階遅延・再生中切替"],
   },
   search: {
-    prompt: "GitHub で MiaoCast を検索",
+    prompt: "GitHub で CozyTing を検索",
     placeholder: "オープンソースを検索...",
     button: "検索",
     officialBadge: "公式リリース",
-    repoDesc: "MiaoCast — あらゆる Android から自宅の Xiaomi スピーカーへ単一アプリ送信",
+    repoDesc: "CozyTing — あらゆる Android から自宅の Xiaomi スピーカーへ単一アプリ送信",
   },
   outro: {
-    brandPrimary: "MiaoCast",
+    brandPrimary: "CozyTing",
     brandSecondary: "",
     tagline: "あらゆる Android から、家じゅうの Xiaomi スピーカーへ。",
     taglineSize: 33,

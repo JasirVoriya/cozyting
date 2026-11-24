@@ -3,26 +3,26 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-banner-light.svg">
-  <img alt="妙投（MiaoCast）— 非小米手机也能用的小米妙播 / MiPlay 纯局域网多音箱音频投送应用" src="docs/assets/hero-banner-light.svg" width="100%">
+  <img alt="窝爱听（CozyTing）— 非小米手机也能用的小米妙播 / MiPlay 纯局域网多音箱音频投送应用" src="docs/assets/hero-banner-light.svg" width="100%">
 </picture>
 
-# 妙投（MiaoCast）
+# 窝爱听（CozyTing）
 
 **打破手机品牌限制的开源 MiPlay 纯局域网音频投送工具：只投你选的那一个音乐 App，让多台小米 / 小爱音箱毫秒级同频合唱**
 
 <p>
   <strong>简体中文</strong> · <a href="README_EN.md">English</a> · <a href="README_JA.md">日本語</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/">产品官网</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/#video">演示视频</a> ·
-  <a href="https://github.com/JasirVoriya/miaocast-releases/releases">下载安装包</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/architecture.html">交互式架构图</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/">产品官网</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/#video">演示视频</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting-releases/releases">下载安装包</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/architecture.html">交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
   <a href="CHANGELOG.md">更新日志</a>
 </p>
 
 <p>
-  <a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-FF5C6C?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-FF5C6C?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -32,23 +32,23 @@
 
 </div>
 
-> **妙投（MiaoCast）是什么？**
-> **妙投（MiaoCast）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
+> **窝爱听（CozyTing）是什么？**
+> **窝爱听（CozyTing）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
 >
-> 📦 **立即获取**：前往 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `miaocast-cli`。
-> 📑 **快速导航**：[一分钟看懂妙投](#-一分钟看懂妙投) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
+> 📦 **立即获取**：前往 **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** 直接下载 Android 安装包（APK）或桌面端诊断工具 `cozyting-cli`。
+> 📑 **快速导航**：[一分钟看懂窝爱听](#-一分钟看懂窝爱听) · [解决哪些痛点](#一解决哪些痛点) · [核心功能一览](#二核心功能一览) · [界面实机一览](#三界面实机一览深色--浅色双主题) · [3 步快速上手](#四3-步快速上手普通用户) · [常见问题 FAQ](#五常见问题faq) · [技术架构与开发者指南](#六技术架构与核心实现)
 
 ---
 
-## 🎬 一分钟看懂妙投
+## 🎬 一分钟看懂窝爱听
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/miaocast-releases/#video" title="点击前往产品官网在线观看：一分钟看懂妙投（MiaoCast）">
-    <img src="docs/assets/video/miaocast-promo-poster.jpg" alt="一分钟看懂妙投（MiaoCast）产品演示视频封面：演示任意安卓手机投音到多台小米 / 小爱音箱、单 App 音频隔离、最多 63 台同频与 4 档延迟热切" width="100%">
+  <a href="https://jasirvoriya.github.io/cozyting-releases/#video" title="点击前往产品官网在线观看：一分钟看懂窝爱听（CozyTing）">
+    <img src="docs/assets/video/cozyting-promo-poster.jpg" alt="一分钟看懂窝爱听（CozyTing）产品演示视频封面：演示任意安卓手机投音到多台小米 / 小爱音箱、单 App 音频隔离、最多 63 台同频与 4 档延迟热切" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/miaocast-releases/#video"><strong>▶ 在产品官网在线观看</strong></a> ·
-    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4">直接播放 / 下载 MP4（1280×720）</a>
+    <a href="https://jasirvoriya.github.io/cozyting-releases/#video"><strong>▶ 在产品官网在线观看</strong></a> ·
+    <a href="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo.mp4">直接播放 / 下载 MP4（1280×720）</a>
   </p>
 </div>
 
@@ -65,9 +65,9 @@
 3. **整机投音 / 蓝牙极易「社死串音」**：客厅音箱正放着歌，微信语音、短视频外放、游戏音效和来电提示音全被一并广播到全屋音箱。
 4. **传统投音切歌延迟高、刷视频还抢焦点**：切歌或拖动进度条要等一两秒才响应；在手机上点开一条短视频，音箱里好好的音乐立刻被暂停。
 
-### 方案对比：妙投（MiaoCast）vs 常见投音方式
+### 方案对比：窝爱听（CozyTing）vs 常见投音方式
 
-| 对比维度 | **妙投（MiaoCast）** | 普通蓝牙连接 | 原厂小米妙播 | 系统整机投屏 / 录屏 |
+| 对比维度 | **窝爱听（CozyTing）** | 普通蓝牙连接 | 原厂小米妙播 | 系统整机投屏 / 录屏 |
 | --- | --- | --- | --- | --- |
 | **手机品牌限制** | ✅ **不限品牌**（任意 Android 10+；iOS 规划中） | ✅ 不限品牌 | ❌ 仅限部分小米 / Redmi 机型 | ✅ 不限品牌 |
 | **多音箱全屋同频同步** | ✅ **最多 63 台毫秒级同步**，播放中随时加减设备 | ❌ 通常仅 1 台，多箱易回声不同步 | ✅ 支持多台 MiPlay 设备 | ❌ 单台或音画延迟大 |
@@ -82,7 +82,7 @@
 ## 二、核心功能一览
 
 ### 1. 打破品牌壁垒，局域网开箱直连小米 / 小爱音箱
-- 只要手机和音箱连在同一个 Wi-Fi 局域网下，打开妙投即可自动扫描发现家里的小米音箱、小爱音箱及支持 MiPlay 的设备，**无需登录小米账号、不经过任何云端服务器**。
+- 只要手机和音箱连在同一个 Wi-Fi 局域网下，打开窝爱听即可自动扫描发现家里的小米音箱、小爱音箱及支持 MiPlay 的设备，**无需登录小米账号、不经过任何云端服务器**。
 - 自动过滤局域网内不支持 MiPlay 的杂项设备，只展示真正能投送的音箱，并直接读取展示音箱的真实名称与所属房间名。
 
 ### 2. 只投你选的那一个音乐 App，微信语音与通知绝不串音
@@ -108,7 +108,7 @@
   - **极速（150ms）**：实验性极低缓冲，适合同房间 5GHz 单音箱追求极致响应的场景。
 
 ### 6. 常用音源自动跟随 + 现代双主题界面
-- **常用音源管理**：自由增删常用音乐 / 播客 App、长按拖动排序，并为每个 App 独立设置「自动识别」开关——切回你常用的音乐 App 开始播放，妙投即可自动识别音源（投送中绝不误切打断）。
+- **常用音源管理**：自由增删常用音乐 / 播客 App、长按拖动排序，并为每个 App 独立设置「自动识别」开关——切回你常用的音乐 App 开始播放，窝爱听即可自动识别音源（投送中绝不误切打断）。
 - **专辑氛围界面 & 三态主题**：主界面根据当前播放歌曲的专辑封面呈现克制的柔和氛围底色，支持深色 / 浅色 / 跟随系统三态切换，点击封面右下角 App 角标可一键跳回对应音乐软件。
 - **可控的透明更新**：默认每日静默检查公开分发仓的新版本，展示跨版本聚合更新日志并通过 SHA-256 与签名校验后安装；如需绝对零外网请求，可在设置中一键关闭。
 
@@ -120,35 +120,35 @@
 
 ### 1. 主界面 · 多音箱同频投送（专辑氛围底 · 房间名同行 · 实时 `ms` 延迟 · 独立音量）
 
-![妙投 MiaoCast 主界面多音箱同步投送深色浅色双主题截图，显示专辑封面氛围、独立音量条与毫秒级实时延迟](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
+![窝爱听 CozyTing 主界面多音箱同步投送深色浅色双主题截图，显示专辑封面氛围、独立音量条与毫秒级实时延迟](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
 
 ### 2. 4 档播放延迟一键热切换（投送中免重连实时生效）
 
-![妙投 MiaoCast 四档播放延迟切换弹窗截图，包含标准、均衡、低延迟与极速模式说明](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
+![窝爱听 CozyTing 四档播放延迟切换弹窗截图，包含标准、均衡、低延迟与极速模式说明](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
 
 ### 3. 常用音源管理（自由增删 · 单 App 自动识别开关 · 长按拖动排序）
 
-![妙投 MiaoCast 常用音源管理界面截图，支持单 App 自动识别开关与长按排序](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
+![窝爱听 CozyTing 常用音源管理界面截图，支持单 App 自动识别开关与长按排序](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
 
 ### 4. 内置无线调试 · 4 步免投屏无感采集向导（免 Root · 免电脑 · 免 Shizuku）
 
-![妙投 MiaoCast Android 13+ 内置无线调试 4 步配对向导界面截图，支持免投屏弹窗与单 App 静音](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
+![窝爱听 CozyTing Android 13+ 内置无线调试 4 步配对向导界面截图，支持免投屏弹窗与单 App 静音](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
 
 ### 5. 设置页 · 主题模式、标准/无感采集引擎切换与本机静音策略
 
-![妙投 MiaoCast 设置页核心配置截图，包含深浅主题、采集引擎切换、单 App 隔离与本机静音](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
+![窝爱听 CozyTing 设置页核心配置截图，包含深浅主题、采集引擎切换、单 App 隔离与本机静音](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
 
 ### 6. 设置页 · 自定义延迟调试与「关于与更新」卡片
 
-![妙投 MiaoCast 设置页高级调试与关于更新卡片截图](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
+![窝爱听 CozyTing 设置页高级调试与关于更新卡片截图](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
 
 ### 7. 主界面无打扰新版本轻提示（仅非投送态显示，可随时关闭）
 
-![妙投 MiaoCast 主界面无打扰更新轻提示条截图](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
+![窝爱听 CozyTing 主界面无打扰更新轻提示条截图](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
 
 ### 8. 跨版本更新日志汇总与安全下载安装弹窗
 
-![妙投 MiaoCast 跨版本区间更新日志与 SHA-256 校验安全安装弹窗截图](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+![窝爱听 CozyTing 跨版本区间更新日志与 SHA-256 校验安全安装弹窗截图](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
 
 ---
 
@@ -156,12 +156,12 @@
 
 1. **下载并安装 Android 应用**
    - 要求：**Android 10（API 29）及以上**（`arm64-v8a` 设备）。
-   - 前往 **[GitHub Releases（miaocast-releases）](https://github.com/JasirVoriya/miaocast-releases/releases)** 下载最新的 `miaocast-*-arm64-v8a.apk` 安装到手机。
+   - 前往 **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** 下载最新的 `cozyting-*-arm64-v8a.apk` 安装到手机。
 2. **连接同一家庭 Wi-Fi，自动发现音箱**
    - 确保手机与小米 / 小爱音箱处于同一局域网（同路由器 Wi-Fi）。
-   - 打开妙投，几秒内即可在「输出设备」列表看到局域网内支持 MiPlay 的音箱。
+   - 打开窝爱听，几秒内即可在「输出设备」列表看到局域网内支持 MiPlay 的音箱。
 3. **选择音乐 App 与音箱，一键开播**
-   - 点击顶部音源卡片选择想投送的音乐 App（或先在音乐 App 里开始播放，妙投自动识别），勾选一台或多台音箱即可同频播放。
+   - 点击顶部音源卡片选择想投送的音乐 App（或先在音乐 App 里开始播放，窝爱听自动识别），勾选一台或多台音箱即可同频播放。
    - **采集模式怎么选？**
      - **标准投屏模式（默认）**：兼容 Android 10–16+ 所有机型，无需任何额外配置，开箱即用；
      - **无感模式（Android 13+ 推荐）**：进入「设置 → 采集引擎 → 无感模式（无线调试）」，按 4 步向导完成一次 6 位配对码配对，即可免去投屏弹窗并获得真·单 App 静音与双区音频焦点隔离。
@@ -170,68 +170,68 @@
 
 ## 五、常见问题（FAQ）
 
-### Q1：非小米手机（华为、三星、OPPO、vivo、一加、Pixel 等）能用妙投投音到小爱音箱吗？
+### Q1：非小米手机（华为、三星、OPPO、vivo、一加、Pixel 等）能用窝爱听投音到小爱音箱吗？
 **可以。** 只要手机系统为 **Android 10 及以上**且与小爱 / 小米音箱连在同一 Wi-Fi 下，就可以直接通过局域网 MiPlay 协议投送音乐，无需小米手机，也无需登录小米账号。不同品牌 ROM 的已实测状态可在 [设备兼容矩阵（COMPATIBILITY.md）](docs/COMPATIBILITY.md) 查看。
 
-### Q2：妙投和直接连小爱音箱蓝牙有什么区别？
-蓝牙通常只能连 1 台音箱、穿墙易断连、存在蓝牙音频压缩，且手机里的所有声音（微信语音、短视频、通知）都会全部从音箱外放。妙投走 **家庭 Wi-Fi 局域网**，支持**多台音箱毫秒级同频合唱**、**48kHz 256kbps AAC 高质量直传**，并且**只投你选的那一个音乐 App**，离开客厅只要有 Wi-Fi 就不会断。
+### Q2：窝爱听和直接连小爱音箱蓝牙有什么区别？
+蓝牙通常只能连 1 台音箱、穿墙易断连、存在蓝牙音频压缩，且手机里的所有声音（微信语音、短视频、通知）都会全部从音箱外放。窝爱听走 **家庭 Wi-Fi 局域网**，支持**多台音箱毫秒级同频合唱**、**48kHz 256kbps AAC 高质量直传**，并且**只投你选的那一个音乐 App**，离开客厅只要有 Wi-Fi 就不会断。
 
 ### Q3：音箱放歌时，我在手机上刷抖音、看 B 站或听微信语音，会串音或把音箱音乐暂停吗？
-**不会串音。** 妙投只捕获你选定的音乐 App 的音频流，微信语音、短视频和系统提示音都不会发送到音箱。在 **Android 13+ 开启「无感模式（无线调试）」**后，妙投还会启用**双区音频焦点隔离**与**真·单 App 本机静音**——音箱继续正常放歌，你在手机上照常刷视频、听语音，互不暂停、互不抢声。在普通标准模式下，由于 Android 普通权限无法单独静音单一 App，你可以在设置中选择「全局媒体静音（默认）」或「保留本机出声」。
+**不会串音。** 窝爱听只捕获你选定的音乐 App 的音频流，微信语音、短视频和系统提示音都不会发送到音箱。在 **Android 13+ 开启「无感模式（无线调试）」**后，窝爱听还会启用**双区音频焦点隔离**与**真·单 App 本机静音**——音箱继续正常放歌，你在手机上照常刷视频、听语音，互不暂停、互不抢声。在普通标准模式下，由于 Android 普通权限无法单独静音单一 App，你可以在设置中选择「全局媒体静音（默认）」或「保留本机出声」。
 
 ### Q4：开启「无感模式」需要 Root 手机、连电脑，或者安装 Shizuku 吗？
-**都不需要。** 妙投在 App 内部直接实现了轻量无线调试客户端，仅需手机本身在开发者选项里开启一次「无线调试」并输入 6 位配对码即可完成（约 30 秒），全程不 Root、不连电脑、不依赖任何第三方提权 App。如果不想开启无线调试，直接使用默认的「标准投屏模式」也完全可以正常投送。
+**都不需要。** 窝爱听在 App 内部直接实现了轻量无线调试客户端，仅需手机本身在开发者选项里开启一次「无线调试」并输入 6 位配对码即可完成（约 30 秒），全程不 Root、不连电脑、不依赖任何第三方提权 App。如果不想开启无线调试，直接使用默认的「标准投屏模式」也完全可以正常投送。
 
 ### Q5：支持哪些小米 / 小爱音箱和音乐 App？
 - **音箱端**：支持声明局域网 MiPlay 能力的小米音箱 / 小爱音箱系列及部分小米电视（具体实测型号与已知固件差异如 LX06 晚加入限制，请查阅 [设备兼容矩阵](docs/COMPATIBILITY.md)）。
-- **音源 App**：支持主流允许系统音频捕获的音乐 / 播客 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、酷狗、小宇宙等）。注意：若极少数第三方 App 显式声明 `allowAudioPlaybackCapture="false"` 禁止捕获，妙投尊重系统规则，不会尝试绕过。
+- **音源 App**：支持主流允许系统音频捕获的音乐 / 播客 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、酷狗、小宇宙等）。注意：若极少数第三方 App 显式声明 `allowAudioPlaybackCapture="false"` 禁止捕获，窝爱听尊重系统规则，不会尝试绕过。
 
-### Q6：妙投会收集隐私、上传音频，或者需要登录小米账号吗？
+### Q6：窝爱听会收集隐私、上传音频，或者需要登录小米账号吗？
 **不会。** 音频投送与设备发现 100% 在你的本地家庭局域网内完成，**零云端服务器、零账号登录、零音频上传、零使用统计**。仅有的可选外网行为是每日只读检查公开版本清单 `update.json`（零 Cookie、零遥测参数），且可在「设置 → 关于与更新」中一键关闭，实现 100% 零外网请求。
 
 ### Q7：支持 iPhone / iPad（iOS）吗？
-**底层核心已就绪，iOS 客户端正在规划推进中。** 妙投的共享 Rust 协议与同步核心已经提供完整的 iOS C ABI（`miaocast_core.h`）与 `XCFramework` 打包脚本，跨端设计规范（`design/`）亦已同步；原生 SwiftUI + ReplayKit 客户端设计详见 [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md)。
+**底层核心已就绪，iOS 客户端正在规划推进中。** 窝爱听的共享 Rust 协议与同步核心已经提供完整的 iOS C ABI（`cozyting_core.h`）与 `XCFramework` 打包脚本，跨端设计规范（`design/`）亦已同步；原生 SwiftUI + ReplayKit 客户端设计详见 [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md)。
 
 ---
 ---
 
-> 👇 **以下章节面向开发者、协议研究者与贡献者**，详细介绍妙投的底层 Rust 引擎、跨端三层架构、实时线程模型、CLI 诊断工具与本地构建测试流程。
+> 👇 **以下章节面向开发者、协议研究者与贡献者**，详细介绍窝爱听的底层 Rust 引擎、跨端三层架构、实时线程模型、CLI 诊断工具与本地构建测试流程。
 
 ## 六、技术架构与核心实现
 
 ### 1. 核心技术底座
 
-![妙投（MiaoCast）核心技术底座与能力一览](docs/assets/feature-highlights.svg)
+![窝爱听（CozyTing）核心技术底座与能力一览](docs/assets/feature-highlights.svg)
 
 - **严格单 UID 捕获校验（Fail-Closed）**：标准模式下通过 Android `AudioPlaybackCapture` 白名单捕获单 UID，并在启动前实时校验目标包同用户、非共享 UID 与 SHA-256 签名，严禁静默退化为全系统录屏或麦克风采集；内置 `PcmProbe` 6 拍有声验证锁定，消除切歌间隙手机/音箱短暂双出声。
 - **内置无线调试 `AudioPolicy` 无感引擎（Android 13+）**：通过本机无线 ADB（mDNS + SPAKE2 / TLS 1.3）拉起同应用 `uid=2000` 辅助进程，绕开 `MediaProjection` 弹窗与投屏提示；采用本机环回 `127.0.0.1` + 一次性 256-bit Token 通信，在单一 `AudioPolicy` 上同时挂载单 App `AudioMix` 与 `AudioPolicyFocusListener` 实现双区音频焦点隔离。
 - **63 台音箱确定性毫秒级同步**：L1 纯 Rust 核心（`miplay-core`）完全基于确定性实时线程与有界通道（**零异步运行时**），通过 `EPOCH` 单调时基、`UDP 40B TimerServer` 时钟主与 `OffsetBarrier` 14 AU 预读对齐实现全组同频，并支持投送中 `TIME_OFFSET` 热重锚切档、随时加减音箱与慢端单端剔除。
 - **双认证控制链路严格隔离**：完整实现局域网 MiPlay 发现与 TCP `8899` 控制协议，严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条认证链路。
-- **跨端共享 L1 核心 + 只读诊断 CLI**：Android（Kotlin + 16KB 页对齐 JNI `.so`）与规划中的 iOS（Swift + C11 `miaocast_core.h` / `.xcframework`）共用 100% 平台无关的 L1 Rust 核心与 `design/` 跨端视觉规范；桌面端 `miaocast-cli inspect` 仅发 `GET_*` 并以 `TCP shutdown` 退出，绝不发 `CLOSE` 打断正在播放的音乐。
+- **跨端共享 L1 核心 + 只读诊断 CLI**：Android（Kotlin + 16KB 页对齐 JNI `.so`）与规划中的 iOS（Swift + C11 `cozyting_core.h` / `.xcframework`）共用 100% 平台无关的 L1 Rust 核心与 `design/` 跨端视觉规范；桌面端 `cozyting-cli inspect` 仅发 `GET_*` 并以 `TCP shutdown` 退出，绝不发 `CLOSE` 打断正在播放的音乐。
 
 ### 2. 架构可视化总览
 
 > 🧭 **深入探索源码与模块上下游**：
-> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/miaocast-releases/architecture.html](https://jasirvoriya.github.io/miaocast-releases/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
+> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/cozyting-releases/architecture.html](https://jasirvoriya.github.io/cozyting-releases/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
 > - **全仓源码深度手册**：查阅 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**（含 41 个 Android 源码、24 个 Rust 核心模块、19 组 JVM 契约单测与 6 阶段生命周期不变量详表）。
 
 #### （1）跨端三层架构（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
 
-![妙投（MiaoCast）L1 Rust 核心与 Android iOS 跨端三层架构图](docs/assets/cross-platform-architecture.svg)
+![窝爱听（CozyTing）L1 Rust 核心与 Android iOS 跨端三层架构图](docs/assets/cross-platform-architecture.svg)
 
 - **L1 公共核心层（Rust `core/`，100% 跨端共享）**：统一承载 mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步、流媒体封装、跨版本更新裁决（`update`），以及下沉的 `engine` 多箱并发协调器和 `device_catalog` 路由状态机。
-- **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`miaocast_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
+- **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`cozyting_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
 
 #### （2）四条正交数据流向（媒体 · 控制 · 时钟同步 · 发现遥测）
 
-![妙投（MiaoCast）媒体控制时钟与遥测四条正交数据流向图](docs/assets/architecture-overview.svg)
+![窝爱听（CozyTing）媒体控制时钟与遥测四条正交数据流向图](docs/assets/architecture-overview.svg)
 
 - **青色主音频流**：目标 App → 单 UID `AudioRecord` (48kHz) → `MediaCodec` (256kbps 裸 AAC) → `sync_channel(96)` → `media-clock` (21.333ms 节拍) → 每台接收端独立 `Packetizer` (`ADTS → PES → MPEG-TS → RTP PT=33`) → 音箱反向 Audio TCP。
 - **琥珀控制流 & 翡翠时钟流 & 紫色遥测流**：`engine` 串行协调正向 TCP `8899` 控制认证；`UDP TimerServer` 与反向 `SourceRtsp` 汇合于 `OffsetBarrier` 锁定共享 `TIME_OFFSET`；1Hz 统计与 `PcmProbe` 驱动 UI 原位刷新。
 
 #### （3）单进程实时线程模型与 6 条局域网通路
 
-![妙投（MiaoCast）单进程实时线程模型与六条局域网通路架构图](docs/assets/runtime-architecture.svg)
+![窝爱听（CozyTing）单进程实时线程模型与六条局域网通路架构图](docs/assets/runtime-architecture.svg)
 
 - **单进程零 IPC 拷贝**：原生采集线程（`MAX_PRIORITY`）与 Rust 引擎在同一地址空间内通过有界通道解耦；每台接收端拥有独立 5 线程（`media` / `rtsp` / `ctl` / `hb` / `timer`），慢端满队单端剔除，绝不阻塞全组。
 - **无死锁停止协议**：停止投送时 `Engine::stop` **先 `drop(feed)` 唤醒 `media-clock`**，再 `join` 全部工作线程并向每台音箱下发 `CLOSE(0x0002)` 释放会话。
@@ -239,13 +239,13 @@
 ### 3. 目录结构
 
 ```text
-miaocast/
+cozyting/
 ├── core/               # [L1 公共核心层] 纯 Rust 协议、多箱同步引擎、并发协调器 (engine)、设备目录与更新裁决
-│   ├── include/        #   [FFI] iOS / C11 头文件 (miaocast_core.h) 与 module.modulemap
+│   ├── include/        #   [FFI] iOS / C11 头文件 (cozyting_core.h) 与 module.modulemap
 │   └── src/            #   24 个核心模块（含 Android JNI ffi.rs 与 iOS C ABI ffi_c.rs）
 ├── design/             # [L3 跨端共享设计层] 明暗双主题 tokens.json、20 枚 24x24 矢量图标与 UI_SPEC.md
 ├── android/            # [L2+L3 Android 端] Kotlin 原生客户端 (:app standard/acceptance) 与三 UID 隔离测试音源 (:testtones)
-├── cli/                # [工程支撑] 独立终端工具 miaocast-cli（discover / 只读 inspect / 投送与故障注入调试）
+├── cli/                # [工程支撑] 独立终端工具 cozyting-cli（discover / 只读 inspect / 投送与故障注入调试）
 ├── scripts/            # [构建流水线] Android debug/release 构建、iOS XCFramework 打包与 16KB 页对齐/签名验收脚本
 └── docs/               # [文档与官网] 产品官网 (index.html)、交互式架构图 (architecture.html)、深度手册、兼容矩阵与 GEO 索引 (llms.txt)
 ```
@@ -256,16 +256,16 @@ miaocast/
 
 ## 七、开发者指南：CLI 诊断 · 本地构建 · 测试
 
-### 1. 使用 `miaocast-cli` 只读诊断局域网音箱
+### 1. 使用 `cozyting-cli` 只读诊断局域网音箱
 
-可在 **[GitHub Releases](https://github.com/JasirVoriya/miaocast-releases/releases)** 直接下载预编译三端 `miaocast-cli`，或在源码仓库本地运行：
+可在 **[GitHub Releases](https://github.com/JasirVoriya/cozyting-releases/releases)** 直接下载预编译三端 `cozyting-cli`，或在源码仓库本地运行：
 
 ```sh
 # 扫描局域网 MiPlay / 小爱音箱（输出 6 列 TSV：IP、名称、型号、MiPlay 能力声明等）
-cargo run --release -p miaocast-cli -- discover
+cargo run --release -p cozyting-cli -- discover
 
 # 只读查询指定音箱状态（仅发 GET_* 并以 TCP shutdown 退出，不发 CLOSE，不打断正在播放的音乐）
-cargo run --release -p miaocast-cli -- inspect <音箱IP> --auth legacy
+cargo run --release -p cozyting-cli -- inspect <音箱IP> --auth legacy
 ```
 
 ### 2. 本地构建（Android APK & iOS XCFramework）
@@ -284,7 +284,7 @@ cargo install cargo-ndk --locked
 # Android Release 正式签名构建（通过 MIPLAY_RELEASE_* 或未跟踪的 android/keystore.properties 注入签名）：
 ./scripts/build-release.sh
 
-# iOS 静态库与 MiaoCastCore.xcframework 打包（macOS + Xcode）：
+# iOS 静态库与 CozyTingCore.xcframework 打包（macOS + Xcode）：
 ./scripts/build-ios-xcframework.sh
 ```
 
@@ -295,7 +295,7 @@ cargo install cargo-ndk --locked
 cargo test --workspace
 
 # 2. FFI iOS C ABI 头文件 C11 严格语法校验
-clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
+clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/cozyting_core.h
 
 # 3. L2/L3 Android JVM 契约单测与 NewApi Fatal Lint
 cd android && ./gradlew --no-daemon test lintStandardDebug
@@ -312,7 +312,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **不把编译通过等同于全机型兼容**：各厂商后台冻结策略（如 HyperOS Greeze）及部分音箱固件协议差异（如 LX06 晚加入扩组，见 [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)）需按机型实测核验。
 
 📚 **延伸文档索引**：
-- [产品官网（GitHub Pages）](https://jasirvoriya.github.io/miaocast-releases/) · [在线交互式架构浏览器](https://jasirvoriya.github.io/miaocast-releases/architecture.html)（[本地 HTML](docs/architecture.html)） · [AI / LLM 索引（llms.txt）](docs/llms.txt)
+- [产品官网（GitHub Pages）](https://jasirvoriya.github.io/cozyting-releases/) · [在线交互式架构浏览器](https://jasirvoriya.github.io/cozyting-releases/architecture.html)（[本地 HTML](docs/architecture.html)） · [AI / LLM 索引（llms.txt）](docs/llms.txt)
 - [架构与全仓源码深度手册](docs/ARCHITECTURE.md) · [音箱与发送端设备兼容矩阵](docs/COMPATIBILITY.md) · [未测限制与已知缺口](docs/LIMITATIONS.md)
 - [Android 内置无线调试无感采集方案](docs/ANDROID_WIRELESS_DEBUG_CAPTURE_DESIGN.md) · [iOS 客户端设计方案（规划）](docs/IOS_CLIENT_DESIGN.md) · [局域网 AirPlay 2 网关设计方案（保留）](docs/AIRPLAY_BRIDGE_DESIGN.md)
 - [更新日志 (CHANGELOG)](CHANGELOG.md) · [参与贡献 (CONTRIBUTING)](CONTRIBUTING.md) · [安全策略 (SECURITY)](SECURITY.md) · [本机静音边界](docs/LOCAL_MUTE.md) · [延迟预算模型](docs/LATENCY_BUDGET.md)

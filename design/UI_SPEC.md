@@ -1,9 +1,9 @@
-# 妙投（MiaoCast）跨端 UI 设计规范（Android + 未来 iOS）
+# 窝爱听（CozyTing）跨端 UI 设计规范（Android + 未来 iOS）
 
 本目录是 **第 3 层（UI 表现层）** 的唯一视觉事实来源：Android（Kotlin 原生 View）与后续 iOS（SwiftUI）分别按原生方式实现界面，但严格共用本目录的 `tokens.json`、`icons/*.svg` 与页面信息架构。
 
-- **品牌名与协议名解耦约定**：C 端产品名称在简体中文 locale 为 **妙投**，在英文与日文等非中文 locale 统一为 **MiaoCast**；底层协议与引擎标识统一保留 **MiPlay**（如设备行协议徽标 `MiPlay`、设置项中的「未声明 MiPlay 能力的节点」、L1 Rust 核心 `miaocast-core`）。
-- **全链路多语言（i18n）基线**：双端原生支持至少 **简体中文（`zh-CN`）**、**英文（`en`）**、**日文（`ja`）** 三语且可扩展至更多语种。Android 端所有用户可见文案统一收敛至 `res/values/`、`res/values-en/`、`res/values-ja/` 的 `strings.xml`，并在 API 29–36 提供零外部依赖的应用内语言切换（API 33+ 经 `compat/LocaleCompat` 同步系统分应用语言 `LocaleManager`）；iOS 端同步维护 `Localizable.xcstrings`（支持在系统「设置 → MiaoCast → 语言」及应用内入口切换），L1 `core/` 通过结构化 `error_code` / `notes_is_fallback` 与文案解耦，严禁硬编码单语种句子。
+- **品牌名与协议名解耦约定**：C 端产品名称在简体中文 locale 为 **窝爱听**，在英文与日文等非中文 locale 统一为 **CozyTing**；底层协议与引擎标识统一保留 **MiPlay**（如设备行协议徽标 `MiPlay`、设置项中的「未声明 MiPlay 能力的节点」、L1 Rust 核心 `cozyting-core`）。
+- **全链路多语言（i18n）基线**：双端原生支持至少 **简体中文（`zh-CN`）**、**英文（`en`）**、**日文（`ja`）** 三语且可扩展至更多语种。Android 端所有用户可见文案统一收敛至 `res/values/`、`res/values-en/`、`res/values-ja/` 的 `strings.xml`，并在 API 29–36 提供零外部依赖的应用内语言切换（API 33+ 经 `compat/LocaleCompat` 同步系统分应用语言 `LocaleManager`）；iOS 端同步维护 `Localizable.xcstrings`（支持在系统「设置 → CozyTing → 语言」及应用内入口切换），L1 `core/` 通过结构化 `error_code` / `notes_is_fallback` 与文案解耦，严禁硬编码单语种句子。
 
 ## 1. 视觉风格（第一版样式 B · 克制低饱和 + 高对比选中卡）
 
@@ -15,13 +15,13 @@
 ## 2. 四段式主界面结构（双端对齐）
 
 1. **顶栏（Top Bar）**
-   - 左侧：品牌标题（中文 `妙投` / 英文 `MiaoCast`，双端统一）+ 运行状态胶囊（状态圆点 + `本机出声` / `投送中 · N 台` / `连接中`）。
+   - 左侧：品牌标题（中文 `窝爱听` / 英文 `CozyTing`，双端统一）+ 运行状态胶囊（状态圆点 + `本机出声` / `投送中 · N 台` / `连接中`）。
    - 右侧：紧挨排列「**延迟模式快捷胶囊**」与「**设置**」圆形图标按钮（标准 6 齿齿轮图标；当存在未忽略的新版本时在设置按钮右上角叠放 `8dp/pt` 主题蓝圆点角标）；深色/浅色/跟随系统三态切换统一收敛在独立设置页「外观与发现」卡片中，设备刷新按钮下沉至「输出设备」标题栏。
    - **非阻塞版本更新轻提示条（顶栏下方、主面板上方）**：仅在非投送态检测到未忽略新版本且本次会话未手动关闭时展示单行紧凑提示条（`update.svg` + `发现新版本 vX.Y.Z` + `查看` 胶囊 + `×` 关闭）；投送中自动隐藏，绝不在冷启动强行弹出阻塞型弹窗打断听歌与选箱。
    - **延迟模式快捷胶囊与极简下拉菜单（Android & iOS 双端对齐）**：
      - 单一事实来源：仅由持久化 `delayMs`（`0` = 自动，`> 0` = 具体毫秒）自动推导，绝不维护第二份模式枚举；
      - 4 个内置档位各配独立 `24×24` 几何线性图标：`标准`（`latency_standard.svg`，自动 5GHz 800ms / 2.4GHz 1000ms，14 AU，中性色）、`均衡`（`latency_balanced.svg`，400ms，8 AU，主题蓝）、`低延迟`（`latency_low.svg`，250ms，5 AU，主题蓝）、`极速`（`latency_ultra.svg`，150ms，3 AU，暖琥珀）；若用户在设置页手动填写了非预设值，胶囊自动显示 `latency_custom.svg` + `${delayMs}ms`（`<250ms` 琥珀 / `≥250ms` 蓝），下拉框 4 个预设均不勾选并在底部动态追加一行已勾选的 `自定义 · Nms`；
-     - 下拉菜单保持极致精简（宽约 `196–200dp/pt`，单行仅展示「图标 + 档位名 + 右侧 ms + 勾选」，零长文说明），点击任意预设立即调用 L1 `miaocast_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 热重锚 `TIME_OFFSET` 即时生效（免断连重连），且冷启动按 L1 `startup_runway_aus_for_delay_ms` 自动缩放预热帧数；
+     - 下拉菜单保持极致精简（宽约 `196–200dp/pt`，单行仅展示「图标 + 档位名 + 右侧 ms + 勾选」，零长文说明），点击任意预设立即调用 L1 `cozyting_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 热重锚 `TIME_OFFSET` 即时生效（免断连重连），且冷启动按 L1 `startup_runway_aus_for_delay_ms` 自动缩放预热帧数；
      - 下拉框底部经细分割线提供按需入口 `ⓘ 档位说明 ›`，点击后弹出详情弹窗展示 4 档完整参数、适用场景与「去设置自定义 ms」跳转（Android 使用 `PopupWindow` + Style B `Dialog`；iOS SwiftUI 使用 `Menu` + `.sheet` 对应实现）。
 2. **正在播放区（Now Playing）**
    - **已获得活跃媒体会话**（双端统一左大封面 + 右文控结构）：
@@ -31,7 +31,7 @@
        - **Android**：点击封面（带圆角水波纹反馈）优先通过 `nowPlaying.sourcePackage`（回退已选音源 `selectedPackage`）调用 `getLaunchIntentForPackage()` 拉起对应音乐 App。
        - **iOS（SwiftUI）**：同布局与右下角角标槽位；受 iOS 沙箱限制无法遍历任意第三方 App 图标或按 Bundle ID 强拉起，角标展示已知音源/系统音频图标，点击封面时对支持 URL Scheme 的音乐 App 跳转（如 Apple Music `music://`），未知音源则静默降级不报错。
      - **进度条与音量条（双端统一细轨道规范）**：播放进度条采用全宽 **`4dp/pt` 居中细胶囊轨道** + `14dp/pt` 圆形滑块，当前时间（左）与总时长（右）紧贴轨道下方两侧（播放中平滑走字，拖拽实时更新）；Android `SeekBar` 的 `LayerDrawable` 必须显式锁定图层高度为 `4dp` 并垂直居中，防止系统拉伸成粗条；下方紧接带实时百分比的总音量细轨道滑块。
-     - **高音量保护与跨线二次确认（Android & iOS 双端共享 L1 策略）**：总音量条与单音箱行内独立音量条统一消费 L1 Rust `miaocast_volume_guard_evaluate_json` / `miaocast_engine_set_volume_checked`（默认开启，安全上限默认 `60%`，合法配置 `30%–90%` 步进 `5%`）。安全区内滑块保持原本纯净细胶囊轨道（不绘制额外刻度块），仅在进入高音量区（`> 上限`）时高亮轨道、滑块描边与百分比切为琥珀警告色（亮底选中音箱行采用深琥珀 `#D97706` 保证对比度）。交互仅在**从安全区（`≤ 上限`）向上跨过安全上限（`> 上限`）**时拦截下发、先回弹至原音量并弹出 2 按钮 Style B 确认框（`保持原音量（Y%）` / `确认调至 X%`；点弹窗外或返回同样保持原音量）；已在高音量区内微调或降回安全区直接生效，降回安全区后再次跨线会重新确认；多音箱总音量只要任一受影响音箱跨线即触发确认；iOS SwiftUI 使用同等纯净轨道与 Style B 确认弹窗 / `.alert` 实现。
+     - **高音量保护与跨线二次确认（Android & iOS 双端共享 L1 策略）**：总音量条与单音箱行内独立音量条统一消费 L1 Rust `cozyting_volume_guard_evaluate_json` / `cozyting_engine_set_volume_checked`（默认开启，安全上限默认 `60%`，合法配置 `30%–90%` 步进 `5%`）。安全区内滑块保持原本纯净细胶囊轨道（不绘制额外刻度块），仅在进入高音量区（`> 上限`）时高亮轨道、滑块描边与百分比切为琥珀警告色（亮底选中音箱行采用深琥珀 `#D97706` 保证对比度）。交互仅在**从安全区（`≤ 上限`）向上跨过安全上限（`> 上限`）**时拦截下发、先回弹至原音量并弹出 2 按钮 Style B 确认框（`保持原音量（Y%）` / `确认调至 X%`；点弹窗外或返回同样保持原音量）；已在高音量区内微调或降回安全区直接生效，降回安全区后再次跨线会重新确认；多音箱总音量只要任一受影响音箱跨线即触发确认；iOS SwiftUI 使用同等纯净轨道与 Style B 确认弹窗 / `.alert` 实现。
    - **未开启通知使用权 vs 已开启但暂未播放**：仅在系统尚未授予通知使用权（`!isNotificationListenerEnabled()`）时折叠为单行可点击权限引导条（Android 点击直达通知使用权设置；iOS 展示广播捕获/音频会话提示）+ 总音量条；一旦已授予通知使用权，从系统设置返回后立即隐藏该权限引导条并展开播控区（若此时尚未打开任何音乐 App 播放，则展示就绪待播态 `暂未播放 · <已选音源>`，点击封面或播放键可直接启动已选音源 App）。
 3. **音源槽位（Platform Audio Source Slot）**
    - **Android**：
@@ -42,7 +42,7 @@
 4. **输出设备区（Output Devices）**
    - 分节标题栏：左侧 `输出设备`，右侧展示已发现设备数 + **`28dp/pt` 圆形刷新扫描按钮**（仅刷新局域网输出设备，扫描中旋转动画；且每次打开 App 或从外部切回前台——Android `onResume()` / iOS `scenePhase == .active`——在满足「非内部子页面返回 + 距上次扫描完成 ≥ 30 秒或当前可投设备为 0 台」时自动触发一次后台扫描刷新，扫描结果与当前可见列表一致时不重建设备行 View，正在拖动音量滑块时延后至松手再刷新，手动点击刷新按钮则无视 30 秒冷却立即强制刷新），避免放在顶栏造成全局刷新的语义误解。
    - 首行：`本机播放`（与外部接收端互斥，标题字号与外部设备行统一为 `13sp/pt Bold`）。
-   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ **同行轻分隔标题「设备名 + 可选房间名」**（单行末尾省略，不拼接型号后缀；设备名采用 `13sp/pt Bold` 主色，获取到非空房间名时紧随 ` · <房间名>` 采用 `11.5sp/pt Regular` 次级色，无房间名或获取不到时彻底隐藏、不留分隔符；Android 通过 `SpannableStringBuilder` 实现，iOS SwiftUI 通过 `Text(name).font(.system(size: 13, weight: .bold)) + Text(" · \(room)").font(.system(size: 11.5)).foregroundStyle(subColor)` 等价实现；双端统一消费第 1 层 Rust `miaocast_discover_json_ex`，单次只读 TCP 8899 `GET_DEVICE_INFO` TLV 帧内同步提取 `miName` 与 `roomName`，名称优先级为「`miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已含 `room_info_queried=true` 的本地缓存，首次发现/缺房间字段的旧版缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
+   - 外部音箱/电视行：统一矢量图标（音箱/电视）+ **同行轻分隔标题「设备名 + 可选房间名」**（单行末尾省略，不拼接型号后缀；设备名采用 `13sp/pt Bold` 主色，获取到非空房间名时紧随 ` · <房间名>` 采用 `11.5sp/pt Regular` 次级色，无房间名或获取不到时彻底隐藏、不留分隔符；Android 通过 `SpannableStringBuilder` 实现，iOS SwiftUI 通过 `Text(name).font(.system(size: 13, weight: .bold)) + Text(" · \(room)").font(.system(size: 11.5)).foregroundStyle(subColor)` 等价实现；双端统一消费第 1 层 Rust `cozyting_discover_json_ex`，单次只读 TCP 8899 `GET_DEVICE_INFO` TLV 帧内同步提取 `miName` 与 `roomName`，名称优先级为「`miName` → 本地缓存 `miName` → mDNS 老名字 → IP」，音箱与电视一视同仁、投送中跳过查名；冷启动自动扫描沿用已含 `room_info_queried=true` 的本地缓存，首次发现/缺房间字段的旧版缓存或手动刷新时触发查名）+ 副标题（IP + 实时状态：`投送中` / `连接中…` / `重连中…` / 不可投送原因）+ 右侧延迟胶囊（直接消费第 1 层 Rust 下沉的 `ui_state` 与 `display_latency_ms`）+ 协议徽标 + 矢量勾选圆。
    - 选中后行内展开带实时百分比的独立音量滑块；拖动音量时仅原位更新，禁止重建设备列表。
    - **主卡片底边收口与按需提示横条**：平时（待机、选定音源、正常投送中）主卡片在最后一台输出设备行下方直接以 `16dp/pt` 对称内边距干净收底，不常驻任何冗余文字（如「已选择音源：xxx」「已切回本机播放」等均由卡片高亮与顶栏胶囊体现）；仅在切换延迟档位/热切音源时底部展示 **2.5 秒自动消失** 的主题蓝轻提示横条，或在发生异常/权限缺失/扫描失败时展示带琥珀色圆点的告警提示条（恢复正常后自动隐藏）。
 
@@ -56,13 +56,13 @@
     - **通知栏长按展开输入（保底兜底，始终同步开启）**：无论是否开启无障碍，均推送高优 `RemoteInput` 通知横幅，并在文案中醒目提示「若未看到输入按钮，请长按本条通知（或单指下滑）展开输入框」，同时向导页保留小窗/分屏手动填码入口；
     - 主界面、音源页与向导页中的所有模态提示/确认弹窗（首次使用无感模式配对引导、重启后无线调试恢复提示、清除配对证书确认、常用音源与自动识别说明）统一采用 `UiComponents.showStyleBDialog` 自定义圆角卡片弹窗（深色 `#151A23` / 浅色 `#FFFFFF` + 顶栏关闭圆钮 + 可选内嵌附注框 + 全宽 Tonal 按钮，严禁使用系统原生 `AlertDialog`；iOS SwiftUI 采用同等 Style B 卡片弹窗 / `.sheet` 呈现）。
    - **投送时手机静音开关**（去重精简为「单条清晰副标题 + 单行实时状态」：Android 13+ 无感单 App 模式下说明仅静音当前投送的音乐 App、其他 App 照常发声并注明以 ROM 为准，并在 `uid=2000` `AudioPolicy` 内自动启用双区音频焦点隔离，避免手机刷短视频暂停音箱音乐或恢复音乐导致视频短暂无声，停止/异常退出自动注销；标准模式下说明静音媒体音量且标准模式无法单 App 静音；iOS 受沙箱限制不支持 `AudioPolicy` 焦点接管）。
-   - **高音量保护与安全音量上限（Android & iOS 双端对齐）**：提供「高音量保护」总开关（默认开启）与展开态「安全音量上限」步进滑块（默认 `60%`，范围 `30%–90%`，步进 `5%`），持久化至本地偏好并实时同步至 L1 Rust `miaocast_set_volume_guard_policy`。
+   - **高音量保护与安全音量上限（Android & iOS 双端对齐）**：提供「高音量保护」总开关（默认开启）与展开态「安全音量上限」步进滑块（默认 `60%`，范围 `30%–90%`，步进 `5%`），持久化至本地偏好并实时同步至 L1 Rust `cozyting_set_volume_guard_policy`。
    - **自动识别正在播放的音源总开关**（Android，默认开启，仅从常用音源中已授权自动识别的 App 选取）、通知使用权实时状态与直达入口（Android）、电池优化豁免实时状态与直达入口（Android）。
-3. **连接与调试（默认折叠）**：手动添加音箱 IP、音源模式分段选择（选定 App / 测试静音）、播放延迟（ms）输入框与同行右侧「生效」主按钮（支持 50–5000ms 及留空/0 自动；投送中点击直接调用 L1 `miaocast_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 清缓冲并热重锚广播 `TIME_OFFSET` 即时生效，无需断连重连，待机时保存并在下次连接生效；Android 与未来 iOS 共用同一交互与 L1 能力）、房间参考模式分段选择、认证模式分段选择、验收变体本地探针。
+3. **连接与调试（默认折叠）**：手动添加音箱 IP、音源模式分段选择（选定 App / 测试静音）、播放延迟（ms）输入框与同行右侧「生效」主按钮（支持 50–5000ms 及留空/0 自动；投送中点击直接调用 L1 `cozyting_engine_set_playback_delay` / `NativeBridge.setPlaybackDelay` 清缓冲并热重锚广播 `TIME_OFFSET` 即时生效，无需断连重连，待机时保存并在下次连接生效；Android 与未来 iOS 共用同一交互与 L1 能力）、房间参考模式分段选择、认证模式分段选择、验收变体本地探针。
 4. **关于与更新（Android & iOS 双端对齐）**：
    - 展示品牌名 + 当前版本号（自动剥离 `-release` 构建后缀，预览版/验收版附状态标注）+ 上次检查时间与右侧状态胶囊（`已是最新` / `有新版本` / `检测中…` / `检查失败`）。
    - 主操作按钮（`立即检查更新` / `查看新版本 vX.Y.Z`）、`启动时自动检查更新` 开关（默认开启、每 24h 向公开静态清单发起一次只读 HTTPS 请求、零遥测，关闭后 100% 零外网请求）、更新通道分段 `[稳定版 | 预览版 (RC)]` 与公开 Release 页面直达入口。
-   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `miaocast_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；中部更新日志滚动区必须硬性限高（`≤ 230dp/pt` 且 `≤ 屏高 36%`；Android 通过自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮即完成钳制，iOS SwiftUI 使用 `ScrollView { ... }.frame(maxHeight: 230)`），确保长日志绝不将底部操作按钮顶出屏幕；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
+   - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `cozyting_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；中部更新日志滚动区必须硬性限高（`≤ 230dp/pt` 且 `≤ 屏高 36%`；Android 通过自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮即完成钳制，iOS SwiftUI 使用 `ScrollView { ... }.frame(maxHeight: 230)`），确保长日志绝不将底部操作按钮顶出屏幕；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
 
 ## 4. 图标规范（`design/icons/`）
 
@@ -78,5 +78,5 @@
 - **收起态正文（严格单行定长，不随设备数增长）**：
   - **1 台设备**：直接显示真实设备名（如 `客厅音箱`；异常时追加 ` · 重连中` / ` · 已断开` / ` · 连接中`；无缓存名时回退完整 IP）。
   - **≥ 2 台设备**：统一简洁纯计数（正常：`N 台设备同步播放`；全部连接中：`正在连接 N 台设备`；已暂停：`N 台设备`；存在异常时聚合提醒：`N 台设备 · K 台重连中` / `M 台已断开`）。
-- **下拉展开态（`BigTextStyle`）**：≥ 2 台设备时列出具体音箱明细（`• 设备名 · 状态`），异常设备置顶排序，最多展示前 5 台，超出末尾折叠为 `…等共 N 台设备`；操作按钮保留 `暂停/恢复` 与 `停止`。通知渠道名称统一为 `妙投 · 投送状态`。
+- **下拉展开态（`BigTextStyle`）**：≥ 2 台设备时列出具体音箱明细（`• 设备名 · 状态`），异常设备置顶排序，最多展示前 5 台，超出末尾折叠为 `…等共 N 台设备`；操作按钮保留 `暂停/恢复` 与 `停止`。通知渠道名称统一为 `窝爱听 · 投送状态`。
 - **iOS 边界说明**：iOS 无 Android 前台服务常驻通知，播控与连接状态由 App 内顶栏胶囊及系统「控制中心 / 正在播放」（或后续 Live Activities）承载，文案沿用同等去工程化口径。

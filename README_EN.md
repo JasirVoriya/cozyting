@@ -3,26 +3,26 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-banner-light.svg">
-  <img alt="MiaoCast (妙投) — Open-Source Pure-LAN MiPlay Multi-Room Audio Casting for Xiaomi and XiaoAi Speakers" src="docs/assets/hero-banner-light.svg" width="100%">
+  <img alt="CozyTing (窝爱听) — Open-Source Pure-LAN MiPlay Multi-Room Audio Casting for Xiaomi and XiaoAi Speakers" src="docs/assets/hero-banner-light.svg" width="100%">
 </picture>
 
-# MiaoCast (妙投)
+# CozyTing (窝爱听)
 
 **Open-Source Third-Party MiPlay Audio Casting App: Stream Only Your Chosen Music App to Up to 63 Xiaomi / XiaoAi Speakers Over Pure LAN**
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="README_JA.md">日本語</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/en/">Website</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video">Video Demo</a> ·
-  <a href="https://github.com/JasirVoriya/miaocast-releases/releases">Download APK</a> ·
-  <a href="https://jasirvoriya.github.io/miaocast-releases/en/architecture.html">Interactive Architecture</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/en/">Website</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video">Video Demo</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting-releases/releases">Download APK</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting-releases/en/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 <p>
-  <a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/miaocast-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-FF5C6C?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-FF5C6C?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -32,23 +32,23 @@
 
 </div>
 
-> **What is MiaoCast (妙投)?**
-> **MiaoCast** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
+> **What is CozyTing (窝爱听)?**
+> **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
-> 📦 **Download**: Grab the latest Android APK and cross-platform `miaocast-cli` binaries from **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
-> 📑 **Jump to**: [MiaoCast in 1 Minute](#-miaocast-in-1-minute) · [Problems Solved](#1-what-problems-does-miaocast-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
+> 📦 **Download**: Grab the latest Android APK and cross-platform `cozyting-cli` binaries from **[GitHub Releases (cozyting-releases)](https://github.com/JasirVoriya/cozyting-releases/releases)**.
+> 📑 **Jump to**: [CozyTing in 1 Minute](#-cozyting-in-1-minute) · [Problems Solved](#1-what-problems-does-cozyting-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
 
 ---
 
-## 🎬 MiaoCast in 1 Minute
+## 🎬 CozyTing in 1 Minute
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video" title="Watch MiaoCast in 1 Minute on the product website">
-    <img src="docs/assets/video/miaocast-promo-en-poster.jpg" alt="MiaoCast in 1 Minute video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
+  <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video" title="Watch CozyTing in 1 Minute on the product website">
+    <img src="docs/assets/video/cozyting-promo-en-poster.jpg" alt="CozyTing in 1 Minute video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/miaocast-releases/en/#video"><strong>▶ Watch on the Product Website</strong></a> ·
-    <a href="https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en.mp4">Direct MP4 (1280×720)</a>
+    <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video"><strong>▶ Watch on the Product Website</strong></a> ·
+    <a href="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-en.mp4">Direct MP4 (1280×720)</a>
   </p>
 </div>
 
@@ -56,7 +56,7 @@
 
 ---
 
-## 1. What Problems Does MiaoCast Solve?
+## 1. What Problems Does CozyTing Solve?
 
 If you own Xiaomi or XiaoAi smart speakers and want to play music from your phone, existing options come with major frustrations:
 
@@ -65,9 +65,9 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 3. **Embarrassing Audio Leaks**: Bluetooth and full-system screen mirroring broadcast everything—voice messages, short-form videos, game effects, and notification chimes—straight to your living-room speakers.
 4. **High Latency & Interrupted Music**: Standard Wi-Fi casting lags on track skips, and opening a video on your phone immediately pauses the music playing on your speakers.
 
-### Comparison: MiaoCast vs. Bluetooth vs. Stock MiPlay vs. Screen Mirroring
+### Comparison: CozyTing vs. Bluetooth vs. Stock MiPlay vs. Screen Mirroring
 
-| Capability | **MiaoCast (妙投)** | Bluetooth | Stock Xiaomi MiPlay | System Screen Mirroring |
+| Capability | **CozyTing (窝爱听)** | Bluetooth | Stock Xiaomi MiPlay | System Screen Mirroring |
 | --- | --- | --- | --- | --- |
 | **Phone Brand Support** | ✅ **Any Android 10+ phone** (iOS planned) | ✅ Any phone | ❌ Select Xiaomi / Redmi only | ✅ Any phone |
 | **Multi-Room Synchronized Speakers** | ✅ **Up to 63 speakers in ms sync**, live add/remove | ❌ Usually 1 speaker | ✅ Multiple MiPlay speakers | ❌ Single target / high lag |
@@ -91,7 +91,7 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 ### 3. Seamless Wireless Debugging Mode (Android 13+) — No Root, No PC, No Shizuku
 - **Standard Mode** works out of the box on Android 10+ with zero setup.
-- On **Android 13+**, MiaoCast's built-in **4-step wireless debugging pairing wizard** connects locally via a one-time 6-digit pairing code (no root, no computer, no external Shizuku app required) to unlock:
+- On **Android 13+**, CozyTing's built-in **4-step wireless debugging pairing wizard** connects locally via a one-time 6-digit pairing code (no root, no computer, no external Shizuku app required) to unlock:
   - **No recurring projection popups** and no persistent system "casting screen" indicator;
   - **True per-app local mute**: mutes only the music app being cast while other apps continue playing normally through your phone's speaker;
   - **Dual-zone AudioFocus isolation**: scroll TikTok/YouTube or listen to voice messages on your phone without pausing the music playing on your speakers.
@@ -119,35 +119,35 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 ### 1. Main Screen · Synchronized Multi-Speaker Casting
 
-![MiaoCast main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/en/01-main-casting-dark-vs-light.png)
+![CozyTing main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/en/01-main-casting-dark-vs-light.png)
 
 ### 2. 4-Tier Live Latency Switching (Hot-Switch Without Reconnecting)
 
-![MiaoCast 4-tier latency mode selector showing Standard, Balanced, Low Latency, and Ultra-Low presets](docs/assets/screenshots/en/02-latency-tiers-dark-vs-light.png)
+![CozyTing 4-tier latency mode selector showing Standard, Balanced, Low Latency, and Ultra-Low presets](docs/assets/screenshots/en/02-latency-tiers-dark-vs-light.png)
 
 ### 3. Favorite Audio Sources (Per-App Auto-Detect & Drag Reorder)
 
-![MiaoCast favorite audio source manager with per-app auto-detect toggles and drag reordering](docs/assets/screenshots/en/03-app-picker-dark-vs-light.png)
+![CozyTing favorite audio source manager with per-app auto-detect toggles and drag reordering](docs/assets/screenshots/en/03-app-picker-dark-vs-light.png)
 
 ### 4. Built-In Wireless Debugging 4-Step Seamless Capture Wizard
 
-![MiaoCast 4-step built-in wireless debugging setup wizard for rootless zero-popup audio capture on Android 13+](docs/assets/screenshots/en/04-wireless-guide-dark-vs-light.png)
+![CozyTing 4-step built-in wireless debugging setup wizard for rootless zero-popup audio capture on Android 13+](docs/assets/screenshots/en/04-wireless-guide-dark-vs-light.png)
 
 ### 5. Settings · Theme, Capture Engine, Single-App Mute & Permissions
 
-![MiaoCast settings screen for dark/light theme, standard vs seamless capture engine, per-app isolation, and local mute](docs/assets/screenshots/en/05-settings-core-dark-vs-light.png)
+![CozyTing settings screen for dark/light theme, standard vs seamless capture engine, per-app isolation, and local mute](docs/assets/screenshots/en/05-settings-core-dark-vs-light.png)
 
 ### 6. Settings · Advanced Connection Tuning & About / Updates Card
 
-![MiaoCast settings screen showing custom latency tuning and verified in-app updates card](docs/assets/screenshots/en/06-settings-update-dark-vs-light.png)
+![CozyTing settings screen showing custom latency tuning and verified in-app updates card](docs/assets/screenshots/en/06-settings-update-dark-vs-light.png)
 
 ### 7. Non-Intrusive Update Banner & Badge (Idle State Only)
 
-![MiaoCast non-intrusive update notification banner shown only when not actively casting](docs/assets/screenshots/en/07-main-update-banner-dark-vs-light.png)
+![CozyTing non-intrusive update notification banner shown only when not actively casting](docs/assets/screenshots/en/07-main-update-banner-dark-vs-light.png)
 
 ### 8. Cross-Version Changelog & SHA-256 Verified In-App Update Dialog
 
-![MiaoCast cross-version changelog dialog with SHA-256 and signing certificate verification before installation](docs/assets/screenshots/en/08-update-dialog-dark-vs-light.png)
+![CozyTing cross-version changelog dialog with SHA-256 and signing certificate verification before installation](docs/assets/screenshots/en/08-update-dialog-dark-vs-light.png)
 
 ---
 
@@ -155,9 +155,9 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 1. **Install the Android APK**
    - Requires **Android 10 (API 29) or higher** (`arm64-v8a`).
-   - Download the latest `miaocast-*-arm64-v8a.apk` from **[GitHub Releases (miaocast-releases)](https://github.com/JasirVoriya/miaocast-releases/releases)**.
+   - Download the latest `cozyting-*-arm64-v8a.apk` from **[GitHub Releases (cozyting-releases)](https://github.com/JasirVoriya/cozyting-releases/releases)**.
 2. **Connect to the Same Home Wi-Fi**
-   - Make sure your phone and Xiaomi / XiaoAi speakers are on the same local Wi-Fi network. MiaoCast discovers compatible speakers automatically.
+   - Make sure your phone and Xiaomi / XiaoAi speakers are on the same local Wi-Fi network. CozyTing discovers compatible speakers automatically.
 3. **Pick Your Music App & Speakers**
    - Choose your music app (or start playing and let Auto-Detect pick it up), check one or more speakers, and enjoy synchronized playback.
    - **Standard vs. Seamless Mode**: Standard Mode works out of the box on Android 10+. On Android 13+, open *Settings → Capture Engine → Seamless Mode (Wireless Debugging)* and follow the 4-step on-device wizard to eliminate capture popups and enable true per-app mute + dual-zone AudioFocus isolation.
@@ -166,23 +166,23 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 ## 5. Frequently Asked Questions (FAQ)
 
-### Can non-Xiaomi phones (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) cast to Xiaomi / XiaoAi speakers with MiaoCast?
+### Can non-Xiaomi phones (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) cast to Xiaomi / XiaoAi speakers with CozyTing?
 **Yes.** Any Android 10+ phone on the same Wi-Fi LAN can cast directly to MiPlay-capable Xiaomi / XiaoAi speakers without a Xiaomi account or root. Check tested devices and community reports in the [Compatibility Matrix](docs/COMPATIBILITY.md).
 
-### How is MiaoCast different from Bluetooth or AirPlay?
-Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone sounds), MiaoCast streams **48kHz 256kbps AAC** over your home Wi-Fi to **up to 63 speakers in millisecond sync**, capturing **only the single music app you select**. Think of it as an open-source, pure-LAN AirPlay-style multi-room experience for MiPlay speakers on Android.
+### How is CozyTing different from Bluetooth or AirPlay?
+Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone sounds), CozyTing streams **48kHz 256kbps AAC** over your home Wi-Fi to **up to 63 speakers in millisecond sync**, capturing **only the single music app you select**. Think of it as an open-source, pure-LAN AirPlay-style multi-room experience for MiPlay speakers on Android.
 
 ### Will watching videos or playing voice messages leak to the speakers or pause the music?
-**No audio leaks.** MiaoCast strictly isolates your chosen music app. When using **Seamless Mode on Android 13+**, MiaoCast also enables **dual-zone AudioFocus isolation** and **true per-app local mute**, so watching videos or playing chat voice notes on your phone will neither leak to the speakers nor pause your speaker playback.
+**No audio leaks.** CozyTing strictly isolates your chosen music app. When using **Seamless Mode on Android 13+**, CozyTing also enables **dual-zone AudioFocus isolation** and **true per-app local mute**, so watching videos or playing chat voice notes on your phone will neither leak to the speakers nor pause your speaker playback.
 
 ### Does Seamless Mode require root, a PC, or Shizuku?
-**No.** MiaoCast embeds a lightweight local wireless ADB client. You only pair once on-device using Android's 6-digit Wireless Debugging pairing code—no root, no computer, and no third-party privilege apps required. Standard Mode remains available on all Android 10+ devices with zero setup.
+**No.** CozyTing embeds a lightweight local wireless ADB client. You only pair once on-device using Android's 6-digit Wireless Debugging pairing code—no root, no computer, and no third-party privilege apps required. Standard Mode remains available on all Android 10+ devices with zero setup.
 
-### Does MiaoCast upload audio or require a Xiaomi account?
+### Does CozyTing upload audio or require a Xiaomi account?
 **Never.** Discovery and audio streaming happen 100% inside your local LAN with zero cloud APIs, zero accounts, and zero telemetry. The only optional internet request is a read-only daily check against the public `update.json` release feed (verified via HTTPS + SHA-256 + APK signature), which you can disable in Settings for 100% zero outbound traffic.
 
 ### Is iOS / iPhone supported?
-**The shared Rust core (`miaocast_core.h` C ABI + `XCFramework` build pipeline) and cross-platform UI design spec are ready; the native SwiftUI + ReplayKit iOS client is planned.** See [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md) for the roadmap.
+**The shared Rust core (`cozyting_core.h` C ABI + `XCFramework` build pipeline) and cross-platform UI design spec are ready; the native SwiftUI + ReplayKit iOS client is planned.** See [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md) for the roadmap.
 
 ---
 ---
@@ -193,42 +193,42 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 
 ### 1. Engineering Foundation
 
-![MiaoCast Core Technical Capabilities](docs/assets/feature-highlights.svg)
+![CozyTing Core Technical Capabilities](docs/assets/feature-highlights.svg)
 
 - **Strict Per-App Isolation (Fail-Closed)**: Uses Android `AudioPlaybackCapture` with single-UID allowlisting plus real-time same-user, non-shared-UID, and SHA-256 package signature verification—never silently falling back to full-system capture or microphone input. A 6-beat `PcmProbe` energy lock prevents dual-output glitches during track transitions.
 - **Rootless Wireless Debugging `AudioPolicy` Engine (Android 13+)**: Launches an internal `uid=2000` helper via built-in mDNS + SPAKE2/TLS 1.3 wireless ADB over an ephemeral `127.0.0.1` loopback channel authenticated with a one-time 256-bit token, combining single-app `AudioMix` capture with `AudioPolicyFocusListener` dual-zone AudioFocus isolation.
 - **63-Speaker Deterministic Rust Sync Engine**: Pure-Rust L1 core (`miplay-core`) built on `std::thread` and bounded `sync_channel` (**zero async runtime**), with monotonic `EPOCH`, UDP 40B `TimerServer` clock master, `OffsetBarrier` 14-AU preroll alignment, runtime `TIME_OFFSET` hot rebasing, and per-sink slow-consumer eviction.
 - **Isolated Legacy & Safety Auth Channels**: Strictly separates Legacy (`MD5 + HMAC-SHA1`) and Safety (`OPack + mutual HMAC + chained AES-128-CBC`) TCP `8899` control sessions.
-- **Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog` / `update`) across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`miaocast_core.h` C ABI + `.xcframework` script), and `miaocast-cli inspect` (read-only diagnostics exiting via `TCP shutdown` without sending `CLOSE`).
+- **Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog` / `update`) across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`cozyting_core.h` C ABI + `.xcframework` script), and `cozyting-cli inspect` (read-only diagnostics exiting via `TCP shutdown` without sending `CLOSE`).
 
 ### 2. Visual Architecture Overview
 
 > 🧭 **Explore Deeper**:
-> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
+> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting-releases/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
 > - **Full Source Dictionary**: Read **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for complete file-by-file responsibility tables (41 Android files, 24 Rust modules, 19 JVM test suites, and 6-stage lifecycle invariants).
 
 #### (1) Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
 
-![MiaoCast Cross-Platform 3-Layer Architecture spanning L1 Rust Core, JNI and C ABI bridges, Android Kotlin, and planned iOS SwiftUI](docs/assets/cross-platform-architecture.svg)
+![CozyTing Cross-Platform 3-Layer Architecture spanning L1 Rust Core, JNI and C ABI bridges, Android Kotlin, and planned iOS SwiftUI](docs/assets/cross-platform-architecture.svg)
 
 #### (2) Four Orthogonal Data Flows (Media · Control · Clock Sync · Telemetry)
 
-![MiaoCast Four Orthogonal Data Flows diagram covering Audio Media, TCP 8899 Control, UDP Clock Sync, and mDNS Telemetry](docs/assets/architecture-overview.svg)
+![CozyTing Four Orthogonal Data Flows diagram covering Audio Media, TCP 8899 Control, UDP Clock Sync, and mDNS Telemetry](docs/assets/architecture-overview.svg)
 
 #### (3) Single-Process Real-Time Threading & 6 LAN Channels
 
-![MiaoCast Single-Process Real-Time Threading Model and 6 LAN Network Channels](docs/assets/runtime-architecture.svg)
+![CozyTing Single-Process Real-Time Threading Model and 6 LAN Network Channels](docs/assets/runtime-architecture.svg)
 
 ### 3. Repository Structure
 
 ```text
-miaocast/
+cozyting/
 ├── core/               # [L1 Shared Core] Pure Rust protocol, multi-room sync engine, coordinator (engine), catalog & updater
-│   ├── include/        #   [FFI] iOS C11 header (miaocast_core.h) & module.modulemap
+│   ├── include/        #   [FFI] iOS C11 header (cozyting_core.h) & module.modulemap
 │   └── src/            #   24 core modules (including Android JNI ffi.rs & iOS C ABI ffi_c.rs)
 ├── design/             # [L3 Shared Design] Light/dark tokens.json, 20 vector icons (24x24) & UI_SPEC.md
 ├── android/            # [L2+L3 Android] Native Kotlin client (:app standard/acceptance) & 3-UID isolation testtones
-├── cli/                # [Tooling] Standalone miaocast-cli (discover / read-only inspect / cast & fault-injection debug)
+├── cli/                # [Tooling] Standalone cozyting-cli (discover / read-only inspect / cast & fault-injection debug)
 ├── scripts/            # [Build Pipeline] Android debug/release, iOS XCFramework & 16KB page-alignment verification
 └── docs/               # [Docs & Site] Product website (index.html), architecture explorer (architecture.html), docs & llms.txt
 ```
@@ -239,8 +239,8 @@ miaocast/
 
 ```sh
 # 1. Discover LAN speakers or run read-only inspection (exits via TCP shutdown without sending CLOSE)
-cargo run --release -p miaocast-cli -- discover
-cargo run --release -p miaocast-cli -- inspect <SPEAKER_IP> --auth legacy
+cargo run --release -p cozyting-cli -- discover
+cargo run --release -p cozyting-cli -- inspect <SPEAKER_IP> --auth legacy
 
 # 2. Build Android Debug / Release APK (16KB ELF page-aligned) & iOS XCFramework
 ./scripts/build-debug.sh
@@ -249,7 +249,7 @@ cargo run --release -p miaocast-cli -- inspect <SPEAKER_IP> --auth legacy
 
 # 3. Run Rust unit tests, C11 header check, and Android JVM unit tests + NewApi Fatal Lint
 cargo test --workspace
-clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
+clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/cozyting_core.h
 cd android && ./gradlew --no-daemon test lintStandardDebug
 ```
 
@@ -258,6 +258,6 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 ## 8. Honest Scope, Links & License
 
 - **Known Boundaries**: See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) and [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Third-party apps opting out via `allowAudioPlaybackCapture="false"` cannot be bypassed; under standard unprivileged Android permissions, muting a single app without affecting `STREAM_MUSIC` is not supported by public APIs (Seamless Mode on Android 13+ requires real-device ROM verification); OEM background freezing and speaker firmware quirks (e.g., [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)) vary by device.
-- **Resources**: [Product Website](https://jasirvoriya.github.io/miaocast-releases/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/miaocast-releases/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
+- **Resources**: [Product Website](https://jasirvoriya.github.io/cozyting-releases/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting-releases/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 - **License**: Released under **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)**.
 - **Non-Affiliation Disclaimer**: Independent third-party open-source implementation for LAN interoperability research. Not affiliated with, authorized by, or endorsed by Xiaomi Corporation.

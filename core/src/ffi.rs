@@ -1,4 +1,4 @@
-//! Android JNI 薄插头（feature "jni"）：对应 Kotlin `com.miaocast.app.NativeBridge`。
+//! Android JNI 薄插头（feature "jni"）：对应 Kotlin `com.cozyting.app.NativeBridge`。
 //!
 //! 仅负责 JNI 类型转换，全部状态、句柄管理与多箱并发协调均已下沉至 [`crate::engine`]
 //! 与 [`crate::device_catalog`]，与 iOS C ABI (`ffi_c.rs`) 共享同一套实现。
@@ -21,17 +21,17 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_init(_e: JNIEnv, _c: JClass) {
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_init(_e: JNIEnv, _c: JClass) {
         #[cfg(target_os = "android")]
         android_logger::init_once(
             android_logger::Config::default()
-                .with_tag("MiaoCastCore")
+                .with_tag("CozyTingCore")
                 .with_max_level(log::LevelFilter::Info),
         );
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_discover(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_discover(
         mut env: JNIEnv,
         _c: JClass,
         local_ip: JString,
@@ -42,7 +42,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_discoverJson(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_discoverJson(
         mut env: JNIEnv,
         _c: JClass,
         local_ip: JString,
@@ -55,7 +55,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_discoverJsonEx(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_discoverJsonEx(
         mut env: JNIEnv,
         _c: JClass,
         local_ip: JString,
@@ -72,7 +72,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_routeApplyJson(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_routeApplyJson(
         mut env: JNIEnv,
         _c: JClass,
         devices_json: JString,
@@ -86,7 +86,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_probe(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_probe(
         mut env: JNIEnv,
         _c: JClass,
         ip: JString,
@@ -96,7 +96,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_create(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_create(
         _env: JNIEnv,
         _c: JClass,
         silent: jboolean,
@@ -105,7 +105,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_connect(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_connect(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -126,7 +126,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_connectWithVolumeConfirm(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_connectWithVolumeConfirm(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -157,7 +157,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_pushAac(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_pushAac(
         env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -170,7 +170,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queueAddReceiver(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_queueAddReceiver(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -181,7 +181,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queueRemoveReceiver(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_queueRemoveReceiver(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -192,7 +192,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queueSetVolume(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_queueSetVolume(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -204,7 +204,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queueSetVolumeChecked(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_queueSetVolumeChecked(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -220,7 +220,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_setVolumeGuardPolicy(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_setVolumeGuardPolicy(
         _e: JNIEnv,
         _c: JClass,
         enabled: jboolean,
@@ -230,7 +230,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_evaluateVolumeChangeJson(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_evaluateVolumeChangeJson(
         mut env: JNIEnv,
         _c: JClass,
         enabled: jboolean,
@@ -250,7 +250,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_setVolume(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_setVolume(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -262,7 +262,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_addReceiver(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_addReceiver(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -273,7 +273,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_removeReceiver(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_removeReceiver(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -284,7 +284,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_pause(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_pause(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -293,7 +293,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_resume(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_resume(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -302,7 +302,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_switchSource(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_switchSource(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -311,7 +311,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_setPlaybackDelay(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_setPlaybackDelay(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -321,7 +321,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_debugDrop(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_debugDrop(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -332,7 +332,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_debugBlackhole(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_debugBlackhole(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -344,7 +344,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_queryChannel(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_queryChannel(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -353,7 +353,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_stats(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_stats(
         mut env: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -362,7 +362,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_setAuthMode(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_setAuthMode(
         _e: JNIEnv,
         _c: JClass,
         mode: jint,
@@ -371,7 +371,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_safetyProbe(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_safetyProbe(
         mut env: JNIEnv,
         _c: JClass,
         ip: JString,
@@ -381,7 +381,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_delayForFrequency(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_delayForFrequency(
         _e: JNIEnv,
         _c: JClass,
         mhz: jint,
@@ -390,7 +390,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_stop(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_stop(
         _e: JNIEnv,
         _c: JClass,
         h: jlong,
@@ -399,7 +399,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_compareVersions(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_compareVersions(
         mut env: JNIEnv,
         _c: JClass,
         a: JString,
@@ -411,7 +411,7 @@ mod android {
     }
 
     #[no_mangle]
-    pub extern "system" fn Java_com_miaocast_app_NativeBridge_evaluateUpdateJson(
+    pub extern "system" fn Java_com_cozyting_app_NativeBridge_evaluateUpdateJson(
         mut env: JNIEnv,
         _c: JClass,
         current_version: JString,

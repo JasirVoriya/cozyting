@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 910" width="1360" height="910" role="img" aria-labelledby="rt-title rt-desc">
-  <title id="rt-title">妙投（MiaoCast）软件运行时整体架构</title>
+  <title id="rt-title">窝爱听（CozyTing）软件运行时整体架构</title>
   <desc id="rt-desc">展示单 Android 应用进程内 Kotlin 线程组、JNI 有界队列与句柄表、Rust 共享媒体时钟与监督线程、每台接收端独立的 5 线程与 6 条局域网通路以及核心生命周期状态流转。</desc>
   <defs>
     <linearGradient id="rt-bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -127,15 +127,15 @@
   <!-- ==================== HEADER ==================== -->
   <g transform="translate(36, 22)">
     <rect x="0" y="4" width="6" height="42" rx="3" fill="url(#jni-bar)"/>
-    <text x="18" y="24" class="sans title">妙投（MiaoCast）· 软件运行时整体架构（进程 · 线程 · 队列 · 网络拓扑）</text>
-    <text x="18" y="44" class="mono sub">Single Android Process (ART + libmiaocast_core.so) · Bounded Queues (96 / 256) · Per-Receiver 5 Threads &amp; 6 Network Paths</text>
+    <text x="18" y="24" class="sans title">窝爱听（CozyTing）· 软件运行时整体架构（进程 · 线程 · 队列 · 网络拓扑）</text>
+    <text x="18" y="44" class="mono sub">Single Android Process (ART + libcozyting_core.so) · Bounded Queues (96 / 256) · Per-Receiver 5 Threads &amp; 6 Network Paths</text>
   </g>
 
   <!-- ==================== LEFT: ANDROID APP PROCESS ==================== -->
   <g>
     <rect x="36" y="92" width="858" height="790" rx="16" class="proc-box"/>
     <rect x="52" y="104" width="256" height="22" rx="6" fill="#0d2342" stroke="#2563eb" stroke-width="0.9"/>
-    <text x="180" y="119" text-anchor="middle" class="mono tag" fill="#93c5fd">ANDROID PROCESS · com.miaocast.app</text>
+    <text x="180" y="119" text-anchor="middle" class="mono tag" fill="#93c5fd">ANDROID PROCESS · com.cozyting.app</text>
     <text x="322" y="119" class="sans nmeta">单进程承载 UI / FGS / MediaCodec，并在同地址空间加载 Rust 动态库 (.so)</text>
 
     <!-- SUBZONE A: ART / Kotlin Runtime (Resources bar on TOP, Threads on BOTTOM for zero wire-crossing!) -->

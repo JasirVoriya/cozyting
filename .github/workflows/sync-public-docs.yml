@@ -1,4 +1,4 @@
-name: Sync Public Docs & Pages to miaocast-releases
+name: Sync Public Docs & Pages to cozyting-releases
 
 on:
   push:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   sync:
-    name: Sync Whitelisted Public Docs -> JasirVoriya/miaocast-releases
+    name: Sync Whitelisted Public Docs -> JasirVoriya/cozyting-releases
     runs-on: ubuntu-latest
     steps:
       - name: Check PUBLIC_RELEASE_TOKEN configured
@@ -47,7 +47,7 @@ jobs:
         if: steps.guard.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
-          repository: JasirVoriya/miaocast-releases
+          repository: JasirVoriya/cozyting-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
           ref: main
           path: dst
@@ -76,7 +76,7 @@ jobs:
           chmod +x dst/scripts/generate-update-manifest.py
 
           # 4. 将公开仓 README 中指向私仓 CI 徽章的链接替换为公开仓 Pages 徽章
-          python3 - dst JasirVoriya/miaocast-releases <<'PY'
+          python3 - dst JasirVoriya/cozyting-releases <<'PY'
           import sys
           from pathlib import Path
 
@@ -91,11 +91,11 @@ jobs:
                   continue
               text = p.read_text(encoding="utf-8")
               text = text.replace(
-                  '<a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>',
+                  '<a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>',
                   f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
               )
-              text = text.replace("https://jasirvoriya.github.io/miaocast/", pages_url)
-              text = text.replace("https://github.com/JasirVoriya/miaocast/releases", f"https://github.com/{target_repo}/releases")
+              text = text.replace("https://jasirvoriya.github.io/cozyting/", pages_url)
+              text = text.replace("https://github.com/JasirVoriya/cozyting/releases", f"https://github.com/{target_repo}/releases")
               p.write_text(text, encoding="utf-8")
           PY
 
@@ -130,5 +130,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           SHORT_SHA="${SRC_SHA:0:7}"
-          git commit -m "docs: auto-sync public docs and Pages assets from miaocast@${SHORT_SHA}"
+          git commit -m "docs: auto-sync public docs and Pages assets from cozyting@${SHORT_SHA}"
           git push origin main

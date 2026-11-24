@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 将私有主仓的公开介绍文档、更新日志、交互式架构浏览器与 GitHub Pages/更新清单工作流
-# 安全同步至公开分发仓（JasirVoriya/miaocast-releases）。
+# 安全同步至公开分发仓（JasirVoriya/cozyting-releases）。
 # 严禁同步源码目录（core/、android/、cli/）与任何私有文件（.local/、keystore.properties 等）。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET_REPO="${1:-JasirVoriya/miaocast-releases}"
-STAGE_DIR="${STAGE_DIR:-/tmp/miaocast-releases-stage}"
+TARGET_REPO="${1:-JasirVoriya/cozyting-releases}"
+STAGE_DIR="${STAGE_DIR:-/tmp/cozyting-releases-stage}"
 
 rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR"
@@ -63,12 +63,12 @@ for fname in ("README.md", "README_EN.md", "README_JA.md"):
     text = p.read_text(encoding="utf-8")
     # 将指向私仓 CI 的徽章替换为公开仓 Pages 状态徽章
     text = text.replace(
-        '<a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>',
+        '<a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>',
         f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
     )
     # 兜底修正可能残留的私仓 Pages / Releases 链接
-    text = text.replace("https://jasirvoriya.github.io/miaocast/", pages_url)
-    text = text.replace("https://github.com/JasirVoriya/miaocast/releases", f"https://github.com/{target_repo}/releases")
+    text = text.replace("https://jasirvoriya.github.io/cozyting/", pages_url)
+    text = text.replace("https://github.com/JasirVoriya/cozyting/releases", f"https://github.com/{target_repo}/releases")
     p.write_text(text, encoding="utf-8")
 PY
 

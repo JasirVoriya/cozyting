@@ -1,6 +1,6 @@
 //! 跨端 App 更新裁决与跨版本区间日志聚合引擎（纯逻辑、零网络 I/O、零新增依赖）。
 //!
-//! 供 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs` / `miaocast_core.h`) 共享同一套：
+//! 供 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs` / `cozyting_core.h`) 共享同一套：
 //! - SemVer 2.0 版本归一化与比较（自动剥离前导 `v` 与 `-release`/`-acceptance`/`-debug` 构建后缀）；
 //! - `update.json`（公开分发仓静态清单）与 GitHub Releases REST API 双格式自动解析；
 //! - `stable` / `prerelease` 通道过滤、平台资产挑选（排除未签名/调试包）与最低系统版本门禁；
@@ -1000,7 +1000,7 @@ fn error_decision_json(current_version: &str, code: &str, msg: &str, detail: &st
     )
 }
 
-/// 跨端更新裁决统一入口（供 JNI `NativeBridge.evaluateUpdateJson` 与 C ABI `miaocast_update_evaluate_json` 共用）。
+/// 跨端更新裁决统一入口（供 JNI `NativeBridge.evaluateUpdateJson` 与 C ABI `cozyting_update_evaluate_json` 共用）。
 pub fn evaluate_update_json(
     current_version: &str,
     channel: &str,
@@ -1162,15 +1162,15 @@ mod tests {
               "version": "0.9.7",
               "prerelease": false,
               "published_at": "2026-11-25T10:00:00Z",
-              "release_url": "https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.7",
-              "notes": "- 0.9.7 正式版汇总：无线调试无感采集与妙投品牌升级",
+              "release_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.7",
+              "notes": "- 0.9.7 正式版汇总：无线调试无感采集与窝爱听品牌升级",
               "android": {
                 "min_sdk": 29,
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miaocast-v0.9.7-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.7/miaocast-v0.9.7-arm64-v8a.apk",
+                    "name": "cozyting-v0.9.7-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.7/cozyting-v0.9.7-arm64-v8a.apk",
                     "size_bytes": 6800000,
                     "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                     "signed": true
@@ -1183,15 +1183,15 @@ mod tests {
               "version": "0.9.8-rc.2",
               "prerelease": true,
               "published_at": "2026-11-26T10:00:00Z",
-              "release_url": "https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.8-rc.2",
+              "release_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.8-rc.2",
               "notes": "- rc2 增量修复",
               "android": {
                 "min_sdk": 29,
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miaocast-v0.9.8-rc.2-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8-rc.2/miaocast-v0.9.8-rc.2-arm64-v8a.apk",
+                    "name": "cozyting-v0.9.8-rc.2-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8-rc.2/cozyting-v0.9.8-rc.2-arm64-v8a.apk",
                     "size_bytes": 6900000,
                     "sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
                     "signed": true
@@ -1203,7 +1203,7 @@ mod tests {
           "releases": [
             { "tag": "v0.9.8-rc.2", "prerelease": true, "published_at": "2026-11-26T10:00:00Z", "notes": "- rc2 增量修复" },
             { "tag": "v0.9.8-rc.1", "prerelease": true, "published_at": "2026-11-25T20:00:00Z", "notes": "- rc1 新能力" },
-            { "tag": "v0.9.7", "prerelease": false, "published_at": "2026-11-25T10:00:00Z", "notes": "- 0.9.7 正式版汇总：无线调试无感采集与妙投品牌升级" },
+            { "tag": "v0.9.7", "prerelease": false, "published_at": "2026-11-25T10:00:00Z", "notes": "- 0.9.7 正式版汇总：无线调试无感采集与窝爱听品牌升级" },
             { "tag": "v0.9.7-rc.6", "prerelease": true, "published_at": "2026-11-22T06:00:00Z", "notes": "- 0.9.7-rc.6 临时预览" },
             { "tag": "v0.9.6", "prerelease": false, "published_at": "2026-11-21T14:00:00Z", "notes": "- 0.9.6 miName 解析" },
             { "tag": "v0.9.5", "prerelease": false, "published_at": "2026-11-21T10:00:00Z", "notes": "- 0.9.5 常用音源管理" },
@@ -1269,22 +1269,22 @@ mod tests {
             "prerelease": false,
             "draft": false,
             "published_at": "2026-11-26T08:00:00Z",
-            "html_url": "https://github.com/JasirVoriya/miaocast-releases/releases/tag/v0.9.8",
-            "body": "<!-- auto comment -->\n\n- 新增应用内更新检测\n\n**Full Changelog**: https://github.com/JasirVoriya/miaocast-releases/compare/v0.9.7...v0.9.8",
+            "html_url": "https://github.com/JasirVoriya/cozyting-releases/releases/tag/v0.9.8",
+            "body": "<!-- auto comment -->\n\n- 新增应用内更新检测\n\n**Full Changelog**: https://github.com/JasirVoriya/cozyting-releases/compare/v0.9.7...v0.9.8",
             "assets": [
               {
-                "name": "miaocast-v0.9.8-arm64-v8a-unsigned.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miaocast-v0.9.8-arm64-v8a-unsigned.apk",
+                "name": "cozyting-v0.9.8-arm64-v8a-unsigned.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a-unsigned.apk",
                 "size": 6500000
               },
               {
-                "name": "miaocast-v0.9.8-arm64-v8a.apk",
-                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/miaocast-v0.9.8-arm64-v8a.apk",
+                "name": "cozyting-v0.9.8-arm64-v8a.apk",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/cozyting-v0.9.8-arm64-v8a.apk",
                 "size": 6600000
               },
               {
                 "name": "SHA256SUMS.txt",
-                "browser_download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v0.9.8/SHA256SUMS.txt",
+                "browser_download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v0.9.8/SHA256SUMS.txt",
                 "size": 512
               }
             ]
@@ -1294,7 +1294,7 @@ mod tests {
         let out = evaluate_update_json("0.9.7", "stable", "android", "arm64-v8a", "29", "", gh_api);
         let parsed = parse_json(&out).unwrap();
         assert_eq!(parsed.str_field("status"), "update_available");
-        assert_eq!(parsed.str_field("asset_name"), "miaocast-v0.9.8-arm64-v8a.apk");
+        assert_eq!(parsed.str_field("asset_name"), "cozyting-v0.9.8-arm64-v8a.apk");
         assert_eq!(parsed.bool_field("installable"), Some(true));
         assert!(parsed.str_field("sha256sums_url").ends_with("SHA256SUMS.txt"));
         assert_eq!(parsed.str_field("release_notes"), "- 新增应用内更新检测");
@@ -1313,8 +1313,8 @@ mod tests {
                 "assets": [
                   {
                     "abi": "arm64-v8a",
-                    "name": "miaocast-v1.0.0-arm64-v8a.apk",
-                    "download_url": "https://github.com/JasirVoriya/miaocast-releases/releases/download/v1.0.0/miaocast-v1.0.0-arm64-v8a.apk",
+                    "name": "cozyting-v1.0.0-arm64-v8a.apk",
+                    "download_url": "https://github.com/JasirVoriya/cozyting-releases/releases/download/v1.0.0/cozyting-v1.0.0-arm64-v8a.apk",
                     "size_bytes": 7000000,
                     "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                     "signed": true

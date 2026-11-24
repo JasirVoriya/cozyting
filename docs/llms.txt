@@ -1,34 +1,34 @@
-# 妙投（MiaoCast）
+# 窝爱听（CozyTing）
 
-> 妙投（MiaoCast）是一款基于 MiPlay 局域网协议的免费开源第三方音频投送客户端（AGPL-3.0-only），原生支持简体中文、英文与日文三语。它让华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机无需 Root、无需登录小米账号，即可在家庭 Wi-Fi 局域网内将指定单个音乐 App 的声音毫秒级同频投送到最多 63 台小米 / 小爱音箱（零云端直连）。iOS 端底层 Rust 核心与跨端设计规范已就绪，SwiftUI 客户端规划推进中。
+> 窝爱听（CozyTing）是一款基于 MiPlay 局域网协议的免费开源第三方音频投送客户端（AGPL-3.0-only），原生支持简体中文、英文与日文三语。它让华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机无需 Root、无需登录小米账号，即可在家庭 Wi-Fi 局域网内将指定单个音乐 App 的声音毫秒级同频投送到最多 63 台小米 / 小爱音箱（零云端直连）。iOS 端底层 Rust 核心与跨端设计规范已就绪，SwiftUI 客户端规划推进中。
 >
-> MiaoCast is a free, open-source (AGPL-3.0-only) third-party MiPlay pure-LAN audio casting client for Android 10+ with native Simplified Chinese (`zh-CN`), English (`en`), and Japanese (`ja`) support (iOS SwiftUI client planned on the same shared Rust core). It enables any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi—to stream audio exclusively from a single chosen music or podcast app to up to 63 Xiaomi / XiaoAi Wi-Fi speakers in millisecond sync over the local Wi-Fi network, with zero cloud servers, zero Xiaomi account login, and no root required.
+> CozyTing is a free, open-source (AGPL-3.0-only) third-party MiPlay pure-LAN audio casting client for Android 10+ with native Simplified Chinese (`zh-CN`), English (`en`), and Japanese (`ja`) support (iOS SwiftUI client planned on the same shared Rust core). It enables any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi—to stream audio exclusively from a single chosen music or podcast app to up to 63 Xiaomi / XiaoAi Wi-Fi speakers in millisecond sync over the local Wi-Fi network, with zero cloud servers, zero Xiaomi account login, and no root required.
 >
-> MiaoCast（妙投）は、日本語・英語・簡体字中国語の 3 言語にネイティブ対応した無料・オープンソース（AGPL-3.0-only）のサードパーティ製 MiPlay 完全 LAN 音声送信クライアント（Android 10+、iOS 計画中）です。端末メーカーを問わず Root・Xiaomi アカウント不要で、選んだ 1 つの音楽アプリだけを最大 63 台の Xiaomi / XiaoAi スピーカーへミリ秒単位で同期送信します。
+> CozyTing（窝爱听）は、日本語・英語・簡体字中国語の 3 言語にネイティブ対応した無料・オープンソース（AGPL-3.0-only）のサードパーティ製 MiPlay 完全 LAN 音声送信クライアント（Android 10+、iOS 計画中）です。端末メーカーを問わず Root・Xiaomi アカウント不要で、選んだ 1 つの音楽アプリだけを最大 63 台の Xiaomi / XiaoAi スピーカーへミリ秒単位で同期送信します。
 
 ## Core Identity & Facts
 
-- **Product Name**: 妙投 / MiaoCast
+- **Product Name**: 窝爱听 / CozyTing
 - **Category**: Open-Source LAN Multi-Room Audio Casting App / Third-Party MiPlay Sender Client
 - **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
 - **Supported App & Website Languages**: Simplified Chinese (`zh-CN`), English (`en`), Japanese (`ja`) — follow system language or switch in-app / via top-bar switcher
-- **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/miaocast-releases
+- **Official Public Distribution & Docs Repo**: https://github.com/JasirVoriya/cozyting-releases
 - **Official Website (GitHub Pages)**:
-  - 简体中文: https://jasirvoriya.github.io/miaocast-releases/
-  - English: https://jasirvoriya.github.io/miaocast-releases/en/
-  - 日本語: https://jasirvoriya.github.io/miaocast-releases/ja/
-- **Downloads (Android APK & `miaocast-cli`)**: https://github.com/JasirVoriya/miaocast-releases/releases
+  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/
+  - English: https://jasirvoriya.github.io/cozyting-releases/en/
+  - 日本語: https://jasirvoriya.github.io/cozyting-releases/ja/
+- **Downloads (Android APK & `cozyting-cli`)**: https://github.com/JasirVoriya/cozyting-releases/releases
 - **Interactive Architecture Explorer**:
-  - 简体中文: https://jasirvoriya.github.io/miaocast-releases/architecture.html
-  - English: https://jasirvoriya.github.io/miaocast-releases/en/architecture.html
-  - 日本語: https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html
-- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`miaocast-cli`)
+  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/architecture.html
+  - English: https://jasirvoriya.github.io/cozyting-releases/en/architecture.html
+  - 日本語: https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html
+- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`cozyting-cli`)
 - **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
-- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://raw.githubusercontent.com/JasirVoriya/miaocast-releases/main/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
+- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://raw.githubusercontent.com/JasirVoriya/cozyting-releases/main/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
 
 ## Key Problems Solved (Pain Points)
 
-1. **Removes Phone Brand Lock-In**: Stock Xiaomi MiPlay ("小米妙播") is restricted to select Xiaomi / Redmi devices. MiaoCast brings MiPlay Wi-Fi casting to any Android 10+ phone (Huawei, Samsung, Pixel, OnePlus, OPPO, vivo, etc.).
+1. **Removes Phone Brand Lock-In**: Stock Xiaomi MiPlay ("小米妙播") is restricted to select Xiaomi / Redmi devices. CozyTing brings MiPlay Wi-Fi casting to any Android 10+ phone (Huawei, Samsung, Pixel, OnePlus, OPPO, vivo, etc.).
 2. **Replaces Single-Speaker Bluetooth with Multi-Room Wi-Fi Sync**: Supports up to 63 synchronized MiPlay speakers over home Wi-Fi (48kHz 256kbps AAC), with independent per-speaker volume, room names, inline latency display (`ms`), and live add/remove without stopping music.
 3. **Strict Per-App Audio Isolation (No Accidental Leaks)**: Captures only the selected music/podcast app (Fail-Closed single-UID + SHA-256 signature verification; never silently degrades to full-system screen recording or microphone capture). Chat voice notes, short videos, and notifications stay off your living-room speakers.
 4. **Rootless Silent Capture & Dual-Zone AudioFocus (Android 13+)**: Built-in on-device Wireless Debugging pairing wizard (no root, no PC, no Shizuku) eliminates recurring MediaProjection popups and system casting indicators, enables true per-app local mute, and isolates AudioFocus into dual zones so watching videos on your phone does not pause speaker playback.
@@ -37,24 +37,24 @@
 ## Honest Scope & Known Limitations
 
 - Cannot bypass third-party apps that explicitly set `android:allowAudioPlaybackCapture="false"`.
-- In Standard Mode (unprivileged Android permissions), public Android APIs cannot mute a single third-party app without muting `STREAM_MUSIC`; MiaoCast provides explicit "Global Media Mute (default)" and "Keep Local Output" strategies. True per-app mute requires Silent Mode on Android 13+ and depends on real-device ROM support.
+- In Standard Mode (unprivileged Android permissions), public Android APIs cannot mute a single third-party app without muting `STREAM_MUSIC`; CozyTing provides explicit "Global Media Mute (default)" and "Keep Local Output" strategies. True per-app mute requires Silent Mode on Android 13+ and depends on real-device ROM support.
 - Specific speaker firmware quirks (such as XiaoAi Pro `LX06` late-join / reverse RTSP differences) and OEM background freezing (e.g., HyperOS Greeze) require real-device verification and are documented honestly in `docs/COMPATIBILITY.md` and `docs/LIMITATIONS.md`.
 - Independent third-party open-source project; not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
 
 ## Canonical Documentation Links
 
-- [README (简体中文)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
-- [README (English)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README_EN.md): Complete English product & developer documentation.
-- [README (日本語)](https://github.com/JasirVoriya/miaocast-releases/blob/main/README_JA.md): Complete Japanese product & developer documentation.
-- [Product Website (zh-CN / en / ja)](https://jasirvoriya.github.io/miaocast-releases/): Multilingual landing pages with comparison table, localized screenshots, localized promo videos, download CTA, and structured FAQ.
-- [MiaoCast in 1 Minute Videos (MP4, 1280x720, 62s)](https://jasirvoriya.github.io/miaocast-releases/#video):
-  - 简体中文: https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo.mp4
-  - English: https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-en.mp4
-  - 日本語: https://jasirvoriya.github.io/miaocast-releases/assets/video/miaocast-promo-ja.mp4
-- [Interactive Architecture Explorer (zh-CN / en / ja)](https://jasirvoriya.github.io/miaocast-releases/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
-- [Device Compatibility Matrix](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
-- [Known Limitations](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.
-- [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/miaocast-releases/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
-- [Changelog](https://github.com/JasirVoriya/miaocast-releases/blob/main/CHANGELOG.md): Version release history.
-- [Security Policy](https://github.com/JasirVoriya/miaocast-releases/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
-- [Releases & APK Downloads](https://github.com/JasirVoriya/miaocast-releases/releases): Signed Android APKs, `miaocast-cli` binaries, and `SHA256SUMS.txt`.
+- [README (简体中文)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README.md): User-facing overview, pain points, comparison table, features, screenshots, 3-step quick start, FAQ, and technical architecture.
+- [README (English)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README_EN.md): Complete English product & developer documentation.
+- [README (日本語)](https://github.com/JasirVoriya/cozyting-releases/blob/main/README_JA.md): Complete Japanese product & developer documentation.
+- [Product Website (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting-releases/): Multilingual landing pages with comparison table, localized screenshots, localized promo videos, download CTA, and structured FAQ.
+- [CozyTing in 1 Minute Videos (MP4, 1280x720, 62s)](https://jasirvoriya.github.io/cozyting-releases/#video):
+  - 简体中文: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo.mp4
+  - English: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-en.mp4
+  - 日本語: https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja.mp4
+- [Interactive Architecture Explorer (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting-releases/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
+- [Device Compatibility Matrix](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
+- [Known Limitations](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.
+- [Deep-Dive Architecture Manual](https://github.com/JasirVoriya/cozyting-releases/blob/main/docs/ARCHITECTURE.md): Complete module dictionary, data flows, threading model, and 6-stage lifecycle invariants.
+- [Changelog](https://github.com/JasirVoriya/cozyting-releases/blob/main/CHANGELOG.md): Version release history.
+- [Security Policy](https://github.com/JasirVoriya/cozyting-releases/blob/main/SECURITY.md): Local-only privacy architecture and update verification model.
+- [Releases & APK Downloads](https://github.com/JasirVoriya/cozyting-releases/releases): Signed Android APKs, `cozyting-cli` binaries, and `SHA256SUMS.txt`.

@@ -6,7 +6,7 @@ import { FPS, TOTAL_FRAMES } from "./theme";
 const Root: React.FC = () => (
   <>
     <Composition
-      id="MiaoCastPromo"
+      id="CozyTingPromo"
       component={Promo}
       defaultProps={{ locale: "zh" as const }}
       durationInFrames={TOTAL_FRAMES}
@@ -15,7 +15,7 @@ const Root: React.FC = () => (
       height={1080}
     />
     <Composition
-      id="MiaoCastPromoEn"
+      id="CozyTingPromoEn"
       component={Promo}
       defaultProps={{ locale: "en" as const }}
       durationInFrames={TOTAL_FRAMES}
@@ -24,7 +24,7 @@ const Root: React.FC = () => (
       height={1080}
     />
     <Composition
-      id="MiaoCastPromoJa"
+      id="CozyTingPromoJa"
       component={Promo}
       defaultProps={{ locale: "ja" as const }}
       durationInFrames={TOTAL_FRAMES}

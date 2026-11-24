@@ -257,7 +257,7 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
                   whiteSpace: "nowrap",
                 }}
               >
-                JasirVoriya/miaocast-releases
+                JasirVoriya/cozyting-releases
               </div>
             </div>
 

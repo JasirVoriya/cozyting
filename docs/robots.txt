@@ -1,4 +1,4 @@
-# Robots policy for MiaoCast (妙投) GitHub Pages
+# Robots policy for CozyTing (窝爱听) GitHub Pages
 # Explicitly welcomes search engines and AI/LLM search crawlers.
 
 User-agent: *
@@ -28,5 +28,5 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-Sitemap: https://jasirvoriya.github.io/miaocast-releases/sitemap.xml
-# LLM-friendly summary: https://jasirvoriya.github.io/miaocast-releases/llms.txt
+Sitemap: https://jasirvoriya.github.io/cozyting-releases/sitemap.xml
+# LLM-friendly summary: https://jasirvoriya.github.io/cozyting-releases/llms.txt

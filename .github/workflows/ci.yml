@@ -104,12 +104,12 @@ jobs:
       - name: Run Rust workspace unit tests
         run: cargo test --workspace
 
-      - name: Build miaocast-cli (release)
-        run: cargo build --release -p miaocast-cli
+      - name: Build cozyting-cli (release)
+        run: cargo build --release -p cozyting-cli
 
       - name: Check iOS C ABI header syntax (C11)
-        if: hashFiles('core/include/miaocast_core.h') != ''
-        run: clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/miaocast_core.h
+        if: hashFiles('core/include/cozyting_core.h') != ''
+        run: clang -std=c11 -Wall -Wextra -Werror -fsyntax-only core/include/cozyting_core.h
 
   android-build-and-test:
     name: Android JNI, Lint & Unit Tests
@@ -132,7 +132,7 @@ jobs:
         id: jni-cache
         uses: actions/cache@v4
         with:
-          path: android/app/src/main/jniLibs/arm64-v8a/libmiaocast_core.so
+          path: android/app/src/main/jniLibs/arm64-v8a/libcozyting_core.so
           key: android-jni-so-arm64-v2-${{ hashFiles('Cargo.toml', 'Cargo.lock', 'core/Cargo.toml', 'core/src/**') }}
 
       - name: Set up Rust toolchain (aarch64-linux-android)
@@ -156,11 +156,11 @@ jobs:
         run: |
           export ANDROID_NDK_HOME="${ANDROID_NDK_ROOT:-$(ls -d "${ANDROID_HOME}"/ndk/* | sort -V | tail -1)}"
           echo "Using ANDROID_NDK_HOME=${ANDROID_NDK_HOME}"
-          cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p miaocast-core --features jni
+          cargo ndk -t arm64-v8a --platform 29 -o android/app/src/main/jniLibs build --release -p cozyting-core --features jni
 
-      - name: Verify 16KB ELF alignment on libmiaocast_core.so
+      - name: Verify 16KB ELF alignment on libcozyting_core.so
         run: |
-          READELF_OUT="$(readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libmiaocast_core.so)"
+          READELF_OUT="$(readelf -W -l android/app/src/main/jniLibs/arm64-v8a/libcozyting_core.so)"
           printf '%s\n' "$READELF_OUT" | grep -E 'Type|LOAD|Align'
           printf '%s\n' "$READELF_OUT" | awk '
             function hex2dec(s,    i, c, n, d) {
@@ -201,7 +201,7 @@ jobs:
       - name: Upload standard debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: miaocast-standard-debug-apk
+          name: cozyting-standard-debug-apk
           path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
           retention-days: 14
           if-no-files-found: error

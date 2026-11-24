@@ -19,7 +19,7 @@ body:
         - 音频捕获 / 静音策略 / 音质与延迟
         - 多音箱同步与断线重连
         - 新协议 / 新设备支持（DLNA / AirPlay / Google Cast 等）
-        - miaocast-cli 命令行工具
+        - cozyting-cli 命令行工具
         - 文档 / 构建 / 工程体验
         - 其他
     validations:

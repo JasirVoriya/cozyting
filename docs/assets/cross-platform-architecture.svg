@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 850" width="1360" height="850" role="img" aria-labelledby="cp-title cp-desc">
-  <title id="cp-title">妙投（MiaoCast）跨端三层架构（Android / iOS 各自实现 L2/L3 + 共享 Rust L1 核心）</title>
-  <desc id="cp-desc">展示 L3 UI 表现层（Android 原生与未来 iOS SwiftUI 各自实现，共用 design/ 设计规范）、L2 系统接口层（各自实现音频捕获、AAC 编码与保活）、FFI 跨语言薄插头层（Android JNI 与未来 iOS C ABI/UniFFI）以及 L1 公共核心层（Rust miaocast-core 全平台共享）。</desc>
+  <title id="cp-title">窝爱听（CozyTing）跨端三层架构（Android / iOS 各自实现 L2/L3 + 共享 Rust L1 核心）</title>
+  <desc id="cp-desc">展示 L3 UI 表现层（Android 原生与未来 iOS SwiftUI 各自实现，共用 design/ 设计规范）、L2 系统接口层（各自实现音频捕获、AAC 编码与保活）、FFI 跨语言薄插头层（Android JNI 与未来 iOS C ABI/UniFFI）以及 L1 公共核心层（Rust cozyting-core 全平台共享）。</desc>
 
   <defs>
     <linearGradient id="bg-canvas" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -297,7 +297,7 @@
   <!-- Android JNI Plug -->
   <rect x="198" y="512" width="424" height="52" rx="10" fill="#0b1f2d" stroke="#34d399" stroke-opacity="0.55"/>
   <text x="410" y="534" text-anchor="middle" class="mono tile-hd" fill="#a7f3d0">Android JNI（NativeBridge.kt ⇄ ffi.rs）</text>
-  <text x="410" y="553" text-anchor="middle" class="mono tile-sub">打包产物：libmiaocast_core.so (arm64-v8a · 16KB)</text>
+  <text x="410" y="553" text-anchor="middle" class="mono tile-sub">打包产物：libcozyting_core.so (arm64-v8a · 16KB)</text>
 
   <!-- Shared Contract Pill -->
   <rect x="634" y="512" width="242" height="52" rx="10" fill="#1d1638" stroke="#c084fc" stroke-opacity="0.7"/>
@@ -306,8 +306,8 @@
 
   <!-- iOS C ABI Plug -->
   <rect x="888" y="512" width="424" height="52" rx="10" fill="#0d1e33" stroke="#38bdf8" stroke-opacity="0.55"/>
-  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI（miaocast_core.h ⇄ ffi_c.rs）</text>
-  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：MiaoCastCore.xcframework (staticlib · #7 已就绪)</text>
+  <text x="1100" y="534" text-anchor="middle" class="mono tile-hd" fill="#bae6fd">iOS C ABI（cozyting_core.h ⇄ ffi_c.rs）</text>
+  <text x="1100" y="553" text-anchor="middle" class="mono tile-sub">打包产物：CozyTingCore.xcframework (staticlib · #7 已就绪)</text>
 
   <!-- ==================== GAP FFI -> L1 (CONVERGING) ==================== -->
   <use href="#p-ffi-and-l1" fill="none" stroke="#fb923c" stroke-width="2.2" marker-end="url(#arr-orange)"/>
@@ -333,7 +333,7 @@
   <!-- Outer Rust Core Container -->
   <g filter="url(#card-shadow)">
     <rect x="198" y="620" width="1114" height="192" rx="14" fill="url(#card-rust)" stroke="#fb923c" stroke-opacity="0.52" stroke-width="1.2"/>
-    <text x="216" y="645" class="sans card-hd">miaocast-core（Rust · core/）</text>
+    <text x="216" y="645" class="sans card-hd">cozyting-core（Rust · core/）</text>
     <text x="514" y="645" class="mono tile-sub" fill="#fdba74">crate-type = ["rlib", "cdylib", "staticlib"]  ·  同时驱动桌面 cli/</text>
 
     <!-- Shared State / Consolidation Strip (#7) -->
@@ -365,5 +365,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="680" y="841" text-anchor="middle" class="sans tile-sub">打包形态：Android APK = android/ (L2+L3) + libmiaocast_core.so (L1)    ｜    未来 iOS IPA = ios/ (L2+L3) + MiaoCastCore.xcframework (同一份 L1)</text>
+  <text x="680" y="841" text-anchor="middle" class="sans tile-sub">打包形态：Android APK = android/ (L2+L3) + libcozyting_core.so (L1)    ｜    未来 iOS IPA = ios/ (L2+L3) + CozyTingCore.xcframework (同一份 L1)</text>
 </svg>

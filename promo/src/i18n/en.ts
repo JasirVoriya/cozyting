@@ -4,7 +4,7 @@ import type { PromoCopy } from "./types";
 export const COPY_EN: PromoCopy = {
   locale: "en",
   intro: {
-    brandPrimary: "MiaoCast",
+    brandPrimary: "CozyTing",
     brandSecondary: "",
     headline: "Cast any song on your phone to every room.",
     headlineSize: 40,
@@ -34,7 +34,7 @@ export const COPY_EN: PromoCopy = {
     act1Eyebrow: "Smart Source Auto-Follow",
     act1Headline: "Switch music apps, speakers follow automatically.",
     act1HeadlineSize: 50,
-    act1Subtitle: "Enable Auto-Detect on your favorite music apps — press play anywhere and MiaoCast switches live.",
+    act1Subtitle: "Enable Auto-Detect on your favorite music apps — press play anywhere and CozyTing switches live.",
     act1SubtitleSize: 24,
     apps: [
       {
@@ -73,7 +73,7 @@ export const COPY_EN: PromoCopy = {
     statusStandby: "Standby",
     pillAutoFollow: (appName) => `🎵 Following: ${appName}`,
     pillSwitchedTo: (appName) => `⚡ Switched to ${appName}`,
-    act1Footnote: "Seamless app switching — no need to reopen MiaoCast",
+    act1Footnote: "Seamless app switching — no need to reopen CozyTing",
     speakerCastingPrefix: "♫ Casting: ",
     act2Eyebrow: "Dual-Channel Isolation · Zero Interruption",
     act2Headline: "Watch videos & voice notes. Music never stops.",
@@ -203,14 +203,14 @@ export const COPY_EN: PromoCopy = {
     badges: ["Favorite Sources · Auto-Switch", "Multi-Room · Per-Speaker Vol", "4 Latency Tiers · Live Switch"],
   },
   search: {
-    prompt: "Find MiaoCast on GitHub",
+    prompt: "Find CozyTing on GitHub",
     placeholder: "Search open-source projects...",
     button: "Search",
     officialBadge: "Official Releases",
-    repoDesc: "MiaoCast — Cast single-app audio from any Android phone to Xiaomi speakers",
+    repoDesc: "CozyTing — Cast single-app audio from any Android phone to Xiaomi speakers",
   },
   outro: {
-    brandPrimary: "MiaoCast",
+    brandPrimary: "CozyTing",
     brandSecondary: "",
     tagline: "Any Android phone, one tap to every Xiaomi speaker.",
     taglineSize: 34,
