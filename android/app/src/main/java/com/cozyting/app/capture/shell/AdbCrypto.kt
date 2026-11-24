@@ -49,7 +49,7 @@ object AdbCrypto {
         val privateKey: PrivateKey,
         val certificate: X509Certificate,
     ) {
-        fun encodeAndroidPublicKeyLine(userHost: String = "miplay@android"): ByteArray {
+        fun encodeAndroidPublicKeyLine(userHost: String = "cozyting@android"): ByteArray {
             val rsaPub = certificate.publicKey as RSAPublicKey
             val raw = encodeAndroidRsaPublicKey(rsaPub)
             val b64 = Base64.getEncoder().encodeToString(raw)
