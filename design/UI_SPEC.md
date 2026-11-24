@@ -104,8 +104,12 @@
   - L1 Rust 核心（`core/src/diag_log.rs`）通过 `cozyting_init_log_file` / `NativeBridge.initLogFile` 异步轮转写入本地 `core.log`（256 KB × 2 = 512 KB 封顶）并维护内存环形缓冲（`cozyting_recent_logs`），同时保留原有系统日志输出（Android `CozyTingCore` Logcat）。
   - L2 客户端异步轮转写入 `runtime.log`（256 KB × 2 = 512 KB 封顶），并兼容保留 `cast_ops.log`（64 KB × 2 = 128 KB 封顶）；全量日志仅存应用私有沙箱，零自动上传，不含音频数据。
 - **独立日志浏览页（Android `LogViewerActivity` / iOS SwiftUI `LogViewerView`）**：
-  - 顶栏：返回按钮 + 标题与摘要（行数 · 本地占用）+ 刷新按钮（`ic_ui_refresh`）。
-  - 分段筛选：`[全部 | 告警/错误 | 核心协议 | 操作流水]`。
-  - 正文区：Style B 面板卡片内嵌等宽字体滚动视图，支持选中文本，打开/刷新默认定位至最新日志（底部）。
-  - 底部操作栏：`导出分享`（主按钮，生成含诊断头的临时 `.txt` 并调起系统分享）、`复制`、`清空`（二次确认弹窗后调用 `clearAll` + `cozyting_clear_logs`）。
-- **iOS SwiftUI 对齐实现**：使用 `NavigationLink` 进入 `LogViewerView`，通过 C ABI `cozyting_init_log_file` 将 Rust 核心日志落盘到 App Group / `Library/Caches` 或 `Application Support` 私有目录，导出采用 SwiftUI 原生 `ShareLink(item: url)` 分享临时诊断快照 `.txt`。
+  - 顶栏：返回按钮 + 标题与摘要（行数 · 本地占用 + 可点击的告警/错误计数胶囊，点选直达「告警/错误」筛选）+ 刷新按钮（`ic_ui_refresh`）。
+  - 分段筛选：`[全部 | 告警/错误 | 核心协议 | 操作流水]`，「告警/错误」存在条目时附数量角标。
+  - 搜索与视图切换行：轻量关键词搜索框（支持清除按钮与命中高亮）+ 右侧「原始 / 结构化」视图一键切换。
+  - 正文区（Style B 面板卡片）：
+    - **结构化时间线模式（默认）**：同日日志以居中日期分割线收拢；每条日志渲染为左侧带 3dp 级别/来源色条的圆角卡片，依次展示 `HH:mm:ss.SSS`、级别徽章（`I`/`W`/`E`）、来源标签（`CozyTing` / `CozyTingCore` / `CastOps`）、单条快速复制按钮、事件主干与流式排布的 `key=value` 参数胶囊；超长嵌入 JSON（≥ 48 字符）默认折叠为 1 行摘要胶囊（项数 · 体积），点击按需缩进格式化并语法高亮展开；向上滚动时右下角浮现「↓ 最新」回底胶囊。
+    - **原始文本模式**：保留等宽可自由选中文本视图，便于整段框选对照。
+    - 打开/刷新默认定位至最新日志（底部）。
+  - 底部操作栏：`导出分享`（主按钮，生成含诊断头的临时 `.txt` 并调起系统分享）、`复制`（复制当前筛选结果）、`清空`（柔和危险色按钮，二次确认弹窗后调用 `clearAll` + `cozyting_clear_logs`）。
+- **iOS SwiftUI 对齐实现**：使用 `NavigationLink` 进入 `LogViewerView`，采用 `ScrollViewReader` + `LazyVStack` 实现同款日期分割线、左侧色条卡片、`FlowLayout` 参数胶囊与 `DisclosureGroup` JSON 格式化展开（支持 `.searchable` 与原始/结构化切换）；通过 C ABI `cozyting_init_log_file` 将 Rust 核心日志落盘到 App Group / `Library/Caches` 或 `Application Support` 私有目录，导出采用 SwiftUI 原生 `ShareLink(item: url)` 分享临时诊断快照 `.txt`。

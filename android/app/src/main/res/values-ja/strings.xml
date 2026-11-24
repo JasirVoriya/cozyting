@@ -524,4 +524,17 @@
     <string name="log_viewer_clear_msg">端末に保存された実行ログ、コアプロトコルログ、操作履歴を完全に削除します。元に戻せません。</string>
     <string name="log_viewer_clear_confirm">消去する</string>
     <string name="log_viewer_cleared">ローカルログを消去しました</string>
+    <string name="log_viewer_warn_count_fmt">警告 %1$d</string>
+    <string name="log_viewer_err_count_fmt">エラー %1$d</string>
+    <string name="log_viewer_search_hint">キーワード・IP・端末名で絞り込み…</string>
+    <string name="log_viewer_search_clear">検索をクリア</string>
+    <string name="log_viewer_mode_raw">生テキスト</string>
+    <string name="log_viewer_mode_structured">構造化</string>
+    <string name="log_viewer_json_summary_items_fmt">%1$d 件 · %2$s</string>
+    <string name="log_viewer_json_expand">展開</string>
+    <string name="log_viewer_json_collapse">折りたたむ</string>
+    <string name="log_viewer_jump_latest">最新へ</string>
+    <string name="log_viewer_copy_entry">このログをコピー</string>
+    <string name="log_viewer_entry_copied">ログを1件コピーしました</string>
+    <string name="log_viewer_empty_filtered">該当するログはありません</string>
 </resources>
