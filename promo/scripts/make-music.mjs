@@ -1,6 +1,6 @@
 // Procedurally synthesises the promo soundtrack (no samples, no voice).
 // 120 BPM, 30 bars (60 s). Bar boundaries line up with scene cuts in src/theme.ts.
-// Bar 0-2 (0-6s): Instant groove from beat 1 with 4 rapid 0.75s hook impacts + crisp 3.0s brand drop.
+// Bar 0 (0-2s): Poised groove from beat 1 for the pain-point question; Bar 1 (2.0s): clean drop into brand reveal.
 import { writeFileSync, mkdirSync } from "node:fs";
 
 const SR = 48000;
@@ -75,14 +75,14 @@ const CHORDS = [
 const chordAt = (bar) => CHORDS[((bar % 4) + 4) % 4];
 
 // section intensities by bar (30 bars total = 60s)
-// 0-2 intro (0-3s 4-cut hook + 3-6s brand lockup), 3-5 anyPhone, 6-10 oneApp, 11-17 multiRoom+latency,
+// 0-2 intro (0-2s pain-point hook + 2-6s brand lockup), 3-5 anyPhone, 6-10 oneApp, 11-17 multiRoom+latency,
 // 18-20 lan breakdown, 21-23 uiShowcase, 24-25 search, 26-29 outro
 const has = {
   kick: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
   hat: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
-  clap: (b) => b === 0 || b === 1 || (b >= 11 && b <= 17) || (b >= 21 && b <= 23),
+  clap: (b) => b === 1 || b === 2 || (b >= 11 && b <= 17) || (b >= 21 && b <= 23),
   bass: (b) => (b >= 0 && b <= 25 && !(b >= 18 && b <= 20)),
-  arp: (b) => b >= 0 && b <= 27,
+  arp: (b) => b >= 1 && b <= 27,
 };
 
 // ---- PAD
@@ -242,14 +242,12 @@ function renderArp() {
     if (!has.arp(bar)) continue;
     const ch = chordAt(bar);
     const steps =
-      bar <= 1 || (bar >= 11 && bar <= 17) || (bar >= 21 && bar <= 23) ? 16 : 8;
+      (bar >= 11 && bar <= 17) || (bar >= 21 && bar <= 23) ? 16 : 8;
     const g =
       bar >= 26
         ? 0.05 * (1 - (bar - 26) / 2)
         : bar >= 18 && bar <= 20
         ? 0.075
-        : bar <= 2
-        ? 0.068
         : 0.06;
     for (let st = 0; st < steps; st++) {
       const t = bar * BAR + st * (BAR / steps);
@@ -335,16 +333,16 @@ for (let bar = 0; bar < BARS; bar++) {
   for (let b = 0; b < 4; b++) {
     const t = bar * BAR + b * BEAT;
     if (has.kick(bar)) {
-      // Bar 0-2: driving four-on-the-floor from beat 1! Bar 3-5: crisp half-time groove before full drop at bar 6
-      if (bar <= 2 || bar >= 6 || b % 2 === 0) {
-        const gain = bar <= 1 ? 1.05 : bar >= 3 && bar <= 5 ? 0.85 : 1.0;
+      // Bar 0: poised half-time pulse; Bar 1-2: smooth four-on-the-floor brand reveal; Bar 3-5: half-time before bar 6 drop
+      if (bar === 1 || bar === 2 || bar >= 6 || b % 2 === 0) {
+        const gain = bar === 0 ? 0.85 : bar >= 3 && bar <= 5 ? 0.85 : 0.96;
         kickAt(t, gain);
       }
     }
-    if (has.clap(bar) && (b === 1 || b === 3)) clapAt(t, bar <= 1 ? 0.85 : 1.0);
+    if (has.clap(bar) && (b === 1 || b === 3)) clapAt(t, bar <= 2 ? 0.72 : 1.0);
     if (has.hat(bar)) {
-      hatAt(t + BEAT / 2, bar <= 2 ? 0.95 : 1.0, b === 3 && bar % 2 === 1);
-      if (bar <= 1 || bar >= 11) {
+      hatAt(t + BEAT / 2, bar === 0 ? 0.75 : 0.95, b === 3 && bar % 2 === 1);
+      if (bar >= 11) {
         hatAt(t + BEAT / 4, 0.45);
         hatAt(t + (3 * BEAT) / 4, 0.45);
       }
@@ -352,20 +350,14 @@ for (let bar = 0; bar < BARS; bar++) {
   }
 }
 
-// 0.00s - 3.00s: 4 rapid hook cuts (0.00, 0.75, 1.50, 2.25s) with punchy syncopated hits + climbing chimes
-[0.0, 0.75, 1.5, 2.25].forEach((t, idx) => {
-  if (idx > 0) kickAt(t, 0.95);
-  tick(t, 0.08);
-  chime(t + 0.005, [72, 76, 79, 83][idx], 0.06, 0.3 + idx * 0.14);
-});
-// Tight lift into the 3.00s brand lockup snap
-riser(3.0, 0.65, 0.85);
-impact(3.0, 0.85);
-clapAt(3.0, 1.05);
-chime(3.0, 84, 0.07, 0.46);
-chime(3.03, 88, 0.055, 0.58);
+// Smooth rise across Bar 0 (0-2s pain-point question) into clean Bar 1 (2.0s) brand reveal
+riser(1 * BAR, 0.9, 0.75);
+impact(1 * BAR, 0.78);
+clapAt(1 * BAR, 0.85);
+chime(1 * BAR, 84, 0.065, 0.46);
+chime(1 * BAR + 0.04, 88, 0.05, 0.58);
 
-// breath before big sections (all shifted -1 bar for 30-bar / 60s cut)
+// breath before big sections (30-bar / 60s structure)
 riser(3 * BAR, 1.5, 0.75);
 riser(11 * BAR, 2.0, 1.1);
 riser(21 * BAR, 3.0, 1.1);
