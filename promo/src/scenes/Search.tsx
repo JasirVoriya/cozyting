@@ -122,7 +122,7 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
               minWidth: 180,
               padding: "0 44px",
               borderRadius: 999,
-              background: hovering > 0.3 ? "#FF6B7A" : C.coral,
+              background: hovering > 0.3 ? "#F08462" : C.coral,
               boxShadow: `0 12px 34px rgba(229,109,72,${0.42 + hovering * 0.28})`,
               display: "flex",
               alignItems: "center",

@@ -267,7 +267,7 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
                 minWidth: 164,
                 padding: "0 38px",
                 borderRadius: 999,
-                background: hovering > 0.25 ? "#FF6B7A" : C.coral,
+                background: hovering > 0.25 ? "#F08462" : C.coral,
                 boxShadow: `0 10px 30px rgba(229,109,72,${0.44 + hovering * 0.26})`,
                 display: "flex",
                 alignItems: "center",
