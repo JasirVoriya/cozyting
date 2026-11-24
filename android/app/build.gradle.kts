@@ -71,7 +71,10 @@ android {
             applicationId = "com.cozyting.app.acceptance"
             versionNameSuffix = "-acceptance"
             buildConfigField("boolean", "IS_ACCEPTANCE", "true")
-            signingConfig = signingConfigs.getByName("acceptance")
+            val acceptanceSigning = signingConfigs.getByName("acceptance")
+            if (acceptanceSigning.storeFile?.exists() == true) {
+                signingConfig = acceptanceSigning
+            }
         }
     }
 
@@ -135,7 +138,9 @@ androidComponents {
     onVariants(selector().withFlavor("channel" to "acceptance")) { variant ->
         val cfg = android.signingConfigs.getByName("acceptance")
         // AGP 8：通过 packaging/signing 由 flavor.signingConfig 提供；若 debug 覆盖则构建后 apksigner 重签
-        variant.signingConfig.setConfig(cfg)
+        if (cfg.storeFile?.exists() == true) {
+            variant.signingConfig.setConfig(cfg)
+        }
     }
 }
 
