@@ -1,0 +1,30 @@
+.github/CODEOWNERS
+  h_75f437d5bc136b 1-16
+.github/labeler.yml
+  h_75f437d5bc136b 1-50
+.github/workflows/labeler.yml
+  h_75f437d5bc136b 1-19
+.github/workflows/release.yml
+  h_75f437d5bc136b 167-170,199-204
+.github/workflows/sync-public-docs.yml
+  h_75f437d5bc136b 11,62
+CODE_OF_CONDUCT.md
+  h_75f437d5bc136b 1-80
+README.md
+  h_75f437d5bc136b 331-338
+README_EN.md
+  h_75f437d5bc136b 268-275
+README_JA.md
+  h_75f437d5bc136b 247-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e28b9eb75c5ff43308a355d6a0b1be463b82271a",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
