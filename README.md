@@ -328,3 +328,11 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **开源许可证**：本项目采用 **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** 开源发布。
 - **非官方与互操作性声明**：本项目为独立的第三方开源客户端实现，仅用于局域网设备互操作性与音频投送技术研究。本项目与小米集团（Xiaomi）及其关联公司没有任何隶属、授权、认可或合作关系。文中所提及的产品名称、协议名称或商标均归其各自所有者所有。
 - **隐私与网络边界**：仅捕获用户授权的音频流，不采集屏幕图像或麦克风，音频投送全程在本地局域网直连运行；应用内置的公开版本更新检测为只读零遥测 HTTPS 清单（强制 SHA-256 与签名校验），可在设置中随时关闭以保持 100% 零外网请求。
+
+### 贡献者致谢
+
+感谢每一位提交代码、实测设备兼容或反馈建议的贡献者！
+
+<a href="https://github.com/JasirVoriya/cozyting/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JasirVoriya/cozyting" alt="CozyTing Contributors" />
+</a>

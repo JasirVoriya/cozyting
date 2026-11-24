@@ -1,0 +1,16 @@
+# Default owner for everything in the repository
+* @JasirVoriya
+
+# Security-critical audio capture isolation & MiPlay protocol auth
+/core/src/auth/ @JasirVoriya
+/android/app/src/main/java/com/cozyting/app/capture/ @JasirVoriya
+
+# Cross-platform FFI contract & design system single source of truth
+/core/src/ffi.rs @JasirVoriya
+/core/src/ffi_c.rs @JasirVoriya
+/core/include/cozyting_core.h @JasirVoriya
+/design/ @JasirVoriya
+
+# CI/CD workflows & release pipelines
+/.github/ @JasirVoriya
+/scripts/ @JasirVoriya

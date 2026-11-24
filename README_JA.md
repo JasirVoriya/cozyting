@@ -244,3 +244,11 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **関連リンク**：[製品サイト（日本語）](https://jasirvoriya.github.io/cozyting-releases/ja/) · [アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html) · [LLM 要約 (`llms.txt`)](docs/llms.txt) · [セキュリティポリシー](SECURITY.md) · [コントリビューションガイド](CONTRIBUTING.md)
 - **ライセンス**：**[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** で公開されています。
 - **非公式プロジェクト表記**：LAN 相互運用性研究のための独立したサードパーティ製オープンソース実装であり、Xiaomi Corporation および関連会社とは一切関係・提携・承認関係にありません。
+
+### コントリビューター
+
+コード貢献・機器互換レポート・フィードバックを寄せてくださった皆さまに感謝します！
+
+<a href="https://github.com/JasirVoriya/cozyting/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=JasirVoriya/cozyting" alt="CozyTing Contributors" />
+</a>
