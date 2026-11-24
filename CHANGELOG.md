@@ -8,6 +8,16 @@
 
 ---
 
+## [0.9.7-rc.10] - 2026-11-24
+
+> 预发布版本（Pre-release）：修复长更新日志导致更新弹窗底部下载按钮被顶出屏幕的布局问题，并将应用内更新清单主通道与 GitHub Pages 彻底解耦，纯局域网运行，不含云端账号或遥测上报。
+
+### Fixed
+- **更新弹窗长日志不再顶掉下载按钮**：将 `UpdateDialogController` 的日志滚动区由 `onLayoutChange` 延迟改高改为自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮直接钳制高度（`≤ 230dp` 且 `≤ 屏高 36%`，常显垂直滚动条），确保更新日志较长时「立即下载并安装」「前往浏览器下载」与底部操作行始终完整可见，并补充 Robolectric 布局回归单测。
+- **应用内更新清单主通道与 GitHub Pages 彻底解耦**：`UpdateConfig.MANIFEST_PRIMARY_URL` 切换为公开分发仓 `main` 根目录直链 `raw.githubusercontent.com/JasirVoriya/miaocast-releases/main/update.json`（Fastly CDN、`ETag/304`、零 API 限流），发版流水线在镜像 Release 产物完成后串行直推更新清单，彻底消除 GitHub Pages 同 SHA 静默去重与 `on: release` 触发风暴。
+
+---
+
 ## [0.9.7-rc.9] - 2026-11-24
 
 > 预发布版本（Pre-release）：面向预览通道用户验证简体中文（`zh-CN`）、英文（`en`）、日文（`ja`）全链路三语支持（Android App 应用内语言切换、L1 结构化更新错误码、三语宣传视频与 `/` / `/en/` / `/ja/` 静态多语言官网），纯局域网运行，不含云端账号或遥测上报。
