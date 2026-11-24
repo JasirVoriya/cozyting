@@ -162,7 +162,7 @@ export const COPY_JA: PromoCopy = {
         ms: 150,
         tag: "同室向け極小バッファ・ほぼ待機ゼロ",
         color: C.coral,
-        accent: "rgba(255,92,108,0.95)",
+        accent: "rgba(229,109,72,0.95)",
         pulseSpeed: 3.2,
         rect: [60, 942, 558, 186],
       },

@@ -64,7 +64,23 @@
    - 主操作按钮（`立即检查更新` / `查看新版本 vX.Y.Z`）、`启动时自动检查更新` 开关（默认开启、每 24h 向公开静态清单发起一次只读 HTTPS 请求、零遥测，关闭后 100% 零外网请求）、更新通道分段 `[稳定版 | 预览版 (RC)]` 与公开 Release 页面直达入口。
    - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `cozyting_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（正式版自动过滤已被汇总覆盖的中间 RC）；中部更新日志滚动区必须硬性限高（`≤ 230dp/pt` 且 `≤ 屏高 36%`；Android 通过自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮即完成钳制，iOS SwiftUI 使用 `ScrollView { ... }.frame(maxHeight: 230)`），确保长日志绝不将底部操作按钮顶出屏幕；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
 
-## 4. 图标规范（`design/icons/`）
+## 4. 图标与品牌标识规范
+
+### 4.1 App 图标与品牌标识（F2 · 深夜亮灯小屋与垂尾听歌小猫）
+
+- **核心意象与构图**：纯扁平绘本几何色块（严禁深蓝霓虹发光与 3D 模糊渐变）。圆润暖珊瑚屋顶与烟囱构成「温暖小窝」，拱形暖黄亮灯窗口内一只黑猫安睡枕爪并将尾巴自然垂出暖木窗台，左上方悬着饱满弯月，右上方烟囱飘出两枚错落倾斜的主视觉音符（主双音符 `♫` 向左微歪 `-10°`、伴随单音符 `♪` 向右斜飞 `+16°`），传达「疲惫归家、打开软件、满屋响起音乐」的治愈氛围。
+- **双主题品牌色板（同步沉淀于 `design/tokens.json` `brand` 字段）**：
+  - 浅色底板（暖燕麦奶油）：`#FDF4E6` · 屋墙 `#5E5665` · 弯月 `#F2B84B`
+  - 深色底板（深夜暖炭）：`#1B1F2B` · 屋墙 `#474D5F` · 弯月 `#FFD269`
+  - 共用核心色：全品牌主色暖珊瑚 `#E56D48`（屋顶、烟囱、音符及官网/文档/宣传片主强调色）、暖灯拱窗 `#FFD166`、暖木窗台 `#EE9B48`、小猫剪影 `#20232F`、小鼻点缀 `#EF8B65`。
+- **Android 端落地（API 29–36 Adaptive Icon + Android 13+ Monochrome）**：
+  - `res/drawable/ic_launcher_background.xml` & `ic_launcher_foreground.xml`（浅色）与 `res/drawable-night/`（深色），统一 `108dp × 108dp` 画布，将 `512 × 512` 基准矢量经 `translate(18, 18) scale(0.140625)` 映射至中央 `72dp` 可视区，全元素严格落入 `66dp` 圆形安全区内（确保圆形/圆角矩形/水滴等 OEM 裁切均不切边）。
+  - `res/drawable/ic_launcher_monochrome.xml`（Android 13+ 主题单色图标）：采用纯 `#FFFFFF` 单色与原生 `android:fillType="evenOdd"` 真透明镂空（拱窗与右下垂尾通道、猫体合并轮廓与双闭眼均为透明负形），严禁用背景色盖白边，确保系统单色染色（Material You）下双闭眼与垂尾清晰可辨。
+- **iOS 端同步规范（SwiftUI / Asset Catalog `AppIcon.appiconset`）**：
+  - 同源导出 `1024 × 1024` 无透明通道圆角前平铺母版：**浅色版（Default）** 使用 `#FDF4E6` 暖燕麦底与 `#5E5665` 屋墙；**深色版（Dark，iOS 18+）** 使用 `#1B1F2B` 深夜暖炭底与 `#474D5F` 屋墙；**着色版（Tinted，iOS 18+）** 复用与 Android `ic_launcher_monochrome.xml` 同源的 `evenOdd` 真镂空单色剪影。
+  - 所有视觉元素落在中央 `86%` 安全区内，兼顾 iOS 连续曲率圆角（Squircle）与 `24pt` / `29pt` 设置页小图标清晰度。
+
+### 4.2 界面线性图标（`design/icons/`）
 
 - 统一画布 `24×24`，描边图标统一 `stroke-width="1.85"`、`stroke-linecap="round"`、`stroke-linejoin="round"`。
 - Android 转为 `res/drawable/ic_ui_*.xml`（通过 `tint` 跟随 `UiPalette` 着色）；iOS 导入 Asset Catalog 并设为 `Template Image`。

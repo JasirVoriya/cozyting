@@ -7,7 +7,7 @@
       <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#FFFFFF" stroke-opacity="0.04" stroke-width="1"/>
     </pattern>
     <marker id="hb-arr-d" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 1 1.5 L 8.5 5 L 1 8.5 Z" fill="#FF6B79"/>
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5 Z" fill="#E56D48"/>
     </marker>
     <style>
       .sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif; }
@@ -36,35 +36,59 @@
     <g transform="translate(18, 30)">
       <!-- Mini Brand Logo (28x28) -->
       <g transform="scale(0.0546875)">
-        <rect x="2" y="2" width="508" height="508" rx="115" fill="#15171E" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="10"/>
-        <circle cx="226" cy="256" r="110" fill="#363C49"/>
-        <circle cx="226" cy="256" r="93" fill="#101218"/>
-        <circle cx="226" cy="256" r="72" fill="#242934"/>
-        <circle cx="226" cy="256" r="42" fill="#FF6B79"/>
-        <path d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z" fill="#FFFFFF"/>
-        <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF6B79" stroke-width="38" stroke-linecap="round"/>
+        <rect x="2" y="2" width="508" height="508" rx="115" fill="#1B1F2B" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="10"/>
+        <g transform="translate(141 128) scale(1.38) translate(-156 -142)">
+          <path d="M 155 107 C 134 111 122 131 128 151 C 134 171 155 182 175 176 C 181 174 186 170 190 166 C 176 168 162 161 155 149 C 148 136 151 120 160 110 C 161 108 158 106 155 107 Z" fill="#FFD269"/>
+        </g>
+        <g transform="translate(312 122) rotate(-10) scale(1.66) translate(-24 -26)">
+          <path d="M 13 47 L 13 12 L 45 4 L 45 39" fill="none" stroke="#E56D48" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 13 12 L 45 4" fill="none" stroke="#E56D48" stroke-width="13" stroke-linecap="round"/>
+          <ellipse cx="4.5" cy="49.5" rx="12" ry="9" transform="rotate(-18 4.5 49.5)" fill="#E56D48"/>
+          <ellipse cx="36.5" cy="41.5" rx="12" ry="9" transform="rotate(-18 36.5 41.5)" fill="#E56D48"/>
+        </g>
+        <g transform="translate(387 98) rotate(16) scale(1.12) translate(-14 -24)">
+          <path d="M 12 40 L 12 4 C 24 6 32 15 29 26" fill="none" stroke="#E56D48" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="4" cy="42.5" rx="12" ry="9" transform="rotate(-18 4 42.5)" fill="#E56D48"/>
+        </g>
+        <g transform="translate(256 296) scale(0.92) translate(-256 -256)">
+          <path d="M 128 242 L 256 154 L 384 242 L 384 374 Q 384 422 336 422 L 176 422 Q 128 422 128 374 Z" fill="#474D5F"/>
+          <rect x="323" y="156" width="35" height="68" rx="9" fill="#E56D48"/>
+          <path d="M 107 254 L 236 160 Q 256 146 276 160 L 405 254" fill="none" stroke="#E56D48" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 184 304 A 72 72 0 0 1 328 304 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z" fill="#FFD166"/>
+          <path d="M 184 355 L 328 355 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z" fill="#EE9B48"/>
+          <path d="M 232 314 C 256 303 290 306 304 323 C 313 333 313 347 311 356 L 222 356 Z" fill="#20232F"/>
+          <path d="M 204 318 L 207 297 Q 209 287 220 293 L 233 304 Z" fill="#20232F"/>
+          <path d="M 260 318 L 257 297 Q 255 287 244 293 L 231 304 Z" fill="#20232F"/>
+          <ellipse cx="232" cy="328" rx="31.5" ry="24" fill="#20232F"/>
+          <ellipse cx="215" cy="355.5" rx="11.5" ry="9.5" fill="#20232F"/>
+          <ellipse cx="243" cy="356" rx="11.5" ry="9.5" fill="#20232F"/>
+          <path d="M 212 327 Q 218 334 224 327" fill="none" stroke="#FFD166" stroke-width="4.2" stroke-linecap="round"/>
+          <path d="M 240 327 Q 246 334 252 327" fill="none" stroke="#FFD166" stroke-width="4.2" stroke-linecap="round"/>
+          <ellipse cx="232" cy="334.5" rx="3.5" ry="2.3" fill="#EF8B65"/>
+          <path d="M 301 344 C 314 352 316 377 307 392 C 299 404 280 404 273 394" fill="none" stroke="#20232F" stroke-width="15.5" stroke-linecap="round"/>
+        </g>
       </g>
       <text x="36" y="13" class="sans" font-size="11.5" font-weight="800" fill="#F8FAFC">窝爱听 · CozyTing</text>
       <text x="36" y="26" class="mono" font-size="9" font-weight="600" fill="#94A3B8">APP · 单 App 捕获</text>
     </g>
 
     <!-- Casting Status Card INSIDE screen -->
-    <rect x="16" y="68" width="178" height="68" rx="12" fill="#1C2230" stroke="#FF6B79" stroke-opacity="0.42" stroke-width="1.2"/>
-    <circle cx="28" cy="84" r="3" fill="#FF6B79"/>
+    <rect x="16" y="68" width="178" height="68" rx="12" fill="#1C2230" stroke="#E56D48" stroke-opacity="0.42" stroke-width="1.2"/>
+    <circle cx="28" cy="84" r="3" fill="#E56D48"/>
     <text x="37" y="88" class="sans" font-size="11" font-weight="700" fill="#F1F5F9">正在投送</text>
     <!-- Equalizer bars -->
-    <rect x="158" y="81" width="3.5" height="9" rx="1.5" fill="#FF6B79"/>
-    <rect x="164" y="76" width="3.5" height="14" rx="1.5" fill="#FF6B79"/>
-    <rect x="170" y="79" width="3.5" height="11" rx="1.5" fill="#FF6B79"/>
-    <rect x="176" y="83" width="3.5" height="7" rx="1.5" fill="#FF6B79" opacity="0.75"/>
+    <rect x="158" y="81" width="3.5" height="9" rx="1.5" fill="#E56D48"/>
+    <rect x="164" y="76" width="3.5" height="14" rx="1.5" fill="#E56D48"/>
+    <rect x="170" y="79" width="3.5" height="11" rx="1.5" fill="#E56D48"/>
+    <rect x="176" y="83" width="3.5" height="7" rx="1.5" fill="#E56D48" opacity="0.75"/>
     <!-- Progress bar -->
     <rect x="26" y="99" width="158" height="4.5" rx="2.2" fill="#2D3546"/>
-    <rect x="26" y="99" width="102" height="4.5" rx="2.2" fill="#FF6B79"/>
+    <rect x="26" y="99" width="102" height="4.5" rx="2.2" fill="#E56D48"/>
     <!-- Mini target speaker chips -->
-    <rect x="26" y="111" width="76" height="17" rx="8.5" fill="#351820" stroke="#FF6B79" stroke-opacity="0.45" stroke-width="0.9"/>
-    <text x="64" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FDA4AF">✓ 小爱 Sound</text>
-    <rect x="108" y="111" width="60" height="17" rx="8.5" fill="#351820" stroke="#FF6B79" stroke-opacity="0.45" stroke-width="0.9"/>
-    <text x="138" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FDA4AF">✓ 音箱 #1</text>
+    <rect x="26" y="111" width="76" height="17" rx="8.5" fill="#33201A" stroke="#E56D48" stroke-opacity="0.45" stroke-width="0.9"/>
+    <text x="64" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FFD166">✓ 小爱 Sound</text>
+    <rect x="108" y="111" width="60" height="17" rx="8.5" fill="#33201A" stroke="#E56D48" stroke-opacity="0.45" stroke-width="0.9"/>
+    <text x="138" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FFD166">✓ 音箱 #1</text>
 
     <!-- Platform Pill INSIDE phone -->
     <rect x="24" y="148" width="162" height="26" rx="13" fill="#064E3B" fill-opacity="0.52" stroke="#3DDC84" stroke-opacity="0.55" stroke-width="1"/>
@@ -90,35 +114,59 @@
     <g transform="translate(18, 30)">
       <!-- Mini Brand Logo (28x28) -->
       <g transform="scale(0.0546875)">
-        <rect x="2" y="2" width="508" height="508" rx="115" fill="#15171E" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="10"/>
-        <circle cx="226" cy="256" r="110" fill="#363C49"/>
-        <circle cx="226" cy="256" r="93" fill="#101218"/>
-        <circle cx="226" cy="256" r="72" fill="#242934"/>
-        <circle cx="226" cy="256" r="42" fill="#FF6B79"/>
-        <path d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z" fill="#FFFFFF"/>
-        <path d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0" fill="none" stroke="#FF6B79" stroke-width="38" stroke-linecap="round"/>
+        <rect x="2" y="2" width="508" height="508" rx="115" fill="#1B1F2B" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="10"/>
+        <g transform="translate(141 128) scale(1.38) translate(-156 -142)">
+          <path d="M 155 107 C 134 111 122 131 128 151 C 134 171 155 182 175 176 C 181 174 186 170 190 166 C 176 168 162 161 155 149 C 148 136 151 120 160 110 C 161 108 158 106 155 107 Z" fill="#FFD269"/>
+        </g>
+        <g transform="translate(312 122) rotate(-10) scale(1.66) translate(-24 -26)">
+          <path d="M 13 47 L 13 12 L 45 4 L 45 39" fill="none" stroke="#E56D48" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 13 12 L 45 4" fill="none" stroke="#E56D48" stroke-width="13" stroke-linecap="round"/>
+          <ellipse cx="4.5" cy="49.5" rx="12" ry="9" transform="rotate(-18 4.5 49.5)" fill="#E56D48"/>
+          <ellipse cx="36.5" cy="41.5" rx="12" ry="9" transform="rotate(-18 36.5 41.5)" fill="#E56D48"/>
+        </g>
+        <g transform="translate(387 98) rotate(16) scale(1.12) translate(-14 -24)">
+          <path d="M 12 40 L 12 4 C 24 6 32 15 29 26" fill="none" stroke="#E56D48" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="4" cy="42.5" rx="12" ry="9" transform="rotate(-18 4 42.5)" fill="#E56D48"/>
+        </g>
+        <g transform="translate(256 296) scale(0.92) translate(-256 -256)">
+          <path d="M 128 242 L 256 154 L 384 242 L 384 374 Q 384 422 336 422 L 176 422 Q 128 422 128 374 Z" fill="#474D5F"/>
+          <rect x="323" y="156" width="35" height="68" rx="9" fill="#E56D48"/>
+          <path d="M 107 254 L 236 160 Q 256 146 276 160 L 405 254" fill="none" stroke="#E56D48" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 184 304 A 72 72 0 0 1 328 304 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z" fill="#FFD166"/>
+          <path d="M 184 355 L 328 355 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z" fill="#EE9B48"/>
+          <path d="M 232 314 C 256 303 290 306 304 323 C 313 333 313 347 311 356 L 222 356 Z" fill="#20232F"/>
+          <path d="M 204 318 L 207 297 Q 209 287 220 293 L 233 304 Z" fill="#20232F"/>
+          <path d="M 260 318 L 257 297 Q 255 287 244 293 L 231 304 Z" fill="#20232F"/>
+          <ellipse cx="232" cy="328" rx="31.5" ry="24" fill="#20232F"/>
+          <ellipse cx="215" cy="355.5" rx="11.5" ry="9.5" fill="#20232F"/>
+          <ellipse cx="243" cy="356" rx="11.5" ry="9.5" fill="#20232F"/>
+          <path d="M 212 327 Q 218 334 224 327" fill="none" stroke="#FFD166" stroke-width="4.2" stroke-linecap="round"/>
+          <path d="M 240 327 Q 246 334 252 327" fill="none" stroke="#FFD166" stroke-width="4.2" stroke-linecap="round"/>
+          <ellipse cx="232" cy="334.5" rx="3.5" ry="2.3" fill="#EF8B65"/>
+          <path d="M 301 344 C 314 352 316 377 307 392 C 299 404 280 404 273 394" fill="none" stroke="#20232F" stroke-width="15.5" stroke-linecap="round"/>
+        </g>
       </g>
       <text x="36" y="13" class="sans" font-size="11.5" font-weight="800" fill="#F8FAFC">窝爱听 · CozyTing</text>
       <text x="36" y="26" class="mono" font-size="9" font-weight="600" fill="#94A3B8">APP · 同款内核</text>
     </g>
 
     <!-- Casting Status Card INSIDE screen -->
-    <rect x="16" y="68" width="178" height="68" rx="12" fill="#1C2230" stroke="#FF6B79" stroke-opacity="0.42" stroke-width="1.2"/>
-    <circle cx="28" cy="84" r="3" fill="#FF6B79"/>
+    <rect x="16" y="68" width="178" height="68" rx="12" fill="#1C2230" stroke="#E56D48" stroke-opacity="0.42" stroke-width="1.2"/>
+    <circle cx="28" cy="84" r="3" fill="#E56D48"/>
     <text x="37" y="88" class="sans" font-size="11" font-weight="700" fill="#F1F5F9">正在投送</text>
     <!-- Equalizer bars -->
-    <rect x="158" y="83" width="3.5" height="7" rx="1.5" fill="#FF6B79" opacity="0.8"/>
-    <rect x="164" y="76" width="3.5" height="14" rx="1.5" fill="#FF6B79"/>
-    <rect x="170" y="79" width="3.5" height="11" rx="1.5" fill="#FF6B79"/>
-    <rect x="176" y="81" width="3.5" height="9" rx="1.5" fill="#FF6B79"/>
+    <rect x="158" y="83" width="3.5" height="7" rx="1.5" fill="#E56D48" opacity="0.8"/>
+    <rect x="164" y="76" width="3.5" height="14" rx="1.5" fill="#E56D48"/>
+    <rect x="170" y="79" width="3.5" height="11" rx="1.5" fill="#E56D48"/>
+    <rect x="176" y="81" width="3.5" height="9" rx="1.5" fill="#E56D48"/>
     <!-- Progress bar -->
     <rect x="26" y="99" width="158" height="4.5" rx="2.2" fill="#2D3546"/>
-    <rect x="26" y="99" width="102" height="4.5" rx="2.2" fill="#FF6B79"/>
+    <rect x="26" y="99" width="102" height="4.5" rx="2.2" fill="#E56D48"/>
     <!-- Mini target speaker chips -->
-    <rect x="26" y="111" width="76" height="17" rx="8.5" fill="#351820" stroke="#FF6B79" stroke-opacity="0.45" stroke-width="0.9"/>
-    <text x="64" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FDA4AF">✓ 小爱 Sound</text>
-    <rect x="108" y="111" width="60" height="17" rx="8.5" fill="#351820" stroke="#FF6B79" stroke-opacity="0.45" stroke-width="0.9"/>
-    <text x="138" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FDA4AF">✓ 音箱 #N</text>
+    <rect x="26" y="111" width="76" height="17" rx="8.5" fill="#33201A" stroke="#E56D48" stroke-opacity="0.45" stroke-width="0.9"/>
+    <text x="64" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FFD166">✓ 小爱 Sound</text>
+    <rect x="108" y="111" width="60" height="17" rx="8.5" fill="#33201A" stroke="#E56D48" stroke-opacity="0.45" stroke-width="0.9"/>
+    <text x="138" y="122.5" text-anchor="middle" class="sans" font-size="9" font-weight="600" fill="#FFD166">✓ 音箱 #N</text>
 
     <!-- Platform Pill INSIDE phone -->
     <rect x="24" y="148" width="162" height="26" rx="13" fill="#242B39" stroke="#475569" stroke-width="1"/>
@@ -133,9 +181,9 @@
   <text x="294" y="313" text-anchor="middle" class="sans" font-size="13" font-weight="600" fill="#CBD5E1">内置 Rust L1 Core · 无需额外网关 / 服务端</text>
 
   <!-- ==================== CENTER: DIRECT PURE-LAN STREAM (ZERO GATEWAY) ==================== -->
-  <path d="M 562 180 L 836 180" fill="none" stroke="#FF6B79" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round" marker-end="url(#hb-arr-d)"/>
-  <rect x="605" y="135" width="188" height="27" rx="13.5" fill="#351820" stroke="#FF6B79" stroke-opacity="0.55" stroke-width="1"/>
-  <text x="699" y="152.5" text-anchor="middle" class="sans" font-size="11.5" font-weight="700" fill="#FDA4AF">纯局域网直连 · 零网关</text>
+  <path d="M 562 180 L 836 180" fill="none" stroke="#E56D48" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round" marker-end="url(#hb-arr-d)"/>
+  <rect x="605" y="135" width="188" height="27" rx="13.5" fill="#33201A" stroke="#E56D48" stroke-opacity="0.55" stroke-width="1"/>
+  <text x="699" y="152.5" text-anchor="middle" class="sans" font-size="11.5" font-weight="700" fill="#FFD166">纯局域网直连 · 零网关</text>
   <text x="699" y="207" text-anchor="middle" class="mono" font-size="11" font-weight="600" fill="#CBD5E1">AAC 48kHz · 毫秒级同频</text>
   <text x="699" y="227" text-anchor="middle" class="sans" font-size="10.5" fill="#94A3B8">手机直推音箱 · 零云端</text>
 
@@ -147,7 +195,7 @@
   <g transform="translate(905, 126)">
     <rect x="0" y="0" width="76" height="126" rx="18" fill="#262C3A" stroke="#3B4356" stroke-width="1.5"/>
     <ellipse cx="38" cy="14" rx="26" ry="5" fill="#32394A" stroke="#475569" stroke-width="1"/>
-    <circle cx="38" cy="14" r="3" fill="#FF6B79"/>
+    <circle cx="38" cy="14" r="3" fill="#E56D48"/>
     <line x1="16" y1="42" x2="60" y2="42" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
     <line x1="16" y1="54" x2="60" y2="54" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
     <line x1="16" y1="66" x2="60" y2="66" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
@@ -161,10 +209,10 @@
   <g transform="translate(999, 106)">
     <rect x="0" y="0" width="96" height="146" rx="20" fill="#0E1117" stroke="#3B4356" stroke-width="1.5"/>
     <ellipse cx="48" cy="16" rx="34" ry="6.5" fill="#1F2430"/>
-    <ellipse cx="48" cy="16" rx="20" ry="3.5" fill="none" stroke="#FF6B79" stroke-width="2"/>
+    <ellipse cx="48" cy="16" rx="20" ry="3.5" fill="none" stroke="#E56D48" stroke-width="2"/>
     <circle cx="48" cy="72" r="24" fill="#181C26" stroke="#363D4D" stroke-width="1.5"/>
     <circle cx="48" cy="72" r="14" fill="#272D3B"/>
-    <circle cx="48" cy="72" r="5" fill="#FF6B79"/>
+    <circle cx="48" cy="72" r="5" fill="#E56D48"/>
     <rect x="26" y="114" width="44" height="4" rx="2" fill="#2D3546"/>
     <rect x="34" y="124" width="28" height="4" rx="2" fill="#2D3546"/>
     <text x="48" y="166" text-anchor="middle" class="mono" font-size="10.5" font-weight="700" fill="#E2E8F0">小爱 / Xiaomi Sound</text>
@@ -174,7 +222,7 @@
   <g transform="translate(1113, 126)">
     <rect x="0" y="0" width="76" height="126" rx="18" fill="#262C3A" stroke="#3B4356" stroke-width="1.5"/>
     <ellipse cx="38" cy="14" rx="26" ry="5" fill="#32394A" stroke="#475569" stroke-width="1"/>
-    <circle cx="38" cy="14" r="3" fill="#FF6B79"/>
+    <circle cx="38" cy="14" r="3" fill="#E56D48"/>
     <line x1="16" y1="42" x2="60" y2="42" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
     <line x1="16" y1="54" x2="60" y2="54" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
     <line x1="16" y1="66" x2="60" y2="66" stroke="#64748B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
@@ -185,8 +233,8 @@
   </g>
 
   <!-- Sound waves above center speaker -->
-  <path d="M 1026 97 A 24 24 0 0 1 1068 97" fill="none" stroke="#FF6B79" stroke-width="2.4" stroke-linecap="round" opacity="0.92"/>
-  <path d="M 1017 89 A 36 36 0 0 1 1077 89" fill="none" stroke="#FF6B79" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+  <path d="M 1026 97 A 24 24 0 0 1 1068 97" fill="none" stroke="#E56D48" stroke-width="2.4" stroke-linecap="round" opacity="0.92"/>
+  <path d="M 1017 89 A 36 36 0 0 1 1077 89" fill="none" stroke="#E56D48" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
 
   <text x="1047" y="313" text-anchor="middle" class="sans" font-size="13" font-weight="600" fill="#CBD5E1">单台 / 多台同频投送（上限 63 台）</text>
 </svg>

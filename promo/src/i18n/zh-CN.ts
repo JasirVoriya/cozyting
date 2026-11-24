@@ -162,7 +162,7 @@ export const COPY_ZH: PromoCopy = {
         ms: 150,
         tag: "同房极速 · 几乎零等待",
         color: C.coral,
-        accent: "rgba(255,92,108,0.95)",
+        accent: "rgba(229,109,72,0.95)",
         pulseSpeed: 3.2,
         rect: [60, 962, 558, 150],
       },

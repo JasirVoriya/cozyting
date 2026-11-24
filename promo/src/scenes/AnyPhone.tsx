@@ -40,7 +40,7 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
     <AbsoluteFill style={{ background: C.bg, opacity: sceneFade(f, dur, 10, 16) }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 55% 56%, rgba(46,108,246,${0.22 * castMorph}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 86% 54%, rgba(255,92,108,${0.16 * castMorph}) 0%, rgba(255,92,108,0) 36%)`,
+          background: `radial-gradient(circle at 55% 56%, rgba(46,108,246,${0.22 * castMorph}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 86% 54%, rgba(229,109,72,${0.16 * castMorph}) 0%, rgba(229,109,72,0) 36%)`,
         }}
       />
 
@@ -81,7 +81,7 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
 
           return (
             <g key={b.name} opacity={a} transform={`translate(${(1 - a) * -28} 0)`}>
-              <path d={d} fill="none" stroke="rgba(255,92,108,0.34)" strokeWidth={2.2} />
+              <path d={d} fill="none" stroke="rgba(229,109,72,0.34)" strokeWidth={2.2} />
               {dotPos && (
                 <circle
                   cx={dotPos[0]}
@@ -98,7 +98,7 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
                 height={bh}
                 rx={24}
                 fill="rgba(22,28,39,0.94)"
-                stroke={castMorph > 0.3 ? "rgba(255,92,108,0.62)" : "rgba(255,255,255,0.22)"}
+                stroke={castMorph > 0.3 ? "rgba(229,109,72,0.62)" : "rgba(255,255,255,0.22)"}
                 strokeWidth={2.2}
               />
               <circle cx={bx + 32} cy={by + 48} r={9} fill={C.coral} />
@@ -126,7 +126,7 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
 
         {/* 7th Full-Width Card: Any Other Android Phone */}
         <g opacity={otherA} transform={`translate(${(1 - otherA) * -28} 0)`}>
-          <path d={otherD} fill="none" stroke="rgba(255,92,108,0.45)" strokeWidth={2.4} />
+          <path d={otherD} fill="none" stroke="rgba(229,109,72,0.45)" strokeWidth={2.4} />
           {otherDotPos && (
             <circle
               cx={otherDotPos[0]}
@@ -142,12 +142,12 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
             width={578}
             height={116}
             rx={24}
-            fill="rgba(255,92,108,0.12)"
-            stroke="rgba(255,92,108,0.78)"
+            fill="rgba(229,109,72,0.12)"
+            stroke="rgba(229,109,72,0.78)"
             strokeWidth={2.4}
             strokeDasharray="10 6"
           />
-          <circle cx={136} cy={820} r={18} fill="rgba(255,92,108,0.24)" stroke={C.coral} strokeWidth={2} />
+          <circle cx={136} cy={820} r={18} fill="rgba(229,109,72,0.24)" stroke={C.coral} strokeWidth={2} />
           <text x={136} y={829} textAnchor="middle" fontFamily={FONT_EN} fontSize={28} fontWeight={700} fill={C.coral}>
             +
           </text>
@@ -206,8 +206,8 @@ export const AnyPhone: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, 
             display: "inline-block",
             padding: "10px 22px",
             borderRadius: 999,
-            background: "rgba(255,92,108,0.16)",
-            border: "1.5px solid rgba(255,92,108,0.55)",
+            background: "rgba(229,109,72,0.16)",
+            border: "1.5px solid rgba(229,109,72,0.55)",
             fontFamily: fontMain,
             fontSize: locale === "en" ? 22 : 24,
             fontWeight: 600,

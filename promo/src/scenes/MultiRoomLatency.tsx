@@ -125,7 +125,7 @@ export const MultiRoomLatency: React.FC<{ dur: number; locale: PromoLocale }> = 
     <AbsoluteFill style={{ background: C.bg, opacity: sceneFade(f, dur, 8, 16) }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 24% 55%, rgba(46,108,246,0.20) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 72% 48%, rgba(255,92,108,${0.10 + 0.08 * (tierIdx / 3)}) 0%, rgba(255,92,108,0) 44%)`,
+          background: `radial-gradient(circle at 24% 55%, rgba(46,108,246,0.20) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 72% 48%, rgba(229,109,72,${0.10 + 0.08 * (tierIdx / 3)}) 0%, rgba(229,109,72,0) 44%)`,
         }}
       />
 
@@ -380,7 +380,7 @@ export const MultiRoomLatency: React.FC<{ dur: number; locale: PromoLocale }> = 
                   y={r.y}
                   width={r.w}
                   height={r.h}
-                  fill={`rgba(255,92,108,${0.02 + 0.05 * active})`}
+                  fill={`rgba(229,109,72,${0.02 + 0.05 * active})`}
                   stroke={active > 0 ? activeAccentColor : C.line2}
                   strokeOpacity={active > 0 ? 0.55 : 0.4}
                   strokeWidth={2.2}
@@ -406,7 +406,7 @@ export const MultiRoomLatency: React.FC<{ dur: number; locale: PromoLocale }> = 
                       width={90}
                       height={30}
                       rx={15}
-                      fill={tierIdx === 3 && latencyMode > 0.5 ? "rgba(255,92,108,0.28)" : "rgba(59,130,246,0.26)"}
+                      fill={tierIdx === 3 && latencyMode > 0.5 ? "rgba(229,109,72,0.28)" : "rgba(59,130,246,0.26)"}
                       stroke={activeAccentColor}
                       strokeWidth={1.3}
                     />

@@ -32,7 +32,7 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
     <AbsoluteFill style={{ background: C.bg }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 28% 54%, rgba(46,108,246,${0.20 * phonesIn}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 69% 38%, rgba(255,92,108,${0.12 * core}) 0%, rgba(255,92,108,0) 38%)`,
+          background: `radial-gradient(circle at 28% 54%, rgba(46,108,246,${0.20 * phonesIn}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 69% 38%, rgba(229,109,72,${0.12 * core}) 0%, rgba(229,109,72,0) 38%)`,
         }}
       />
       <svg width="1920" height="1080" style={{ position: "absolute", inset: 0 }}>
@@ -96,7 +96,7 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
         <div
           style={{
             position: "absolute",
-            left: 1315 - size / 2 + ((256 - 226) / 512) * size,
+            left: 1315 - size / 2,
             top: 235 - size / 2,
           }}
         >
@@ -208,8 +208,8 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
               height: 108,
               borderRadius: 999,
               background: "rgba(20,25,36,0.95)",
-              border: `2.5px solid ${hovering > 0.25 ? "#FF7A87" : "rgba(255,92,108,0.82)"}`,
-              boxShadow: `0 26px 68px rgba(0,0,0,0.60), 0 0 ${36 + hovering * 28}px rgba(255,92,108,${0.25 + hovering * 0.20})`,
+              border: `2.5px solid ${hovering > 0.25 ? "#F08462" : "rgba(229,109,72,0.82)"}`,
+              boxShadow: `0 26px 68px rgba(0,0,0,0.60), 0 0 ${36 + hovering * 28}px rgba(229,109,72,${0.25 + hovering * 0.20})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -268,7 +268,7 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
                 padding: "0 38px",
                 borderRadius: 999,
                 background: hovering > 0.25 ? "#FF6B7A" : C.coral,
-                boxShadow: `0 10px 30px rgba(255,92,108,${0.44 + hovering * 0.26})`,
+                boxShadow: `0 10px 30px rgba(229,109,72,${0.44 + hovering * 0.26})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

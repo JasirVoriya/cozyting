@@ -119,7 +119,7 @@ export const Eyebrow: React.FC<{ text: string; start: number; color?: string; ou
   );
 };
 
-/** The CozyTing driver mark, drawn in parts so it can be built up. */
+/** The CozyTing cozy-house & sleeping-cat mark (F2), drawn in parts so it can be built up smoothly. */
 export const LogoMark: React.FC<{
   size: number;
   rings: number;
@@ -128,33 +128,127 @@ export const LogoMark: React.FC<{
   arc: number;
   pulse?: number;
 }> = ({ size, rings, core, play, arc, pulse = 0 }) => {
-  const r = (a: number, b: number) => Math.max(0, Math.min(1, (rings - a) / (b - a)));
-  const k = 1 + pulse * 0.04;
+  const houseP = easeOut(Math.max(0, Math.min(1, rings)));
+  const windowP = easeOut(Math.max(0, Math.min(1, core)));
+  const catP = easeOut(Math.max(0, Math.min(1, play)));
+  const skyP = easeOut(Math.max(0, Math.min(1, arc)));
+  const noteBob = pulse * -7;
+  const noteTilt = pulse * 3;
   return (
     <svg width={size} height={size} viewBox="0 0 512 512" style={{ overflow: "visible" }}>
-      <g transform={`translate(226 256) scale(${k}) translate(-226 -256)`}>
-        <circle cx="226" cy="256" r={110 * easeOut(r(0, 0.5))} fill={C.ring1} />
-        <circle cx="226" cy="256" r={93 * easeOut(r(0.15, 0.65))} fill={C.ring2} />
-        <circle cx="226" cy="256" r={72 * easeOut(r(0.3, 0.85))} fill={C.ring3} />
-        <circle cx="226" cy="256" r={42 * core} fill={C.coral} />
-        <path
-          d="M 214.5 240.5 L 214.5 271.5 Q 214.5 279.5 222.0 275.2 L 247.0 260.3 Q 254.5 256 247.0 251.7 L 222.0 236.8 Q 214.5 232.5 214.5 240.5 Z"
-          fill="#FFFFFF"
-          opacity={play}
-          transform={`translate(232 256) scale(${0.4 + 0.6 * play}) translate(-232 -256)`}
-        />
-      </g>
-      <path
-        d="M 327.6 147.0 A 149 149 0 0 1 327.6 365.0"
-        fill="none"
-        stroke={C.coral}
-        strokeWidth="38"
-        strokeLinecap="round"
-        pathLength={1}
-        strokeDasharray="1 2"
-        strokeDashoffset={1 - arc}
-        opacity={arc > 0.001 ? 1 : 0}
+      {/* Rounded dark tile backdrop so mark reads crisply on dark promo canvas */}
+      <rect
+        x="2"
+        y="2"
+        width="508"
+        height="508"
+        rx="115"
+        fill={C.tileDark}
+        stroke="rgba(255,255,255,0.10)"
+        strokeWidth="3"
+        opacity={houseP}
       />
+
+      {/* Crescent moon & floating F2 music notes */}
+      <g opacity={skyP} transform={`translate(0 ${(1 - skyP) * 14})`}>
+        <g transform="translate(141 128) scale(1.38) translate(-156 -142)">
+          <path
+            d="M 155 107 C 134 111 122 131 128 151 C 134 171 155 182 175 176 C 181 174 186 170 190 166 C 176 168 162 161 155 149 C 148 136 151 120 160 110 C 161 108 158 106 155 107 Z"
+            fill="#FFD269"
+          />
+        </g>
+        <g transform={`translate(312 ${122 + noteBob}) rotate(${-10 - noteTilt}) scale(1.66) translate(-24 -26)`}>
+          <path
+            d="M 13 47 L 13 12 L 45 4 L 45 39"
+            fill="none"
+            stroke={C.coral}
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M 13 12 L 45 4" fill="none" stroke={C.coral} strokeWidth="13" strokeLinecap="round" />
+          <ellipse cx="4.5" cy="49.5" rx="12" ry="9" transform="rotate(-18 4.5 49.5)" fill={C.coral} />
+          <ellipse cx="36.5" cy="41.5" rx="12" ry="9" transform="rotate(-18 36.5 41.5)" fill={C.coral} />
+        </g>
+        <g transform={`translate(387 ${98 + noteBob * 1.3}) rotate(${16 + noteTilt}) scale(1.12) translate(-14 -24)`}>
+          <path
+            d="M 12 40 L 12 4 C 24 6 32 15 29 26"
+            fill="none"
+            stroke={C.coral}
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <ellipse cx="4" cy="42.5" rx="12" ry="9" transform="rotate(-18 4 42.5)" fill={C.coral} />
+        </g>
+      </g>
+
+      {/* Cozy house body, chimney, roof, lit window, and sleeping cat with dangling tail */}
+      <g
+        transform={`translate(256 296) scale(${0.92 * (0.88 + 0.12 * houseP)}) translate(-256 -256)`}
+        opacity={houseP}
+      >
+        <path
+          d="M 128 242 L 256 154 L 384 242 L 384 374 Q 384 422 336 422 L 176 422 Q 128 422 128 374 Z"
+          fill={C.wallDark}
+        />
+        <rect x="323" y="156" width="35" height="68" rx="9" fill={C.coral} />
+        <path
+          d="M 107 254 L 236 160 Q 256 146 276 160 L 405 254"
+          fill="none"
+          stroke={C.coral}
+          strokeWidth="38"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Warm lit arched window & amber sill */}
+        <g opacity={windowP}>
+          <path
+            d="M 184 304 A 72 72 0 0 1 328 304 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z"
+            fill={C.warmGold}
+          />
+          <path
+            d="M 184 355 L 328 355 L 328 360 Q 328 374 314 374 L 198 374 Q 184 374 184 360 Z"
+            fill={C.amberSill}
+          />
+        </g>
+
+        {/* Sleeping cat & dangling tail */}
+        <g opacity={catP}>
+          <path
+            d="M 232 314 C 256 303 290 306 304 323 C 313 333 313 347 311 356 L 222 356 Z"
+            fill={C.catInk}
+          />
+          <path d="M 204 318 L 207 297 Q 209 287 220 293 L 233 304 Z" fill={C.catInk} />
+          <path d="M 260 318 L 257 297 Q 255 287 244 293 L 231 304 Z" fill={C.catInk} />
+          <ellipse cx="232" cy="328" rx="31.5" ry="24" fill={C.catInk} />
+          <ellipse cx="215" cy="355.5" rx="11.5" ry="9.5" fill={C.catInk} />
+          <ellipse cx="243" cy="356" rx="11.5" ry="9.5" fill={C.catInk} />
+          <path
+            d="M 212 327 Q 218 334 224 327"
+            fill="none"
+            stroke={C.warmGold}
+            strokeWidth="4.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 240 327 Q 246 334 252 327"
+            fill="none"
+            stroke={C.warmGold}
+            strokeWidth="4.2"
+            strokeLinecap="round"
+          />
+          <ellipse cx="232" cy="334.5" rx="3.5" ry="2.3" fill={C.catNose} />
+          <path
+            d="M 301 344 C 314 352 316 377 307 392 C 299 404 280 404 273 394"
+            fill="none"
+            stroke={C.catInk}
+            strokeWidth="15.5"
+            strokeLinecap="round"
+          />
+        </g>
+      </g>
     </svg>
   );
 };
@@ -193,7 +287,7 @@ export const Speaker: React.FC<{ x: number; y: number; s?: number; active?: numb
           <Ripple cx={0} cy={0} t={(beatT + 0.5) % 1} maxR={90} color={C.coral} width={1.2} />
         </>
       )}
-      <circle r={44} fill={active > 0 ? `rgba(255,92,108,${0.12 * active})` : "transparent"} />
+      <circle r={44} fill={active > 0 ? `rgba(229,109,72,${0.12 * active})` : "transparent"} />
       <rect
         x={-22}
         y={-30}

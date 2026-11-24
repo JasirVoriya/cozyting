@@ -44,7 +44,7 @@ export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(circle at 26% 56%, rgba(56,189,248,0.16) 0%, rgba(56,189,248,0) 42%), radial-gradient(circle at 78% 54%, rgba(255,92,108,0.18) 0%, rgba(255,92,108,0) 42%)",
+            "radial-gradient(circle at 26% 56%, rgba(56,189,248,0.16) 0%, rgba(56,189,248,0) 42%), radial-gradient(circle at 78% 54%, rgba(229,109,72,0.18) 0%, rgba(229,109,72,0) 42%)",
         }}
       />
 
@@ -688,8 +688,8 @@ export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
                 padding: "16px 24px",
                 borderRadius: 24,
                 background: "rgba(11,13,18,0.96)",
-                border: "2px solid rgba(255,92,108,0.75)",
-                boxShadow: "0 18px 46px rgba(0,0,0,0.6), 0 0 32px rgba(255,92,108,0.25)",
+                border: "2px solid rgba(229,109,72,0.75)",
+                boxShadow: "0 18px 46px rgba(0,0,0,0.6), 0 0 32px rgba(229,109,72,0.25)",
                 textAlign: "center",
               }}
             >
@@ -712,8 +712,8 @@ export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
               height: 755,
               borderRadius: 38,
               background: "rgba(21,26,37,0.88)",
-              border: "2px solid rgba(255,92,108,0.58)",
-              boxShadow: "0 36px 85px rgba(0,0,0,0.52), 0 0 60px rgba(255,92,108,0.12)",
+              border: "2px solid rgba(229,109,72,0.58)",
+              boxShadow: "0 36px 85px rgba(0,0,0,0.52), 0 0 60px rgba(229,109,72,0.12)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -727,8 +727,8 @@ export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
                 style={{
                   padding: "8px 20px",
                   borderRadius: 999,
-                  background: "rgba(255,92,108,0.20)",
-                  border: "1.5px solid rgba(255,92,108,0.68)",
+                  background: "rgba(229,109,72,0.20)",
+                  border: "1.5px solid rgba(229,109,72,0.68)",
                   fontFamily: fontMain,
                   fontSize: 22,
                   fontWeight: 700,
@@ -792,7 +792,7 @@ export const OneApp: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
                 radius={26}
                 scale={0.86}
                 elevation={0.9}
-                accentBorder="rgba(255,92,108,0.65)"
+                accentBorder="rgba(229,109,72,0.65)"
               />
 
               <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 4 }}>

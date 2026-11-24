@@ -162,7 +162,7 @@ export const COPY_EN: PromoCopy = {
         ms: 150,
         tag: "Same-room minimal buffer",
         color: C.coral,
-        accent: "rgba(255,92,108,0.95)",
+        accent: "rgba(229,109,72,0.95)",
         pulseSpeed: 3.2,
         rect: [60, 914, 558, 174],
       },
