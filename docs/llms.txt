@@ -24,7 +24,7 @@
   - 日本語: https://jasirvoriya.github.io/miaocast-releases/ja/architecture.html
 - **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`miaocast-cli`)
 - **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
-- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://jasirvoriya.github.io/miaocast-releases/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
+- **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Optional daily read-only HTTPS update check against `https://raw.githubusercontent.com/JasirVoriya/miaocast-releases/main/update.json` (SHA-256 + APK signature verified) can be turned off in Settings for 100% zero outbound requests.
 
 ## Key Problems Solved (Pain Points)
 

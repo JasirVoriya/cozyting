@@ -11,9 +11,9 @@ import java.net.URI
 object UpdateConfig {
     const val PUBLIC_RELEASE_REPO = "JasirVoriya/miaocast-releases"
 
-    /** 主源：GitHub Pages 静态 JSON（无 60 次/小时 REST API 限流，支持 ETag 304）。 */
+    /** 主源：公开分发仓 main 根目录静态 JSON（Fastly CDN 分发，无 60 次/小时 REST API 限流，支持 ETag 304）。 */
     const val MANIFEST_PRIMARY_URL =
-        "https://jasirvoriya.github.io/miaocast-releases/update.json"
+        "https://raw.githubusercontent.com/JasirVoriya/miaocast-releases/main/update.json"
 
     /** 兜底源：公开分发仓 GitHub Releases 列表 API（返回最近 30 版，支持跨版本区间日志聚合）。 */
     const val RELEASES_FALLBACK_API_URL =

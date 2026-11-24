@@ -12,7 +12,7 @@
 ## 本项目的安全与隐私边界
 
 - **纯局域网投送 · 零遥测**：音频发现、控制、时钟同步与投送全程在本地局域网直连运行，不上传通知内容、音频数据、设备列表、设备型号或日志。
-- **可选只读版本更新检测（可控透明）**：默认每 24 小时仅向公开分发仓库（`https://jasirvoriya.github.io/miaocast-releases/update.json`，兜底 `api.github.com/repos/JasirVoriya/miaocast-releases/releases`）发起一次纯只读 HTTPS 请求获取版本清单（零 Cookie、零账号、零遥测参数），可在「设置 → 关于与更新」中一键关闭以保持 100% 零外网请求；应用内下载 APK 强制执行仅 HTTPS + 官方 SHA-256 摘要 + 包名与签名证书三重 Fail-Closed 校验。
+- **可选只读版本更新检测（可控透明）**：默认每 24 小时仅向公开分发仓库（`https://raw.githubusercontent.com/JasirVoriya/miaocast-releases/main/update.json`，兜底 `api.github.com/repos/JasirVoriya/miaocast-releases/releases`）发起一次纯只读 HTTPS 请求获取版本清单（零 Cookie、零账号、零遥测参数），可在「设置 → 关于与更新」中一键关闭以保持 100% 零外网请求；应用内下载 APK 强制执行仅 HTTPS + 官方 SHA-256 摘要 + 包名与签名证书三重 Fail-Closed 校验。
 - **音频捕获隔离**：`RECORD_AUDIO` 权限仅用于 `AudioPlaybackCapture` 播放捕获（不采集麦克风），启动前强制校验目标包同用户、非共享 UID 与签名摘要，任一不满足即 **fail-closed** 拒绝。
 - **双认证隔离**：Legacy（明文挑战）与 Safety（OPack + 双向 HMAC + 链式 AES-128-CBC）链路严格分离，不跨模式混用。
 - **只读诊断约束**：`miaocast-cli inspect` 强制限制命令白名单并在退出时仅执行 TCP shutdown，不发送 `CLOSE` 破坏正在进行的外部会话。

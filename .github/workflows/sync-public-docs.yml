@@ -92,7 +92,7 @@ jobs:
               text = p.read_text(encoding="utf-8")
               text = text.replace(
                   '<a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>',
-                  f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="Pages & Update Feed" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
+                  f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
               )
               text = text.replace("https://jasirvoriya.github.io/miaocast/", pages_url)
               text = text.replace("https://github.com/JasirVoriya/miaocast/releases", f"https://github.com/{target_repo}/releases")
