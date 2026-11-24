@@ -524,4 +524,17 @@
     <string name="log_viewer_clear_msg">This permanently removes saved runtime logs, core protocol logs, and operation history on this device.</string>
     <string name="log_viewer_clear_confirm">Clear</string>
     <string name="log_viewer_cleared">Local logs cleared</string>
+    <string name="log_viewer_warn_count_fmt">%1$d Warn</string>
+    <string name="log_viewer_err_count_fmt">%1$d Err</string>
+    <string name="log_viewer_search_hint">Filter keyword, IP, speaker, tag…</string>
+    <string name="log_viewer_search_clear">Clear search</string>
+    <string name="log_viewer_mode_raw">Raw</string>
+    <string name="log_viewer_mode_structured">Structured</string>
+    <string name="log_viewer_json_summary_items_fmt">%1$d items · %2$s</string>
+    <string name="log_viewer_json_expand">Expand</string>
+    <string name="log_viewer_json_collapse">Collapse</string>
+    <string name="log_viewer_jump_latest">Latest</string>
+    <string name="log_viewer_copy_entry">Copy log entry</string>
+    <string name="log_viewer_entry_copied">Log entry copied</string>
+    <string name="log_viewer_empty_filtered">No logs match the current filter</string>
 </resources>
