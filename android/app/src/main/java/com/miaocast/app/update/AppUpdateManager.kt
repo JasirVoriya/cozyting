@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * 进程级 App 更新检测协调器：
  * - 单飞（single-flight）去重，避免主界面与设置页并发重复发起网络请求；
- * - 优先请求 GitHub Pages `update.json`（支持 ETag 304），不可达时自动回退至公开仓 Releases API；
+ * - 优先请求公开仓静态清单 `update.json`（支持 ETag 304），不可达时自动回退至公开仓 Releases API；
  * - 全部版本号比较、通道过滤与跨版本区间日志聚合均委托给 L1 Rust `NativeBridge.evaluateUpdateJson`；
  * - 严格遵守「自动检测 24h 节流」「验收包禁止自动弹窗」「零遥测」与「不打扰投送」边界。
  */
@@ -186,7 +186,7 @@ object AppUpdateManager {
         val now = clockMs()
         var primaryError: String? = null
 
-        // 1. 首选：GitHub Pages 静态清单 update.json（支持 ETag 304）
+        // 1. 首选：公开分发仓静态清单 update.json（支持 ETag 304）
         val cachedJson = settings.cachedUpdateManifestJson
         val sendEtag = if (cachedJson.isNotBlank()) settings.updateEtag.takeIf { it.isNotBlank() } else null
         try {

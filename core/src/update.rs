@@ -2,7 +2,7 @@
 //!
 //! 供 Android JNI (`ffi.rs`) 与 iOS C ABI (`ffi_c.rs` / `miaocast_core.h`) 共享同一套：
 //! - SemVer 2.0 版本归一化与比较（自动剥离前导 `v` 与 `-release`/`-acceptance`/`-debug` 构建后缀）；
-//! - `update.json`（GitHub Pages 静态清单）与 GitHub Releases REST API 双格式自动解析；
+//! - `update.json`（公开分发仓静态清单）与 GitHub Releases REST API 双格式自动解析；
 //! - `stable` / `prerelease` 通道过滤、平台资产挑选（排除未签名/调试包）与最低系统版本门禁；
 //! - `(current_version, target_version]` 半开区间跨版本差异日志聚合（正式版升级自动跳过已转正 RC）。
 

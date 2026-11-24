@@ -27,8 +27,8 @@ else
   git checkout -b main
 fi
 
-# 清理旧跟踪内容（保留 .git）
-find "$STAGE_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+# 清理旧跟踪内容（保留 .git 与公开仓根目录维护的 update.json）
+find "$STAGE_DIR" -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'update.json' -exec rm -rf {} +
 
 # 1. 复制公开顶层文档（严禁复制任何源码或私有文件）
 for f in README.md README_EN.md README_JA.md CHANGELOG.md SECURITY.md CONTRIBUTING.md LICENSE; do
@@ -64,7 +64,7 @@ for fname in ("README.md", "README_EN.md", "README_JA.md"):
     # 将指向私仓 CI 的徽章替换为公开仓 Pages 状态徽章
     text = text.replace(
         '<a href="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/miaocast/actions/workflows/ci.yml/badge.svg"></a>',
-        f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="Pages & Update Feed" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
+        f'<a href="https://github.com/{target_repo}/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/{target_repo}/actions/workflows/pages.yml/badge.svg"></a>',
     )
     # 兜底修正可能残留的私仓 Pages / Releases 链接
     text = text.replace("https://jasirvoriya.github.io/miaocast/", pages_url)
@@ -72,16 +72,17 @@ for fname in ("README.md", "README_EN.md", "README_JA.md"):
     p.write_text(text, encoding="utf-8")
 PY
 
-# 5. 生成公开仓专属 GitHub Pages 工作流（同时发布交互式架构浏览器与 update.json 更新清单）
+# 5. 生成公开仓专属 GitHub Pages 工作流（仅在 docs/ 或工作流自身变动时部署官网，与发版 update.json 解耦）
 mkdir -p "$STAGE_DIR/.github/workflows"
 cat > "$STAGE_DIR/.github/workflows/pages.yml" <<'YAML'
-name: Deploy Pages & Update Manifest
+name: Deploy GitHub Pages
 
 on:
   push:
     branches: [main]
-  release:
-    types: [published, edited, deleted]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -95,7 +96,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build & Deploy Showcase Pages + update.json
+    name: Build & Deploy Showcase Pages
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -131,19 +132,6 @@ jobs:
           done
           cp -r docs/assets/* _site/assets/
           touch _site/.nojekyll
-
-      - name: Wait for release assets to settle
-        if: github.event_name == 'release'
-        run: sleep 15
-
-      - name: Generate App Update Manifest (update.json)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python3 scripts/generate-update-manifest.py \
-            --repo "${{ github.repository }}" \
-            --out _site/update.json
-          head -n 40 _site/update.json
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

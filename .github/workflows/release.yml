@@ -224,3 +224,35 @@ jobs:
           body_path: release-notes.md
           prerelease: ${{ contains(inputs.tag || github.ref_name, '-') }}
           files: release-assets/*
+
+      - name: Checkout Public Repo (main) for update.json
+        if: steps.public_sync_guard.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: JasirVoriya/miaocast-releases
+          token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          ref: main
+          path: public-release-repo
+
+      - name: Generate and Push Root update.json to Public Repo (main)
+        if: steps.public_sync_guard.outputs.enabled == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/generate-update-manifest.py \
+            --repo JasirVoriya/miaocast-releases \
+            --out public-release-repo/update.json
+
+          cd public-release-repo
+          git add update.json
+          if git diff --cached --quiet; then
+            echo "update.json is already up to date; nothing to push."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(release): update update.json for ${RELEASE_TAG}"
+          git pull --rebase origin main
+          git push origin main
