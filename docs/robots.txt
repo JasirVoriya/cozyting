@@ -28,5 +28,5 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-Sitemap: https://jasirvoriya.github.io/cozyting-releases/sitemap.xml
-# LLM-friendly summary: https://jasirvoriya.github.io/cozyting-releases/llms.txt
+Sitemap: https://jasirvoriya.github.io/cozyting/sitemap.xml
+# LLM-friendly summary: https://jasirvoriya.github.io/cozyting/llms.txt

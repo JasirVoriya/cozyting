@@ -292,7 +292,7 @@ def generate_manifest(
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="生成窝爱听（CozyTing）静态更新清单 update.json")
-    parser.add_argument("--repo", required=True, help="公开 Release 仓库，例如 JasirVoriya/cozyting-releases")
+    parser.add_argument("--repo", required=True, help="公开 Release 仓库，例如 JasirVoriya/cozyting")
     parser.add_argument("--out", required=True, help="输出 update.json 路径")
     parser.add_argument("--input-json", default="", help="可选：离线测试用 Releases JSON 文件路径")
     parser.add_argument("--min-android-sdk", type=int, default=29)

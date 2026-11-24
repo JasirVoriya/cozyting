@@ -167,7 +167,7 @@ export const Search: React.FC<{ dur: number; locale: PromoLocale }> = ({ dur, lo
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <span style={{ fontFamily: FONT_MONO, fontSize: 30, fontWeight: 700, color: "#FFFFFF" }}>
-                    JasirVoriya / cozyting-releases
+                    JasirVoriya / cozyting
                   </span>
                   <span
                     style={{

@@ -12,20 +12,19 @@
 
 <p>
   <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a> · <strong>日本語</strong> ·
-  <a href="https://github.com/JasirVoriya/cozyting">ソースコード</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/ja/">製品サイト</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/ja/#video">デモ動画</a> ·
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases">APK ダウンロード</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/ja/">製品サイト</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/ja/#video">デモ動画</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/releases">APK ダウンロード</a> ·
   <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html">アーキテクチャ図</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/ja/architecture.html">アーキテクチャ図</a> ·
   <a href="docs/COMPATIBILITY.md">互換マトリクス</a> ·
   <a href="CHANGELOG.md">変更履歴</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
-  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -38,8 +37,7 @@
 > **CozyTing（窝爱听）とは？**
 > **CozyTing** は無料・オープンソースのサードパーティ製 **MiPlay 完全 LAN 音声送信アプリ**（Android 10+ 対応、共通 Rust コア上の iOS SwiftUI 版を計画中）です。**Pixel・Galaxy・Xperia・OnePlus・OPPO・vivo・Huawei・Xiaomi など端末メーカーを問わず**、Root 不要・Xiaomi アカウント不要・クラウド不要で、選んだ 1 つの音楽・ポッドキャストアプリ（Spotify、Apple Music、YouTube Music、NetEase Cloud Music など）の音声だけを自宅 Wi-Fi 経由で最大 63 台の **Xiaomi / XiaoAi スピーカー** へミリ秒同期再生します。日本語・英語・簡体字中国語の 3 言語にネイティブ対応しています。
 >
-> 📦 **ダウンロード**：最新の署名済み Android APK およびクロスプラットフォーム診断 CLI `cozyting-cli` は **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** から入手できます。
-> 🗂️ **リポジトリ構成**：ソースコード・Issue・PR は **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**、署名済み APK / CLI 配布物・製品サイト・アプリ内更新マニフェストは **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)** で管理しています。
+> 📦 **ダウンロード**：最新の署名済み Android APK およびクロスプラットフォーム診断 CLI `cozyting-cli` は **[GitHub Releases](https://github.com/JasirVoriya/cozyting/releases)** から入手できます。
 > 📑 **目次**：[1 分でわかる CozyTing](#-1-分でわかる-cozyting) · [解決する課題](#1-解決する-4-つの課題) · [主な機能](#2-主な機能) · [画面プレビュー](#3-画面プレビューダークライト両対応) · [3 ステップ導入](#4-3-ステップ導入ガイド) · [よくある質問](#5-よくある質問faq) · [技術アーキテクチャ](#6-技術アーキテクチャとコア設計)
 
 ---
@@ -47,12 +45,12 @@
 ## 🎬 1 分でわかる CozyTing
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/cozyting-releases/ja/#video" title="製品サイトでデモ動画を再生：1 分でわかる CozyTing">
+  <a href="https://jasirvoriya.github.io/cozyting/ja/#video" title="製品サイトでデモ動画を再生：1 分でわかる CozyTing">
     <img src="docs/assets/video/cozyting-promo-ja-poster.jpg" alt="1 分でわかる CozyTing デモ動画サムネイル：単一アプリ音声分離、最大 63 台の Xiaomi / XiaoAi スピーカー同期、4 段階遅延切替、Android 13+ Root 不要サイレント送信" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/cozyting-releases/ja/#video"><strong>▶ 製品サイトで動画を視聴</strong></a> ·
-    <a href="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-ja.mp4">MP4 を直接再生 / ダウンロード（1280×720）</a>
+    <a href="https://jasirvoriya.github.io/cozyting/ja/#video"><strong>▶ 製品サイトで動画を視聴</strong></a> ·
+    <a href="https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4">MP4 を直接再生 / ダウンロード（1280×720）</a>
   </p>
 </div>
 
@@ -158,7 +156,7 @@
 
 1. **Android APK をインストール**
    - **Android 10（API 29）以上**（`arm64-v8a`）に対応しています。
-   - **[GitHub Releases（cozyting-releases）](https://github.com/JasirVoriya/cozyting-releases/releases)** から最新の署名済み `cozyting-*-arm64-v8a.apk` をダウンロードしてインストールします。
+   - **[GitHub Releases（cozyting）](https://github.com/JasirVoriya/cozyting/releases)** から最新の署名済み `cozyting-*-arm64-v8a.apk` をダウンロードしてインストールします。
 2. **同じ自宅 Wi-Fi に接続**
    - スマホと Xiaomi / XiaoAi スピーカーを同じローカル Wi-Fi に接続すると、対応スピーカーが自動検出されます。
 3. **音楽アプリとスピーカーを選択して再生**
@@ -207,7 +205,7 @@ Bluetooth（単体・近距離・全音声出力）とは異なり、CozyTing �
 ### 2. アーキテクチャ図と詳細資料
 
 > 🧭 **さらに詳しく見る**：
-> - **インタラクティブ図**：**[インタラクティブ・アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html)**（ローカル：[`docs/ja/architecture.html`](docs/ja/architecture.html)）で任意のモジュールをクリックし **↑ 上流ソース** と **↓ 下流コンシューマ** を追跡できます。
+> - **インタラクティブ図**：**[インタラクティブ・アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting/ja/architecture.html)**（ローカル：[`docs/ja/architecture.html`](docs/ja/architecture.html)）で任意のモジュールをクリックし **↑ 上流ソース** と **↓ 下流コンシューマ** を追跡できます。
 > - **設計マニュアル**：全モジュールの責務一覧・データフロー・6 段階ライフサイクル不変条件は **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** を参照してください。
 
 ![CozyTing クロスプラットフォーム 3 層アーキテクチャ](docs/assets/cross-platform-architecture.svg)
@@ -241,7 +239,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 ## 8. 検証境界・リンク・ライセンス
 
 - **既知の制約**：[docs/LIMITATIONS.md](docs/LIMITATIONS.md) と [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) を参照してください。`allowAudioPlaybackCapture="false"` を明示したサードパーティアプリはバイパスできません。標準モードの公開 Android API では `STREAM_MUSIC` 全体に影響せず単一アプリのみ消音することは不可（Android 13+ サイレントモードは端末 ROM 依存）。OEM 省電力凍結や機種固有のファームウェア挙動（[`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md) 等）は機種ごとに異なります。
-- **関連リンク**：[製品サイト（日本語）](https://jasirvoriya.github.io/cozyting-releases/ja/) · [アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting-releases/ja/architecture.html) · [LLM 要約 (`llms.txt`)](docs/llms.txt) · [セキュリティポリシー](SECURITY.md) · [コントリビューションガイド](CONTRIBUTING.md)
+- **関連リンク**：[製品サイト（日本語）](https://jasirvoriya.github.io/cozyting/ja/) · [アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting/ja/architecture.html) · [LLM 要約 (`llms.txt`)](docs/llms.txt) · [セキュリティポリシー](SECURITY.md) · [コントリビューションガイド](CONTRIBUTING.md)
 - **ライセンス**：**[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** で公開されています。
 - **非公式プロジェクト表記**：LAN 相互運用性研究のための独立したサードパーティ製オープンソース実装であり、Xiaomi Corporation および関連会社とは一切関係・提携・承認関係にありません。
 

@@ -12,20 +12,19 @@
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="README_JA.md">日本語</a> ·
-  <a href="https://github.com/JasirVoriya/cozyting">Source Code</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/en/">Website</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video">Video Demo</a> ·
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases">Download APK</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/en/">Website</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/en/#video">Video Demo</a> ·
+  <a href="https://github.com/JasirVoriya/cozyting/releases">Download APK</a> ·
   <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
-  <a href="https://jasirvoriya.github.io/cozyting-releases/en/architecture.html">Interactive Architecture</a> ·
+  <a href="https://jasirvoriya.github.io/cozyting/en/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/JasirVoriya/cozyting-releases/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
-  <a href="https://github.com/JasirVoriya/cozyting/issues"><img alt="Issues" src="https://img.shields.io/badge/Issues-cozyting-3B82F6?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
+  <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -38,8 +37,7 @@
 > **What is CozyTing (窝爱听)?**
 > **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
-> 📦 **Download**: Grab the latest Android APK and cross-platform `cozyting-cli` binaries from **[GitHub Releases (cozyting-releases)](https://github.com/JasirVoriya/cozyting-releases/releases)**.
-> 🗂️ **Dual-Repo Layout**: Source code, issues, and pull requests live in **[JasirVoriya/cozyting](https://github.com/JasirVoriya/cozyting)**; signed APK / CLI binaries, the product site, and the in-app update manifest are published in **[JasirVoriya/cozyting-releases](https://github.com/JasirVoriya/cozyting-releases)**.
+> 📦 **Download**: Grab the latest Android APK and cross-platform `cozyting-cli` binaries from **[GitHub Releases](https://github.com/JasirVoriya/cozyting/releases)**.
 > 📑 **Jump to**: [CozyTing in 1 Minute](#-cozyting-in-1-minute) · [Problems Solved](#1-what-problems-does-cozyting-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
 
 ---
@@ -47,12 +45,12 @@
 ## 🎬 CozyTing in 1 Minute
 
 <div align="center">
-  <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video" title="Watch CozyTing in 1 Minute on the product website">
+  <a href="https://jasirvoriya.github.io/cozyting/en/#video" title="Watch CozyTing in 1 Minute on the product website">
     <img src="docs/assets/video/cozyting-promo-en-poster.jpg" alt="CozyTing in 1 Minute video thumbnail demonstrating single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4-tier live latency switching, and Android 13+ root-free capture" width="100%">
   </a>
   <p>
-    <a href="https://jasirvoriya.github.io/cozyting-releases/en/#video"><strong>▶ Watch on the Product Website</strong></a> ·
-    <a href="https://jasirvoriya.github.io/cozyting-releases/assets/video/cozyting-promo-en.mp4">Direct MP4 (1280×720)</a>
+    <a href="https://jasirvoriya.github.io/cozyting/en/#video"><strong>▶ Watch on the Product Website</strong></a> ·
+    <a href="https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4">Direct MP4 (1280×720)</a>
   </p>
 </div>
 
@@ -159,7 +157,7 @@ If you own Xiaomi or XiaoAi smart speakers and want to play music from your phon
 
 1. **Install the Android APK**
    - Requires **Android 10 (API 29) or higher** (`arm64-v8a`).
-   - Download the latest `cozyting-*-arm64-v8a.apk` from **[GitHub Releases (cozyting-releases)](https://github.com/JasirVoriya/cozyting-releases/releases)**.
+   - Download the latest `cozyting-*-arm64-v8a.apk` from **[GitHub Releases (cozyting)](https://github.com/JasirVoriya/cozyting/releases)**.
 2. **Connect to the Same Home Wi-Fi**
    - Make sure your phone and Xiaomi / XiaoAi speakers are on the same local Wi-Fi network. CozyTing discovers compatible speakers automatically.
 3. **Pick Your Music App & Speakers**
@@ -208,7 +206,7 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 ### 2. Visual Architecture Overview
 
 > 🧭 **Explore Deeper**:
-> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting-releases/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
+> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
 > - **Full Source Dictionary**: Read **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for complete file-by-file responsibility tables (41 Android files, 24 Rust modules, 19 JVM test suites, and 6-stage lifecycle invariants).
 
 #### (1) Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
@@ -262,7 +260,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 ## 8. Honest Scope, Links & License
 
 - **Known Boundaries**: See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) and [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md). Third-party apps opting out via `allowAudioPlaybackCapture="false"` cannot be bypassed; under standard unprivileged Android permissions, muting a single app without affecting `STREAM_MUSIC` is not supported by public APIs (Seamless Mode on Android 13+ requires real-device ROM verification); OEM background freezing and speaker firmware quirks (e.g., [`docs/LX06_V8_POSTMORTEM.md`](docs/LX06_V8_POSTMORTEM.md)) vary by device.
-- **Resources**: [Product Website](https://jasirvoriya.github.io/cozyting-releases/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting-releases/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
+- **Resources**: [Product Website](https://jasirvoriya.github.io/cozyting/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 - **License**: Released under **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)**.
 - **Non-Affiliation Disclaimer**: Independent third-party open-source implementation for LAN interoperability research. Not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
 

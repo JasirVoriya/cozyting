@@ -1,0 +1,71 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Showcase Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Assemble static site (Landing Page + Architecture Explorer + SEO/GEO files + assets)
+        run: |
+          mkdir -p _site/assets
+          if [[ -f docs/index.html ]]; then
+            cp docs/index.html _site/index.html
+          else
+            cp docs/architecture.html _site/index.html
+          fi
+          cp docs/architecture.html _site/architecture.html
+          for locale_dir in en ja; do
+            if [[ -d "docs/$locale_dir" ]]; then
+              mkdir -p "_site/$locale_dir"
+              cp -r "docs/$locale_dir/." "_site/$locale_dir/"
+            fi
+          done
+          for seo_file in robots.txt sitemap.xml llms.txt; do
+            if [[ -f "docs/$seo_file" ]]; then
+              cp "docs/$seo_file" "_site/$seo_file"
+            fi
+          done
+          cp -r docs/assets/* _site/assets/
+          touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy Showcase Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

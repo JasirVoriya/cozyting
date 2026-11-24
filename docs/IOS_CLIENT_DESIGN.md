@@ -171,7 +171,7 @@ ios/
 | **本机静音** | 代码自动静音 `STREAM_MUSIC` + `PcmProbe` 6 拍锁定 | **无公开 API 自动静音；用户手动将音量键调至 0** | `ReplayKit` 采样位于系统音量衰减之前，预期手机无声但音箱照常发声（须真机复核） |
 | **开播授权与指示** | 每次会话弹 `MediaProjection` 授权 + 状态栏图标 | 每次开播点 `RPSystemBroadcastPickerView` 确认 + 红条/灵动岛红点 | 均属操作系统强制隐私提示 |
 | **正在播放与跳转** | 通知监听读任意第三方封面与播控，点封面按包名拉起 | 沙箱不可读取任意第三方会话/图标，按 [UI_SPEC.md](../design/UI_SPEC.md) 降级展示广播状态提示与有限 URL Scheme 跳转 | 不申请越权权限，未知音源静默降级不报错 |
-| **应用更新检测** | `HttpsURLConnection` 拉取公开 `update.json` + L1 `cozyting_update_evaluate_json` 裁决 + 强制 SHA-256 与签名校验后 `FileProvider` 调起安装 | 复用同一份 `update.json` 与 L1 C ABI `cozyting_update_evaluate_json`（经 `URLSession` 只读 HTTPS + ETag） | App Store 分发版走商店更新（编译宏禁用自更新弹窗遵循审核规范）；自签 / IPA 分发版以 `.sheet` 展示跨版本区间日志并跳转 Safari 打开 `cozyting-releases` 发布页 |
+| **应用更新检测** | `HttpsURLConnection` 拉取公开 `update.json` + L1 `cozyting_update_evaluate_json` 裁决 + 强制 SHA-256 与签名校验后 `FileProvider` 调起安装 | 复用同一份 `update.json` 与 L1 C ABI `cozyting_update_evaluate_json`（经 `URLSession` 只读 HTTPS + ETag） | App Store 分发版走商店更新（编译宏禁用自更新弹窗遵循审核规范）；自签 / IPA 分发版以 `.sheet` 展示跨版本区间日志并跳转 Safari 打开 `cozyting` 发布页 |
 | **运行内存红线** | 主进程内存宽松 | **Extension 进程 50MB Jetsam 强杀上限** | 丢弃 `.video` 帧、严控零拷贝与有界队列，真机 Instruments 必测 |
 
 ---
