@@ -236,6 +236,13 @@
     <string name="settings_local_probe_started">本地过滤验收已启动</string>
 
     <string name="settings_section_about">关于与更新</string>
+    <string name="title_about">关于窝爱听</string>
+    <string name="about_check_updates_title">检查更新</string>
+    <string name="about_beta_updates_title">接收测试版更新</string>
+    <string name="about_beta_updates_sub">开启后将优先获取先行预览版（RC）以提前体验新功能</string>
+    <string name="about_releases_title">版本发布与更新日志</string>
+    <string name="about_releases_sub">GitHub Releases · AGPL-3.0 开源</string>
+    <string name="about_footer_note">纯局域网 · 零云端 · AGPL-3.0</string>
     <string name="settings_ver_acceptance">验收版</string>
     <string name="settings_ver_preview">预览版</string>
     <string name="settings_update_checking">正在检查公开更新清单…</string>

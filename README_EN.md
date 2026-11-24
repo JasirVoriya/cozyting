@@ -181,7 +181,7 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 **No.** CozyTing embeds a lightweight local wireless ADB client. You only pair once on-device using Android's 6-digit Wireless Debugging pairing code—no root, no computer, and no third-party privilege apps required. Standard Mode remains available on all Android 10+ devices with zero setup.
 
 ### Does CozyTing upload audio or require a Xiaomi account?
-**Never.** Discovery and audio streaming happen 100% inside your local LAN with zero cloud APIs, zero accounts, and zero telemetry. The only optional internet request is a read-only daily check against the public `update.json` release feed (verified via HTTPS + SHA-256 + APK signature), which you can disable in Settings for 100% zero outbound traffic.
+**Never.** Discovery and audio streaming happen 100% inside your local LAN with zero cloud APIs, zero accounts, and zero telemetry. The only outbound request is a read-only 24-hour check against the public static `update.json` release feed (anonymous HTTPS + `ETag 304`, zero cookies/device parameters, verified via SHA-256 + APK signature), and full LAN casting works seamlessly offline.
 
 ### Is iOS / iPhone supported?
 **The shared Rust core (`cozyting_core.h` C ABI + `XCFramework` build pipeline) and cross-platform UI design spec are ready; the native SwiftUI + ReplayKit iOS client is planned.** See [docs/IOS_CLIENT_DESIGN.md](docs/IOS_CLIENT_DESIGN.md) for the roadmap.

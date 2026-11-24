@@ -49,6 +49,10 @@
             android:exported="false"
             android:label="@string/title_settings" />
         <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="@string/title_about" />
+        <activity
             android:name=".capture.shell.WirelessDebugGuideActivity"
             android:exported="false"
             android:label="@string/title_wireless_guide" />

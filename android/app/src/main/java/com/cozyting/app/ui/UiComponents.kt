@@ -473,13 +473,14 @@ object UiComponents {
         return container
     }
 
-    /** 统一自定义开关行（替代原生 CheckBox）。 */
+    /** 统一自定义开关行（替代原生 CheckBox）。`flat = true` 时不绘制外围小框，供卡片内分割线列表使用。 */
     fun switchRow(
         context: Context,
         palette: UiPalette,
         title: String,
         subtitle: String? = null,
         initialChecked: Boolean,
+        flat: Boolean = false,
         onCheckedChange: (Boolean) -> Unit,
     ): LinearLayout {
         var checked = initialChecked
@@ -524,14 +525,26 @@ object UiComponents {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rippleSurface(
-                fillColor = palette.rowIdleBg,
-                radiusPx = dpf(context, UiPalette.RADIUS_CONTROL_DP.toFloat()),
-                rippleColor = palette.ripple,
-                strokeColor = palette.rowIdleBorder,
-                strokeWidthPx = dp(context, 1).coerceAtLeast(1),
-            )
-            setPadding(dp(context, 12), dp(context, 11), dp(context, 12), dp(context, 11))
+            background = if (flat) {
+                rippleSurface(
+                    fillColor = Color.TRANSPARENT,
+                    radiusPx = dpf(context, 10f),
+                    rippleColor = palette.ripple,
+                )
+            } else {
+                rippleSurface(
+                    fillColor = palette.rowIdleBg,
+                    radiusPx = dpf(context, UiPalette.RADIUS_CONTROL_DP.toFloat()),
+                    rippleColor = palette.ripple,
+                    strokeColor = palette.rowIdleBorder,
+                    strokeWidthPx = dp(context, 1).coerceAtLeast(1),
+                )
+            }
+            if (flat) {
+                setPadding(dp(context, 2), dp(context, 12), dp(context, 2), dp(context, 12))
+            } else {
+                setPadding(dp(context, 12), dp(context, 11), dp(context, 12), dp(context, 11))
+            }
             isClickable = true
             isFocusable = true
             setOnClickListener {

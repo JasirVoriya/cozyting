@@ -105,9 +105,13 @@ object AppUpdateManager {
         return ready.decision.status == UpdateDecisionStatus.UPDATE_AVAILABLE
     }
 
-    /** 判断当前是否应在主界面展示非阻塞轻提示条（投送中绝不展示，点 × 后本次会话隐藏）。 */
-    fun activeBannerDecision(isCastingNow: Boolean): UpdateDecision? {
-        if (isCastingNow || isAcceptanceProvider()) return null
+    /**
+     * 判断当前是否应在主界面展示非阻塞轻提示条：
+     * - 仅在检测到未跳过的新版本、非验收包且本次会话未手动点 × 关闭时展示；
+     * - 投送中照常展示，仅在用户点击「跳过此版本」后彻底隐藏该版本提醒。
+     */
+    fun activeBannerDecision(@Suppress("UNUSED_PARAMETER") isCastingNow: Boolean = false): UpdateDecision? {
+        if (isAcceptanceProvider()) return null
         val ready = state as? UpdateCheckState.Ready ?: return null
         val d = ready.decision
         if (d.status != UpdateDecisionStatus.UPDATE_AVAILABLE) return null
@@ -141,13 +145,13 @@ object AppUpdateManager {
 
     /**
      * 冷启动静默检查入口：
-     * - 受 `autoCheckUpdates` 开关、24 小时节流与验收包保护约束；
+     * - 默认常开（受 24 小时节流与验收包保护约束，零遥测、绝不冷启动强弹窗）；
      * - 若在 24 小时冷却期内但存在本地缓存清单，直接基于本地缓存无网复算状态（零流量）。
      */
     fun maybeAutoCheck(context: Context) {
         val appCtx = context.applicationContext
         val settings = PrefsCastSettingsStore(appCtx)
-        if (!settings.autoCheckUpdates || isAcceptanceProvider()) {
+        if (isAcceptanceProvider()) {
             return
         }
         val now = clockMs()
