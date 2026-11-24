@@ -17,7 +17,7 @@ class AdbCryptoTest {
 
     @Test
     fun generatedIdentityHasValidSelfSignedX509And524ByteAndroidPubKey() {
-        val id = AdbCrypto.generateIdentity("MiPlayTest")
+        val id = AdbCrypto.generateIdentity("CozyTingTest")
         id.certificate.verify(id.certificate.publicKey)
 
         val rsaPub = id.certificate.publicKey as RSAPublicKey
@@ -35,7 +35,11 @@ class AdbCryptoTest {
         val exp = ByteBuffer.wrap(encoded, 520, 4).order(ByteOrder.LITTLE_ENDIAN).int
         assertEquals(rsaPub.publicExponent.toInt(), exp)
 
-        val peerInfo = AdbCrypto.buildPeerInfo(id.encodeAndroidPublicKeyLine())
+        val pubKeyLine = id.encodeAndroidPublicKeyLine()
+        val pubKeyText = String(pubKeyLine, Charsets.US_ASCII)
+        assertTrue(pubKeyText.endsWith(" cozyting@android\u0000"))
+
+        val peerInfo = AdbCrypto.buildPeerInfo(pubKeyLine)
         assertEquals(AdbCrypto.PEER_INFO_SIZE, peerInfo.size)
         assertEquals(AdbCrypto.PEER_INFO_TYPE_RSA_PUB_KEY, peerInfo[0])
     }
