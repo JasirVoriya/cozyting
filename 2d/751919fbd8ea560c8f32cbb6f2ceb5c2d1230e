@@ -1,0 +1,46 @@
+CHANGELOG.md
+  h_75f437d5bc136b 11-32
+README.md
+  h_75f437d5bc136b 192,328
+README_EN.md
+  h_75f437d5bc136b 184
+README_JA.md
+  h_75f437d5bc136b 183
+android/app/build.gradle.kts
+  h_75f437d5bc136b 31-32
+android/app/src/main/AndroidManifest.xml
+  h_75f437d5bc136b 51-54
+android/app/src/main/java/com/cozyting/app/AboutActivity.kt
+  h_75f437d5bc136b 1-470
+android/app/src/main/java/com/cozyting/app/SettingsActivity.kt
+  h_75f437d5bc136b 85,1010,1012-1013,1016-1026,1028,1034,1036-1037,1042,1044,1056,1058-1071,1073-1081,1084-1094,1097-1102,1107-1113,1116
+android/app/src/main/java/com/cozyting/app/ui/UiComponents.kt
+  h_75f437d5bc136b 476,483,528-547
+android/app/src/main/java/com/cozyting/app/update/AppUpdateManager.kt
+  h_75f437d5bc136b 108-114,148,154
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 239-245
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 239-245
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 239-245
+android/app/src/test/java/com/cozyting/app/ui/SettingsScrollAndSwitchTest.kt
+  h_75f437d5bc136b 154,157-159,163,166,170-212
+android/app/src/test/java/com/cozyting/app/update/AppUpdateManagerTest.kt
+  h_75f437d5bc136b 118,137-138,143
+design/UI_SPEC.md
+  h_75f437d5bc136b 20,62-70
+docs/llms.txt
+  h_75f437d5bc136b 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d751919fbd8ea560c8f32cbb6f2ceb5c2d1230e",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
