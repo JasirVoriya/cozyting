@@ -7,7 +7,7 @@ export const BEAT = 30; // frames @120 BPM
 export const BAR = 120;
 
 // Scene boundaries (frames). Every cut lands on a bar line of the 120 BPM soundtrack.
-// Intro: 0-3s (0..180) = 4 rapid 0.75s (45f) hook cuts; 3-6s (180..360) = brand lockup card.
+// Intro (6s / 3 bars): 0-2s (0..120) calm pain-point question; 2-6s (120..360) brand lockup + real UI.
 export const T = {
   intro: [0, 3 * BAR],
   anyPhone: [3 * BAR, 6 * BAR],

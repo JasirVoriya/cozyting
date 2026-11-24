@@ -3,44 +3,15 @@ import type { PromoLocale } from "../theme";
 export interface PromoCopy {
   locale: PromoLocale;
   intro: {
-    hookCuts: readonly [
-      {
-        eyebrow: string;
-        headline: string;
-        headlineSize: number;
-        brands: readonly { name: string; sub: string }[];
-        bridgeLabel: string;
-        speakerTitle: string;
-        speakerBadge: string;
-      },
-      {
-        eyebrow: string;
-        headline: string;
-        headlineSize: number;
-        switchBadge: string;
-        isolateBadge: string;
-        speakerStatus: string;
-      },
-      {
-        eyebrow: string;
-        headline: string;
-        headlineSize: number;
-        leftBadge: string;
-        dividerLabel: string;
-        rightBadge: string;
-        speakerNowPlaying: string;
-      },
-      {
-        eyebrow: string;
-        headline: string;
-        headlineSize: number;
-        syncBadge: string;
-        latencyFrom: string;
-        latencyTo: string;
-        latencyTag: string;
-        waveLockBadge: string;
-      },
-    ];
+    painHook: {
+      phoneLabel: string;
+      blockedBadge: string;
+      speakerLabel: string;
+      question: string;
+      questionSize: number;
+      subline: string;
+      sublineSize: number;
+    };
     brandPrimary: string;
     brandSecondary: string;
     headline: string;
