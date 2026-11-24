@@ -39,13 +39,13 @@ jobs:
 
       - name: Checkout private source repository
         if: steps.guard.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: src
 
       - name: Checkout public release repository
         if: steps.guard.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: JasirVoriya/cozyting-releases
           token: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
