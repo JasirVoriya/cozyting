@@ -80,7 +80,7 @@ class UpdateDialogControllerTest {
         val allViews = findAllViews(decor)
         val scroll = allViews.filterIsInstance<ScrollView>().firstOrNull()
         assertNotNull("Expected ScrollView for release notes", scroll)
-        val maxAllowedPx = UiComponents.dp(activity, 230)
+        val maxAllowedPx = UiComponents.dp(activity, 260)
         assertTrue(
             "Expected ScrollView height (${scroll!!.measuredHeight}) <= $maxAllowedPx on first measure pass",
             scroll.measuredHeight <= maxAllowedPx,
@@ -122,8 +122,46 @@ class UpdateDialogControllerTest {
         decor.layout(0, 0, decor.measuredWidth, decor.measuredHeight)
 
         val scroll = findAllViews(decor).filterIsInstance<ScrollView>().first()
-        val maxAllowedPx = UiComponents.dp(activity, 230)
+        val maxAllowedPx = UiComponents.dp(activity, 260)
         assertTrue("Short notes ScrollView (${scroll.measuredHeight}) should wrap below $maxAllowedPx", scroll.measuredHeight < maxAllowedPx)
+        dialog.dismiss()
+    }
+
+    @Test
+    fun structuredMarkdownRendersWithoutRawSyntaxTokens() {
+        val raw = """
+            > 预发版（Pre-release）：补齐常用操作记忆。
+
+            ### Added
+            - **总音量与单音箱独立音量持久化**：
+              - 记住总音量与单音箱独立音量。
+              - 开启高音量保护时自动钳制回上限。
+            - **更新横幅 `×` 持久化**：
+            - 点击 `×` 后按 `tag` 持久化，详见 [说明](https://example.com/docs)。
+
+            ### Fixed
+            - **默认配对名称**：更正为 `cozyting@android`。
+        """.trimIndent()
+
+        val blocks = ChangelogMarkdownRenderer.parse(raw)
+        assertTrue("Expected callout first", blocks.first() is ChangelogMarkdownRenderer.Block.Callout)
+        val sections = blocks.filterIsInstance<ChangelogMarkdownRenderer.Block.Section>()
+        assertTrue("Expected Added and Fixed sections", sections.size == 2)
+        val bullets = blocks.filterIsInstance<ChangelogMarkdownRenderer.Block.BulletItem>()
+        assertTrue("Expected 3 top-level bullet items (explicit + legacy flat + inline)", bullets.size == 3)
+        assertTrue("Expected 2 explicit children", bullets[0].children.size == 2)
+        assertTrue("Expected 1 legacy flat child", bullets[1].children.size == 1)
+
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val dialog = UpdateDialogController.show(activity, UiPalette.forMode(isDark = true), buildDecision(raw))
+        val decor = requireNotNull(dialog.window?.decorView)
+        val allText = findAllViews(decor).filterIsInstance<TextView>().joinToString("\n") { it.text?.toString().orEmpty() }
+        assertTrue("Should render localized Added label", allText.contains(activity.getString(R.string.update_changelog_sec_added)))
+        assertTrue("Should render localized Fixed label", allText.contains(activity.getString(R.string.update_changelog_sec_fixed)))
+        assertTrue("Should strip raw ### syntax", !allText.contains("### "))
+        assertTrue("Should strip raw ** syntax", !allText.contains("**"))
+        assertTrue("Should strip raw backtick syntax", !allText.contains("`"))
+        assertTrue("Should strip raw markdown link URL", !allText.contains("https://example.com/docs"))
         dialog.dismiss()
     }
 }

@@ -307,6 +307,11 @@
     <string name="update_dialog_acceptance_notice">QA build (%1$s). Install the standard release APK via your browser.</string>
     <string name="update_dialog_changelog_header">%2$d releases since v%1$s</string>
     <string name="update_dialog_changelog_truncated">… Older entries omitted. Open in browser to view the full changelog.</string>
+    <string name="update_changelog_sec_added">Added</string>
+    <string name="update_changelog_sec_changed">Changed</string>
+    <string name="update_changelog_sec_fixed">Fixed</string>
+    <string name="update_changelog_sec_removed">Removed</string>
+    <string name="update_changelog_sec_security">Security</string>
     <string name="update_fallback_empty_notes">This release includes improvements and stability fixes. Visit the Release page for full details.</string>
     <string name="update_dialog_need_install_perm">Allow CozyTing to install unknown apps in system settings, then return and tap Install Now.</string>
     <string name="update_dialog_btn_install_after_perm">Allowed, Install Now</string>

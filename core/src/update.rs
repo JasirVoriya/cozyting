@@ -553,7 +553,7 @@ pub fn clean_release_notes(raw: &str) -> String {
     }
     no_comments.push_str(rest);
 
-    // 2. 归一化换行并过滤无实质信息的纯 compare 链接行
+    // 2. 归一化换行、保留列表嵌套缩进，并过滤无实质信息的纯 compare 链接行
     let normalized = no_comments.replace("\r\n", "\n");
     let mut lines: Vec<&str> = Vec::new();
     let mut blank_run = 0usize;
@@ -569,7 +569,7 @@ pub fn clean_release_notes(raw: &str) -> String {
             }
         } else {
             blank_run = 0;
-            lines.push(trimmed);
+            lines.push(raw_line.trim_end());
         }
     }
     while lines.last() == Some(&"") {
@@ -1370,5 +1370,15 @@ mod tests {
         let parsed_empty = parse_json(&empty_notes).unwrap();
         assert_eq!(parsed_empty.bool_field("notes_is_fallback"), Some(true));
         assert_eq!(parsed_empty.str_field("error_code"), "");
+    }
+
+    #[test]
+    fn clean_release_notes_preserves_nested_bullet_indentation() {
+        let raw = "<!-- comment -->\n> 摘要导语\n\n### Added\n- **主功能**：  \n  - 子条目一  \n    - 孙条目\n\n**Full Changelog**: https://example.com/compare/v1...v2\n";
+        let cleaned = clean_release_notes(raw);
+        assert_eq!(
+            cleaned,
+            "> 摘要导语\n\n### Added\n- **主功能**：\n  - 子条目一\n    - 孙条目"
+        );
     }
 }
