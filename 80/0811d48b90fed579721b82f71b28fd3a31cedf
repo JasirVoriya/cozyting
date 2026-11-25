@@ -1,0 +1,14 @@
+core/src/session.rs
+  h_75f437d5bc136b 581-607,649-653,1702-1720
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "800811d48b90fed579721b82f71b28fd3a31cedf",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
