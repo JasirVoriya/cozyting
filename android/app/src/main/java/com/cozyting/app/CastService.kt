@@ -42,6 +42,7 @@ import com.cozyting.app.cast.NowPlayingTracker
 import com.cozyting.app.cast.PrefsDiscoveredDeviceStore
 import com.cozyting.app.compat.AcceptanceAudioDefaults
 import com.cozyting.app.compat.CaptureSelectionLayers
+import com.cozyting.app.compat.QuickSettingsTileCompat
 import com.cozyting.app.ui.AppLocaleManager
 import com.cozyting.app.ui.PrefsCastSettingsStore
 import com.cozyting.app.ui.VolumeSafetyGuard
@@ -369,11 +370,12 @@ class CastService : Service() {
                     VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
                     val res = NativeBridge.queueSetVolumeChecked(h, ip, v, confirmed)
                     event("协调音量(${ip.ifEmpty { "全组" }}, $v, confirmed=$confirmed): $res")
+                    QuickSettingsTileCompat.requestListeningState(this)
                 }
                 return START_NOT_STICKY
             }
-            ACTION_PAUSE -> { bg("pause") { paused = true; event("暂停: " + NativeBridge.pause(h)); updateNotification() }; return START_NOT_STICKY }
-            ACTION_RESUME -> { bg("resume") { event("恢复: " + NativeBridge.resume(h)); paused = false; updateNotification() }; return START_NOT_STICKY }
+            ACTION_PAUSE -> { bg("pause") { paused = true; event("暂停: " + NativeBridge.pause(h)); updateNotification(); QuickSettingsTileCompat.requestListeningState(this) }; return START_NOT_STICKY }
+            ACTION_RESUME -> { bg("resume") { event("恢复: " + NativeBridge.resume(h)); paused = false; updateNotification(); QuickSettingsTileCompat.requestListeningState(this) }; return START_NOT_STICKY }
             ACTION_ADD -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
                 val reqVol = intent.getIntExtra(EXTRA_VOLUME, -1)
@@ -389,6 +391,7 @@ class CastService : Service() {
                     lastStats = NativeBridge.stats(h)
                     event("协调加入 $ip: $res")
                     updateNotification(force = true)
+                    QuickSettingsTileCompat.requestListeningState(this)
                 }
                 return START_NOT_STICKY
             }
@@ -401,6 +404,7 @@ class CastService : Service() {
                     lastStats = NativeBridge.stats(h)
                     event("协调移除 $ip")
                     updateNotification(force = true)
+                    QuickSettingsTileCompat.requestListeningState(this)
                 }
                 return START_NOT_STICKY
             }
@@ -762,14 +766,30 @@ class CastService : Service() {
                 PendingIntent.FLAG_IMMUTABLE,
             )
         }
-        val open = PendingIntent.getActivity(
-            this, 9, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
+        val openQuickPanel = PendingIntent.getActivity(
+            this,
+            9,
+            QuickCastPanelActivity.createLaunchIntent(this),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val openDevicesAction = PendingIntent.getActivity(
+            this,
+            3,
+            QuickCastPanelActivity.createLaunchIntent(this),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = Notification.Builder(this, CHANNEL)
             .setContentTitle(copy.title)
             .setContentText(copy.collapsedText)
             .setSmallIcon(if (paused) android.R.drawable.ic_media_pause else R.drawable.ic_stat_miplay)
-            .setContentIntent(open)
+            .setContentIntent(openQuickPanel)
+            .addAction(
+                Notification.Action.Builder(
+                    null,
+                    locCtx.getString(R.string.cast_action_devices_volume),
+                    openDevicesAction,
+                ).build(),
+            )
             .addAction(
                 Notification.Action.Builder(
                     null,
@@ -1127,6 +1147,7 @@ class CastService : Service() {
         lastNotificationSignature = ""
         releaseLocks()
         runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_ID) }
+        QuickSettingsTileCompat.requestListeningState(this)
         stopSelf()
         main.post { targetChangeListener?.invoke() }
     }
@@ -1174,6 +1195,7 @@ class CastService : Service() {
         releaseLocks()
         // 通知可被用户关掉后仍可通过 App 停止；这里主动取消 ongoing
         runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_ID) }
+        QuickSettingsTileCompat.requestListeningState(this)
         main.post { targetChangeListener?.invoke() }
     }
 
@@ -1221,5 +1243,6 @@ class CastService : Service() {
         val copy = formatNotificationCopy()
         lastNotificationSignature = "${paused}|${copy.title}|${copy.collapsedText}|${copy.expandedText.orEmpty()}"
         startForeground(NOTIF_ID, buildNotification(copy), type)
+        QuickSettingsTileCompat.requestListeningState(this)
     }
 }

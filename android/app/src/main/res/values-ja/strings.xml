@@ -587,4 +587,23 @@
     <string name="shared_uid_consent_cancel">キャンセル</string>
     <string name="shared_uid_consent_allow">キャストを許可</string>
     <string name="status_banner_dismiss_cd">通知を閉じる</string>
+
+    <!-- Quick Settings tile & floating Quick Cast panel -->
+    <string name="qs_tile_label">CozyTing</string>
+    <string name="qs_tile_sub_idle">タップしてスピーカー選択</string>
+    <string name="qs_tile_sub_casting_fmt">%1$d 台 · %2$d%%</string>
+    <string name="qs_tile_sub_paused_fmt">%1$d 台 · 一時停止</string>
+    <string name="cast_action_devices_volume">機器と音量</string>
+    <string name="quick_panel_open_app">アプリを開く ↗</string>
+    <string name="quick_panel_done">完了</string>
+    <string name="settings_qs_tile_title">クイック設定タイル</string>
+    <string name="settings_qs_tile_sub">コントロールセンターから機器と音量のフローティングカードを呼び出す</string>
+    <string name="settings_qs_tile_add_btn">ワンタップ追加</string>
+    <string name="settings_qs_tile_guide_btn">追加ガイド</string>
+    <string name="settings_qs_tile_added">クイック設定に「CozyTing」タイルを追加しました。上からスワイプしていつでも開けます。</string>
+    <string name="settings_qs_tile_already_added">「CozyTing」タイルはすでにクイック設定に追加されています。そのままタップして使えます。</string>
+    <string name="settings_qs_tile_guide_title">クイック設定への追加方法</string>
+    <string name="settings_qs_tile_guide_msg">1. 画面上から下にスワイプしてコントロールセンターを開きます。\n2. 編集ボタンをタップします。\n3. 下のタイル一覧から「CozyTing」をドラッグして追加すると、タップでフローティングカードが開けます。</string>
+    <string name="settings_qs_tile_guide_ok">OK</string>
+    <string name="settings_qs_tile_preview_btn">カードを今すぐ試す</string>
 </resources>

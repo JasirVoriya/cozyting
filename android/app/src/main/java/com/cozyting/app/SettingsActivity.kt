@@ -37,6 +37,7 @@ import com.cozyting.app.cast.CastRouteSelection
 import com.cozyting.app.cast.PrefsDiscoveredDeviceStore
 import com.cozyting.app.compat.CaptureSelectionLayers
 import com.cozyting.app.compat.LocaleCompat
+import com.cozyting.app.compat.QuickSettingsTileCompat
 import com.cozyting.app.compat.WindowInsetsApplyCompat
 import com.cozyting.app.diag.AppLog
 import com.cozyting.app.diag.AppLogStore
@@ -80,6 +81,7 @@ class SettingsActivity : Activity() {
     private var pendingLocalProbe: Intent? = null
     private var localProbeStatus: TextView? = null
     private var localProbeBtn: TextView? = null
+    private var quickTileDialog: Dialog? = null
     private var devicesChanged = false
     private var triggerDiscover = false
     private val updateListener: (UpdateCheckState) -> Unit = {
@@ -123,6 +125,7 @@ class SettingsActivity : Activity() {
     override fun onDestroy() {
         AppUpdateManager.removeListener(updateListener)
         main.removeCallbacks(probeTicker)
+        runCatching { quickTileDialog?.dismiss() }
         super.onDestroy()
     }
 
@@ -330,6 +333,8 @@ class SettingsActivity : Activity() {
                 }
             },
         )
+        castCard.addView(spacer(8))
+        castCard.addView(buildQuickTileRow())
         root.addView(castCard)
 
         // —— 卡片 3：连接与调试（运行日志直达 + 高级调试默认折叠） ——
@@ -734,6 +739,108 @@ class SettingsActivity : Activity() {
                 setColorFilter(palette.textTertiary)
                 layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply { marginStart = dp(4) }
             },
+        )
+    }
+
+    private fun buildQuickTileRow(): View {
+        val canDirectAdd = QuickSettingsTileCompat.canRequestAddTile()
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = palette.rowIdleBg,
+                radiusPx = UiComponents.dpf(this@SettingsActivity, 14f),
+                rippleColor = palette.ripple,
+                strokeColor = palette.rowIdleBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(12), dp(11), dp(12), dp(11))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { triggerQuickTileAction() }
+        }
+        val meta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(10)
+            }
+        }
+        meta.addView(
+            TextView(this).apply {
+                text = getString(R.string.settings_qs_tile_title)
+                textSize = 13.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+            },
+        )
+        meta.addView(
+            TextView(this).apply {
+                text = getString(R.string.settings_qs_tile_sub)
+                textSize = 11.5f
+                setTextColor(palette.textSecondary)
+                setPadding(0, dp(2), 0, 0)
+            },
+        )
+        row.addView(meta)
+        row.addView(
+            UiComponents.pillBadge(
+                context = this,
+                bgColor = palette.accentSoftBg,
+                textColor = palette.accentBright,
+                label = getString(
+                    if (canDirectAdd) R.string.settings_qs_tile_add_btn else R.string.settings_qs_tile_guide_btn,
+                ),
+            ),
+        )
+        return row
+    }
+
+    private fun triggerQuickTileAction() {
+        if (!QuickSettingsTileCompat.canRequestAddTile()) {
+            showQuickTileGuideDialog(
+                title = getString(R.string.settings_qs_tile_guide_title),
+                message = getString(R.string.settings_qs_tile_guide_msg),
+            )
+            return
+        }
+        QuickSettingsTileCompat.requestAddTile(
+            context = this,
+            label = getString(R.string.qs_tile_label),
+            executor = { r -> main.post(r) },
+        ) { result ->
+            if (isFinishing || isDestroyed) return@requestAddTile
+            when (result) {
+                QuickSettingsTileCompat.ADD_RESULT_ADDED -> showQuickTileGuideDialog(
+                    title = getString(R.string.settings_qs_tile_title),
+                    message = getString(R.string.settings_qs_tile_added),
+                )
+                QuickSettingsTileCompat.ADD_RESULT_ALREADY_ADDED -> showQuickTileGuideDialog(
+                    title = getString(R.string.settings_qs_tile_title),
+                    message = getString(R.string.settings_qs_tile_already_added),
+                )
+                else -> showQuickTileGuideDialog(
+                    title = getString(R.string.settings_qs_tile_guide_title),
+                    message = getString(R.string.settings_qs_tile_guide_msg),
+                )
+            }
+        }
+    }
+
+    private fun showQuickTileGuideDialog(title: String, message: String) {
+        if (isFinishing || isDestroyed) return
+        runCatching { quickTileDialog?.dismiss() }
+        quickTileDialog = UiComponents.showStyleBDialog(
+            activity = this,
+            palette = palette,
+            title = title,
+            message = message,
+            primaryLabel = getString(R.string.settings_qs_tile_guide_ok),
+            onPrimary = {},
+            secondaryLabel = getString(R.string.settings_qs_tile_preview_btn),
+            onSecondary = {
+                startActivity(QuickCastPanelActivity.createLaunchIntent(this))
+            },
+            onDismissed = { quickTileDialog = null },
         )
     }
 
