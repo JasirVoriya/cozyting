@@ -1,0 +1,17 @@
+android/app/build.gradle.kts
+  h_75f437d5bc136b 31-32
+CHANGELOG.md
+  h_75f437d5bc136b 11-21,23-36
+  h_75f437d5bc136b 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64317e67ea0038aa67fd71946ed30a8b697ca502",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
