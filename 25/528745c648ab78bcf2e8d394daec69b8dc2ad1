@@ -1,0 +1,38 @@
+android/app/src/main/java/com/cozyting/app/AppPickerActivity.kt
+  h_75f437d5bc136b 754,756,758-773
+android/app/src/main/java/com/cozyting/app/CastService.kt
+  h_75f437d5bc136b 658-659,661,675,677,681,935,937,942
+android/app/src/main/java/com/cozyting/app/LocalFilterProbeService.kt
+  h_75f437d5bc136b 183-184
+android/app/src/main/java/com/cozyting/app/MainActivity.kt
+  h_75f437d5bc136b 103,125,208,213-215,341-342,414,461-472,490-491,532-533,1298-1301,2275,2304,2314,2324,2711,2713,2827,2829-2848,2899-2901,2913-2915
+android/app/src/main/java/com/cozyting/app/capture/CaptureModels.kt
+  h_75f437d5bc136b 3-5,24,39-50,64-66
+android/app/src/main/java/com/cozyting/app/capture/CaptureTargetResolver.kt
+  h_75f437d5bc136b 5-11,19,32,38,41-47,49-52,55-68,76,85-96
+android/app/src/main/java/com/cozyting/app/capture/PrefsTargetAppStore.kt
+  h_75f437d5bc136b 171-213,223
+android/app/src/main/java/com/cozyting/app/ui/SharedUidConsentDialog.kt
+  h_75f437d5bc136b 1-54
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 554-566
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 554-566
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 554-566
+android/app/src/test/java/com/cozyting/app/capture/CaptureTargetResolverTest.kt
+  h_75f437d5bc136b 59,70-90,92,96-113,118-119,126-170
+design/UI_SPEC.md
+  h_75f437d5bc136b 49-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "25528745c648ab78bcf2e8d394daec69b8dc2ad1",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
