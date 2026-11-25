@@ -1,62 +1,70 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-25T04:16:43Z",
+  "generated_at": "2026-11-25T05:40:46Z",
   "repo": "JasirVoriya/cozyting",
   "channels": {
     "stable": {
-      "tag": "v0.9.9",
-      "version": "0.9.9",
+      "tag": "v0.9.10",
+      "version": "0.9.10",
       "prerelease": false,
-      "published_at": "2026-11-24T18:50:16Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.9",
-      "notes": "> 正式版（Stable Release）：新增应用内本地运行日志浏览与一键导出分享，重构设置页「关于与更新」为更符合主流移动端习惯的单入口 + 独立关于二级页，并将更新通道升级为「接收测试版更新」开关。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **应用内本地运行日志落盘与结构化浏览/导出（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust 核心新增异步轮转日志转发模块（`core/src/diag_log.rs`），异步落盘至应用私有目录 `core.log`（256 KB × 2 轮转，封顶 512 KB），同步暴露 Android JNI 与 iOS C ABI。\n  - Android 侧新增统一日志入口 `AppLog` / `AppLogStore` 与独立结构化日志浏览页（支持分类筛选、关键词搜索、JSON 折叠高亮、复制、清空及附带诊断头的一键系统分享导出），纯本地沙箱存储、不含音频数据、零自动上传。\n- **独立「关于窝爱听 / About CozyTing」二级页与三语同步**：\n  - 顶部居中展示小屋小猫品牌头与版本号，下方以统一无框分割线列表平铺「检查更新」「接收测试版更新（Switch 开关）」「版本发布与更新日志」，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` iOS 对齐规范。\n\n### Changed\n- **重构设置页「关于与更新」布局与更新提醒策略**：\n  - 设置页底部收口为单一清爽入口「关于窝爱听」（有新版本时右侧高亮版本胶囊与蓝点），彻底移除原卡片内嵌套小框、全宽大按钮与高饱和分段条。\n  - 冷启动自动检查更新默认常开（保留 24 小时节流、ETag 304 与零遥测，绝不强弹阻塞窗口），移除冗余开关；主界面非阻塞更新轻提示条在投送中同样可见，仅在跳过该版本后永久隐藏。\n- **单一公开仓分发与更新清单收拢**：公开源码、Releases、GitHub Pages 与应用内更新清单统一收拢至 `JasirVoriya/cozyting`。\n\n### Fixed\n- **无线调试默认配对名称同步品牌名**：将 `AdbCrypto.encodeAndroidPublicKeyLine` 默认 `userHost` 更正为 `cozyting@android`。",
+      "published_at": "2026-11-25T05:40:44Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
+      "notes": "> 正式版（Stable Release）：补齐重启后的常用状态记忆（总音量/单音箱独立音量与上次音箱组合一键恢复），升级更新弹窗结构化 Markdown 日志渲染、共享 UID 三档分流授权，并显著增强无线调试无感采集切后台时的心跳抗抖动与自动静默恢复能力。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n  - 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n  - 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n  - 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n  - 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。\n- **共享 UID 三档分流策略与显式同意弹窗**：\n  - 针对与少量非系统组件共享 UID 的音源 App（如部分系统自带音乐/多账号组件），新增显式风险确认弹窗，经用户知情同意后允许按单 UID 投送；高危系统共享 UID 仍严格坚持 Fail-Closed 拒绝，绝不退化为全系统采集。\n\n### Changed\n- **更新弹窗日志结构化渲染（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust `clean_release_notes` 与清单生成脚本保留列表行首缩进，Android 端新增零依赖 `ChangelogMarkdownRenderer` 渲染导语块、三语分组徽标、嵌套缩进与行内富文本，保持 `onMeasure` 硬限高不顶出底部下载按钮。\n- **三语公开文档、官网与宣传片品牌叙事同步对齐**：\n  - 同步更新中/英/日三语 README、GitHub Pages 与 60 秒宣传片文案，强化「纯局域网、无损单 App 投送小米音箱」的产品定位与 SEO/GEO 结构化摘要。\n\n### Fixed\n- **无感采集 Helper 心跳抗抖动、断连自动静默重建与三语报错提示**：\n  - 放宽 Helper 心跳看门狗（`6.0s`）与 PCM 写阻塞超时（`4.5s`），并增加控制口瞬时超时重试（最多 3 次），大幅降低切往小红书等重度 App 时因系统短暂限频触发的误断连。\n  - 检测到 Helper 意外退出时，保持音箱端连接不断并在 30 秒限频窗口内自动尝试静默重新拉起 Helper 恢复推流；同时为 `ShellAudioFocusPolicyBridge` 回调补充空安全与异常兜底。\n  - 修复英文/日文界面下 Helper 心跳断开报错仍显示硬编码中文的问题，并在中/英/日三语报错中直接附带「将系统省电策略设为无限制」排查引导。\n- **主界面告警横幅展示交互与捕获错误三语本地化**：\n  - 修复告警横幅持久化与手动关闭体验，补齐 `CaptureTargetResolver` 中/英/日三语错误提示。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.9-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.9/cozyting-v0.9.9-arm64-v8a.apk",
-            "size_bytes": 2696481,
-            "sha256": "e418c6b9bd504f033974e94dc4aa4fb0d0f123c8cbf2760d420706e74e41bdeb",
+            "name": "cozyting-v0.9.10-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.10/cozyting-v0.9.10-arm64-v8a.apk",
+            "size_bytes": 2738545,
+            "sha256": "7e73571f01b63e23fc6cb48855df72505d8c3a313a9676b9ebecd869c3952e74",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.9",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
         "app_store_url": ""
       }
     },
     "prerelease": {
-      "tag": "v0.9.10-rc.2",
-      "version": "0.9.10-rc.2",
-      "prerelease": true,
-      "published_at": "2026-11-25T04:16:40Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10-rc.2",
-      "notes": "> 预发版（Pre-release）：重构应用内更新弹窗的更新日志排版与渲染体验，消除原始 Markdown 符号直出并恢复父子层级缩进。纯局域网运行，零云端、零账号、零遥测。\n\n### Changed\n- **更新弹窗日志结构化渲染（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust `clean_release_notes` 与清单生成脚本改为保留列表行首缩进，不再将嵌套子条目压平。\n  - Android 端新增零依赖 `ChangelogMarkdownRenderer`：将 `>` 摘要渲染为带语义色条的导语块，`### Added / Changed / Fixed / Removed / Security` 映射为三语语义分组徽标，父级功能点加粗提亮并以左侧细竖线缩进承接子级说明，行内 `**加粗**`、`` `code` `` 与 `[文案](url)` 转为原生富文本（同步兼容历史已压平缩进的清单条目）。\n  - 跨多版本日志顶部改用版本胶囊 + 预览徽标 + 右对齐日期排版，滚动区开启垂直边缘渐隐并将限高微调至 `≤ 260dp / 40%` 屏高（保持 `onMeasure` 硬限高不顶出底部按钮），同步更新中/英/日三语文案与 `design/UI_SPEC.md` iOS SwiftUI 对应规范。",
+      "tag": "v0.9.10",
+      "version": "0.9.10",
+      "prerelease": false,
+      "published_at": "2026-11-25T05:40:44Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
+      "notes": "> 正式版（Stable Release）：补齐重启后的常用状态记忆（总音量/单音箱独立音量与上次音箱组合一键恢复），升级更新弹窗结构化 Markdown 日志渲染、共享 UID 三档分流授权，并显著增强无线调试无感采集切后台时的心跳抗抖动与自动静默恢复能力。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n  - 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n  - 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n  - 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n  - 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。\n- **共享 UID 三档分流策略与显式同意弹窗**：\n  - 针对与少量非系统组件共享 UID 的音源 App（如部分系统自带音乐/多账号组件），新增显式风险确认弹窗，经用户知情同意后允许按单 UID 投送；高危系统共享 UID 仍严格坚持 Fail-Closed 拒绝，绝不退化为全系统采集。\n\n### Changed\n- **更新弹窗日志结构化渲染（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust `clean_release_notes` 与清单生成脚本保留列表行首缩进，Android 端新增零依赖 `ChangelogMarkdownRenderer` 渲染导语块、三语分组徽标、嵌套缩进与行内富文本，保持 `onMeasure` 硬限高不顶出底部下载按钮。\n- **三语公开文档、官网与宣传片品牌叙事同步对齐**：\n  - 同步更新中/英/日三语 README、GitHub Pages 与 60 秒宣传片文案，强化「纯局域网、无损单 App 投送小米音箱」的产品定位与 SEO/GEO 结构化摘要。\n\n### Fixed\n- **无感采集 Helper 心跳抗抖动、断连自动静默重建与三语报错提示**：\n  - 放宽 Helper 心跳看门狗（`6.0s`）与 PCM 写阻塞超时（`4.5s`），并增加控制口瞬时超时重试（最多 3 次），大幅降低切往小红书等重度 App 时因系统短暂限频触发的误断连。\n  - 检测到 Helper 意外退出时，保持音箱端连接不断并在 30 秒限频窗口内自动尝试静默重新拉起 Helper 恢复推流；同时为 `ShellAudioFocusPolicyBridge` 回调补充空安全与异常兜底。\n  - 修复英文/日文界面下 Helper 心跳断开报错仍显示硬编码中文的问题，并在中/英/日三语报错中直接附带「将系统省电策略设为无限制」排查引导。\n- **主界面告警横幅展示交互与捕获错误三语本地化**：\n  - 修复告警横幅持久化与手动关闭体验，补齐 `CaptureTargetResolver` 中/英/日三语错误提示。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.10-rc.2-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.10-rc.2/cozyting-v0.9.10-rc.2-arm64-v8a.apk",
-            "size_bytes": 2713933,
-            "sha256": "c7b3b234bfdc4866a2f7f48a380d71e00fd0342270dae188b364b005b5bddfef",
+            "name": "cozyting-v0.9.10-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.10/cozyting-v0.9.10-arm64-v8a.apk",
+            "size_bytes": 2738545,
+            "sha256": "7e73571f01b63e23fc6cb48855df72505d8c3a313a9676b9ebecd869c3952e74",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10-rc.2",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
         "app_store_url": ""
       }
     }
   },
   "releases": [
+    {
+      "tag": "v0.9.10",
+      "version": "0.9.10",
+      "prerelease": false,
+      "published_at": "2026-11-25T05:40:44Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
+      "notes": "> 正式版（Stable Release）：补齐重启后的常用状态记忆（总音量/单音箱独立音量与上次音箱组合一键恢复），升级更新弹窗结构化 Markdown 日志渲染、共享 UID 三档分流授权，并显著增强无线调试无感采集切后台时的心跳抗抖动与自动静默恢复能力。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n  - 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n  - 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n  - 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n  - 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。\n- **共享 UID 三档分流策略与显式同意弹窗**：\n  - 针对与少量非系统组件共享 UID 的音源 App（如部分系统自带音乐/多账号组件），新增显式风险确认弹窗，经用户知情同意后允许按单 UID 投送；高危系统共享 UID 仍严格坚持 Fail-Closed 拒绝，绝不退化为全系统采集。\n\n### Changed\n- **更新弹窗日志结构化渲染（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust `clean_release_notes` 与清单生成脚本保留列表行首缩进，Android 端新增零依赖 `ChangelogMarkdownRenderer` 渲染导语块、三语分组徽标、嵌套缩进与行内富文本，保持 `onMeasure` 硬限高不顶出底部下载按钮。\n- **三语公开文档、官网与宣传片品牌叙事同步对齐**：\n  - 同步更新中/英/日三语 README、GitHub Pages 与 60 秒宣传片文案，强化「纯局域网、无损单 App 投送小米音箱」的产品定位与 SEO/GEO 结构化摘要。\n\n### Fixed\n- **无感采集 Helper 心跳抗抖动、断连自动静默重建与三语报错提示**：\n  - 放宽 Helper 心跳看门狗（`6.0s`）与 PCM 写阻塞超时（`4.5s`），并增加控制口瞬时超时重试（最多 3 次），大幅降低切往小红书等重度 App 时因系统短暂限频触发的误断连。\n  - 检测到 Helper 意外退出时，保持音箱端连接不断并在 30 秒限频窗口内自动尝试静默重新拉起 Helper 恢复推流；同时为 `ShellAudioFocusPolicyBridge` 回调补充空安全与异常兜底。\n  - 修复英文/日文界面下 Helper 心跳断开报错仍显示硬编码中文的问题，并在中/英/日三语报错中直接附带「将系统省电策略设为无限制」排查引导。\n- **主界面告警横幅展示交互与捕获错误三语本地化**：\n  - 修复告警横幅持久化与手动关闭体验，补齐 `CaptureTargetResolver` 中/英/日三语错误提示。"
+    },
     {
       "tag": "v0.9.10-rc.2",
       "version": "0.9.10-rc.2",
