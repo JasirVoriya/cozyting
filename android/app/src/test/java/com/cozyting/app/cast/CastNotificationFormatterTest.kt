@@ -33,7 +33,7 @@ class CastNotificationFormatterTest {
         )
 
         assertEquals("正在投送 · 示例音乐", copy.title)
-        assertEquals("客厅音箱", copy.collapsedText)
+        assertEquals("客厅音箱 · 点击打开控制卡", copy.collapsedText)
         assertNull(copy.expandedText)
         assertFalse(copy.collapsedText.contains("E2E"))
         assertFalse(copy.collapsedText.contains("配置"))
@@ -59,7 +59,7 @@ class CastNotificationFormatterTest {
         )
 
         assertEquals("正在投送 · 示例音乐", copy.title)
-        assertEquals("2 台设备同步播放", copy.collapsedText)
+        assertEquals("2 台设备同步播放 · 点击打开控制卡", copy.collapsedText)
         assertEquals("• 客厅音箱 · 播放中\n• 卧室音箱 · 播放中", copy.expandedText)
     }
 
@@ -111,7 +111,7 @@ class CastNotificationFormatterTest {
         )
 
         assertEquals("正在连接 · 示例音乐", copy.title)
-        assertEquals("正在连接 2 台设备", copy.collapsedText)
+        assertEquals("正在连接 2 台设备 · 点击打开控制卡", copy.collapsedText)
         assertTrue(copy.expandedText!!.contains("• 客厅音箱 · 连接中"))
     }
 
@@ -134,7 +134,7 @@ class CastNotificationFormatterTest {
             deviceNamesByIp = names,
         )
         assertEquals("正在投送 · 全局媒体", globalCopy.title)
-        assertEquals("2 台设备同步播放", globalCopy.collapsedText)
+        assertEquals("2 台设备同步播放 · 点击打开控制卡", globalCopy.collapsedText)
 
         val pausedCopy = CastNotificationFormatter.format(
             source = "app",
@@ -146,7 +146,7 @@ class CastNotificationFormatterTest {
             deviceNamesByIp = names,
         )
         assertEquals("已暂停投送 · 示例音乐", pausedCopy.title)
-        assertEquals("2 台设备", pausedCopy.collapsedText)
+        assertEquals("2 台设备 · 点击打开控制卡", pausedCopy.collapsedText)
 
         val silentCopy = CastNotificationFormatter.format(
             source = "silent",
@@ -159,6 +159,6 @@ class CastNotificationFormatterTest {
         )
         assertEquals("静音测试中", silentCopy.title)
         // 无缓存名时平滑回退为完整 IP，不展示裸末段
-        assertEquals("192.0.2.99", silentCopy.collapsedText)
+        assertEquals("192.0.2.99 · 点击打开控制卡", silentCopy.collapsedText)
     }
 }
