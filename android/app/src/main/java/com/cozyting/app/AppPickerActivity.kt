@@ -751,10 +751,26 @@ class AppPickerActivity : Activity() {
     private fun select(app: LaunchableApp) {
         status.text = getString(R.string.picker_verifying, app.label)
         Thread {
+            val approvedShared = store.loadSharedUidConsent(app.packageName)
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
-            when (val r = resolver.resolveForCapture(app.packageName)) {
+            when (val r = resolver.resolveForCapture(app.packageName, approvedSharedUidPackages = approvedShared)) {
                 is CaptureTargetResult.Fail -> main.post {
-                    status.text = r.messageZh
+                    if (r.reason == com.cozyting.app.capture.CaptureFailReason.SHARED_UID && r.sharedPackages.size > 1) {
+                        status.text = r.localizedMessage(this)
+                        com.cozyting.app.ui.SharedUidConsentDialog.show(
+                            activity = this,
+                            palette = palette,
+                            targetLabel = app.label,
+                            targetPackage = app.packageName,
+                            sharedPackages = r.sharedPackages,
+                            onAllow = {
+                                store.saveSharedUidConsent(app.packageName, r.sharedPackages)
+                                select(app)
+                            },
+                        )
+                    } else {
+                        status.text = r.localizedMessage(this)
+                    }
                 }
                 is CaptureTargetResult.Ok -> {
                     val action = ManualSourceSwitchPolicy.decide(

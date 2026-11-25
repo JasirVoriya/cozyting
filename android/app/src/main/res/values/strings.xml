@@ -551,4 +551,17 @@
     <string name="log_viewer_copy_entry">复制该条日志</string>
     <string name="log_viewer_entry_copied">已复制该条日志</string>
     <string name="log_viewer_empty_filtered">当前筛选条件下暂无日志</string>
+
+    <!-- Target capture validation & shared UID consent -->
+    <string name="capture_err_no_selection">请先选择要投送的 App。未选择时不会开始捕获，也不会回退到全系统音频。</string>
+    <string name="capture_err_not_found">找不到或对本用户不可见：%1$s。可能已卸载或被隐藏，请重新选择。</string>
+    <string name="capture_err_cross_user">目标 App 不在当前用户资料中（例如工作资料）。仅支持同用户应用，已停止。</string>
+    <string name="capture_err_system_shared_uid">目标 App 使用系统级共享 UID，可能混入系统或通话音频，已拒绝捕获。请选择普通独立应用。</string>
+    <string name="capture_err_shared_uid">目标 App 与其他应用共享同一音频通道，请重新点选该应用并确认后方可投送。</string>
+    <string name="capture_err_identity_changed">目标 App 签名身份已变化（可能已卸载重装），请重新选择后再开始。</string>
+    <string name="shared_uid_consent_title">共享音频通道确认</string>
+    <string name="shared_uid_consent_msg">「%1$s」与以下应用共享系统音频通道：%2$s。\n\n投送时会同时捕获这些应用的声音，不会捕获微信、系统通知等其他应用。是否允许投送？</string>
+    <string name="shared_uid_consent_cancel">取消</string>
+    <string name="shared_uid_consent_allow">允许投送</string>
+    <string name="status_banner_dismiss_cd">关闭提示</string>
 </resources>

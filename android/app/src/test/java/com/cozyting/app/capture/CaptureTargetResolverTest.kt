@@ -56,7 +56,7 @@ class CaptureTargetResolverTest {
     }
 
     @Test
-    fun sharedUserId_rejected() {
+    fun systemSharedUserId_hardRejectedEvenWithConsent() {
         lookup.put(
             PackageIdentity(
                 packageName = "com.example.shared",
@@ -67,26 +67,107 @@ class CaptureTargetResolverTest {
                 signingCertSha256 = "bbb",
             ),
         )
-        val r = resolver.resolveForCapture(savedPackage = "com.example.shared")
+        val r = resolver.resolveForCapture(
+            savedPackage = "com.example.shared",
+            approvedSharedUidPackages = setOf("com.example.shared", "com.example.other"),
+        )
         assertTrue(r is CaptureTargetResult.Fail)
-        assertEquals(CaptureFailReason.SHARED_UID, (r as CaptureTargetResult.Fail).reason)
+        assertEquals(CaptureFailReason.SYSTEM_SHARED_UID, (r as CaptureTargetResult.Fail).reason)
     }
 
     @Test
-    fun multiplePackagesSameUid_rejectedEvenWithoutSharedUserId() {
+    fun privilegedAppIdBelowFirstApplicationUid_hardRejected() {
+        lookup.put(
+            PackageIdentity(
+                packageName = "com.example.sys",
+                uid = 1000,
+                sharedUserId = null,
+                packagesSharingUid = listOf("com.example.sys"),
+                sameUser = true,
+                signingCertSha256 = "sys",
+            ),
+        )
+        val r = resolver.resolveForCapture(savedPackage = "com.example.sys")
+        assertTrue(r is CaptureTargetResult.Fail)
+        assertEquals(CaptureFailReason.SYSTEM_SHARED_UID, (r as CaptureTargetResult.Fail).reason)
+    }
+
+    @Test
+    fun declaredSharedUserId_withSingleInstalledPackage_allowed() {
+        lookup.put(
+            PackageIdentity(
+                packageName = "com.apple.android.music",
+                uid = 10234,
+                sharedUserId = "com.apple.android",
+                packagesSharingUid = listOf("com.apple.android.music"),
+                sameUser = true,
+                signingCertSha256 = "apple-cert",
+            ),
+        )
+        val r = resolver.resolveForCapture(savedPackage = "com.apple.android.music")
+        assertTrue(r is CaptureTargetResult.Ok)
+        assertEquals(10234, (r as CaptureTargetResult.Ok).uid)
+    }
+
+    @Test
+    fun multiplePackagesSameUid_rejectedWithoutConsent_andReturnsSharedPackages() {
         lookup.put(
             PackageIdentity(
                 packageName = "com.example.a",
                 uid = 10555,
-                sharedUserId = null,
-                packagesSharingUid = listOf("com.example.a", "com.example.b"),
+                sharedUserId = "com.example.shared",
+                packagesSharingUid = listOf("com.example.b", "com.example.a"),
                 sameUser = true,
                 signingCertSha256 = "ccc",
             ),
         )
         val r = resolver.resolveForCapture(savedPackage = "com.example.a")
         assertTrue(r is CaptureTargetResult.Fail)
-        assertEquals(CaptureFailReason.SHARED_UID, (r as CaptureTargetResult.Fail).reason)
+        val fail = r as CaptureTargetResult.Fail
+        assertEquals(CaptureFailReason.SHARED_UID, fail.reason)
+        assertEquals(listOf("com.example.a", "com.example.b"), fail.sharedPackages)
+    }
+
+    @Test
+    fun multiplePackagesSameUid_allowedWhenExactSnapshotConsented() {
+        lookup.put(
+            PackageIdentity(
+                packageName = "com.example.a",
+                uid = 10555,
+                sharedUserId = "com.example.shared",
+                packagesSharingUid = listOf("com.example.b", "com.example.a"),
+                sameUser = true,
+                signingCertSha256 = "ccc",
+            ),
+        )
+        val r = resolver.resolveForCapture(
+            savedPackage = "com.example.a",
+            approvedSharedUidPackages = setOf("com.example.a", "com.example.b"),
+        )
+        assertTrue(r is CaptureTargetResult.Ok)
+        assertEquals(10555, (r as CaptureTargetResult.Ok).uid)
+    }
+
+    @Test
+    fun multiplePackagesSameUid_reRejectedWhenNewPeerAdded() {
+        lookup.put(
+            PackageIdentity(
+                packageName = "com.example.a",
+                uid = 10555,
+                sharedUserId = "com.example.shared",
+                packagesSharingUid = listOf("com.example.a", "com.example.b", "com.example.c"),
+                sameUser = true,
+                signingCertSha256 = "ccc",
+            ),
+        )
+        val r = resolver.resolveForCapture(
+            savedPackage = "com.example.a",
+            approvedSharedUidPackages = setOf("com.example.a", "com.example.b"),
+        )
+        assertTrue(r is CaptureTargetResult.Fail)
+        val fail = r as CaptureTargetResult.Fail
+        assertEquals(CaptureFailReason.SHARED_UID, fail.reason)
+        assertEquals(listOf("com.example.a", "com.example.b", "com.example.c"), fail.sharedPackages)
     }
 
     @Test

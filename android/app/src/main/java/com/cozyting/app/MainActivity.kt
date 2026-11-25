@@ -100,6 +100,7 @@ class MainActivity : Activity() {
         private const val REQ_APP_PICKER = 43
         private const val REQ_SETTINGS = 45
         private const val AUTO_DISCOVER_COOLDOWN_MS = 30_000L
+        private const val ACTION_ALERT_DURATION_MS = 7_000L
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -121,6 +122,7 @@ class MainActivity : Activity() {
     private var updateDialog: Dialog? = null
     private var wirelessPromptDialog: Dialog? = null
     private var volumeConfirmDialog: Dialog? = null
+    private var sharedUidConsentDialog: Dialog? = null
     private var settingsUpdateBadge: View? = null
     private var updateBanner: LinearLayout? = null
     private var updateBannerText: TextView? = null
@@ -203,11 +205,14 @@ class MainActivity : Activity() {
     private enum class StatusBannerKind {
         HIDDEN,
         TRANSIENT_INFO,
+        ACTION_ALERT,
         WARNING_ALERT,
     }
 
     private val hideTransientStatusRunnable = Runnable {
-        if (!isFinishing && !isDestroyed && lastStatusKind == StatusBannerKind.TRANSIENT_INFO) {
+        if (!isFinishing && !isDestroyed &&
+            (lastStatusKind == StatusBannerKind.TRANSIENT_INFO || lastStatusKind == StatusBannerKind.ACTION_ALERT)
+        ) {
             clearStatusBanner()
         }
     }
@@ -333,6 +338,8 @@ class MainActivity : Activity() {
         wirelessPromptDialog = null
         runCatching { volumeConfirmDialog?.dismiss() }
         volumeConfirmDialog = null
+        runCatching { sharedUidConsentDialog?.dismiss() }
+        sharedUidConsentDialog = null
         quickChipDragController?.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
@@ -404,7 +411,7 @@ class MainActivity : Activity() {
         permissions.forEachIndexed { i, p ->
             val ok = grantResults.getOrNull(i) == PackageManager.PERMISSION_GRANTED
             if (p == Manifest.permission.RECORD_AUDIO && !ok) {
-                showAlertStatus(getString(R.string.main_err_record_audio_denied))
+                showActionAlert(getString(R.string.main_err_record_audio_denied))
             }
         }
     }
@@ -451,6 +458,18 @@ class MainActivity : Activity() {
         main.postDelayed(hideTransientStatusRunnable, durationMs)
     }
 
+    private fun showActionAlert(msg: String, durationMs: Long = ACTION_ALERT_DURATION_MS) {
+        if (msg.isBlank()) {
+            clearStatusBanner()
+            return
+        }
+        main.removeCallbacks(hideTransientStatusRunnable)
+        lastStatusMessage = msg
+        lastStatusKind = StatusBannerKind.ACTION_ALERT
+        applyStatusBannerUi()
+        main.postDelayed(hideTransientStatusRunnable, durationMs)
+    }
+
     private fun showAlertStatus(msg: String) {
         if (msg.isBlank()) {
             clearStatusBanner()
@@ -468,7 +487,8 @@ class MainActivity : Activity() {
             statusBanner.visibility = View.GONE
             return
         }
-        val isWarning = lastStatusKind == StatusBannerKind.WARNING_ALERT
+        val isWarning = lastStatusKind == StatusBannerKind.WARNING_ALERT ||
+            lastStatusKind == StatusBannerKind.ACTION_ALERT
         val fgColor = if (isWarning) palette.statusWarning else palette.accentBright
         val bgColor = if (isWarning) {
             Color.argb(
@@ -509,6 +529,8 @@ class MainActivity : Activity() {
         wirelessPromptDialog = null
         runCatching { volumeConfirmDialog?.dismiss() }
         volumeConfirmDialog = null
+        runCatching { sharedUidConsentDialog?.dismiss() }
+        sharedUidConsentDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -1273,6 +1295,10 @@ class MainActivity : Activity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dp(10) }
             visibility = View.GONE
+            isClickable = true
+            isFocusable = true
+            contentDescription = getString(R.string.status_banner_dismiss_cd)
+            setOnClickListener { clearStatusBanner() }
             addView(statusDot)
             addView(statusLine)
         }
@@ -2246,7 +2272,7 @@ class MainActivity : Activity() {
                     clearStatusBanner()
                 }
                 is Effect.RejectNonCastable -> {
-                    showAlertStatus(getString(R.string.main_err_cannot_cast, e.reason))
+                    showActionAlert(getString(R.string.main_err_cannot_cast, e.reason))
                 }
             }
         }
@@ -2275,7 +2301,7 @@ class MainActivity : Activity() {
         }
         if (validation is CaptureEngineCapabilities.ValidationResult.Rejected) {
             val localizedReason = validation.message(this)
-            showAlertStatus(localizedReason)
+            showActionAlert(localizedReason)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             showWirelessPrecheckGuideDialog(speakerIds, localizedReason)
@@ -2285,7 +2311,7 @@ class MainActivity : Activity() {
         val needsTargetApp = appMode && allowed.effectiveScope == CaptureScopeMode.SINGLE_APP
 
         if (needsTargetApp && selectedPackage.isBlank()) {
-            showAlertStatus(getString(R.string.main_err_select_app_first))
+            showActionAlert(getString(R.string.main_err_select_app_first))
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
             openAppPicker()
@@ -2295,7 +2321,7 @@ class MainActivity : Activity() {
             allowed.effectiveEngine == CaptureEngineMode.STANDARD &&
             checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
         ) {
-            showAlertStatus(getString(R.string.main_err_record_audio_needed))
+            showActionAlert(getString(R.string.main_err_record_audio_needed))
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQ_PERMS)
             routeState = CastRouteSelection.selectThisDevice(routeState).state
             renderDevices()
@@ -2682,8 +2708,9 @@ class MainActivity : Activity() {
             }.getOrDefault(targetPkg)
 
         Thread {
+            val approvedShared = store.loadSharedUidConsent(targetPkg)
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
-            val result = resolver.resolveForCapture(targetPkg)
+            val result = resolver.resolveForCapture(targetPkg, approvedSharedUidPackages = approvedShared)
             main.post {
                 if (pendingAutoResolvePkg == targetPkg) pendingAutoResolvePkg = null
                 if (CastService.running.get() || castRequested) return@post
@@ -2797,9 +2824,28 @@ class MainActivity : Activity() {
             return
         }
         Thread {
+            val approvedShared = store.loadSharedUidConsent(app.packageName)
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
-            when (val r = resolver.resolveForCapture(app.packageName)) {
-                is CaptureTargetResult.Fail -> main.post { showAlertStatus(r.messageZh) }
+            when (val r = resolver.resolveForCapture(app.packageName, approvedSharedUidPackages = approvedShared)) {
+                is CaptureTargetResult.Fail -> main.post {
+                    if (r.reason == com.cozyting.app.capture.CaptureFailReason.SHARED_UID && r.sharedPackages.size > 1) {
+                        runCatching { sharedUidConsentDialog?.dismiss() }
+                        sharedUidConsentDialog = com.cozyting.app.ui.SharedUidConsentDialog.show(
+                            activity = this,
+                            palette = palette,
+                            targetLabel = app.label,
+                            targetPackage = app.packageName,
+                            sharedPackages = r.sharedPackages,
+                            onAllow = {
+                                store.saveSharedUidConsent(app.packageName, r.sharedPackages)
+                                quickSelectApp(app)
+                            },
+                            onDismissed = { sharedUidConsentDialog = null },
+                        )
+                    } else {
+                        showActionAlert(r.localizedMessage(this))
+                    }
+                }
                 is CaptureTargetResult.Ok -> {
                     val sel = TargetAppSelection(
                         packageName = r.packageName,
@@ -2850,7 +2896,9 @@ class MainActivity : Activity() {
                 selectedCert = selection.signingCertSha256
                 store.saveSelection(selection)
                 refreshTargetFromStore()
-                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                if (lastStatusKind == StatusBannerKind.WARNING_ALERT ||
+                    lastStatusKind == StatusBannerKind.ACTION_ALERT
+                ) {
                     clearStatusBanner()
                 }
             }
@@ -2862,7 +2910,9 @@ class MainActivity : Activity() {
                 store.saveSelection(selection)
                 lastGrantSession = null
                 refreshTargetFromStore()
-                if (lastStatusKind == StatusBannerKind.WARNING_ALERT) {
+                if (lastStatusKind == StatusBannerKind.WARNING_ALERT ||
+                    lastStatusKind == StatusBannerKind.ACTION_ALERT
+                ) {
                     clearStatusBanner()
                 }
             }

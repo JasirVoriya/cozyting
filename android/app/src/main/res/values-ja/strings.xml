@@ -551,4 +551,17 @@
     <string name="log_viewer_copy_entry">このログをコピー</string>
     <string name="log_viewer_entry_copied">ログを1件コピーしました</string>
     <string name="log_viewer_empty_filtered">該当するログはありません</string>
+
+    <!-- Target capture validation & shared UID consent -->
+    <string name="capture_err_no_selection">先にキャスト元のアプリを選択してください。未選択のままシステム全体の音声へフォールバックすることはありません。</string>
+    <string name="capture_err_not_found">アプリが見つからないか現在のユーザーから参照できません：%1$s。アンインストールまたは非表示の可能性があります。</string>
+    <string name="capture_err_cross_user">選択したアプリは別のユーザープロファイル（仕事用など）にあるためキャプチャできません。</string>
+    <string name="capture_err_system_shared_uid">システムレベルの共有 UID を使用しているため、システム音や通話音声が混ざる恐れがあり拒否しました。通常のアプリを選択してください。</string>
+    <string name="capture_err_shared_uid">このアプリは他のアプリとオーディオ UID を共有しています。再度選択して共有チャンネルを確認してからキャストしてください。</string>
+    <string name="capture_err_identity_changed">アプリの署名情報が変更されました（再インストールの可能性があります）。再度選択してから開始してください。</string>
+    <string name="shared_uid_consent_title">共有オーディオチャンネルの確認</string>
+    <string name="shared_uid_consent_msg">「%1$s」は次のアプリと Android のオーディオ UID を共有しています：%2$s。\n\nキャスト時はこれら複数アプリの音声が同時に送信されます（他のアプリや通知音は含まれません）。許可しますか？</string>
+    <string name="shared_uid_consent_cancel">キャンセル</string>
+    <string name="shared_uid_consent_allow">キャストを許可</string>
+    <string name="status_banner_dismiss_cd">通知を閉じる</string>
 </resources>

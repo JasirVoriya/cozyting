@@ -1,5 +1,8 @@
 package com.cozyting.app.capture
 
+import android.content.Context
+import com.cozyting.app.R
+
 /** 开始捕获前对目标包的身份快照（不持久化 UID）。 */
 data class PackageIdentity(
     val packageName: String,
@@ -18,6 +21,7 @@ enum class CaptureFailReason {
     NO_SELECTION,
     NOT_FOUND,
     SHARED_UID,
+    SYSTEM_SHARED_UID,
     CROSS_USER,
     IDENTITY_CHANGED,
 }
@@ -32,7 +36,18 @@ sealed class CaptureTargetResult {
     data class Fail(
         val reason: CaptureFailReason,
         val messageZh: String,
-    ) : CaptureTargetResult()
+        val targetPackage: String = "",
+        val sharedPackages: List<String> = emptyList(),
+    ) : CaptureTargetResult() {
+        fun localizedMessage(context: Context): String = when (reason) {
+            CaptureFailReason.NO_SELECTION -> context.getString(R.string.capture_err_no_selection)
+            CaptureFailReason.NOT_FOUND -> context.getString(R.string.capture_err_not_found, targetPackage)
+            CaptureFailReason.CROSS_USER -> context.getString(R.string.capture_err_cross_user)
+            CaptureFailReason.SYSTEM_SHARED_UID -> context.getString(R.string.capture_err_system_shared_uid)
+            CaptureFailReason.SHARED_UID -> context.getString(R.string.capture_err_shared_uid)
+            CaptureFailReason.IDENTITY_CHANGED -> context.getString(R.string.capture_err_identity_changed)
+        }
+    }
 }
 
 data class TargetAppSelection(
@@ -46,6 +61,9 @@ interface TargetAppStore {
     fun loadSelection(): TargetAppSelection?
     fun clearSelection()
     fun loadRecentSelections(limit: Int = 6): List<TargetAppSelection> = emptyList()
+    fun saveSharedUidConsent(packageName: String, sharedPackages: Collection<String>) {}
+    fun loadSharedUidConsent(packageName: String): Set<String>? = null
+    fun clearSharedUidConsent(packageName: String) {}
     /** 明确不提供持久 UID。 */
     fun loadUid(): Int? = null
 }
