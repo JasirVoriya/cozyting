@@ -578,6 +578,33 @@ pub fn inspect(ip: Ipv4Addr) -> Result<crate::inspect::InspectReport> {
     crate::inspect::inspect_legacy(ip)
 }
 
+/// 硬件音量分档容差（部分音箱如 15/25 档设备会将 0..100 百分比吸附到最接近的硬件档位，
+/// 例如下发 18 实际回报 20）。仅适用于非静音（expected > 0）场景。
+const PREMUTE_QUANTIZATION_TOLERANCE: u8 = 10;
+
+/// 校验重连后 `GET_VOLUME` 回报的实际音量是否满足预调预期。
+/// - `expected == 0`（强制静音场景）：严格要求 `actual == 0`，否则拒绝推流；
+/// - `expected > 0`（普通目标音量）：允许硬件分档误差（`actual <= expected + 10`），
+///   仅当实际音量显著高于预期（存在炸耳风险）时拒绝推流。
+/// 返回 `Ok(true)` 表示精确一致，`Ok(false)` 表示在容差内存在分档偏差。
+fn check_premute_volume(expected: u8, actual: u8) -> Result<bool> {
+    if expected == 0 {
+        if actual != 0 {
+            return Err(Error::Protocol(format!(
+                "receiver volume is {actual}, expected premuted {expected}; refusing to stream"
+            )));
+        }
+        return Ok(true);
+    }
+    let max_allowed = expected.saturating_add(PREMUTE_QUANTIZATION_TOLERANCE);
+    if actual > max_allowed {
+        return Err(Error::Protocol(format!(
+            "receiver volume is {actual}, expected premuted {expected} (max allowed {max_allowed}); refusing to stream"
+        )));
+    }
+    Ok(actual == expected)
+}
+
 fn connect_receiver(
     ip: Ipv4Addr,
     cfg: &CastConfig,
@@ -619,7 +646,11 @@ fn connect_receiver(
         s.state = ctl.status.state;
     }
     if let (Some(v), Some(now)) = (cfg.premute, ctl.status.volume) {
-        if now != v { return Err(Error::Protocol(format!("receiver volume is {now}, expected premuted {v}; refusing to stream"))) }
+        if !check_premute_volume(v, now)? {
+            log::warn!(
+                "[{ip}] premute volume quantized: requested {v}, receiver reports {now} (within tolerance)"
+            );
+        }
     }
     phase(&format!("preparePlayback + SetPlaySource ref={}", cfg.identity.ref_function));
     ctl.prepare_playback(&cfg.identity)?;
@@ -1667,5 +1698,24 @@ mod tests {
         assert_eq!(clamp_playback_delay_us(10_000), MIN_PLAYBACK_DELAY_US);
         assert_eq!(clamp_playback_delay_us(400_000), 400_000);
         assert_eq!(clamp_playback_delay_us(9_000_000), MAX_PLAYBACK_DELAY_US);
+    }
+
+    #[test]
+    fn check_premute_volume_strict_on_zero_and_tolerant_on_hardware_steps() {
+        // 强制静音（0）：必须精确为 0
+        assert_eq!(check_premute_volume(0, 0).unwrap(), true);
+        assert!(check_premute_volume(0, 1).is_err());
+        assert!(check_premute_volume(0, 20).is_err());
+
+        // 普通目标音量：精确命中返回 true，硬件分档吸附或偏低在容差内放行并返回 false
+        assert_eq!(check_premute_volume(20, 20).unwrap(), true);
+        assert_eq!(check_premute_volume(18, 20).unwrap(), false);
+        assert_eq!(check_premute_volume(18, 28).unwrap(), false);
+        assert_eq!(check_premute_volume(20, 12).unwrap(), false);
+        assert_eq!(check_premute_volume(95, 100).unwrap(), false);
+
+        // 显著高于目标音量（超出分档容差）：仍拒绝推流防炸耳
+        assert!(check_premute_volume(18, 29).is_err());
+        assert!(check_premute_volume(18, 80).is_err());
     }
 }
