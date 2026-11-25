@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-24T18:50:17Z",
+  "generated_at": "2026-11-25T03:09:39Z",
   "repo": "JasirVoriya/cozyting",
   "channels": {
     "stable": {
@@ -30,33 +30,41 @@
       }
     },
     "prerelease": {
-      "tag": "v0.9.9",
-      "version": "0.9.9",
-      "prerelease": false,
-      "published_at": "2026-11-24T18:50:16Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.9",
-      "notes": "> 正式版（Stable Release）：新增应用内本地运行日志浏览与一键导出分享，重构设置页「关于与更新」为更符合主流移动端习惯的单入口 + 独立关于二级页，并将更新通道升级为「接收测试版更新」开关。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **应用内本地运行日志落盘与结构化浏览/导出（L1 Rust + Android + iOS 规范同步）**：\n- L1 Rust 核心新增异步轮转日志转发模块（`core/src/diag_log.rs`），异步落盘至应用私有目录 `core.log`（256 KB × 2 轮转，封顶 512 KB），同步暴露 Android JNI 与 iOS C ABI。\n- Android 侧新增统一日志入口 `AppLog` / `AppLogStore` 与独立结构化日志浏览页（支持分类筛选、关键词搜索、JSON 折叠高亮、复制、清空及附带诊断头的一键系统分享导出），纯本地沙箱存储、不含音频数据、零自动上传。\n- **独立「关于窝爱听 / About CozyTing」二级页与三语同步**：\n- 顶部居中展示小屋小猫品牌头与版本号，下方以统一无框分割线列表平铺「检查更新」「接收测试版更新（Switch 开关）」「版本发布与更新日志」，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` iOS 对齐规范。\n\n### Changed\n- **重构设置页「关于与更新」布局与更新提醒策略**：\n- 设置页底部收口为单一清爽入口「关于窝爱听」（有新版本时右侧高亮版本胶囊与蓝点），彻底移除原卡片内嵌套小框、全宽大按钮与高饱和分段条。\n- 冷启动自动检查更新默认常开（保留 24 小时节流、ETag 304 与零遥测，绝不强弹阻塞窗口），移除冗余开关；主界面非阻塞更新轻提示条在投送中同样可见，仅在跳过该版本后永久隐藏。\n- **单一公开仓分发与更新清单收拢**：公开源码、Releases、GitHub Pages 与应用内更新清单统一收拢至 `JasirVoriya/cozyting`。\n\n### Fixed\n- **无线调试默认配对名称同步品牌名**：将 `AdbCrypto.encodeAndroidPublicKeyLine` 默认 `userHost` 更正为 `cozyting@android`。",
+      "tag": "v0.9.10-rc.1",
+      "version": "0.9.10-rc.1",
+      "prerelease": true,
+      "published_at": "2026-11-25T03:09:35Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10-rc.1",
+      "notes": "> 预发版（Pre-release）：补齐重启 App 后的常用操作记忆，包括总音量与单音箱独立音量（联动高音量安全保护）、上次使用的音箱组合置顶与一键恢复，以及更新提示横幅关闭状态持久化。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n- 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n- 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n- 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复（同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 双端规范）。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n- 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.9-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.9/cozyting-v0.9.9-arm64-v8a.apk",
-            "size_bytes": 2696481,
-            "sha256": "e418c6b9bd504f033974e94dc4aa4fb0d0f123c8cbf2760d420706e74e41bdeb",
+            "name": "cozyting-v0.9.10-rc.1-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.10-rc.1/cozyting-v0.9.10-rc.1-arm64-v8a.apk",
+            "size_bytes": 2696821,
+            "sha256": "d7dadfbadaa8b12621999eaacf6b43b319325a5e7b8847ad9dd9ded5f7ded5bc",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.9",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10-rc.1",
         "app_store_url": ""
       }
     }
   },
   "releases": [
+    {
+      "tag": "v0.9.10-rc.1",
+      "version": "0.9.10-rc.1",
+      "prerelease": true,
+      "published_at": "2026-11-25T03:09:35Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10-rc.1",
+      "notes": "> 预发版（Pre-release）：补齐重启 App 后的常用操作记忆，包括总音量与单音箱独立音量（联动高音量安全保护）、上次使用的音箱组合置顶与一键恢复，以及更新提示横幅关闭状态持久化。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n- 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n- 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n- 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复（同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 双端规范）。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n- 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。"
+    },
     {
       "tag": "v0.9.9",
       "version": "0.9.9",
