@@ -60,6 +60,24 @@
             android:name=".diag.LogViewerActivity"
             android:exported="false"
             android:label="@string/title_log_viewer" />
+        <activity
+            android:name=".QuickCastPanelActivity"
+            android:theme="@style/Theme.CozyTing.QuickPanel"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:label="@string/qs_tile_label" />
+        <service
+            android:name=".CastTileService"
+            android:label="@string/qs_tile_label"
+            android:icon="@drawable/ic_stat_miplay"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <service
             android:name=".CastService"
             android:foregroundServiceType="mediaProjection|mediaPlayback"
