@@ -515,6 +515,16 @@
     <string name="cast_hotswitch_rejected">音源を切り替えできません：%1$s</string>
     <string name="cast_hotswitch_reverted">%1$s へ切り替えできませんでした（%2$s を維持）</string>
     <string name="cast_hotswitch_stopped">%1$s への切替に失敗しキャストを停止しました：%2$s</string>
+    <string name="shell_err_not_paired">ワイヤレスデバッグが未ペアリングです。「設定 → キャプチャエンジン」から 6 桁コードでペアリングしてください。</string>
+    <string name="shell_err_no_wireless_service">ローカルのワイヤレスデバッグが見つかりません。「開発者向けオプション → ワイヤレスデバッグ」がオンか確認してください。</string>
+    <string name="shell_err_helper_timeout">サイレントキャプチャ Helper の接続待機がタイムアウトしました。ワイヤレスデバッグの状態を確認するか再ペアリングしてください。</string>
+    <string name="shell_err_helper_handshake">サイレントキャプチャ Helper のハンドシェイクに失敗しました</string>
+    <string name="shell_err_helper_no_response">サイレントキャプチャ Helper から応答がありません</string>
+    <string name="shell_err_helper_start_failed">サイレントキャプチャエンジンの起動に失敗しました</string>
+    <string name="shell_err_helper_heartbeat_lost">サイレントキャプチャ Helper のハートビートが切断されたためキャストを安全に停止しました（システム設定でバッテリー制限を「制限なし」にすることを推奨します）</string>
+    <string name="shell_err_pcm_stream_lost">サイレントキャプチャの音声ストリームが中断しました（%1$s）。バッテリー制限を「制限なし」に設定してください</string>
+    <string name="shell_event_helper_reconnecting">サイレントキャプチャ Helper の切断を検出、自動復旧を試みています…</string>
+    <string name="shell_event_helper_recovered">サイレントキャプチャ Helper を自動復旧しました（キャスト継続中）</string>
 
     <!-- Runtime Log Viewer -->
     <string name="title_log_viewer">実行ログ</string>

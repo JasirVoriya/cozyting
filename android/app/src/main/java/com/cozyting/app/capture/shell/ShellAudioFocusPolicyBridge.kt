@@ -55,37 +55,47 @@ class ShellAudioFocusPolicyBridge(
         activeInfos.clear()
     }
 
-    override fun onAudioFocusRequest(afi: AudioFocusInfo, requestResult: Int) {
-        val policy = policyRef.get() ?: return
-        val clientId = runCatching { afi.clientId }.getOrNull().orEmpty()
-        if (clientId.isEmpty()) {
-            grantQuietly(afi, policy)
-            return
-        }
-        val uid = runCatching { afi.clientUid }.getOrDefault(-1)
-        val pkg = runCatching { afi.packageName }.getOrNull().orEmpty()
-        val gain = runCatching { afi.gainRequest }.getOrDefault(DualZoneAudioFocusRouter.AUDIOFOCUS_GAIN)
+    override fun onAudioFocusRequest(afi: AudioFocusInfo?, requestResult: Int) {
+        runCatching {
+            val info = afi ?: return
+            val policy = policyRef.get() ?: return
+            val clientId = runCatching { info.clientId }.getOrNull().orEmpty()
+            if (clientId.isEmpty()) {
+                grantQuietly(info, policy)
+                return
+            }
+            val uid = runCatching { info.clientUid }.getOrDefault(-1)
+            val pkg = runCatching { info.packageName }.getOrNull().orEmpty()
+            val gain = runCatching { info.gainRequest }.getOrDefault(DualZoneAudioFocusRouter.AUDIOFOCUS_GAIN)
 
-        activeInfos[clientId] = afi
-        val actions = router.onFocusRequest(
-            DualZoneAudioFocusRouter.FocusRequest(
-                clientId = clientId,
-                uid = uid,
-                packageName = pkg,
-                gainRequest = gain,
-            ),
-        )
-        executeActions(actions, currentAfi = afi, policy = policy)
+            activeInfos[clientId] = info
+            val actions = router.onFocusRequest(
+                DualZoneAudioFocusRouter.FocusRequest(
+                    clientId = clientId,
+                    uid = uid,
+                    packageName = pkg,
+                    gainRequest = gain,
+                ),
+            )
+            executeActions(actions, currentAfi = info, policy = policy)
+        }.onFailure { t ->
+            runCatching { Log.w(TAG, "onAudioFocusRequest ignored error: ${t.message}") }
+        }
     }
 
-    override fun onAudioFocusAbandon(afi: AudioFocusInfo) {
-        val policy = policyRef.get() ?: return
-        val clientId = runCatching { afi.clientId }.getOrNull().orEmpty()
-        if (clientId.isEmpty()) return
-        val uid = runCatching { afi.clientUid }.getOrDefault(-1)
-        activeInfos.remove(clientId)
-        val actions = router.onFocusAbandon(clientId, uid)
-        executeActions(actions, currentAfi = null, policy = policy)
+    override fun onAudioFocusAbandon(afi: AudioFocusInfo?) {
+        runCatching {
+            val info = afi ?: return
+            val policy = policyRef.get() ?: return
+            val clientId = runCatching { info.clientId }.getOrNull().orEmpty()
+            if (clientId.isEmpty()) return
+            val uid = runCatching { info.clientUid }.getOrDefault(-1)
+            activeInfos.remove(clientId)
+            val actions = router.onFocusAbandon(clientId, uid)
+            executeActions(actions, currentAfi = null, policy = policy)
+        }.onFailure { t ->
+            runCatching { Log.w(TAG, "onAudioFocusAbandon ignored error: ${t.message}") }
+        }
     }
 
     private fun executeActions(

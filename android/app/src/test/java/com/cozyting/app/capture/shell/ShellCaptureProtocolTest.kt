@@ -66,4 +66,13 @@ class ShellCaptureProtocolTest {
         assertTrue(cmd.contains("--pcm-port 41235"))
         assertTrue(cmd.endsWith("</dev/null >/dev/null 2>&1 &); sleep 1"))
     }
+
+    @Test
+    fun watchdogThresholdsAllowBriefBackgroundStalls() {
+        assertTrue(ShellCaptureProtocol.HEARTBEAT_TIMEOUT_MS >= 5_000L)
+        assertTrue(ShellCaptureProtocol.WRITE_STALL_TIMEOUT_MS >= 4_000L)
+        assertTrue(ShellCaptureProtocol.HEARTBEAT_TIMEOUT_MS > ShellCaptureProtocol.HEARTBEAT_INTERVAL_MS * 6)
+        assertTrue(ShellCaptureProtocol.HEARTBEAT_MAX_CONSECUTIVE_TIMEOUTS >= 2)
+        assertTrue(ShellCaptureProtocol.AUTO_RESPAWN_MAX_ATTEMPTS >= 1)
+    }
 }

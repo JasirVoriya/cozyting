@@ -515,6 +515,16 @@
     <string name="cast_hotswitch_rejected">无法切换音源：%1$s</string>
     <string name="cast_hotswitch_reverted">无法热切换至 %1$s，已保持当前音源 %2$s</string>
     <string name="cast_hotswitch_stopped">无法热切换音源为 %1$s，已停止投送：%2$s</string>
+    <string name="shell_err_not_paired">无线调试尚未配对，请前往「设置 → 采集引擎」完成 6 位配对码首次配对</string>
+    <string name="shell_err_no_wireless_service">未检测到本机无线调试服务，请确认系统「开发者选项 → 无线调试」已开启</string>
+    <string name="shell_err_helper_timeout">等待无感采集 Helper 回连超时，请检查无线调试状态或尝试重新配对</string>
+    <string name="shell_err_helper_handshake">无感采集 Helper 握手失败</string>
+    <string name="shell_err_helper_no_response">无感采集 Helper 无响应</string>
+    <string name="shell_err_helper_start_failed">无感采集引擎启动失败</string>
+    <string name="shell_err_helper_heartbeat_lost">无感采集 Helper 心跳断开，已安全停止投送（建议在系统设置中将窝爱听省电策略设为「无限制」）</string>
+    <string name="shell_err_pcm_stream_lost">无感采集音频流意外中断（%1$s），已安全停止投送（建议将系统省电策略设为「无限制」）</string>
+    <string name="shell_event_helper_reconnecting">检测到无感采集 Helper 断开，正在尝试自动恢复…</string>
+    <string name="shell_event_helper_recovered">无感采集 Helper 已自动恢复，投送继续</string>
 
     <!-- Runtime Log Viewer -->
     <string name="title_log_viewer">运行日志</string>

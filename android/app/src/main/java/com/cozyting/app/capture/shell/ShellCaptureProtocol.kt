@@ -18,8 +18,12 @@ object ShellCaptureProtocol {
     const val LOOPBACK_HOST = "127.0.0.1"
     const val TOKEN_BYTES = 32
     const val HEARTBEAT_INTERVAL_MS = 500L
-    const val HEARTBEAT_TIMEOUT_MS = 2_500L
-    const val WRITE_STALL_TIMEOUT_MS = 2_000L
+    const val HEARTBEAT_TIMEOUT_MS = 6_000L
+    const val WRITE_STALL_TIMEOUT_MS = 4_500L
+    const val CONTROL_SOCKET_TIMEOUT_MS = 3_000
+    const val HEARTBEAT_MAX_CONSECUTIVE_TIMEOUTS = 3
+    const val AUTO_RESPAWN_WINDOW_MS = 30_000L
+    const val AUTO_RESPAWN_MAX_ATTEMPTS = 2
 
     const val CMD_START_SINGLE_UID = "start_single_uid"
     const val CMD_START_GLOBAL_MEDIA = "start_global_media"
