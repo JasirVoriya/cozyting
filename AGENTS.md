@@ -6,11 +6,11 @@
 - 在获得用户明确允许前，**严禁**修改任何项目文件（代码、配置、文档等）或执行会改变仓库状态的操作。
 - 默认仅做只读分析与排查，向用户输出**明确结论与推荐方案**（必要时附影响范围与备选方案），等待用户确认后方可开始实施改动。
 
-### 0.2 强制基于 `main` 新建分支改动，完成后合并回 `main`
-- 获得允许准备改动时，**每一次独立改动都必须遵循以下闭环**（统一通过下方 `0.3` 的独立 Git Worktree 协议执行）：
-  1. **从主分支拉新分支与独立 Worktree**：基于最新 `main` 在 `.worktrees/` 下创建独立 worktree 与新分支（如 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`），**严禁直接在主工作区或 `main` 分支上做改动**，也不得把不相关改动混入其他正在进行的分支。
+### 0.2 强制基于 `main` 新建分支改动，完成后按分级流程合入 `main`
+- 获得允许准备改动时，**每一次独立改动都必须遵循以下闭环**（统一通过下方 `0.3` 的独立 Git Worktree 协议与 `0.4` 的分级协作规范执行）：
+  1. **同步主分支并拉新分支与独立 Worktree**：先同步最新 `origin/main`（见 `0.4` 第 3 条），再基于最新 `main` 在 `.worktrees/` 下创建独立 worktree 与新分支（如 `feat/<topic>`、`fix/<topic>`、`docs/<topic>`、`chore/<topic>`），**严禁直接在主工作区或 `main` 分支上做改动**，也不得把不相关改动混入其他正在进行的分支。
   2. **在独立 Worktree 完成全部改动与验证**：编辑、测试、自检与 commit 均在该 worktree 与新分支上进行。
-  3. **变基验证后串行合入主分支**：先在 worktree 内基于最新 `main` 完成 `git rebase main` 并重新验证通过，再在主工作区持锁使用 `git merge --no-ff <branch>` 合入 `main`（合并前确认遵循提交前自检规范；是否推送远程由用户确认）。
+  3. **变基验证后按分级路径合入 `main`**：先在 worktree 内基于最新 `origin/main` 完成 `git rebase` 并重新验证通过，随后按 `0.4` 选择合入方式——**A 档（核心/代码/大改动）推送分支走 GitHub PR + CI 门禁合入**，**B 档（维护者低风险小改动）在主工作区持锁使用 `git merge --no-ff <branch>` 合入 `main`**（合并/推送前须遵循第 `1.2` 节提交前自检规范；是否推送远程或创建 PR 由用户确认）。
 
 ### 0.3 多 Agent 并发开发隔离规范（Git Worktree 强制协议）
 
@@ -53,8 +53,10 @@
 - **外部临时缓存隔离**：若本地环境将 `CARGO_TARGET_DIR`、Gradle `project-cache-dir` / `buildDir` 等重定向到仓库外临时路径，**必须按 `<type>-<topic>` 追加独立后缀隔离**，严禁多个并发会话共用同一外部构建/缓存目录。
 - **ADB 真机独占**：若已有活跃会话在声明文件中标记占用真机，其他会话**严禁**执行 `adb install`、启停应用或抓取独占日志，仅允许执行离线验证（如 `cargo test`、Android Lint、JVM 单测、离线编译），待对方释放或用户明确指令后再进行真机测试。
 
-#### 6. 串行合入 `main`（原子锁 + 先 Rebase 后 `--no-ff`）
-开发与验证可并行，但**合并回 `main` 必须严格串行**：
+#### 6. 串行合入 `main`（B 档本地原子锁合入 / A 档推送走 PR）
+开发与验证可并行，但**合并回 `main` 必须有序**：
+- **若本任务属于 A 档（走 GitHub PR，见 `0.4`）**：在 worktree 内完成全部改动、测试、双端核对（第 2 节）、隐私自检（第 1.2 节）与 `git fetch origin && git rebase origin/main` 并 `git commit` 后，直接推送功能分支到远程并通过 `gh pr create`（或 GitHub Web）创建 PR，待云端 CI 绿灯并合并后，再在主目录同步 `main`（`git fetch origin && git merge --ff-only origin/main`）。
+- **若本任务属于 B 档（本地快速通道，见 `0.4`）**，合并回本地 `main` 必须严格串行：
 1. 在自己的 worktree 内完成全部改动、测试、双端核对（第 2 节）与隐私自检（第 1.2 节）并 `git commit`。
 2. 获取原子合并锁（利用 `mkdir` 的跨进程原子性）：
    ```bash
@@ -64,7 +66,7 @@
    - 若 `mkdir` 失败，说明另一会话正在合入 `main`，必须等待重试或向用户汇报，**严禁强行删除他人的锁目录**。
    - 加锁成功后，写入 `$LOCK_DIR/owner.txt`（记录分支名与时间戳）。
 3. 持锁期间执行合入：
-   - 确认主目录 `git status --porcelain` 为空且当前位于 `main` 分支。
+   - 确认主目录 `git status --porcelain` 为空且当前位于 `main` 分支，必要时先 `git fetch origin && git merge --ff-only origin/main` 同步远端提交（如发版 Bot 推送的 `update.json`）。
    - 在自己的 worktree 内先执行 `git rebase main`：
      - 若发生冲突，先释放锁、在自己 worktree 内解决冲突并**重新跑完验证**后，再重新申请锁合入。
      - 若 `main` 在期间有新提交导致 rebase 产生新基底，同样须重新验证通过后再合入。
@@ -75,12 +77,36 @@
 4. 无论合并成功或中途退出，均须及时清理自己创建的 `$LOCK_DIR`（仅当 `owner.txt` 属于自己时）。
 
 #### 7. 收尾与异常恢复
-- **正常完成**：合入 `main` 后，在本会话内完成清理：
+- **正常完成**：合入 `main`（含 A 档 PR 合并并已将本地 `main` 同步至 `origin/main`）后，在本会话内完成清理：
   1. 移除本会话 worktree：`git worktree remove .worktrees/<type>-<topic>`
-  2. 删除已合入的临时分支：`git branch -d <type>/<topic>`
+  2. 删除已合入的临时分支：`git branch -d <type>/<topic>`（若远端 PR 采用 Squash Merge 且已确认合入 `origin/main`，可改用 `git branch -D <type>/<topic>`）
   3. 删除本会话声明文件：`$(git rev-parse --git-common-dir)/agent-sessions/<type>-<topic>.txt`
 - **严禁越权清理**：禁止任何会话删除、重置或强制移除其他会话的 worktree、分支或声明文件。
 - **任务中止/失败**：不得使用 `git worktree remove --force` 或 `rm -rf` 擅自丢弃未提交改动；应保留现场，在回复中明确告知 worktree 路径与分支名，交由用户决定继续或清理。
+
+### 0.4 GitHub PR 与 Issue 分级协作规范
+
+为兼顾**公开开源项目的云端 CI 门禁与变更透明度**以及**单人 + 多 Agent 高频迭代效率**，后续开发按以下分级规范执行：
+
+#### 1. 分级合入标准（A 档走 PR / B 档本地快速通道）
+- **A 档：走 GitHub Pull Request（CI 合入前门禁）**
+  - **适用范围**：涉及 `core/` 协议/状态机/FFI/C ABI、Android/iOS 核心功能或架构改动、代码重构、依赖升级（含 Dependabot），以及所有外部贡献。
+  - **执行方式**：在 worktree 完成验证并 `git rebase origin/main` 后，推送分支并通过 `gh pr create`（或 GitHub Web）创建 PR，等待云端 CI（Rust 单测/C11 头文件校验、Android 16KB ELF 对齐 + JVM 单测 + `lintStandardDebug`）绿灯后在 GitHub 合并（同时删除远程功能分支）。
+- **B 档：本地直推 `main`（个人快速通道，仅限仓库维护者）**
+  - **适用范围**：低风险、小颗粒变更，如纯文档、`README`、`docs/`、`design/`、极小 UI 样式微调、`chore(release)` 等（其中文档与设计改动默认已被 `ci.yml` `paths-ignore` 跳过）。
+  - **执行方式**：按 `0.3` 第 6 节在本地持锁 `git merge --no-ff` 合回 `main`，确认后推送 `origin main`。
+
+#### 2. Issue 使用边界（按需创建，不做形式主义）
+- **无需先提 Issue，直接开 PR**：维护者自己发现并准备立即动手的常规 Bug 修复、交互优化、中小功能、代码重构、依赖升级；PR 描述中的 `关联 Issue：Fixes #` 如无直接删除。
+- **建议先提 Issue，再由 PR 通过 `Fixes #<id>` 关闭**：
+  - 暂不立即实施的想法、待办或 Roadmap（便于记录与社区反馈）；
+  - 需要拆分为多个 PR 推进的大型特性或重构（用作总追踪单与 Checklist）；
+  - 值得被用户检索的典型 Bug 或具体音箱/手机机型兼容问题（便于社区搜索命中）；
+  - 外部贡献者在实施较大改动前的方案对齐（避免偏离工程红线）。
+
+#### 3. 远端 `main` 同步约定（避免与发版 Bot 撞车）
+- 因 `release.yml` 会在发版后由 `github-actions[bot]` 自动向 `main` 推送 `update.json` 更新，每次新建 worktree、发起 PR 或本地合入/推送 `main` 前，须先执行 `git fetch origin` 并将本地 `main` 快进至 `origin/main`（或对功能分支 `git rebase origin/main`），避免产生多余的 `Merge remote-tracking branch 'origin/main'` 提交。
+- 若后续为 `main` 启用 GitHub Rulesets，注意不要强制单人项目设置 `Require approvals ≥ 1`，且须同步评估 `release.yml` 推送 `update.json` 的权限绕过或改造方案。
 
 ## 1. 个人开发环境与隐私隔离规范（强制）
 
