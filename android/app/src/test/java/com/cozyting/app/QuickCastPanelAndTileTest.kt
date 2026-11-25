@@ -27,6 +27,14 @@ class QuickCastPanelAndTileTest {
     }
 
     @Test
+    fun quickSettingsTileCompat_gatesWindowBlurToApi31Plus() {
+        assertFalse(QuickSettingsTileCompat.supportsWindowBlurBehind(29))
+        assertFalse(QuickSettingsTileCompat.supportsWindowBlurBehind(30))
+        assertTrue(QuickSettingsTileCompat.supportsWindowBlurBehind(31))
+        assertTrue(QuickSettingsTileCompat.supportsWindowBlurBehind(36))
+    }
+
+    @Test
     fun quickTileAndPanelStringsLocalizedInZhEnJa() {
         val app = RuntimeEnvironment.getApplication()
         val labels = mutableSetOf<String>()
@@ -63,6 +71,13 @@ class QuickCastPanelAndTileTest {
             .setup()
         val activity = controller.get()
         assertNotNull(activity.window.decorView)
+        val openAppMatches = ArrayList<android.view.View>()
+        activity.window.decorView.findViewsWithText(
+            openAppMatches,
+            activity.getString(R.string.quick_panel_open_app),
+            android.view.View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION,
+        )
+        assertEquals(1, openAppMatches.size)
         controller.pause().stop().destroy()
     }
 

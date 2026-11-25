@@ -27,7 +27,10 @@ import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.view.animation.PathInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -92,6 +95,8 @@ class QuickCastPanelActivity : Activity() {
     private lateinit var routeState: CastRouteSelection.State
     private lateinit var palette: UiPalette
 
+    private lateinit var scrimView: FrameLayout
+    private lateinit var cardView: LinearLayout
     private lateinit var nowPlayingCard: NowPlayingCardController
     private lateinit var volumeBar: UiComponents.VolumeGuardSeekBar
     private lateinit var volumePctView: TextView
@@ -101,6 +106,7 @@ class QuickCastPanelActivity : Activity() {
     private lateinit var deviceList: LinearLayout
     private lateinit var alertBanner: LinearLayout
     private lateinit var alertText: TextView
+    private var dismissing = false
 
     private var nowPlaying: NowPlayingInfo = NowPlayingInfo.unavailable("")
     private var nowPlayingUpdatedAtMs: Long = 0L
@@ -179,12 +185,16 @@ class QuickCastPanelActivity : Activity() {
         settingsStore = PrefsCastSettingsStore(this)
         palette = UiPalette.forMode(settingsStore.isDark(this))
 
-        QuickSettingsTileCompat.applyWindowBlurBehind(window, dp(20))
+        QuickSettingsTileCompat.disableActivityTransition(this)
+        QuickSettingsTileCompat.applyWindowBlurBehind(window, dp(22))
 
         loadPersistedState()
         buildUi()
         bindNowPlaying()
         renderDevices()
+        if (!isUiPreviewMode()) {
+            scheduleEnterAnimation()
+        }
 
         if (!isUiPreviewMode()) {
             nowPlayingTracker = NowPlayingTracker(
@@ -227,10 +237,18 @@ class QuickCastPanelActivity : Activity() {
     override fun onDestroy() {
         main.removeCallbacks(poll)
         main.removeCallbacks(clearAlertRunnable)
+        if (::scrimView.isInitialized) scrimView.animate().cancel()
+        if (::cardView.isInitialized) cardView.animate().cancel()
         stopRefreshSpinner()
         nowPlayingTracker?.stop()
         runCatching { volumeConfirmDialog?.dismiss() }
         super.onDestroy()
+    }
+
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        dismissAnimated()
     }
 
     @Deprecated("Deprecated in Java")
@@ -306,24 +324,49 @@ class QuickCastPanelActivity : Activity() {
     }
 
     private fun buildUi() {
-        val scrim = FrameLayout(this).apply {
-            setBackgroundColor(if (palette.isDark) Color.argb(128, 0, 0, 0) else Color.argb(96, 15, 23, 42))
-            isClickable = true
-            setOnClickListener { finish() }
+        val supportsBlur = QuickSettingsTileCompat.supportsWindowBlurBehind()
+        val scrimColor = when {
+            palette.isDark && supportsBlur -> Color.argb(34, 6, 10, 18)
+            palette.isDark -> Color.argb(88, 6, 10, 18)
+            supportsBlur -> Color.argb(38, 226, 234, 246)
+            else -> Color.argb(72, 15, 23, 42)
         }
+        val scrim = FrameLayout(this).apply {
+            setBackgroundColor(scrimColor)
+            isClickable = true
+            setOnClickListener { dismissAnimated() }
+        }
+        scrimView = scrim
 
-        val cardMaxW = dp(404)
+        val cardMaxW = dp(396)
         val screenW = resources.displayMetrics.widthPixels
-        val cardW = (screenW - dp(28)).coerceAtMost(cardMaxW).coerceAtLeast(dp(280))
-        val maxDeviceListH = (resources.displayMetrics.heightPixels * 0.42f).toInt().coerceAtLeast(dp(180))
+        val cardW = (screenW - dp(24)).coerceAtMost(cardMaxW).coerceAtLeast(dp(280))
+        val maxDeviceListH = (resources.displayMetrics.heightPixels * 0.44f).toInt().coerceAtLeast(dp(220))
 
-        val card = UiComponents.panelCard(this, palette, padDp = 16).apply {
+        val cardFill = when {
+            palette.isDark && supportsBlur -> Color.argb(148, 18, 24, 36)
+            palette.isDark -> Color.argb(218, 18, 24, 36)
+            supportsBlur -> Color.argb(176, 250, 252, 255)
+            else -> Color.argb(234, 250, 252, 255)
+        }
+        val cardStroke = if (palette.isDark) Color.argb(56, 255, 255, 255) else Color.argb(198, 255, 255, 255)
+        val cardPad = dp(14)
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = cardFill,
+                radiusPx = dpf(22f),
+                strokeColor = cardStroke,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(cardPad, cardPad, cardPad, cardPad)
             isClickable = true
             elevation = dpf(14f)
             layoutParams = FrameLayout.LayoutParams(cardW, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER)
         }
+        cardView = card
 
-        // 1. 正在播放区（与 MainActivity 100% 共享同一组件）
+        // 1. 正在播放区（与 MainActivity 100% 共享同一组件，悬浮卡启用紧凑模式）
         nowPlayingCard = NowPlayingCardController(
             context = this,
             palette = palette,
@@ -341,31 +384,32 @@ class QuickCastPanelActivity : Activity() {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             },
+            compact = true,
         )
         card.addView(nowPlayingCard.rootView)
 
-        // 2. 总音量条（与 MainActivity volRow 布局完全一致）
+        // 2. 总音量条（与 MainActivity volRow 布局一致，收紧垂直留白）
         val volRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(6), 0, dp(12))
+            setPadding(0, dp(4), 0, dp(8))
         }
         volRow.addView(
             ImageView(this).apply {
                 setImageResource(R.drawable.ic_ui_volume)
                 setColorFilter(palette.textSecondary)
-                layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginEnd = dp(8) }
+                layoutParams = LinearLayout.LayoutParams(dp(16), dp(16)).apply { marginEnd = dp(8) }
             },
         )
         val masterPolicy = settingsStore.volumeGuardPolicy()
         val masterWarning = VolumeSafetyGuard.isInHighVolumeZone(masterPolicy, masterVolume)
         volumePctView = TextView(this).apply {
             text = "$masterVolume%"
-            textSize = 11.5f
+            textSize = 11f
             setTypeface(null, Typeface.BOLD)
             setTextColor(if (masterWarning) volumeWarningColor(onSelectedRow = false) else palette.textSecondary)
             gravity = Gravity.END
-            minWidth = dp(34)
+            minWidth = dp(32)
         }
         volumeBar = UiComponents.styledVolumeSeekBar(
             context = this,
@@ -400,34 +444,34 @@ class QuickCastPanelActivity : Activity() {
         volRow.addView(volumePctView)
         card.addView(volRow)
 
-        // 3. 输出设备标题栏（左标题 + 右计数/恢复上次/刷新按钮）
+        // 3. 输出设备标题栏（样式 B：左标题 + 右计数/恢复上次/刷新按钮/窝爱听品牌主界面圆钮）
         val deviceHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(2), 0, dp(8))
+            setPadding(0, 0, 0, dp(6))
         }
         deviceHeader.addView(
             TextView(this).apply {
                 text = getString(R.string.main_output_devices)
                 setTextColor(palette.textSecondary)
-                textSize = 12f
+                textSize = 11.5f
                 setTypeface(null, Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             },
         )
         deviceCountView = TextView(this).apply {
             setTextColor(palette.textTertiary)
-            textSize = 11.5f
+            textSize = 11f
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { marginEnd = dp(8) }
+            ).apply { marginEnd = dp(6) }
         }
         deviceHeader.addView(deviceCountView)
 
         restoreLastBtn = TextView(this).apply {
             text = getString(R.string.main_restore_last_speakers)
-            textSize = 11f
+            textSize = 10.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(palette.accentBright)
             background = UiComponents.rippleSurface(
@@ -435,14 +479,14 @@ class QuickCastPanelActivity : Activity() {
                 radiusPx = dpf(999f),
                 rippleColor = palette.ripple,
             )
-            setPadding(dp(9), dp(4), dp(9), dp(4))
+            setPadding(dp(8), dp(3), dp(8), dp(3))
             isClickable = true
             isFocusable = true
             visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { marginEnd = dp(8) }
+            ).apply { marginEnd = dp(6) }
             setOnClickListener { restoreLastUsedSpeakers() }
         }
         deviceHeader.addView(restoreLastBtn)
@@ -456,11 +500,25 @@ class QuickCastPanelActivity : Activity() {
             iconDp = 15,
         ) {
             discover(forceRefreshNames = true)
+        }.apply {
+            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(6)
         }
         deviceHeader.addView(refreshBtn)
+
+        val openAppBtn = UiComponents.iconCircleButton(
+            context = this,
+            palette = palette,
+            iconRes = R.drawable.ic_stat_miplay,
+            contentDesc = getString(R.string.quick_panel_open_app),
+            sizeDp = 28,
+            iconDp = 15,
+        ) {
+            openFullApp()
+        }
+        deviceHeader.addView(openAppBtn)
         card.addView(deviceHeader)
 
-        // 4. 可滚动输出设备列表（限高防溢出）
+        // 4. 可滚动输出设备列表（限高防溢出，底部直接以最后一张设备卡干净收口）
         deviceList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -492,7 +550,7 @@ class QuickCastPanelActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(10) }
+            ).apply { topMargin = dp(8) }
             visibility = View.GONE
             isClickable = true
             setOnClickListener { visibility = View.GONE }
@@ -505,62 +563,85 @@ class QuickCastPanelActivity : Activity() {
         alertBanner.addView(alertText)
         card.addView(alertBanner)
 
-        // 5. 底栏：打开完整应用 + 完成
-        val divider = View(this).apply {
-            setBackgroundColor(palette.panelBorder)
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1).coerceAtLeast(1)).apply {
-                topMargin = dp(12)
-                bottomMargin = dp(10)
-            }
-        }
-        card.addView(divider)
-
-        val footer = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        footer.addView(
-            TextView(this).apply {
-                text = getString(R.string.quick_panel_open_app)
-                textSize = 12.5f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(palette.textSecondary)
-                background = UiComponents.rippleSurface(Color.TRANSPARENT, dpf(8f), palette.ripple)
-                setPadding(dp(4), dp(6), dp(8), dp(6))
-                isClickable = true
-                isFocusable = true
-                setOnClickListener {
-                    startActivity(
-                        Intent(this@QuickCastPanelActivity, MainActivity::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        },
-                    )
-                    finish()
-                }
-            },
-        )
-        footer.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 1, 1f) })
-        footer.addView(
-            TextView(this).apply {
-                text = getString(R.string.quick_panel_done)
-                textSize = 12.5f
-                setTypeface(null, Typeface.BOLD)
-                setTextColor(palette.textPrimary)
-                background = UiComponents.rippleSurface(
-                    fillColor = palette.controlSurface,
-                    radiusPx = dpf(999f),
-                    rippleColor = palette.ripple,
-                )
-                setPadding(dp(16), dp(7), dp(16), dp(7))
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { finish() }
-            },
-        )
-        card.addView(footer)
-
         scrim.addView(card)
         setContentView(scrim)
+    }
+
+    private fun scheduleEnterAnimation() {
+        scrimView.alpha = 0f
+        cardView.alpha = 0f
+        cardView.scaleX = 0.92f
+        cardView.scaleY = 0.92f
+        cardView.translationY = dpf(18f)
+
+        val observer = cardView.viewTreeObserver
+        observer.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (cardView.viewTreeObserver.isAlive) {
+                    cardView.viewTreeObserver.removeOnPreDrawListener(this)
+                }
+                val emphasizedOut = PathInterpolator(0.22f, 1f, 0.36f, 1f)
+                val fadeOut = DecelerateInterpolator(1.5f)
+                scrimView.animate()
+                    .alpha(1f)
+                    .setDuration(220L)
+                    .setInterpolator(fadeOut)
+                    .start()
+                cardView.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .translationY(0f)
+                    .setDuration(280L)
+                    .setInterpolator(emphasizedOut)
+                    .start()
+                ObjectAnimator.ofFloat(cardView, View.ALPHA, 0f, 1f).apply {
+                    duration = 200L
+                    interpolator = fadeOut
+                    start()
+                }
+                return true
+            }
+        })
+    }
+
+    private fun dismissAnimated() {
+        if (dismissing) return
+        dismissing = true
+        if (isUiPreviewMode() || !::cardView.isInitialized || !::scrimView.isInitialized) {
+            finishWithoutTransition()
+            return
+        }
+        val emphasizedIn = PathInterpolator(0.4f, 0f, 1f, 1f)
+        scrimView.animate().cancel()
+        cardView.animate().cancel()
+        scrimView.animate()
+            .alpha(0f)
+            .setDuration(180L)
+            .setInterpolator(emphasizedIn)
+            .start()
+        cardView.animate()
+            .alpha(0f)
+            .scaleX(0.94f)
+            .scaleY(0.94f)
+            .translationY(dpf(14f))
+            .setDuration(180L)
+            .setInterpolator(emphasizedIn)
+            .withEndAction { finishWithoutTransition() }
+            .start()
+    }
+
+    private fun finishWithoutTransition() {
+        finish()
+        QuickSettingsTileCompat.disableActivityTransition(this)
+    }
+
+    private fun openFullApp() {
+        startActivity(
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+        )
+        finishWithoutTransition()
     }
 
     private fun isNotificationListenerEnabled(): Boolean {
@@ -592,7 +673,7 @@ class QuickCastPanelActivity : Activity() {
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching {
             startActivity(launch)
-            finish()
+            finishWithoutTransition()
         }
     }
 
@@ -665,8 +746,18 @@ class QuickCastPanelActivity : Activity() {
 
     private fun deviceRow(d: CastRouteSelection.Device, isLast: Boolean): View {
         val selected = d.selected
-        val bgColor = if (selected) palette.rowSelectedBg else palette.rowIdleBg
-        val borderColor = if (selected) palette.rowSelectedBorder else palette.rowIdleBorder
+        val bgColor = when {
+            selected && palette.isDark -> Color.argb(228, 238, 244, 251)
+            selected -> Color.argb(235, 235, 243, 255)
+            palette.isDark -> Color.argb(34, 255, 255, 255)
+            else -> Color.argb(156, 255, 255, 255)
+        }
+        val borderColor = when {
+            selected && palette.isDark -> Color.argb(240, 255, 255, 255)
+            selected -> palette.accent
+            palette.isDark -> Color.argb(40, 255, 255, 255)
+            else -> Color.argb(26, 15, 23, 42)
+        }
         val borderW = if (selected && !palette.isDark) dp(2).coerceAtLeast(2) else dp(1).coerceAtLeast(1)
         val titleColor = if (selected) palette.onSelectedPrimary else palette.textPrimary
         val subColor = if (selected) palette.onSelectedSecondary else palette.textSecondary
@@ -680,16 +771,16 @@ class QuickCastPanelActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             background = UiComponents.rippleSurface(
                 fillColor = bgColor,
-                radiusPx = dpf(UiPalette.RADIUS_CARD_DP.toFloat()),
+                radiusPx = dpf(14f),
                 rippleColor = if (selected) palette.rippleOnSelected else palette.ripple,
                 strokeColor = borderColor,
                 strokeWidthPx = borderW,
             )
-            setPadding(dp(14), dp(10), dp(14), dp(10))
+            setPadding(dp(11), dp(7), dp(11), dp(7))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { bottomMargin = if (isLast) 0 else dp(8) }
+            ).apply { bottomMargin = if (isLast) 0 else dp(6) }
             isClickable = true
             isFocusable = true
             setOnClickListener { onDeviceClicked(d) }
@@ -811,7 +902,7 @@ class QuickCastPanelActivity : Activity() {
             val volLine = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(8), 0, 0)
+                setPadding(0, dp(5), 0, 0)
             }
             val pctView = TextView(this).apply {
                 text = "$initialVol%"

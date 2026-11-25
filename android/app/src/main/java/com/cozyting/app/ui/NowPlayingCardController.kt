@@ -34,6 +34,7 @@ class NowPlayingCardController(
     private val onSeekTo: (Long) -> Unit,
     private val onOpenNotifSettings: () -> Unit,
     private val onArtworkChanged: ((Bitmap?) -> Unit)? = null,
+    private val compact: Boolean = false,
 ) {
     val rootView: LinearLayout
     val fullBox: LinearLayout
@@ -70,8 +71,8 @@ class NowPlayingCardController(
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val artSize = dp(96)
-        val artRadius = dpf(16f)
+        val artSize = dp(if (compact) 70 else 96)
+        val artRadius = dpf(if (compact) 14f else 16f)
         albumArt = UiComponents.roundedImageView(context, artRadius).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = UiComponents.roundedDrawable(palette.controlSurface, artRadius)
@@ -82,8 +83,8 @@ class NowPlayingCardController(
             setImageResource(R.drawable.ic_ui_music_note)
             setColorFilter(palette.textSecondary)
         }
-        val badgeSize = dp(26)
-        val badgePad = dp(2)
+        val badgeSize = dp(if (compact) 20 else 26)
+        val badgePad = dp(if (compact) 1 else 2)
         albumAppBadgeIcon = UiComponents.roundedImageView(context, (badgeSize - badgePad * 2) / 2f).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             layoutParams = FrameLayout.LayoutParams(
@@ -91,10 +92,11 @@ class NowPlayingCardController(
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
         }
+        val badgeInset = dp(if (compact) 4 else 6)
         albumAppBadgeWrap = FrameLayout(context).apply {
             layoutParams = FrameLayout.LayoutParams(badgeSize, badgeSize, Gravity.BOTTOM or Gravity.END).apply {
-                marginEnd = dp(6)
-                bottomMargin = dp(6)
+                marginEnd = badgeInset
+                bottomMargin = badgeInset
             }
             background = UiComponents.roundedDrawable(
                 fillColor = if (palette.isDark) Color.argb(230, 18, 22, 30) else Color.WHITE,
@@ -122,17 +124,22 @@ class NowPlayingCardController(
         val meta = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(0, artSize, 1f).apply {
-                marginStart = dp(16)
+            minimumHeight = artSize
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                if (compact) ViewGroup.LayoutParams.WRAP_CONTENT else artSize,
+                1f,
+            ).apply {
+                marginStart = dp(if (compact) 12 else 16)
             }
         }
         titleView = TextView(context).apply {
             text = context.getString(R.string.main_unknown_title)
             setTextColor(palette.textPrimary)
-            textSize = 17.5f
+            textSize = if (compact) 14.5f else 17.5f
             setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER_HORIZONTAL
-            maxLines = 1
+            maxLines = if (compact) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -142,11 +149,11 @@ class NowPlayingCardController(
         artistView = TextView(context).apply {
             text = context.getString(R.string.main_no_now_playing_sub)
             setTextColor(palette.textSecondary)
-            textSize = 12.5f
+            textSize = if (compact) 11.5f else 12.5f
             gravity = Gravity.CENTER_HORIZONTAL
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
-            setPadding(0, dp(3), 0, 0)
+            setPadding(0, dp(if (compact) 2 else 3), 0, 0)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -162,20 +169,22 @@ class NowPlayingCardController(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply {
-                topMargin = dp(10)
+                topMargin = dp(if (compact) 6 else 10)
             }
         }
         controls.addView(transportBtn(R.drawable.ic_ui_skip_prev, context.getString(R.string.main_prev_track_desc), onSkipPrevious))
-        val playWrapSize = dp(42)
+        val playWrapSize = dp(if (compact) 36 else 42)
+        val playIconSize = dp(if (compact) 17 else 20)
+        val playMarginH = dp(if (compact) 18 else 26)
         playBtnIcon = ImageView(context).apply {
             setImageResource(R.drawable.ic_ui_play)
             setColorFilter(if (palette.isDark) palette.bgCanvas else Color.WHITE)
-            layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams(playIconSize, playIconSize, Gravity.CENTER)
         }
         val playWrap = FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(playWrapSize, playWrapSize).apply {
-                marginStart = dp(26)
-                marginEnd = dp(26)
+                marginStart = playMarginH
+                marginEnd = playMarginH
             }
             background = UiComponents.rippleSurface(
                 fillColor = palette.textPrimary,
@@ -198,25 +207,30 @@ class NowPlayingCardController(
 
         val progressCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(10), 0, dp(2))
+            setPadding(0, dp(if (compact) 6 else 10), 0, dp(if (compact) 0 else 2))
         }
         posView = TextView(context).apply {
             setTextColor(palette.textTertiary)
-            textSize = 11f
+            textSize = if (compact) 10.5f else 11f
             text = "—:—"
         }
         durView = TextView(context).apply {
             setTextColor(palette.textTertiary)
-            textSize = 11f
+            textSize = if (compact) 10.5f else 11f
             text = "—:—"
             gravity = Gravity.END
+        }
+        val progThumbStroke = if (compact) {
+            if (palette.isDark) Color.rgb(24, 30, 40) else Color.WHITE
+        } else {
+            palette.panelBg
         }
         progressBar = UiComponents.styledSeekBar(
             context = context,
             activeColor = palette.textPrimary,
             trackColor = palette.trackIdle,
             thumbFillColor = palette.textPrimary,
-            thumbStrokeColor = palette.panelBg,
+            thumbStrokeColor = progThumbStroke,
         ).apply {
             max = 1000
             progress = 0
@@ -247,7 +261,7 @@ class NowPlayingCardController(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply {
-                topMargin = dp(2)
+                topMargin = dp(if (compact) 0 else 2)
             }
             addView(posView, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             addView(durView, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -384,7 +398,8 @@ class NowPlayingCardController(
     }
 
     private fun transportBtn(res: Int, desc: String, onClick: () -> Unit): FrameLayout {
-        val sz = dp(38)
+        val sz = dp(if (compact) 32 else 38)
+        val iconSz = dp(if (compact) 16 else 19)
         return FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(sz, sz)
             background = UiComponents.rippleSurface(
@@ -400,7 +415,7 @@ class NowPlayingCardController(
                 ImageView(context).apply {
                     setImageResource(res)
                     setColorFilter(palette.textPrimary)
-                    layoutParams = FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER)
+                    layoutParams = FrameLayout.LayoutParams(iconSz, iconSz, Gravity.CENTER)
                 },
             )
         }

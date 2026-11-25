@@ -137,8 +137,9 @@
   - **通知栏直达入口（`CastService`）**：投送中常驻通知正文与首枚按钮 `设备与音量` 均直达同一悬浮控制卡。
   - **设置页一键添加与引导（`SettingsActivity`）**：API 33+ 调用 `StatusBarManager.requestAddTileService` 一键弹出系统添加确认；API 29–32 或用户取消/OEM 限制时展示 Style B 手动添加步骤指引，并提供「立即试弹悬浮卡」预览入口。
 - **悬浮控制卡视觉与复用结构（`QuickCastPanelActivity`）**：
-  - 独立透明任务栈（`Theme.CozyTing.QuickPanel`、`taskAffinity=""`、`excludeFromRecents="true"`），Android 12+（API 31+）启用 `FLAG_BLUR_BEHIND` 窗口背景模糊、API 29–30 回退纯半透明暗色遮罩，点击空白遮罩或返回键直接关闭并留在原音乐 App。
-  - **1:1 共享核心 UI**：与主界面共用 `NowPlayingCardController`（`96dp` 左侧封面+音源角标、右侧居中歌名/歌手/播控、全宽 `4dp` 进度条，未授权通知使用权时折为引导条）、同款总音量细轨道滑块（含高音量保护与「全部音箱联动」调节）、以及「输出设备」标题栏（含按需 `恢复上次` 胶囊与刷新按钮）+ `本机播放` + 样式 B 多选音箱行与行内独立音量滑块（限高滚动防溢出）；底部提供 `打开完整应用 ↗` 与 `完成`。
+  - 独立透明任务栈（`Theme.CozyTing.QuickPanel`、`taskAffinity=""`、`excludeFromRecents="true"`），关闭主题自带黑幕（`backgroundDimEnabled=false`）避免双重压暗：Android 12+（API 31+）启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃模糊配合轻透遮罩与磨砂玻璃卡面（深色 ~58% 透黑 / 浅色 ~70% 透白 + 细玻璃描边），API 29–30 自动提高不透明度回退以保障无模糊时的文字对比度；点击空白遮罩或返回键直接关闭并留在原音乐 App。
+  - **柔和进出场动效**：禁用生硬的系统默认 Dialog 窗口切换动画，改由遮罩与卡片协同缓动——入场 `280ms`（强调减速曲线 `cubic-bezier(0.22, 1, 0.36, 1)`，`scale 0.92→1.0` + `translateY 18dp→0` + `200ms` 渐显），退场 `180ms`（强调加速曲线 `cubic-bezier(0.4, 0, 1, 1)`，`scale 1.0→0.94` + `translateY 0→14dp` + 渐隐）。
+  - **样式 B 极致紧凑结构与 1:1 共享核心 UI**：与主界面共用 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标、自适应高度右侧居中 2 行歌名/歌手/紧凑播控、全宽 `4dp` 进度条，未授权通知使用权时折为引导条）、同款总音量细轨道滑块（含高音量保护与「全部音箱联动」调节）、以及「输出设备」标题栏（右侧依次排布数量文案、按需 `恢复上次` 胶囊、刷新圆钮与紧邻的**窝爱听品牌单色小标 `ic_stat_miplay` 圆钮**直达主界面）+ `本机播放` + 样式 B 多选音箱行与行内独立音量滑块（限高滚动防溢出）；无额外顶/底栏，底部直接以最后一张设备卡干净收口。
 - **iOS 端对齐与平台边界（SwiftUI / WidgetKit）**：
   - iOS 18+ 在系统控制中心通过 `ControlWidget`（WidgetKit）提供对等「CozyTing / 窝爱听」快捷控制项，支持点击 Deep Link 呼出 App 内轻量 `.sheet` / `.presentationDetents([.medium, .large])` 悬浮控制卡（复用主界面的正在播放卡、总音量条与样式 B 音箱列表）。
   - 受 iOS 沙箱与 `ControlWidget` 交互限制，iOS 无法在第三方 App 画面上方直接叠透底层页面级浮窗，也无法通过 `ControlWidget` 跳过系统 `RPSystemBroadcastPickerView` 首次录屏授权弹窗；需统一由 Deep Link 唤起 App 轻量控制面板承载。
