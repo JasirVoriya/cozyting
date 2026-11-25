@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <title>CozyTing（窝爱听）— ただいまの部屋に、好きな音楽を｜完全 LAN 動作のオープンソース MiPlay 送信</title>
   <meta name="description" content="ただいまの部屋に、好きな音楽を。CozyTing は無料・オープンソース（AGPL-3.0）のサードパーティ製 MiPlay 完全 LAN オーディオ送信アプリ（Android 10+）。Samsung・Pixel・OnePlus・OPPO・vivo・Huawei など端末メーカー不問・Root 不要・Xiaomi アカウント不要で、選んだ 1 つの音楽アプリだけを最大 63 台の Xiaomi / XiaoAi スピーカーへミリ秒同期再生します。">
-  <meta name="keywords" content="CozyTing,窝爱听,MiPlay,Xiaomi スピーカー,XiaoAi スピーカー,マルチルーム同期,Android オーディオキャスト,単一アプリ音声分離,完全 LAN,オープンソース,Rust 同期エンジン">
+  <meta name="keywords" content="CozyTing,窝爱听,MiPlay,Xiaomi スピーカー,XiaoAi スピーカー,DLNA 代替,AirPlay 代替,NAS 不要,マルチルーム同期,Android オーディオキャスト,単一アプリ音声分離,完全 LAN,オープンソース,Rust 同期エンジン">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/ja/">
   <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/">
@@ -106,6 +106,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "はい。Android 10 以上で Xiaomi / XiaoAi スピーカーと同じ自宅 Wi-Fi LAN に接続していれば、端末メーカーを問わず Xiaomi アカウント不要・Root 不要で直接送信できます。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "一般的な DLNA / AirPlay ブリッジ（NAS / Docker）や Xiaomi クラウド API 中継アプリとどう違いますか？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "従来の DLNA / AirPlay ブリッジは常駐 NAS や Docker サーバーが必要で、スマホ側 DLNA 中継も Xiaomi アカウントログインや Xiaomi クラウド API、DLNA ボタン付き音楽アプリが前提となることが多いです。CozyTing はスマホ単体から完全 LAN ネイティブの MiPlay プロトコルで直接送信するため、NAS 不要・アカウント不要・クラウド API 不使用で、あらゆるキャプチャ対応音楽アプリから最大 63 台をミリ秒同期再生できます。"
             }
           },
           {
@@ -1131,16 +1139,17 @@
         <div class="section-head">
           <span class="section-eyebrow">Why CozyTing</span>
           <h2>帰宅後のリラックスタイムを邪魔する 4 つの課題を解決</h2>
-          <p>Bluetooth、純正 MiPlay、画面ミラーリングと比較して、端末の自由度・マルチルーム Wi-Fi 同期・単一アプリ分離を高い次元で両立します。</p>
+          <p>DLNA / AirPlay ブリッジ・クラウド中継、Bluetooth、純正 MiPlay、画面ミラーリングと比較して、端末の自由度・NAS 不要の完全 LAN 直結・マルチルーム Wi-Fi 同期・単一アプリ分離を高い次元で両立します。</p>
         </div>
 
         <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
           <table class="compare-table">
-            <caption id="compare-caption">CozyTing と一般的なスピーカー再生方式の比較</caption>
+            <caption id="compare-caption">CozyTing と一般的なスピーカー再生・ブリッジ方式の比較</caption>
             <thead>
               <tr>
                 <th scope="col">比較項目</th>
                 <th scope="col">CozyTing</th>
+                <th scope="col">DLNA / AirPlay ブリッジ・クラウド中継</th>
                 <th scope="col">Bluetooth 接続</th>
                 <th scope="col">純正 Xiaomi MiPlay</th>
                 <th scope="col">画面ミラーリング</th>
@@ -1151,19 +1160,30 @@
                 <th scope="row">対応スマホメーカー</th>
                 <td class="highlight">メーカー不問（あらゆる Android 10+・iOS 計画中）</td>
                 <td>メーカー不問</td>
+                <td>メーカー不問</td>
                 <td>一部 Xiaomi / Redmi 端末限定</td>
                 <td>メーカー不問</td>
               </tr>
               <tr>
+                <th scope="row">NAS / サーバー要否</th>
+                <td class="highlight">NAS / Docker / PC 不要・スマホ単体で即利用</td>
+                <td>多くは常駐 NAS / ルーター必須、スマホ中継はバックグラウンド維持依存</td>
+                <td>不要</td>
+                <td>不要</td>
+                <td>不要</td>
+              </tr>
+              <tr>
                 <th scope="row">マルチルーム同期</th>
                 <td class="highlight">最大 63 台をミリ秒同期・再生中の追加/解除可</td>
+                <td>多くは単体送信、または別途オーディオハブ構築が必要</td>
                 <td>通常 1 台限定・複数台はズレ発生</td>
                 <td>複数 MiPlay 機器に対応</td>
                 <td>単体または高遅延</td>
               </tr>
               <tr>
                 <th scope="row">単一アプリ音声分離</th>
-                <td class="highlight">選択した音楽アプリのみ送信・通知や通話漏れゼロ</td>
+                <td class="highlight">選択した音楽アプリのみ送信・DLNA ボタン不要</td>
+                <td>DLNA / AirPlay 送信ボタン搭載アプリに限定</td>
                 <td>端末の全音声をそのまま出力</td>
                 <td>メディアソース指定に対応</td>
                 <td>画面・音声すべてをブロードキャスト</td>
@@ -1171,6 +1191,7 @@
               <tr>
                 <th scope="row">動画視聴で音楽が止まらない</th>
                 <td class="highlight">デュアルゾーン AudioFocus 分離（Android 13+ サイレント）</td>
+                <td>URL 転送型は端末音声と独立</td>
                 <td>動画再生でスピーカー音楽が即停止</td>
                 <td>OS バージョンに依存</td>
                 <td>分離不可</td>
@@ -1181,10 +1202,12 @@
                 <td>調整不可</td>
                 <td>調整不可</td>
                 <td>調整不可</td>
+                <td>調整不可</td>
               </tr>
               <tr>
                 <th scope="row">プライバシー・アカウント</th>
-                <td class="highlight">完全 LAN・アカウント不要・AGPL-3.0 オープンソース</td>
+                <td class="highlight">完全 LAN ネイティブ MiPlay・アカウント不要・AGPL-3.0</td>
+                <td>多くは Xiaomi アカウントログイン・クラウド API 依存</td>
                 <td>ローカル（クローズド）</td>
                 <td>Xiaomi アカウント・純正 ROM 依存</td>
                 <td>ベンダーサービスに依存</td>
@@ -1348,6 +1371,11 @@
           <details open>
             <summary>Xiaomi 以外のスマホ（Pixel・Galaxy・Xperia・OPPO・vivo・Huawei など）でも使えますか？</summary>
             <div class="faq-answer">はい。Android 10 以上でスピーカーと同じ Wi-Fi LAN に接続していれば、Xiaomi 端末や Xiaomi アカウントなしで直接送信できます。実機検証状況は <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md">機器互換マトリクス</a> をご覧ください。</div>
+          </details>
+
+          <details>
+            <summary>一般的な DLNA / AirPlay ブリッジ（NAS / Docker）や Xiaomi クラウド API 中継アプリとどう違いますか？</summary>
+            <div class="faq-answer">従来の DLNA / AirPlay ブリッジは常駐 NAS や Docker ホストが必要で、スマホ側 DLNA 中継も Xiaomi アカウントログインや Xiaomi クラウド API、DLNA ボタン付き音楽アプリが前提となることが多いです。CozyTing はスマホ単体から<strong>完全 LAN ネイティブの MiPlay プロトコル</strong>で直接送信するため、NAS 不要・アカウント不要・クラウド API 不使用で、あらゆるキャプチャ対応音楽アプリから最大 63 台をミリ秒同期再生できます。</div>
           </details>
 
           <details>

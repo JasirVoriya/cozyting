@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <title>窝爱听（CozyTing）— 回到小窝，让喜欢的歌溢满房间｜开源 MiPlay 纯局域网多音箱投送</title>
   <meta name="description" content="回到小窝，让喜欢的歌溢满房间。窝爱听（CozyTing）是一款免费开源（AGPL-3.0）的第三方小米妙播 / MiPlay 纯局域网音频投送客户端。支持华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机免 Root 直连最多 63 台小米 / 小爱音箱毫秒级同频听歌，严格单 App 音频隔离不串微信语音与通知。">
-  <meta name="keywords" content="窝爱听,CozyTing,小米妙播第三方,MiPlay,小爱音箱投音,小米音箱多房间同步,非小米手机小米妙播,局域网音频投送,单App音频隔离,无线调试无感采集,Android AudioPlaybackCapture,Rust音频同步引擎,开源多房间音响">
+  <meta name="keywords" content="窝爱听,CozyTing,小米妙播第三方,MiPlay,小爱音箱投音,小米音箱多房间同步,非小米手机小米妙播,小爱音箱DLNA替代,小爱音箱AirPlay替代,无需NAS投送小爱音箱,局域网音频投送,单App音频隔离,无线调试无感采集,Android AudioPlaybackCapture,Rust音频同步引擎,开源多房间音响">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/">
   <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/">
@@ -106,6 +106,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "可以。只要手机系统为 Android 10 及以上且与小米 / 小爱音箱连接在同一家庭 Wi-Fi 局域网下，即可通过 MiPlay 局域网协议直接投送音乐，无需小米手机，也无需登录小米账号。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "窝爱听和常见的 NAS / Docker DLNA / AirPlay 桥接或手机 DLNA 中转（小米云 API）方案有什么区别？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "常见开源方案多采用 NAS / Docker 搭 DLNA / AirPlay 桥接，或通过手机 DLNA 中转调用小米云 API，通常需要常驻服务器或登录小米账号且受限于音乐 App 是否自带 DLNA 按钮。窝爱听直接走纯局域网原生 MiPlay 协议，无需 NAS、无需登录小米账号、零云端 API，任意可捕获音乐 App 均可单 App 隔离投送，并支持最多 63 台音箱毫秒级同频与 4 档延迟热切。"
             }
           },
           {
@@ -1131,16 +1139,17 @@
         <div class="section-head">
           <span class="section-eyebrow">Why CozyTing</span>
           <h2>回家只想安静听首歌，却总被这 4 件事打断</h2>
-          <p>对比普通蓝牙、原厂小米妙播与系统整机投屏，窝爱听在品牌自由度、多房间同步与单 App 隐私隔离上兼得平衡。</p>
+          <p>对比常见 DLNA / AirPlay 桥接或云端中转、普通蓝牙、原厂小米妙播与系统整机投屏，窝爱听在品牌自由度、免 NAS 零云端直连、多房间同步与单 App 隐私隔离上兼得平衡。</p>
         </div>
 
         <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
           <table class="compare-table">
-            <caption id="compare-caption">窝爱听（CozyTing）与常见音箱投音方式对比</caption>
+            <caption id="compare-caption">窝爱听（CozyTing）与常见音箱投音及桥接方式对比</caption>
             <thead>
               <tr>
                 <th scope="col">对比维度</th>
                 <th scope="col">窝爱听（CozyTing）</th>
+                <th scope="col">DLNA / AirPlay 桥接或云端中转</th>
                 <th scope="col">普通蓝牙连接</th>
                 <th scope="col">原厂小米妙播</th>
                 <th scope="col">整机投屏 / 录屏</th>
@@ -1151,19 +1160,30 @@
                 <th scope="row">手机品牌限制</th>
                 <td class="highlight">不限品牌（任意 Android 10+；iOS 规划中）</td>
                 <td>不限品牌</td>
+                <td>不限品牌</td>
                 <td>仅限部分小米 / Redmi 机型</td>
                 <td>不限品牌</td>
               </tr>
               <tr>
+                <th scope="row">NAS / 服务器依赖</th>
+                <td class="highlight">无需 NAS / Docker / 电脑，手机直装即用</td>
+                <td>多数桥接需常驻 NAS / 软路由；手机中转依赖后台保活</td>
+                <td>无需服务器</td>
+                <td>无需服务器</td>
+                <td>无需服务器</td>
+              </tr>
+              <tr>
                 <th scope="row">多音箱全屋同频</th>
                 <td class="highlight">最多 63 台毫秒级同步，播放中随时增减</td>
+                <td>多数仅单台推流，或需额外音频中枢配置</td>
                 <td>通常仅 1 台，多箱易回声</td>
                 <td>支持多台 MiPlay 设备</td>
                 <td>单台或延迟大</td>
               </tr>
               <tr>
                 <th scope="row">单 App 隔离不串音</th>
-                <td class="highlight">只投选定音乐 App，微信语音与通知绝不外放</td>
+                <td class="highlight">只投选定音乐 App，无需 App 自带 DLNA 按钮</td>
+                <td>仅限自带 DLNA / AirPlay 投屏按钮的 App</td>
                 <td>手机全部声音一并外放</td>
                 <td>支持指定媒体源</td>
                 <td>整机音画全广播</td>
@@ -1171,6 +1191,7 @@
               <tr>
                 <th scope="row">刷视频不暂停音乐</th>
                 <td class="highlight">Android 13+ 无感模式支持双区音频焦点隔离</td>
+                <td>仅推流媒体 URL 时互不干扰</td>
                 <td>刷视频立刻抢断音箱音乐</td>
                 <td>视系统版本而定</td>
                 <td>无法隔离</td>
@@ -1181,10 +1202,12 @@
                 <td>不可调</td>
                 <td>不可调</td>
                 <td>不可调</td>
+                <td>不可调</td>
               </tr>
               <tr>
                 <th scope="row">隐私、账号与开源</th>
-                <td class="highlight">零云端、免登录小米账号、AGPL-3.0 开源</td>
+                <td class="highlight">纯局域网原生 MiPlay、免登录小米账号、零云端、AGPL-3.0</td>
+                <td>多数需登录小米账号 / 调用小米云端 API</td>
                 <td>本地闭源</td>
                 <td>绑定小米账号与系统生态</td>
                 <td>依厂商服务而定</td>
@@ -1348,6 +1371,11 @@
           <details open>
             <summary>非小米手机（华为、三星、OPPO、vivo、一加、Pixel 等）能用窝爱听投音到小爱音箱吗？</summary>
             <div class="faq-answer">可以。只要手机系统为 Android 10 及以上且与小米 / 小爱音箱连在同一 Wi-Fi 局域网下，即可通过 MiPlay 协议直接投送音乐，无需小米手机与小米账号。各机型实测状态详见 <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md">设备兼容矩阵</a>。</div>
+          </details>
+
+          <details>
+            <summary>窝爱听和常见的 NAS / Docker DLNA / AirPlay 桥接或手机 DLNA 中转（小米云 API）方案有什么区别？</summary>
+            <div class="faq-answer">常见开源方案多采用 NAS / Docker 搭 DLNA / AirPlay 桥接，或通过手机 DLNA 中转将指令翻译成小米云 API 下发，通常需要常驻服务器或登录小米账号，且受限于音乐 App 是否自带 DLNA 按钮。窝爱听直接走<strong>纯局域网原生 MiPlay 协议</strong>：无需 NAS、免登录小米账号、零云端 API，任意允许音频捕获的音乐 App 均可单 App 隔离投送，并支持最多 63 台音箱毫秒级同频与 4 档延迟热切。</div>
           </details>
 
           <details>

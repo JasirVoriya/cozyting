@@ -4,7 +4,7 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -21,7 +21,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/en/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -38,7 +38,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/ja/</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -55,7 +55,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/architecture.html</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/architecture.html"/>
@@ -65,7 +65,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/en/architecture.html</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/architecture.html"/>
@@ -75,7 +75,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/ja/architecture.html</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/architecture.html"/>
@@ -85,7 +85,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/llms.txt</loc>
-    <lastmod>2026-11-24</lastmod>
+    <lastmod>2026-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
