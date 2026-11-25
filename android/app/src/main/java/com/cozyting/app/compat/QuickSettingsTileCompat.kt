@@ -1,6 +1,7 @@
 package com.cozyting.app.compat
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.PendingIntent
 import android.app.StatusBarManager
 import android.content.ComponentName
@@ -59,9 +60,23 @@ object QuickSettingsTileCompat {
         }
     }
 
+    fun supportsWindowBlurBehind(sdkInt: Int = Build.VERSION.SDK_INT): Boolean = sdkInt >= Build.VERSION_CODES.S
+
     fun applyWindowBlurBehind(window: Window, blurRadiusPx: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurRadiusPx > 0) {
             Api31.applyBlurBehind(window, blurRadiusPx)
+        }
+    }
+
+    /**
+     * 禁用系统默认的 Activity 进出场切换动画，交由悬浮卡片自身执行细腻的渐显/缩放/位移缓动，
+     * 避免系统默认 Dialog 动画生硬跳切。
+     */
+    fun disableActivityTransition(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Api34.disableTransition(activity)
+        } else {
+            Api29.disableTransition(activity)
         }
     }
 
@@ -70,6 +85,11 @@ object QuickSettingsTileCompat {
         @Suppress("DEPRECATION")
         fun startActivityAndCollapse(service: TileService, intent: Intent) {
             service.startActivityAndCollapse(intent)
+        }
+
+        @Suppress("DEPRECATION")
+        fun disableTransition(activity: Activity) {
+            activity.overridePendingTransition(0, 0)
         }
     }
 
@@ -126,6 +146,11 @@ object QuickSettingsTileCompat {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             service.startActivityAndCollapse(pi)
+        }
+
+        fun disableTransition(activity: Activity) {
+            activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0)
+            activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
         }
     }
 }
