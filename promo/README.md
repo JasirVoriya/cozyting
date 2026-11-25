@@ -43,6 +43,10 @@ npm run render:en
 npm run render:ja
 # 或一次全量渲染：
 npm run render:all
+
+# 7. 渲染独立宣传视频封面（16:9 @ 1920×1080、4:3 @ 1600×1200、3:4 @ 1200×1600，输出至 out/covers/）
+npm run covers        # 简体中文版（16:9 + 4:3 + 3:4）
+npm run covers:all    # 中/英/日三语全量（共 9 张）
 ```
 
 ## 3. Web 官网压缩发布参数
