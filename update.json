@@ -1,62 +1,70 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-25T14:22:50Z",
+  "generated_at": "2026-11-25T15:37:42Z",
   "repo": "JasirVoriya/cozyting",
   "channels": {
     "stable": {
-      "tag": "v0.9.10",
-      "version": "0.9.10",
+      "tag": "v0.9.11",
+      "version": "0.9.11",
       "prerelease": false,
-      "published_at": "2026-11-25T05:40:44Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
-      "notes": "> 正式版（Stable Release）：补齐重启后的常用状态记忆（总音量/单音箱独立音量与上次音箱组合一键恢复），升级更新弹窗结构化 Markdown 日志渲染、共享 UID 三档分流授权，并显著增强无线调试无感采集切后台时的心跳抗抖动与自动静默恢复能力。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **总音量与单音箱独立音量持久化（联动高音量安全保护）**：\n  - 记住用户设置的总音量与按设备 ID 维护的单音箱独立音量（保留最近 32 台）；开始投送或扩组加入音箱时保留各自上次独立音量，不再被总音量覆盖。\n  - 开启高音量保护时，冷启动恢复音量若高于安全上限将自动钳制回安全上限，避免重启首次开投爆音；关闭保护时原样恢复。\n- **上次使用的音箱组合置顶与一键恢复**：\n  - 有序持久化上次勾选的可投音箱/多房间组合，冷启动与发现刷新时自动置顶到「本机播放」紧下方；冷启动绝不自动抢投，待机时在「输出设备」标题栏提供「恢复上次 / 恢复上次 · N台」快捷胶囊一键恢复。\n- **主界面更新轻提示条 `×` 关闭状态持久化**：\n  - 点击横幅右侧 `×` 后按版本号 `tag` 持久化，重启 App 后同版本不再反复弹出（设置按钮角标仍保留），有更新版本发布时自动重新提示。\n- **共享 UID 三档分流策略与显式同意弹窗**：\n  - 针对与少量非系统组件共享 UID 的音源 App（如部分系统自带音乐/多账号组件），新增显式风险确认弹窗，经用户知情同意后允许按单 UID 投送；高危系统共享 UID 仍严格坚持 Fail-Closed 拒绝，绝不退化为全系统采集。\n\n### Changed\n- **更新弹窗日志结构化渲染（L1 Rust + Android + iOS 规范同步）**：\n  - L1 Rust `clean_release_notes` 与清单生成脚本保留列表行首缩进，Android 端新增零依赖 `ChangelogMarkdownRenderer` 渲染导语块、三语分组徽标、嵌套缩进与行内富文本，保持 `onMeasure` 硬限高不顶出底部下载按钮。\n- **三语公开文档、官网与宣传片品牌叙事同步对齐**：\n  - 同步更新中/英/日三语 README、GitHub Pages 与 60 秒宣传片文案，强化「纯局域网、无损单 App 投送小米音箱」的产品定位与 SEO/GEO 结构化摘要。\n\n### Fixed\n- **无感采集 Helper 心跳抗抖动、断连自动静默重建与三语报错提示**：\n  - 放宽 Helper 心跳看门狗（`6.0s`）与 PCM 写阻塞超时（`4.5s`），并增加控制口瞬时超时重试（最多 3 次），大幅降低切往小红书等重度 App 时因系统短暂限频触发的误断连。\n  - 检测到 Helper 意外退出时，保持音箱端连接不断并在 30 秒限频窗口内自动尝试静默重新拉起 Helper 恢复推流；同时为 `ShellAudioFocusPolicyBridge` 回调补充空安全与异常兜底。\n  - 修复英文/日文界面下 Helper 心跳断开报错仍显示硬编码中文的问题，并在中/英/日三语报错中直接附带「将系统省电策略设为无限制」排查引导。\n- **主界面告警横幅展示交互与捕获错误三语本地化**：\n  - 修复告警横幅持久化与手动关闭体验，补齐 `CaptureTargetResolver` 中/英/日三语错误提示。",
+      "published_at": "2026-11-25T15:37:41Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
+      "notes": "> 正式版（Stable Release）：新增系统控制中心快捷磁贴与通透磨砂悬浮控制卡（样式 B 紧凑布局、品牌小标直达主界面、柔和进出场动效与物理音量键直控投送总音量），修复多音箱连接生命周期、离散硬件音量档位兼容与手动刷新离线设备滞留问题，并补齐纯静态自愿赞赏支持入口。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 全兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 控制中心快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步设备数与音量副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起系统栏并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关），采用样式 B 极致紧凑布局与轻透磨砂玻璃视觉（Android 12+ 启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃，API 29–30 自动提高不透明度回退），配备柔和协同的弹出/关闭缓动动画：\n    - 抽离共享 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标跳转、自适应 2 行歌名/歌手/播控与 `4dp` 可拖进度条）；\n    - 复用总音量联动滑块（含高音量二次确认保护）及「输出设备」多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊，标题栏右侧紧邻刷新按钮提供窝爱听品牌单色小标圆钮一键进入完整主界面。\n  - 投送中前台服务通知正文追加三语点击提示（如 `2 台设备同步播放 · 点击打开控制卡`），新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡；设置页「投送与系统权限」新增一键添加磁贴（Android 13+ `requestAddTileService`）与手动添加指引，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范。\n- **物理音量键快捷控制投送总音量（Android 主界面 & 悬浮控制卡）**：\n  - 在主界面与悬浮控制卡前台展示且已选音箱/投送中时，拦截物理音量 `+ / -` 按键直接调节投送总音量（单次 ±`5%`、长按即时预览 + `100ms` 合并防抖提交、不弹出系统音量条，跨安全上限联动高音量二次确认）；切回「本机播放」或离开界面后自动交还系统。\n- **全链路自愿赞赏支持入口（纯静态、零支付 SDK、所有功能永久免费开源）**：\n  - 在「关于窝爱听」页面、GitHub 仓库（`.github/FUNDING.yml` 与三语 README）及三语产品官网 `#sponsor` 区块新增低干扰自愿赞赏入口，支持手机端一键唤起支付宝及 Android 10+ `MediaStore` 一键保存暖燕麦主题赞赏码至相册。\n\n### Fixed\n- **修复 8899 控制连接泄漏与无限重连风暴（L1 Rust 核心，双端同步）**：\n  - `ReceiverHandle::shutdown()` 强制关闭 TCP 8899 控制连接并在反向 RTSP / 音频通道握手失败时统一清理套接字；普通目标音量（`> 0`）复用单条 8899 长连接设音量，自动重连新增连续失败 3 次熔断与晚加入 1.5s 冷却间隔，避免并发重连拍打音箱固件。\n- **修复分档硬件音量音箱投送被误拦截（L1 Rust 核心，双端同步）**：\n  - 强制静音保护（`0`）继续严格校验防误播；普通目标音量（`> 0`）允许离散硬件分档容差（`<= +10`）并记录告警正常推流，不再误拦投送与多音箱扩组。\n- **修复手动刷新设备列表时已离线缓存设备滞留展示（L1 Rust 核心 + 跨端规范同步）**：\n  - 冷启动与后台扫描继续合并历史缓存防瞬时丢包；用户手动刷新时以本次局域网真实扫描结果为事实来源，自动淘汰未扫到的离线缓存设备（保留活跃投送中设备与自定义命名）。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.10-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.10/cozyting-v0.9.10-arm64-v8a.apk",
-            "size_bytes": 2738545,
-            "sha256": "7e73571f01b63e23fc6cb48855df72505d8c3a313a9676b9ebecd869c3952e74",
+            "name": "cozyting-v0.9.11-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.11/cozyting-v0.9.11-arm64-v8a.apk",
+            "size_bytes": 3082569,
+            "sha256": "a7632bddb4d016a005e3d53f1bdb139e3da30b20834a0e1da8f673da2e4ef663",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.10",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
         "app_store_url": ""
       }
     },
     "prerelease": {
-      "tag": "v0.9.11-rc.4",
-      "version": "0.9.11-rc.4",
-      "prerelease": true,
-      "published_at": "2026-11-25T14:22:46Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11-rc.4",
-      "notes": "> 预发版（Pre-release）：新增系统控制中心快捷设置磁贴（Quick Settings Tile）与轻量悬浮控制卡，叠加投送中通知栏直达入口及设置页一键添加引导，实现在任意应用上方随时调整投送音箱与独立/联动音量（API 29–36 兼容）。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步状态副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起控制中心并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关，Android 12+ 附带系统窗口背景模糊，API 29–30 自动平滑回退），1:1 复刻主界面体验：\n    - 抽离共享 `NowPlayingCardController`，与主界面共用正在播放封面（含音源角标跳转）、居中歌名/歌手/切歌播控与 `4dp` 可拖进度条；\n    - 复用总音量滑块（联动全部已选音箱 + 高音量二次确认保护）及「输出设备」列表（`本机播放` + 多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊、局域网扫描刷新）；\n    - 底部保留「打开完整应用 ↗」与「完成」入口，并在设置页「投送与系统权限」新增控制中心磁贴一键添加（Android 13+ `requestAddTileService`）与手动添加引导弹窗。\n  - 投送中前台服务通知新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡，补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范（含 iOS 18+ `ControlWidget` 对齐边界）。",
+      "tag": "v0.9.11",
+      "version": "0.9.11",
+      "prerelease": false,
+      "published_at": "2026-11-25T15:37:41Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
+      "notes": "> 正式版（Stable Release）：新增系统控制中心快捷磁贴与通透磨砂悬浮控制卡（样式 B 紧凑布局、品牌小标直达主界面、柔和进出场动效与物理音量键直控投送总音量），修复多音箱连接生命周期、离散硬件音量档位兼容与手动刷新离线设备滞留问题，并补齐纯静态自愿赞赏支持入口。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 全兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 控制中心快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步设备数与音量副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起系统栏并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关），采用样式 B 极致紧凑布局与轻透磨砂玻璃视觉（Android 12+ 启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃，API 29–30 自动提高不透明度回退），配备柔和协同的弹出/关闭缓动动画：\n    - 抽离共享 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标跳转、自适应 2 行歌名/歌手/播控与 `4dp` 可拖进度条）；\n    - 复用总音量联动滑块（含高音量二次确认保护）及「输出设备」多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊，标题栏右侧紧邻刷新按钮提供窝爱听品牌单色小标圆钮一键进入完整主界面。\n  - 投送中前台服务通知正文追加三语点击提示（如 `2 台设备同步播放 · 点击打开控制卡`），新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡；设置页「投送与系统权限」新增一键添加磁贴（Android 13+ `requestAddTileService`）与手动添加指引，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范。\n- **物理音量键快捷控制投送总音量（Android 主界面 & 悬浮控制卡）**：\n  - 在主界面与悬浮控制卡前台展示且已选音箱/投送中时，拦截物理音量 `+ / -` 按键直接调节投送总音量（单次 ±`5%`、长按即时预览 + `100ms` 合并防抖提交、不弹出系统音量条，跨安全上限联动高音量二次确认）；切回「本机播放」或离开界面后自动交还系统。\n- **全链路自愿赞赏支持入口（纯静态、零支付 SDK、所有功能永久免费开源）**：\n  - 在「关于窝爱听」页面、GitHub 仓库（`.github/FUNDING.yml` 与三语 README）及三语产品官网 `#sponsor` 区块新增低干扰自愿赞赏入口，支持手机端一键唤起支付宝及 Android 10+ `MediaStore` 一键保存暖燕麦主题赞赏码至相册。\n\n### Fixed\n- **修复 8899 控制连接泄漏与无限重连风暴（L1 Rust 核心，双端同步）**：\n  - `ReceiverHandle::shutdown()` 强制关闭 TCP 8899 控制连接并在反向 RTSP / 音频通道握手失败时统一清理套接字；普通目标音量（`> 0`）复用单条 8899 长连接设音量，自动重连新增连续失败 3 次熔断与晚加入 1.5s 冷却间隔，避免并发重连拍打音箱固件。\n- **修复分档硬件音量音箱投送被误拦截（L1 Rust 核心，双端同步）**：\n  - 强制静音保护（`0`）继续严格校验防误播；普通目标音量（`> 0`）允许离散硬件分档容差（`<= +10`）并记录告警正常推流，不再误拦投送与多音箱扩组。\n- **修复手动刷新设备列表时已离线缓存设备滞留展示（L1 Rust 核心 + 跨端规范同步）**：\n  - 冷启动与后台扫描继续合并历史缓存防瞬时丢包；用户手动刷新时以本次局域网真实扫描结果为事实来源，自动淘汰未扫到的离线缓存设备（保留活跃投送中设备与自定义命名）。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.11-rc.4-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.11-rc.4/cozyting-v0.9.11-rc.4-arm64-v8a.apk",
-            "size_bytes": 3066065,
-            "sha256": "f474595ccfe9c32bbb4bd4e9bbb33919993f50ba26000d06728df2a7a4c262c6",
+            "name": "cozyting-v0.9.11-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.11/cozyting-v0.9.11-arm64-v8a.apk",
+            "size_bytes": 3082569,
+            "sha256": "a7632bddb4d016a005e3d53f1bdb139e3da30b20834a0e1da8f673da2e4ef663",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11-rc.4",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
         "app_store_url": ""
       }
     }
   },
   "releases": [
+    {
+      "tag": "v0.9.11",
+      "version": "0.9.11",
+      "prerelease": false,
+      "published_at": "2026-11-25T15:37:41Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
+      "notes": "> 正式版（Stable Release）：新增系统控制中心快捷磁贴与通透磨砂悬浮控制卡（样式 B 紧凑布局、品牌小标直达主界面、柔和进出场动效与物理音量键直控投送总音量），修复多音箱连接生命周期、离散硬件音量档位兼容与手动刷新离线设备滞留问题，并补齐纯静态自愿赞赏支持入口。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 全兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 控制中心快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步设备数与音量副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起系统栏并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关），采用样式 B 极致紧凑布局与轻透磨砂玻璃视觉（Android 12+ 启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃，API 29–30 自动提高不透明度回退），配备柔和协同的弹出/关闭缓动动画：\n    - 抽离共享 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标跳转、自适应 2 行歌名/歌手/播控与 `4dp` 可拖进度条）；\n    - 复用总音量联动滑块（含高音量二次确认保护）及「输出设备」多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊，标题栏右侧紧邻刷新按钮提供窝爱听品牌单色小标圆钮一键进入完整主界面。\n  - 投送中前台服务通知正文追加三语点击提示（如 `2 台设备同步播放 · 点击打开控制卡`），新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡；设置页「投送与系统权限」新增一键添加磁贴（Android 13+ `requestAddTileService`）与手动添加指引，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范。\n- **物理音量键快捷控制投送总音量（Android 主界面 & 悬浮控制卡）**：\n  - 在主界面与悬浮控制卡前台展示且已选音箱/投送中时，拦截物理音量 `+ / -` 按键直接调节投送总音量（单次 ±`5%`、长按即时预览 + `100ms` 合并防抖提交、不弹出系统音量条，跨安全上限联动高音量二次确认）；切回「本机播放」或离开界面后自动交还系统。\n- **全链路自愿赞赏支持入口（纯静态、零支付 SDK、所有功能永久免费开源）**：\n  - 在「关于窝爱听」页面、GitHub 仓库（`.github/FUNDING.yml` 与三语 README）及三语产品官网 `#sponsor` 区块新增低干扰自愿赞赏入口，支持手机端一键唤起支付宝及 Android 10+ `MediaStore` 一键保存暖燕麦主题赞赏码至相册。\n\n### Fixed\n- **修复 8899 控制连接泄漏与无限重连风暴（L1 Rust 核心，双端同步）**：\n  - `ReceiverHandle::shutdown()` 强制关闭 TCP 8899 控制连接并在反向 RTSP / 音频通道握手失败时统一清理套接字；普通目标音量（`> 0`）复用单条 8899 长连接设音量，自动重连新增连续失败 3 次熔断与晚加入 1.5s 冷却间隔，避免并发重连拍打音箱固件。\n- **修复分档硬件音量音箱投送被误拦截（L1 Rust 核心，双端同步）**：\n  - 强制静音保护（`0`）继续严格校验防误播；普通目标音量（`> 0`）允许离散硬件分档容差（`<= +10`）并记录告警正常推流，不再误拦投送与多音箱扩组。\n- **修复手动刷新设备列表时已离线缓存设备滞留展示（L1 Rust 核心 + 跨端规范同步）**：\n  - 冷启动与后台扫描继续合并历史缓存防瞬时丢包；用户手动刷新时以本次局域网真实扫描结果为事实来源，自动淘汰未扫到的离线缓存设备（保留活跃投送中设备与自定义命名）。"
+    },
     {
       "tag": "v0.9.11-rc.4",
       "version": "0.9.11-rc.4",
