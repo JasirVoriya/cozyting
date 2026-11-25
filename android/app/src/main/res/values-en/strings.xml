@@ -515,6 +515,16 @@
     <string name="cast_hotswitch_rejected">Cannot switch source: %1$s</string>
     <string name="cast_hotswitch_reverted">Could not hot-switch to %1$s; kept %2$s</string>
     <string name="cast_hotswitch_stopped">Failed to hot-switch to %1$s, casting stopped: %2$s</string>
+    <string name="shell_err_not_paired">Wireless Debugging is not paired yet. Open Settings → Capture Engine to pair with a 6-digit code.</string>
+    <string name="shell_err_no_wireless_service">Local Wireless Debugging service not found. Make sure Developer Options → Wireless Debugging is ON.</string>
+    <string name="shell_err_helper_timeout">Timed out waiting for Silent Capture Helper. Check Wireless Debugging status or pair again.</string>
+    <string name="shell_err_helper_handshake">Silent Capture Helper handshake failed</string>
+    <string name="shell_err_helper_no_response">Silent Capture Helper did not respond</string>
+    <string name="shell_err_helper_start_failed">Failed to start Silent Capture engine</string>
+    <string name="shell_err_helper_heartbeat_lost">Silent Capture Helper heartbeat lost; casting stopped safely (tip: set CozyTing battery usage to Unrestricted in system settings)</string>
+    <string name="shell_err_pcm_stream_lost">Silent Capture audio stream interrupted (%1$s); casting stopped safely (tip: set battery usage to Unrestricted)</string>
+    <string name="shell_event_helper_reconnecting">Silent Capture Helper disconnected; attempting automatic recovery…</string>
+    <string name="shell_event_helper_recovered">Silent Capture Helper recovered automatically; casting continues</string>
 
     <!-- Runtime Log Viewer -->
     <string name="title_log_viewer">Runtime Logs</string>

@@ -24,7 +24,7 @@ import kotlin.system.exitProcess
  * 严守三重防卡死清理协议：
  * 1. 正常收到 `stop` 指令：停采集 → 释放 AudioRecord → `unregisterAudioPolicy` → 关连接 → 退出；
  * 2. 控制口 `EOF` 或 PCM 写通道 `IOException`/`EPIPE`：立即触发 `cleanupAndExit()`；
- * 3. 心跳看门狗（`1.5s` 无 `ping` 或写阻塞超 `2.0s`）：立即反注册策略并退出，防止目标音乐 App 持续无声。
+ * 3. 心跳看门狗（`6.0s` 无 `ping` 或写阻塞超 `4.5s`）：立即反注册策略并退出，防止目标音乐 App 持续无声。
  */
 object ShellAudioHelperMain {
     private const val TAG = "MiPlayShellHelper"
