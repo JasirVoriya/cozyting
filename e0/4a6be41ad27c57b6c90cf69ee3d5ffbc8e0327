@@ -1,0 +1,22 @@
+core/src/control.rs
+  h_75f437d5bc136b 577-588,590,592-594,602,734-740,830-870
+core/src/device_catalog.rs
+  h_75f437d5bc136b 373-386,417-419,1257-1322
+core/src/engine.rs
+  h_75f437d5bc136b 13,272-277
+core/src/session.rs
+  h_75f437d5bc136b 31-46,375,523-542,652-654,687-693,736,796,800,806-807,821,896-899,980,1433-1434,1448,1453-1456,1459-1462,1475-1489,1523,1532-1541,1785-1828
+design/UI_SPEC.md
+  h_75f437d5bc136b 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e04a6be41ad27c57b6c90cf69ee3d5ffbc8e0327",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
