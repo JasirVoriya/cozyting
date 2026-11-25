@@ -1,0 +1,36 @@
+android/app/src/main/java/com/cozyting/app/CastService.kt
+  h_75f437d5bc136b 90,379-380,385-388,580-593,632-636
+android/app/src/main/java/com/cozyting/app/MainActivity.kt
+  h_75f437d5bc136b 150,184,262-278,280,282,284,685,1201-1220,1246,1334,1902-1961,2196-2198,2221-2227,2305-2319,2323-2324,2479,2918-2920,3112-3115,3188-3190,3205-3207,3222-3224
+android/app/src/main/java/com/cozyting/app/cast/CastRouteSelection.kt
+  h_75f437d5bc136b 292-320
+android/app/src/main/java/com/cozyting/app/cast/PrefsDiscoveredDeviceStore.kt
+  h_75f437d5bc136b 77-107,111
+android/app/src/main/java/com/cozyting/app/ui/ThemeMode.kt
+  h_75f437d5bc136b 10,142-201,239-243
+android/app/src/main/java/com/cozyting/app/ui/VolumeSafetyGuard.kt
+  h_75f437d5bc136b 47-56
+android/app/src/main/java/com/cozyting/app/update/AppUpdateManager.kt
+  h_75f437d5bc136b 60,93-100,106-113,147,170,207
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 102-103
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 102-103
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 102-103
+android/app/src/test/java/com/cozyting/app/ui/UserStatePersistenceTest.kt
+  h_75f437d5bc136b 1-207
+design/UI_SPEC.md
+  h_75f437d5bc136b 20,35,44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "134dcb3b6b14ce2b654271fed9c3aa8bf272e23f",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
