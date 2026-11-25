@@ -20,13 +20,15 @@
   <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
   <a href="https://jasirvoriya.github.io/cozyting/en/architecture.html">Interactive Architecture</a> ·
   <a href="docs/COMPATIBILITY.md">Compatibility Matrix</a> ·
-  <a href="CHANGELOG.md">Changelog</a>
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="#support-cozyting">Sponsor</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://afdian.com/a/voriya"><img alt="Sponsor on Afdian" src="https://img.shields.io/badge/Sponsor-Afdian-946CE6?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -267,6 +269,13 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **Resources**: [Product Website](https://jasirvoriya.github.io/cozyting/en/) · [Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting/en/architecture.html) · [LLM Summary (`llms.txt`)](docs/llms.txt) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 - **License**: Released under **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)**.
 - **Non-Affiliation Disclaimer**: Independent third-party open-source implementation for LAN interoperability research. Not affiliated with, authorized by, or endorsed by Xiaomi Corporation.
+
+### Support CozyTing
+
+CozyTing is **100% free, open-source, and pure-LAN**—no paywalls, no accounts, and no locked features. If CozyTing brings your Xiaomi / XiaoAi speakers back to life, starring the repo or buying the author a warm drink is always appreciated (completely optional):
+
+- **Afdian (PayPal / International Cards / WeChat Pay / Alipay)**: <https://afdian.com/a/voriya>
+- **Direct Tip QR Codes (WeChat Pay & Alipay)**: [Open Sponsor Card on Website](https://jasirvoriya.github.io/cozyting/en/#sponsor)
 
 ### Contributors
 

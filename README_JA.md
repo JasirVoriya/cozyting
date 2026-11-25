@@ -20,13 +20,15 @@
   <a href="https://github.com/JasirVoriya/cozyting/issues">Issues</a> ·
   <a href="https://jasirvoriya.github.io/cozyting/ja/architecture.html">アーキテクチャ図</a> ·
   <a href="docs/COMPATIBILITY.md">互換マトリクス</a> ·
-  <a href="CHANGELOG.md">変更履歴</a>
+  <a href="CHANGELOG.md">変更履歴</a> ·
+  <a href="#cozyting-を応援する">スポンサー</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://afdian.com/a/voriya"><img alt="Sponsor on Afdian" src="https://img.shields.io/badge/Sponsor-Afdian-946CE6?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -246,6 +248,13 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **関連リンク**：[製品サイト（日本語）](https://jasirvoriya.github.io/cozyting/ja/) · [アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting/ja/architecture.html) · [LLM 要約 (`llms.txt`)](docs/llms.txt) · [セキュリティポリシー](SECURITY.md) · [コントリビューションガイド](CONTRIBUTING.md)
 - **ライセンス**：**[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** で公開されています。
 - **非公式プロジェクト表記**：LAN 相互運用性研究のための独立したサードパーティ製オープンソース実装であり、Xiaomi Corporation および関連会社とは一切関係・提携・承認関係にありません。
+
+### CozyTing を応援する
+
+CozyTing のすべての機能は**完全無料・オープンソース・完全 LAN 動作**であり、課金制限や限定機能は一切ありません。もし CozyTing が毎日の音楽時間を少しでも心地よくできたなら、GitHub での **Star** や任意の応援をいただけると励みになります：
+
+- **Afdian（PayPal・国際クレジットカード・WeChat Pay・Alipay 対応）**：<https://afdian.com/a/voriya>
+- **QR コードでの応援（WeChat Pay / Alipay）**：[製品サイトの応援カードを開く](https://jasirvoriya.github.io/cozyting/ja/#sponsor)
 
 ### コントリビューター
 

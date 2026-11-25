@@ -19,6 +19,7 @@ import android.widget.TextView
 import com.cozyting.app.compat.WindowInsetsApplyCompat
 import com.cozyting.app.ui.AppLocaleManager
 import com.cozyting.app.ui.PrefsCastSettingsStore
+import com.cozyting.app.ui.SponsorDialogController
 import com.cozyting.app.ui.UiComponents
 import com.cozyting.app.ui.UiPalette
 import com.cozyting.app.update.AppUpdateManager
@@ -103,6 +104,7 @@ class AboutActivity : Activity() {
 
     private var pendingOpenDialogAfterManualCheck = false
     private var updateDialog: Dialog? = null
+    private var sponsorDialog: Dialog? = null
 
     private val updateListener: (UpdateCheckState) -> Unit = { st ->
         if (!isFinishing && !isDestroyed) {
@@ -139,6 +141,8 @@ class AboutActivity : Activity() {
         AppUpdateManager.removeListener(updateListener)
         runCatching { updateDialog?.dismiss() }
         updateDialog = null
+        runCatching { sponsorDialog?.dismiss() }
+        sponsorDialog = null
         super.onDestroy()
     }
 
@@ -227,6 +231,10 @@ class AboutActivity : Activity() {
         buildBetaChannelRow(card)
         card.addView(divider())
         buildReleasesRow(card)
+        if (BuildConfig.ENABLE_SPONSOR_ENTRY) {
+            card.addView(divider())
+            buildSponsorRow(card)
+        }
         root.addView(card)
 
         // —— 底部极轻开源与纯局域网声明 ——
@@ -442,6 +450,54 @@ class AboutActivity : Activity() {
         row.addView(meta)
         row.addView(chevronView())
         card.addView(row)
+    }
+
+    private fun buildSponsorRow(card: LinearLayout) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.rippleSurface(
+                fillColor = Color.TRANSPARENT,
+                radiusPx = UiComponents.dpf(this@AboutActivity, 10f),
+                rippleColor = palette.ripple,
+            )
+            setPadding(dp(2), dp(12), dp(2), dp(12))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showSponsorDialog() }
+        }
+        val meta = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
+        }
+        meta.addView(
+            TextView(this).apply {
+                text = getString(R.string.about_sponsor_title)
+                textSize = 14f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+            },
+        )
+        meta.addView(
+            TextView(this).apply {
+                text = getString(R.string.about_sponsor_sub)
+                textSize = 11.5f
+                setTextColor(palette.textSecondary)
+                setPadding(0, dp(2), 0, 0)
+            },
+        )
+        row.addView(meta)
+        row.addView(chevronView())
+        card.addView(row)
+    }
+
+    private fun showSponsorDialog() {
+        runCatching { sponsorDialog?.dismiss() }
+        sponsorDialog = SponsorDialogController.show(this, palette) {
+            sponsorDialog = null
+        }
     }
 
     private fun showUpdateDialog(decision: UpdateDecision) {

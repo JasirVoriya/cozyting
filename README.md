@@ -20,13 +20,15 @@
   <a href="https://github.com/JasirVoriya/cozyting/issues">问题反馈</a> ·
   <a href="https://jasirvoriya.github.io/cozyting/architecture.html">交互式架构图</a> ·
   <a href="docs/COMPATIBILITY.md">设备兼容矩阵</a> ·
-  <a href="CHANGELOG.md">更新日志</a>
+  <a href="CHANGELOG.md">更新日志</a> ·
+  <a href="#支持窝爱听">赞赏支持</a>
 </p>
 
 <p>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
+  <a href="https://afdian.com/a/voriya"><img alt="请作者喝杯热茶 / Afdian" src="https://img.shields.io/badge/Sponsor-%E7%88%B1%E5%8F%91%E7%94%B5%20%2F%20%E8%B5%9E%E8%B5%8F-946CE6?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -330,6 +332,28 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 - **开源许可证**：本项目采用 **[GNU Affero General Public License v3.0 (AGPL-3.0-only)](LICENSE)** 开源发布。
 - **非官方与互操作性声明**：本项目为独立的第三方开源客户端实现，仅用于局域网设备互操作性与音频投送技术研究。本项目与小米集团（Xiaomi）及其关联公司没有任何隶属、授权、认可或合作关系。文中所提及的产品名称、协议名称或商标均归其各自所有者所有。
 - **隐私与网络边界**：仅捕获用户授权的音频流，不采集屏幕图像或麦克风，音频投送全程在本地局域网直连运行；应用内置的公开版本更新检测仅每 24 小时匿名只读拉取一次公开静态清单（强制 HTTPS + SHA-256 与签名校验，零遥测、不上传任何设备或局域网数据）。
+
+### 支持窝爱听
+
+窝爱听（CozyTing）的所有功能**永久免费开源、纯局域网零云端**，不会设置任何付费墙或特权功能。如果它陪你度过了几个放松的夜晚、或者帮你重新盘活了家里的小爱音箱，欢迎随手点个 **Star**，或自愿请作者喝杯热茶：
+
+- **爱发电（支持微信 / 支付宝 / 国际卡）**：<https://afdian.com/a/voriya>
+- **支付宝手机端直达**：<https://qr.alipay.com/fkx13666yfftru6suyvjk59>
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="240">
+        <img src="docs/assets/sponsor/wechat-tip.jpg" alt="微信赞赏码（窝爱听 CozyTing）" width="200" /><br />
+        <strong>微信赞赏码</strong>
+      </td>
+      <td align="center" width="240">
+        <img src="docs/assets/sponsor/alipay-tip.png" alt="支付宝收款码（窝爱听 CozyTing）" width="200" /><br />
+        <strong>支付宝扫一扫</strong>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ### 贡献者致谢
 
