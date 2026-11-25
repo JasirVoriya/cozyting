@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <title>CozyTing — Come Home. Fill Every Room with Your Music | Open-Source Pure-LAN MiPlay Casting</title>
   <meta name="description" content="Come home. Fill every room with your music. CozyTing is a free, open-source (AGPL-3.0) third-party MiPlay pure-LAN audio casting app for Android 10+. Stream exclusively from one chosen music app on Samsung, Pixel, OnePlus, OPPO, vivo, or Huawei phones to up to 63 Xiaomi / XiaoAi speakers in millisecond sync—zero cloud, zero Xiaomi account, no root.">
-  <meta name="keywords" content="CozyTing,MiPlay,Xiaomi speaker casting,XiaoAi speaker audio cast,multi-room Wi-Fi audio,Android AudioPlaybackCapture,per-app audio isolation,pure LAN audio cast,open source MiPlay sender,Rust audio sync engine">
+  <meta name="keywords" content="CozyTing,MiPlay,Xiaomi speaker casting,XiaoAi speaker audio cast,XiaoAi DLNA alternative,XiaoAi AirPlay alternative,cast to Xiaomi speaker without NAS,multi-room Wi-Fi audio,Android AudioPlaybackCapture,per-app audio isolation,pure LAN audio cast,open source MiPlay sender,Rust audio sync engine">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/en/">
   <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/">
@@ -106,6 +106,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "Yes. Any Android 10+ phone on the same home Wi-Fi LAN can stream directly to MiPlay-capable Xiaomi / XiaoAi speakers without a Xiaomi phone, Xiaomi account, or root."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does CozyTing compare to DLNA / AirPlay NAS bridges or Xiaomi Cloud API relay apps?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Most DLNA/AirPlay bridges require an always-on NAS or Docker server, and mobile DLNA relays typically translate commands through Xiaomi Cloud APIs requiring a Xiaomi account and apps with a built-in DLNA button. CozyTing speaks native local-LAN MiPlay directly on Android—no NAS, no Xiaomi account, zero cloud APIs, works with any capturable music app, and synchronizes up to 63 speakers with 4 live latency tiers."
             }
           },
           {
@@ -1131,16 +1139,17 @@
         <div class="section-head">
           <span class="section-eyebrow">Why CozyTing</span>
           <h2>4 Frustrations That Shouldn&rsquo;t Interrupt Coming Home to Music</h2>
-          <p>Compared to Bluetooth, stock Xiaomi MiPlay, and system screen mirroring, CozyTing combines brand freedom, multi-room Wi-Fi sync, and strict per-app privacy isolation.</p>
+          <p>Compared to DLNA / AirPlay bridges and cloud relays, Bluetooth, stock Xiaomi MiPlay, and system screen mirroring, CozyTing combines brand freedom, zero-NAS pure-LAN direct casting, multi-room Wi-Fi sync, and strict per-app privacy isolation.</p>
         </div>
 
         <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
           <table class="compare-table">
-            <caption id="compare-caption">CozyTing vs. common ways to cast phone audio to Xiaomi speakers</caption>
+            <caption id="compare-caption">CozyTing vs. common ways and bridges to cast phone audio to Xiaomi speakers</caption>
             <thead>
               <tr>
                 <th scope="col">Capability</th>
                 <th scope="col">CozyTing</th>
+                <th scope="col">DLNA / AirPlay Bridges &amp; Cloud Relays</th>
                 <th scope="col">Bluetooth</th>
                 <th scope="col">Stock Xiaomi MiPlay</th>
                 <th scope="col">Screen Mirroring</th>
@@ -1151,19 +1160,30 @@
                 <th scope="row">Phone Brand Support</th>
                 <td class="highlight">Any Android 10+ phone (iOS planned)</td>
                 <td>Any brand</td>
+                <td>Any brand</td>
                 <td>Select Xiaomi / Redmi only</td>
                 <td>Any brand</td>
               </tr>
               <tr>
+                <th scope="row">NAS / Server Required</th>
+                <td class="highlight">Zero NAS / Docker / PC—standalone APK</td>
+                <td>Most bridges need an always-on NAS/router; mobile relays depend on background keep-alive</td>
+                <td>None</td>
+                <td>None</td>
+                <td>None</td>
+              </tr>
+              <tr>
                 <th scope="row">Multi-Room Sync</th>
                 <td class="highlight">Up to 63 speakers in ms sync; live add/remove</td>
+                <td>Mostly single-speaker push or extra hub setup</td>
                 <td>Usually 1 speaker; multi-speaker echo</td>
                 <td>Supports multiple MiPlay speakers</td>
                 <td>Single target or high latency</td>
               </tr>
               <tr>
                 <th scope="row">Single-App Isolation</th>
-                <td class="highlight">Only your chosen music app; zero chat/alert leaks</td>
+                <td class="highlight">Only your chosen music app; no DLNA button needed</td>
+                <td>Limited to apps with built-in DLNA / AirPlay casting</td>
                 <td>Broadcasts all phone audio</td>
                 <td>Supports media source routing</td>
                 <td>Broadcasts entire screen &amp; audio</td>
@@ -1171,6 +1191,7 @@
               <tr>
                 <th scope="row">Videos Don&rsquo;t Pause Music</th>
                 <td class="highlight">Dual-zone AudioFocus isolation (Android 13+ Silent Mode)</td>
+                <td>Independent when pushing media URLs</td>
                 <td>Videos immediately pause speaker music</td>
                 <td>Depends on OS version</td>
                 <td>Cannot isolate</td>
@@ -1181,10 +1202,12 @@
                 <td>Not adjustable</td>
                 <td>Not adjustable</td>
                 <td>Not adjustable</td>
+                <td>Not adjustable</td>
               </tr>
               <tr>
                 <th scope="row">Privacy, Account &amp; License</th>
-                <td class="highlight">Pure LAN, zero Xiaomi account, AGPL-3.0 open source</td>
+                <td class="highlight">Pure-LAN native MiPlay, zero Xiaomi account, AGPL-3.0</td>
+                <td>Most require Xiaomi account login / Xiaomi Cloud API</td>
                 <td>Local proprietary</td>
                 <td>Tied to Xiaomi account &amp; ROM</td>
                 <td>Depends on vendor service</td>
@@ -1348,6 +1371,11 @@
           <details open>
             <summary>Can non-Xiaomi phones (Samsung, Pixel, OnePlus, OPPO, vivo, Huawei) cast to Xiaomi / XiaoAi speakers?</summary>
             <div class="faq-answer">Yes. Any Android 10+ phone on the same Wi-Fi LAN can cast directly via the MiPlay protocol without a Xiaomi phone or Xiaomi account. See real-device test records in the <a href="https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md">Device Compatibility Matrix</a>.</div>
+          </details>
+
+          <details>
+            <summary>How does CozyTing compare to DLNA / AirPlay NAS bridges or Xiaomi Cloud API relay apps?</summary>
+            <div class="faq-answer">Most DLNA / AirPlay bridges require an always-on NAS or Docker host, and mobile DLNA relays typically translate commands into Xiaomi Cloud API calls (requiring a Xiaomi account and music apps with a built-in DLNA button). CozyTing speaks <strong>native pure-LAN MiPlay</strong> directly on Android: zero NAS, zero Xiaomi account, zero cloud APIs, works with any capturable music or podcast app, and syncs up to 63 speakers with 4 live latency tiers.</div>
           </details>
 
           <details>

@@ -40,6 +40,13 @@
 4. **Rootless Silent Capture & Dual-Zone AudioFocus (Android 13+)**: Built-in on-device Wireless Debugging pairing wizard (no root, no PC, no Shizuku) eliminates recurring MediaProjection popups and system casting indicators, enables true per-app local mute, and isolates AudioFocus into dual zones so watching videos on your phone does not pause speaker playback.
 5. **Live 4-Tier Latency Switching**: Switch between Standard (5GHz 800ms / 2.4GHz 1000ms), Balanced (400ms), Low Latency (250ms), Ultra-Low (150ms), or custom `ms` mid-stream via runtime `TIME_OFFSET` rebasing without disconnecting.
 
+## How CozyTing Differs from DLNA / AirPlay Bridges & Cloud-API Relays
+
+- **Standalone Phone App — Zero NAS / Docker / Server**: Unlike LAN DLNA/AirPlay bridge gateways that require an always-on NAS, soft router, Raspberry Pi, or Docker host, CozyTing runs directly as a standalone Android APK on any Android 10+ phone.
+- **Native Pure-LAN MiPlay — Zero Xiaomi Account & Zero Cloud APIs**: Unlike mobile DLNA-to-Xiaomi-Cloud relays that require Xiaomi account login and translate casting commands through Xiaomi Cloud APIs, CozyTing speaks the native local-LAN MiPlay protocol directly to speakers with zero cloud dependency and works even with no internet access.
+- **Works with Any Capturable Music App (No DLNA Button Needed)**: Works with NetEase Cloud Music, QQ Music, Apple Music, Spotify, YouTube Music, podcasts, etc. via Fail-Closed single-app audio isolation—not restricted to apps that expose a built-in DLNA button.
+- **Native Multi-Room Sync & Live Latency Tuning**: Synchronizes up to 63 MiPlay-capable Xiaomi / XiaoAi speakers in millisecond sync with live add/remove and 4-tier runtime latency switching (150ms–1000ms).
+
 ## Honest Scope & Known Limitations
 
 - Cannot bypass third-party apps that explicitly set `android:allowAudioPlaybackCapture="false"`.
