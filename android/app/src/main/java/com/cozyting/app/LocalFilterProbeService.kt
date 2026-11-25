@@ -180,7 +180,8 @@ class LocalFilterProbeService : Service() {
         val saved = store.loadSelection()
         val pkg = pkgExtra.ifBlank { saved?.packageName }
         val expect = certExtra.ifBlank { saved?.signingCertSha256 }
-        return when (val r = CaptureTargetResolver(AndroidPackageIdentityLookup(this)).resolveForCapture(pkg, expect)) {
+        val approvedShared = pkg?.let { store.loadSharedUidConsent(it) }
+        return when (val r = CaptureTargetResolver(AndroidPackageIdentityLookup(this)).resolveForCapture(pkg, expect, approvedShared)) {
             is CaptureTargetResult.Ok -> {
                 store.saveSelection(
                     TargetAppSelection(

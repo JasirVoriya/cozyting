@@ -168,6 +168,49 @@ class PrefsTargetAppStore(context: Context) : TargetAppStore {
         return updated
     }
 
+    override fun saveSharedUidConsent(packageName: String, sharedPackages: Collection<String>) {
+        val pkg = packageName.trim()
+        val normalized = sharedPackages.map { it.trim() }.filter { it.isNotEmpty() }.distinct().sorted()
+        if (pkg.isEmpty() || normalized.size <= 1) return
+        val mapObj = loadConsentMapObject()
+        val arr = JSONArray()
+        normalized.forEach { arr.put(it) }
+        mapObj.put(pkg, arr)
+        prefs.edit()
+            .putString(KEY_SHARED_UID_CONSENTS, mapObj.toString())
+            .remove(KEY_UID_FORBIDDEN)
+            .apply()
+    }
+
+    override fun loadSharedUidConsent(packageName: String): Set<String>? {
+        val pkg = packageName.trim()
+        if (pkg.isEmpty()) return null
+        val arr = loadConsentMapObject().optJSONArray(pkg) ?: return null
+        val set = linkedSetOf<String>()
+        for (i in 0 until arr.length()) {
+            val item = arr.optString(i).trim()
+            if (item.isNotEmpty()) set += item
+        }
+        return set.takeIf { it.size > 1 }
+    }
+
+    override fun clearSharedUidConsent(packageName: String) {
+        val pkg = packageName.trim()
+        if (pkg.isEmpty()) return
+        val mapObj = loadConsentMapObject()
+        if (!mapObj.has(pkg)) return
+        mapObj.remove(pkg)
+        prefs.edit()
+            .putString(KEY_SHARED_UID_CONSENTS, mapObj.toString())
+            .apply()
+    }
+
+    private fun loadConsentMapObject(): JSONObject {
+        val raw = prefs.getString(KEY_SHARED_UID_CONSENTS, null).orEmpty()
+        if (raw.isBlank()) return JSONObject()
+        return runCatching { JSONObject(raw) }.getOrDefault(JSONObject())
+    }
+
     companion object {
         private const val PREFS = "cozyting_target_app"
         private const val KEY_PACKAGE = "package"
@@ -177,6 +220,7 @@ class PrefsTargetAppStore(context: Context) : TargetAppStore {
         private const val KEY_FAVORITES = "favorite_audio_sources"
         private const val KEY_FAVORITES_INITIALIZED = "favorite_audio_sources_initialized"
         private const val KEY_AUTO_DETECT = "auto_detect"
+        private const val KEY_SHARED_UID_CONSENTS = "shared_uid_consents"
         private const val KEY_UID_FORBIDDEN = "uid"
         private const val MAX_RECENT = 8
     }

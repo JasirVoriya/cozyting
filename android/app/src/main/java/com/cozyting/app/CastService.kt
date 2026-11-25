@@ -655,8 +655,10 @@ class CastService : Service() {
         val saved = store.loadSelection()
         val pkg = pkgExtra.ifBlank { saved?.packageName }
         val expectCert = certExtra.ifBlank { saved?.signingCertSha256 }
+        val approvedShared = pkg?.let { store.loadSharedUidConsent(it) }
+        val locCtx = com.cozyting.app.ui.AppLocaleManager.localizedContext(this)
         val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
-        return when (val r = resolver.resolveForCapture(pkg, expectCert)) {
+        return when (val r = resolver.resolveForCapture(pkg, expectCert, approvedShared)) {
             is CaptureTargetResult.Ok -> {
                 // 开始时写回最新签名摘要（仍不存 UID）
                 val label = saved?.label?.ifBlank { r.packageName } ?: r.packageName
@@ -670,12 +672,13 @@ class CastService : Service() {
                 r
             }
             is CaptureTargetResult.Fail -> {
-                lastFailMessage = r.messageZh
+                lastFailMessage = r.localizedMessage(locCtx)
                 event("目标解析失败[${r.reason}]: ${r.messageZh}")
-                // 身份变化/卸载时清掉过期选择
+                // 身份变化/卸载时清掉过期选择与旧授权
                 if (r.reason == CaptureFailReason.NOT_FOUND ||
                     r.reason == CaptureFailReason.IDENTITY_CHANGED
                 ) {
+                    pkg?.let { store.clearSharedUidConsent(it) }
                     store.clearSelection()
                 }
                 null
@@ -929,13 +932,14 @@ class CastService : Service() {
 
             val locCtx = com.cozyting.app.ui.AppLocaleManager.localizedContext(this)
             val modeLabel = if (autoDetected) "自动" else "手动"
+            val approvedShared = targetStore.loadSharedUidConsent(newPackage)
             val resolver = CaptureTargetResolver(AndroidPackageIdentityLookup(this))
-            val resolved = when (val r = resolver.resolveForCapture(newPackage)) {
+            val resolved = when (val r = resolver.resolveForCapture(newPackage, approvedSharedUidPackages = approvedShared)) {
                 is CaptureTargetResult.Ok -> r
                 is CaptureTargetResult.Fail -> {
                     event("${modeLabel}切换音源被拒绝[${r.reason}]: ${r.messageZh}")
                     if (!autoDetected) {
-                        hotSwitchFeedback.set(locCtx.getString(R.string.cast_hotswitch_rejected, r.messageZh))
+                        hotSwitchFeedback.set(locCtx.getString(R.string.cast_hotswitch_rejected, r.localizedMessage(locCtx)))
                         main.post { targetChangeListener?.invoke() }
                     }
                     return

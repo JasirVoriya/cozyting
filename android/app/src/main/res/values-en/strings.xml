@@ -551,4 +551,17 @@
     <string name="log_viewer_copy_entry">Copy log entry</string>
     <string name="log_viewer_entry_copied">Log entry copied</string>
     <string name="log_viewer_empty_filtered">No logs match the current filter</string>
+
+    <!-- Target capture validation & shared UID consent -->
+    <string name="capture_err_no_selection">Select an audio source app first. Capture will not fall back to system-wide audio.</string>
+    <string name="capture_err_not_found">App not found or unavailable for this user: %1$s. It may have been uninstalled or hidden.</string>
+    <string name="capture_err_cross_user">The selected app belongs to another user profile (e.g., work profile) and cannot be captured.</string>
+    <string name="capture_err_system_shared_uid">This app uses a system-level shared UID that may mix system or call audio. Choose a regular app instead.</string>
+    <string name="capture_err_shared_uid">This app shares an audio UID with other apps. Tap it again and confirm the shared channel to cast.</string>
+    <string name="capture_err_identity_changed">App signing identity changed (possibly reinstalled). Select it again before casting.</string>
+    <string name="shared_uid_consent_title">Shared audio channel</string>
+    <string name="shared_uid_consent_msg">\"%1$s\" shares an Android audio UID with: %2$s.\n\nCasting will capture audio from these apps together, while excluding all other apps and system notifications. Allow casting?</string>
+    <string name="shared_uid_consent_cancel">Cancel</string>
+    <string name="shared_uid_consent_allow">Allow casting</string>
+    <string name="status_banner_dismiss_cd">Dismiss notice</string>
 </resources>
