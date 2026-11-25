@@ -1,0 +1,44 @@
+CHANGELOG.md
+  h_75f437d5bc136b 11-25
+android/app/build.gradle.kts
+  h_75f437d5bc136b 31-32
+android/app/src/main/AndroidManifest.xml
+  h_75f437d5bc136b 63-80
+android/app/src/main/java/com/cozyting/app/CastService.kt
+  h_75f437d5bc136b 45,373,377-378,394,407,769-779,785-792,1150,1198,1246
+android/app/src/main/java/com/cozyting/app/CastTileService.kt
+  h_75f437d5bc136b 1-67
+android/app/src/main/java/com/cozyting/app/MainActivity.kt
+  h_75f437d5bc136b 79,131,738-744,748-751,753-764,1566-1572,1586-1587
+android/app/src/main/java/com/cozyting/app/QuickCastPanelActivity.kt
+  h_75f437d5bc136b 1-1340
+android/app/src/main/java/com/cozyting/app/SettingsActivity.kt
+  h_75f437d5bc136b 40,84,128,336-337,745-846
+android/app/src/main/java/com/cozyting/app/compat/QuickSettingsTileCompat.kt
+  h_75f437d5bc136b 1-131
+android/app/src/main/java/com/cozyting/app/ui/NowPlayingCardController.kt
+  h_75f437d5bc136b 1-411
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 590-608
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 590-608
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 590-608
+android/app/src/main/res/values/themes.xml
+  h_75f437d5bc136b 9-18
+android/app/src/test/java/com/cozyting/app/QuickCastPanelAndTileTest.kt
+  h_75f437d5bc136b 1-76
+design/UI_SPEC.md
+  h_75f437d5bc136b 113,132-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a66ef434d5893c4a14731a52e8249c2666e7846",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
