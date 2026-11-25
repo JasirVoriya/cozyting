@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>窝爱听（CozyTing）— 非小米手机也能用的开源 MiPlay 纯局域网多音箱音频投送</title>
-  <meta name="description" content="窝爱听（CozyTing）是一款免费开源（AGPL-3.0）的第三方小米妙播 / MiPlay 纯局域网音频投送客户端。支持华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机免 Root 直连最多 63 台小米 / 小爱音箱毫秒级同频听歌，严格单 App 音频隔离不串微信语音与通知，Android 13+ 支持内置无线调试无感采集与双区音频焦点隔离。">
+  <title>窝爱听（CozyTing）— 回到小窝，让喜欢的歌溢满房间｜开源 MiPlay 纯局域网多音箱投送</title>
+  <meta name="description" content="回到小窝，让喜欢的歌溢满房间。窝爱听（CozyTing）是一款免费开源（AGPL-3.0）的第三方小米妙播 / MiPlay 纯局域网音频投送客户端。支持华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 10+ 手机免 Root 直连最多 63 台小米 / 小爱音箱毫秒级同频听歌，严格单 App 音频隔离不串微信语音与通知。">
   <meta name="keywords" content="窝爱听,CozyTing,小米妙播第三方,MiPlay,小爱音箱投音,小米音箱多房间同步,非小米手机小米妙播,局域网音频投送,单App音频隔离,无线调试无感采集,Android AudioPlaybackCapture,Rust音频同步引擎,开源多房间音响">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/">
@@ -23,8 +23,8 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta property="og:locale:alternate" content="ja_JP">
   <meta property="og:site_name" content="窝爱听 · CozyTing">
-  <meta property="og:title" content="窝爱听（CozyTing）— 打破品牌限制的开源 MiPlay 纯局域网多音箱音频投送">
-  <meta property="og:description" content="只投你选的那一个音乐 App，让多台小米 / 小爱音箱毫秒级同频合唱。支持任意 Android 10+ 手机、零云端免登录、最多 63 台音箱同步、4 档延迟热切与 Android 13+ 免 Root 无感采集。">
+  <meta property="og:title" content="窝爱听（CozyTing）— 回到小窝，让喜欢的歌溢满房间">
+  <meta property="og:description" content="开源纯局域网 MiPlay 音频投送：不限 Android 品牌，只投你选的那一个音乐 App，让多台小米 / 小爱音箱毫秒级同频合唱，零云端免登录。">
   <meta property="og:url" content="https://jasirvoriya.github.io/cozyting/">
   <meta property="og:image" content="https://jasirvoriya.github.io/cozyting/assets/social-preview.png">
   <meta property="og:image:width" content="1280">
@@ -159,28 +159,29 @@
 
     @layer tokens {
       :root {
-        /* Raw light & dark tokens (Ceramic & Slate flat industrial palette) */
-        --bg-page-light: #F4F6FA;
+        /* Raw light & dark tokens (Warm Oat & Night Lamp palette aligned with Logo) */
+        --bg-page-light: #FAF7F2;
         --bg-page-dark: #10131A;
         --bg-surface-light: #FFFFFF;
         --bg-surface-dark: #181C26;
-        --bg-subtle-light: #EEF1F7;
+        --bg-subtle-light: #F3EDE3;
         --bg-subtle-dark: #202634;
-        --border-light: rgba(15, 23, 42, 0.10);
+        --border-light: rgba(122, 88, 58, 0.13);
         --border-dark: rgba(248, 250, 252, 0.11);
-        --text-1-light: #14171F;
+        --text-1-light: #18161A;
         --text-1-dark: #F4F6FA;
-        --text-2-light: #475569;
+        --text-2-light: #524B57;
         --text-2-dark: #A6B0C3;
-        --text-3-light: #64748B;
+        --text-3-light: #766E7C;
         --text-3-dark: #8592A8;
-        --accent-light: #E13E50;
-        --accent-dark: #FF6B7A;
-        --accent-soft-light: #FFF0F2;
-        --accent-soft-dark: rgba(255, 92, 108, 0.16);
+        --accent-light: #E56D48;
+        --accent-dark: #FF855F;
+        --accent-soft-light: #FFF1EA;
+        --accent-soft-dark: rgba(229, 109, 72, 0.16);
+        --warm-lamp: #FFD166;
         --ok-light: #0F8A5F;
         --ok-dark: #34D399;
-        --shadow-light: 0 10px 30px rgba(15, 23, 42, 0.06);
+        --shadow-light: 0 10px 30px rgba(94, 72, 54, 0.07);
         --shadow-dark: 0 12px 32px rgba(0, 0, 0, 0.35);
 
         /* Default light values + @media fallback for browsers without light-dark() */
@@ -427,6 +428,81 @@
     @layer components {
       .hero {
         padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(2rem, 4vw, 3rem);
+        background: radial-gradient(ellipse 65% 55% at 18% 12%, color-mix(in srgb, var(--warm-lamp) 14%, transparent), transparent 72%);
+      }
+
+      /* Brand story panel */
+      .story-panel {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: clamp(1.5rem, 3.2vw, 2.4rem);
+        display: grid;
+        grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+        gap: clamp(1.5rem, 3.5vw, 2.75rem);
+        align-items: center;
+        box-shadow: var(--shadow);
+      }
+
+      @media (max-width: 820px) {
+        .story-panel {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .story-logos {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .story-logo-card {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.1rem 0.9rem 0.85rem;
+        text-align: center;
+      }
+
+      .story-logo-card img {
+        width: min(132px, 100%);
+        height: auto;
+        margin-inline: auto;
+        border-radius: 26px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+      }
+
+      .story-logo-card figcaption {
+        margin-block-start: 0.7rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-3);
+      }
+
+      .story-pillars {
+        display: grid;
+        gap: 0.9rem;
+        margin-block-start: 1.15rem;
+      }
+
+      .story-pillar {
+        padding: 0.85rem 1rem;
+        border-radius: var(--radius-sm);
+        background: var(--bg-subtle);
+        border-inline-start: 3px solid var(--accent);
+      }
+
+      .story-pillar strong {
+        display: block;
+        font-size: 0.96rem;
+        color: var(--text-1);
+        margin-block-end: 0.2rem;
+      }
+
+      .story-pillar span {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--text-2);
       }
 
       .hero-grid {
@@ -860,6 +936,7 @@
       </a>
       <nav aria-label="主导航">
         <ul class="nav-links">
+          <li><a href="#our-story">品牌故事</a></li>
           <li><a href="#pain-points">痛点对比</a></li>
           <li><a href="#features">核心功能</a></li>
           <li><a href="#video">演示视频</a></li>
@@ -884,10 +961,10 @@
       <div class="container hero-grid">
         <div>
           <span class="section-eyebrow">Pure LAN · Zero Cloud · AGPL-3.0</span>
-          <h1>非小米手机也能用的开源 MiPlay 多音箱音频投送</h1>
+          <h1>回到小窝，让喜欢的歌溢满房间。</h1>
           <p class="hero-lead">
-            <strong>窝爱听（CozyTing）</strong> 是一款免费的第三方 MiPlay 局域网音频投送应用（Android 10+，iOS 规划中）。
-            无需 Root、无需登录小米账号，直接将你选定的单个音乐 App 高保真投送到家里一台或多台小米 / 小爱音箱（最多 63 台毫秒级同频），微信语音与系统通知绝不串音。
+            <strong>窝爱听（CozyTing）</strong> 是一款免费开源的第三方 MiPlay 纯局域网音频投送应用（Android 10+，iOS 规划中）。
+            不限手机品牌、无需 Root、免登录小米账号，直接将你选定的单个音乐 App 高保真投送到家里一台或多台小米 / 小爱音箱（最多 63 台毫秒级同频），把工作语音与通知留在手机，房间里只流淌你喜欢的歌。
           </p>
           <div class="cta-row">
             <a class="btn btn-primary" href="https://github.com/JasirVoriya/cozyting/releases">下载最新版 APK</a>
@@ -915,12 +992,52 @@
       </div>
     </section>
 
+    <!-- Brand Story -->
+    <section class="block" id="our-story" aria-labelledby="story-heading">
+      <div class="container">
+        <div class="story-panel">
+          <div class="story-logos">
+            <figure class="story-logo-card">
+              <img src="assets/logo.svg" alt="窝爱听（CozyTing）浅色暖阳版图标：燕麦暖底上的珊瑚橙屋顶小屋、暖灯窗台打盹小猫与飘出音符" width="512" height="512" loading="lazy">
+              <figcaption>浅色 · 燕麦暖阳</figcaption>
+            </figure>
+            <figure class="story-logo-card">
+              <img src="assets/logo-dark.svg" alt="窝爱听（CozyTing）深色深夜版图标：夜色月牙下亮着琥珀暖灯的小屋、窗台小猫与飘出音符" width="512" height="512" loading="lazy">
+              <figcaption>深色 · 深夜暖灯</figcaption>
+            </figure>
+          </div>
+
+          <div>
+            <span class="section-eyebrow">Our Story · 品牌故事</span>
+            <h2 id="story-heading" style="font-size: clamp(1.4rem, 2.5vw, 1.9rem); letter-spacing: -0.02em; line-height: 1.28; margin-block-end: 0.55rem;">为什么叫「窝爱听」？</h2>
+            <p style="color: var(--text-2); font-size: 0.96rem;">
+              忙碌加班到深夜，推开家门回到自己亮着暖灯的小窝，打开喜欢的歌单让音乐流满房间、瞬间卸下疲惫——这是「窝爱听 / CozyTing」想守护的日常片刻。
+            </p>
+            <div class="story-pillars">
+              <div class="story-pillar">
+                <strong>亮着暖灯的小屋 ·「窝」</strong>
+                <span>回归属于自己的小空间，所有发现与音频传输 100% 留在家庭 Wi-Fi 局域网，零云端、免账号。</span>
+              </div>
+              <div class="story-pillar">
+                <strong>窗台打盹的小猫 ·「松弛」</strong>
+                <span>不被手机品牌生态挡在门外，也不必折腾反复断连的蓝牙，随手一点就能放松听歌。</span>
+              </div>
+              <div class="story-pillar">
+                <strong>屋顶飘出的音符 ·「爱听」</strong>
+                <span>严格只投你选的那一个音乐 App，把工作群语音与系统通知留在手机，房间里只留你爱听的声音。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Pain Points & Comparison -->
     <section class="block" id="pain-points">
       <div class="container">
         <div class="section-head">
           <span class="section-eyebrow">Why CozyTing</span>
-          <h2>解决家庭小爱音箱听歌的 4 大痛点</h2>
+          <h2>回家只想安静听首歌，却总被这 4 件事打断</h2>
           <p>对比普通蓝牙、原厂小米妙播与系统整机投屏，窝爱听在品牌自由度、多房间同步与单 App 隐私隔离上兼得平衡。</p>
         </div>
 

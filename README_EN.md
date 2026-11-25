@@ -8,7 +8,9 @@
 
 # CozyTing (窝爱听)
 
-**Open-Source Third-Party MiPlay Audio Casting App: Stream Only Your Chosen Music App to Up to 63 Xiaomi / XiaoAi Speakers Over Pure LAN**
+**Come home. Fill every room with your music.**
+
+<sub>Open-source third-party MiPlay pure-LAN audio casting app: stream only your chosen music app from any Android phone to up to 63 synced Xiaomi / XiaoAi speakers</sub>
 
 <p>
   <a href="README.md">简体中文</a> · <strong>English</strong> · <a href="README_JA.md">日本語</a> ·
@@ -37,6 +39,8 @@
 > **What is CozyTing (窝爱听)?**
 > **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
 >
+> 🏠 **Why "CozyTing" (窝爱听)?** After a long day, you step into your warm home, switch on a soft lamp, and just want your favorite music filling the room—free from phone-brand lock-in and uninterrupted by work voice notes or alerts. That quiet evening ritual inspired both our name and warm-lit house icon.
+>
 > 📦 **Download**: Grab the latest Android APK and cross-platform `cozyting-cli` binaries from **[GitHub Releases](https://github.com/JasirVoriya/cozyting/releases)**.
 > 📑 **Jump to**: [CozyTing in 1 Minute](#-cozyting-in-1-minute) · [Problems Solved](#1-what-problems-does-cozyting-solve) · [Key Features](#2-key-features) · [App UI Showcase](#3-app-ui-showcase-dark--light-dual-theme) · [3-Step Quick Start](#4-quick-start-for-users-3-steps) · [FAQ](#5-frequently-asked-questions-faq) · [Technical Architecture & Developer Guide](#6-technical-architecture--core-design)
 
@@ -60,12 +64,12 @@
 
 ## 1. What Problems Does CozyTing Solve?
 
-If you own Xiaomi or XiaoAi smart speakers and want to play music from your phone, existing options come with major frustrations:
+When you get home and just want to unwind with music playing through your Xiaomi or XiaoAi speakers, everyday friction gets in the way:
 
 1. **Brand Lock-In**: Xiaomi's built-in MiPlay ("小米妙播") casting is locked to select Xiaomi / Redmi phones—non-Xiaomi Android users are left out.
 2. **Bluetooth Limitations**: Bluetooth usually pairs with only one speaker, drops out when you walk into another room, compresses audio, and cannot keep multi-room speakers in sync.
-3. **Embarrassing Audio Leaks**: Bluetooth and full-system screen mirroring broadcast everything—voice messages, short-form videos, game effects, and notification chimes—straight to your living-room speakers.
-4. **High Latency & Interrupted Music**: Standard Wi-Fi casting lags on track skips, and opening a video on your phone immediately pauses the music playing on your speakers.
+3. **Mood-Breaking Audio Leaks**: Bluetooth and full-system screen mirroring broadcast everything—work voice messages, short-form videos, game effects, and notification chimes—straight to your living-room speakers.
+4. **High Latency & Interrupted Music**: Standard Wi-Fi casting lags on track skips, and opening a video while relaxing on the couch immediately pauses the music playing in your room.
 
 ### Comparison: CozyTing vs. Bluetooth vs. Stock MiPlay vs. Screen Mirroring
 

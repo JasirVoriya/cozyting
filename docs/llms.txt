@@ -9,6 +9,11 @@
 ## Core Identity & Facts
 
 - **Product Name**: 窝爱听 / CozyTing
+- **Brand Slogan**:
+  - 简体中文: 回到小窝，让喜欢的歌溢满房间。
+  - English: Come home. Fill every room with your music.
+  - 日本語: ただいまの部屋に、好きな音楽を。
+- **Brand Story**: Inspired by coming home late after work, turning on a warm lamp in your cozy home, and letting your favorite music fill every room—free from phone-brand lock-in and uninterrupted by chat voice notes or notifications (`#our-story`).
 - **Category**: Open-Source LAN Multi-Room Audio Casting App / Third-Party MiPlay Sender Client
 - **License**: GNU Affero General Public License v3.0 (`AGPL-3.0-only`)
 - **Supported App & Website Languages**: Simplified Chinese (`zh-CN`), English (`en`), Japanese (`ja`) — follow system language or switch in-app / via top-bar switcher

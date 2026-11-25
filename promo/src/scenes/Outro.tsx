@@ -32,12 +32,12 @@ export const Outro: React.FC<{ dur: number; locale: PromoLocale }> = ({ locale }
     <AbsoluteFill style={{ background: C.bg }}>
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 28% 54%, rgba(46,108,246,${0.20 * phonesIn}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 69% 38%, rgba(229,109,72,${0.12 * core}) 0%, rgba(229,109,72,0) 38%)`,
+          background: `radial-gradient(circle at 28% 54%, rgba(76,141,255,${0.14 * phonesIn}) 0%, rgba(46,108,246,0) 42%), radial-gradient(circle at 69% 32%, rgba(255,209,102,${0.15 * core}) 0%, rgba(229,109,72,${0.13 * core}) 20%, rgba(229,109,72,0) 44%)`,
         }}
       />
       <svg width="1920" height="1080" style={{ position: "absolute", inset: 0 }}>
         <Ripple cx={1315} cy={245} t={f / 70} maxR={620} color={C.coral} width={2} />
-        <Ripple cx={1315} cy={245} t={(f - 12) / 80} maxR={700} color={C.ink} width={1} />
+        <Ripple cx={1315} cy={245} t={(f - 12) / 80} maxR={700} color={C.warmGold} width={1.3} />
       </svg>
 
       <AbsoluteFill>
