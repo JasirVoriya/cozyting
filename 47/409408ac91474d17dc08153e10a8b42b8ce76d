@@ -1,0 +1,30 @@
+android/app/src/main/java/com/cozyting/app/update/ChangelogMarkdownRenderer.kt
+  h_75f437d5bc136b 1-453
+android/app/src/main/java/com/cozyting/app/update/UpdateDialogController.kt
+  h_75f437d5bc136b 160,163,173,185-186,191-197,199-204,206-207,210-211,214-249,263-264,266-271,275,279,281,286-287
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 310-314
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 310-314
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 310-314
+android/app/src/test/java/com/cozyting/app/update/UpdateDialogControllerTest.kt
+  h_75f437d5bc136b 83,125,129-166
+core/src/update.rs
+  h_75f437d5bc136b 556,572,1374-1383
+design/UI_SPEC.md
+  h_75f437d5bc136b 73
+scripts/generate-update-manifest.py
+  h_75f437d5bc136b 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "47409408ac91474d17dc08153e10a8b42b8ce76d",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
