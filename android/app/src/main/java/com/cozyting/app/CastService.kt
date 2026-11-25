@@ -87,6 +87,7 @@ class CastService : Service() {
         const val EXTRA_PROJ_DATA = "proj_data"
         const val EXTRA_VOLUME = "volume"
         const val EXTRA_VOLUME_CONFIRMED = "volume_confirmed"
+        const val EXTRA_SPEAKER_VOLUMES = "speaker_volumes_json"
         const val EXTRA_SECS = "secs"
         const val EXTRA_TARGET_PACKAGE = "target_package"
         const val EXTRA_TARGET_LABEL = "target_label"
@@ -375,10 +376,16 @@ class CastService : Service() {
             ACTION_RESUME -> { bg("resume") { event("恢复: " + NativeBridge.resume(h)); paused = false; updateNotification() }; return START_NOT_STICKY }
             ACTION_ADD -> {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty().trim()
+                val reqVol = intent.getIntExtra(EXTRA_VOLUME, -1)
+                val confirmed = intent.getBooleanExtra(EXTRA_VOLUME_CONFIRMED, false)
                 if (ip.isNotEmpty() && running.get() && h != 0L) {
                     addActiveReceiverIps(listOf(ip))
                     activeInitialIps = activeReceiverIps().toList()
                     val res = NativeBridge.queueAddReceiver(h, ip)
+                    if (reqVol in 0..100) {
+                        VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
+                        NativeBridge.queueSetVolumeChecked(h, ip, reqVol, confirmed)
+                    }
                     lastStats = NativeBridge.stats(h)
                     event("协调加入 $ip: $res")
                     updateNotification(force = true)
@@ -570,6 +577,20 @@ class CastService : Service() {
         val delay = if (reqDelay > 0) reqDelay else autoDelayMs(this)
         val premute = intent?.getIntExtra(EXTRA_PREMUTE, 0) ?: 0
         val volumeConfirmed = intent?.getBooleanExtra(EXTRA_VOLUME_CONFIRMED, false) ?: false
+        val speakerVolumesMap = linkedMapOf<String, Int>()
+        intent?.getStringExtra(EXTRA_SPEAKER_VOLUMES)?.takeIf { it.isNotBlank() }?.let { rawJson ->
+            runCatching {
+                val obj = JSONObject(rawJson)
+                val keys = obj.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next().trim()
+                    val v = obj.optInt(key, -1)
+                    if (key.isNotEmpty() && v in 0..100) {
+                        speakerVolumesMap[key] = v
+                    }
+                }
+            }
+        }
         val ref = intent?.getStringExtra(EXTRA_REF).orEmpty()
         val secs = intent?.getIntExtra(EXTRA_SECS, 0) ?: 0
         val sessionHandle = NativeBridge.create(source == "silent")
@@ -607,6 +628,11 @@ class CastService : Service() {
             event("connect 返回：$st")
             if (st.contains("\"error\"") && !st.contains("\"receivers\"")) {
                 stopCast(); stopSelf(); return@bg
+            }
+            speakerVolumesMap.forEach { (ip, vol) ->
+                if (vol != premute) {
+                    NativeBridge.queueSetVolumeChecked(sessionHandle, ip, vol, volumeConfirmed)
+                }
             }
             lastStats = st
             if (source == "app") {

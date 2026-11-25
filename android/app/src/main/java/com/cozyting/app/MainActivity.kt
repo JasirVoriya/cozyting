@@ -147,6 +147,7 @@ class MainActivity : Activity() {
     private var quickChipDragController: LinearDragReorderController? = null
     private val quickChipSelectedFlags = mutableMapOf<View, Boolean>()
     private lateinit var deviceCountView: TextView
+    private var restoreLastBtn: TextView? = null
     private lateinit var deviceList: LinearLayout
     private lateinit var statusBanner: LinearLayout
     private lateinit var statusDot: View
@@ -180,6 +181,7 @@ class MainActivity : Activity() {
     private var masterVolume: Int = 30
     private var masterVolumeConfirmedHigh: Boolean = false
     private val speakerVolume = linkedMapOf<String, Int>()
+    private var lastSelectedSpeakerIds: List<String> = emptyList()
     private val latencyIndicators = linkedMapOf<String, LatencyIndicatorViews>()
     private val speakerSubtitles = linkedMapOf<String, TextView>()
     private val speakerVolumeViews = linkedMapOf<String, Pair<UiComponents.VolumeGuardSeekBar, TextView>>()
@@ -257,12 +259,29 @@ class MainActivity : Activity() {
         store = PrefsTargetAppStore(this)
         deviceStore = PrefsDiscoveredDeviceStore(this)
         settingsStore = PrefsCastSettingsStore(this)
-        VolumeSafetyGuard.syncToNative(settingsStore.volumeGuardPolicy())
-        masterVolume = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
+        AppUpdateManager.hydrateDismissedBanner(this)
+        val volPolicy = settingsStore.volumeGuardPolicy()
+        VolumeSafetyGuard.syncToNative(volPolicy)
+        val defaultMaster = AcceptanceAudioDefaults.speakerPremutePercent(BuildConfig.IS_ACCEPTANCE)
+        if (BuildConfig.IS_ACCEPTANCE) {
+            masterVolume = defaultMaster
+        } else {
+            masterVolume = VolumeSafetyGuard.clampForColdStartRestore(
+                volPolicy,
+                settingsStore.loadMasterVolume(defaultMaster),
+            )
+            speakerVolume.clear()
+            settingsStore.loadSpeakerVolumes().forEach { (id, v) ->
+                speakerVolume[id] = VolumeSafetyGuard.clampForColdStartRestore(volPolicy, v)
+            }
+        }
+        lastSelectedSpeakerIds = deviceStore.loadLastSelectedSpeakerIds()
         val cachedDevices = deviceStore.loadDevices()
-        routeState = CastRouteSelection.initial(
+        val initialDevices = CastRouteSelection.prioritizeDevices(
             listOf(CastRouteSelection.Device("this", getString(R.string.main_this_device_name), Kind.THIS_DEVICE, true)) + cachedDevices,
+            lastSelectedSpeakerIds,
         )
+        routeState = CastRouteSelection.initial(initialDevices)
         syncCastStateFromService(forceSyncRoute = true)
         buildUi()
         refreshTargetFromStore()
@@ -663,7 +682,7 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { marginStart = dp(4) }
             setOnClickListener {
                 AppUpdateManager.activeBannerDecision(CastService.running.get())?.let { d ->
-                    AppUpdateManager.dismissBannerForTag(d.latestTag)
+                    AppUpdateManager.dismissBannerForTag(this@MainActivity, d.latestTag)
                 }
             }
         }
@@ -1179,6 +1198,26 @@ class MainActivity : Activity() {
             textSize = 11f
             setTextColor(palette.textTertiary)
         }
+        restoreLastBtn = TextView(this).apply {
+            text = getString(R.string.main_restore_last_speakers)
+            textSize = 11f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(palette.accentBright)
+            background = UiComponents.rippleSurface(
+                fillColor = palette.accentSoftBg,
+                radiusPx = dpf(999f),
+                rippleColor = palette.ripple,
+            )
+            setPadding(dp(9), dp(4), dp(9), dp(4))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = dp(8) }
+            isClickable = true
+            isFocusable = true
+            visibility = View.GONE
+            setOnClickListener { restoreLastUsedSpeakers() }
+        }
         val refreshSize = dp(28)
         refreshBtn = FrameLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(refreshSize, refreshSize).apply {
@@ -1204,6 +1243,7 @@ class MainActivity : Activity() {
             )
         }
         devHeader.addView(deviceCountView)
+        devHeader.addView(restoreLastBtn)
         devHeader.addView(refreshBtn)
         mainCard.addView(devHeader)
 
@@ -1291,6 +1331,7 @@ class MainActivity : Activity() {
         }
         headerStatusDot.background = UiComponents.roundedDrawable(dotColor, dp(7) / 2f)
         headerStatusLabel.text = label
+        updateRestoreLastButton()
     }
 
     private fun latencyWarningSoftColor(): Int = Color.argb(
@@ -1858,6 +1899,66 @@ class MainActivity : Activity() {
         val stats = runCatching { JSONObject(CastService.lastStats) }.getOrNull()
         updateLatencyAndSubtitleIndicators(stats)
         updateHeaderStatusPill()
+        updateRestoreLastButton()
+    }
+
+    private fun updateRestoreLastButton() {
+        val btn = restoreLastBtn ?: return
+        val isCasting = (CastService.running.get() && !stopRequested) ||
+            castRequested ||
+            routeState.selectedSpeakerIds.isNotEmpty()
+        if (isCasting) {
+            btn.visibility = View.GONE
+            return
+        }
+        val restorable = CastRouteSelection.resolveRestorableSpeakerIds(routeState.devices, lastSelectedSpeakerIds)
+        if (restorable.isEmpty()) {
+            btn.visibility = View.GONE
+            return
+        }
+        btn.text = if (restorable.size > 1) {
+            getString(R.string.main_restore_last_speakers_multi, restorable.size)
+        } else {
+            getString(R.string.main_restore_last_speakers)
+        }
+        btn.visibility = View.VISIBLE
+    }
+
+    private fun rememberSelectedSpeakers(selectedIds: Set<String>) {
+        if (selectedIds.isEmpty()) return
+        val ordered = buildList {
+            lastSelectedSpeakerIds.forEach { id ->
+                if (id in selectedIds && id !in this) add(id)
+            }
+            routeState.devices.forEach { d ->
+                if (d.id in selectedIds && d.id !in this) add(d.id)
+            }
+            selectedIds.forEach { id ->
+                if (id !in this) add(id)
+            }
+        }
+        if (ordered != lastSelectedSpeakerIds) {
+            lastSelectedSpeakerIds = ordered
+            deviceStore.saveLastSelectedSpeakerIds(ordered)
+        }
+    }
+
+    private fun restoreLastUsedSpeakers() {
+        val restorable = CastRouteSelection.resolveRestorableSpeakerIds(routeState.devices, lastSelectedSpeakerIds)
+        if (restorable.isEmpty()) {
+            updateRestoreLastButton()
+            return
+        }
+        var next = routeState
+        restorable.forEach { id ->
+            next = CastRouteSelection.setSpeakerChecked(next, id, true).state
+        }
+        routeState = next
+        rememberSelectedSpeakers(next.selectedSpeakerIds)
+        renderDevices()
+        if (next.selectedSpeakerIds.isNotEmpty()) {
+            startCastTo(next.selectedSpeakerIds)
+        }
     }
 
     private fun deviceRow(d: CastRouteSelection.Device, isLast: Boolean = false): View {
@@ -2092,6 +2193,9 @@ class MainActivity : Activity() {
             Kind.SPEAKER, Kind.TV -> CastRouteSelection.setSpeakerChecked(routeState, d.id, !d.selected)
         }
         routeState = transition.state
+        if (transition.state.selectedSpeakerIds.isNotEmpty()) {
+            rememberSelectedSpeakers(transition.state.selectedSpeakerIds)
+        }
         renderDevices()
         applyEffects(transition.effects)
     }
@@ -2114,7 +2218,13 @@ class MainActivity : Activity() {
                     if (CastService.running.get() || castRequested) {
                         CastService.primeConnectingReceivers(setOf(e.id))
                         updateLatencyAndSubtitleIndicators(runCatching { JSONObject(CastService.lastStats) }.getOrNull())
-                        service(CastService.ACTION_ADD) { putExtra(CastService.EXTRA_IP, e.id) }
+                        service(CastService.ACTION_ADD) {
+                            putExtra(CastService.EXTRA_IP, e.id)
+                            speakerVolume[e.id]?.let { vol ->
+                                putExtra(CastService.EXTRA_VOLUME, vol)
+                                putExtra(CastService.EXTRA_VOLUME_CONFIRMED, masterVolumeConfirmedHigh)
+                            }
+                        }
                         clearStatusBanner()
                     } else if (pendingStart != null) {
                         val ips = routeState.selectedSpeakerIds.joinToString(",")
@@ -2192,10 +2302,26 @@ class MainActivity : Activity() {
             return
         }
         val ips = speakerIds.joinToString(",")
+        speakerIds.forEach { id ->
+            if (id !in speakerVolume) {
+                speakerVolume[id] = masterVolume
+            }
+        }
+        val initialPremute = if (speakerIds.size == 1) {
+            speakerVolume[speakerIds.first()] ?: masterVolume
+        } else {
+            masterVolume
+        }
+        val speakerVolumesJson = JSONObject().apply {
+            speakerIds.forEach { id ->
+                speakerVolume[id]?.let { put(id, it) }
+            }
+        }.toString()
         val base = Intent(this, CastService::class.java).setAction(CastService.ACTION_START)
             .putExtra(CastService.EXTRA_IPS, ips)
             .putExtra(CastService.EXTRA_DELAY, settingsStore.delayMs)
-            .putExtra(CastService.EXTRA_PREMUTE, masterVolume)
+            .putExtra(CastService.EXTRA_PREMUTE, initialPremute)
+            .putExtra(CastService.EXTRA_SPEAKER_VOLUMES, speakerVolumesJson)
             .putExtra(CastService.EXTRA_VOLUME_CONFIRMED, masterVolumeConfirmedHigh)
             .putExtra(CastService.EXTRA_REF, settingsStore.refFunction)
             .putExtra(CastService.EXTRA_AUTH, AuthModeResolve.coerceMode(settingsStore.authMode))
@@ -2205,7 +2331,6 @@ class MainActivity : Activity() {
             )
             .putExtra(CastService.EXTRA_CAPTURE_ENGINE, allowed.effectiveEngine.id)
             .putExtra(CastService.EXTRA_CAPTURE_SCOPE, allowed.effectiveScope.id)
-        speakerIds.forEach { speakerVolume[it] = masterVolume }
         clearStatusBanner()
         if (appMode && allowed.effectiveEngine == CaptureEngineMode.WIRELESS_DEBUG) {
             // 无感模式：零 MediaProjection 弹窗、直接启动 mediaPlayback 前台服务
@@ -2351,6 +2476,7 @@ class MainActivity : Activity() {
             next = CastRouteSelection.setSpeakerChecked(next, ip, true).state
         }
         routeState = next
+        rememberSelectedSpeakers(next.selectedSpeakerIds)
         renderDevices()
         startCastTo(speakerIds)
     }
@@ -2789,6 +2915,9 @@ class MainActivity : Activity() {
                     settingsStore.showAllDiscovered,
                 )
                 var next = CastRouteSelection.mergeDiscovered(routeState, mergedDevices)
+                next = next.copy(
+                    devices = CastRouteSelection.prioritizeDevices(next.devices, lastSelectedSpeakerIds),
+                )
                 if (CastService.running.get() && !stopRequested) {
                     val activeIps = CastService.activeReceiverIps()
                     if (activeIps.isNotEmpty()) {
@@ -2980,7 +3109,10 @@ class MainActivity : Activity() {
             REQ_SETTINGS -> {
                 if (data?.getBooleanExtra(SettingsActivity.EXTRA_DEVICES_CHANGED, false) == true) {
                     val saved = deviceStore.loadDevices()
-                    routeState = CastRouteSelection.mergeDiscovered(routeState, saved)
+                    val merged = CastRouteSelection.mergeDiscovered(routeState, saved)
+                    routeState = merged.copy(
+                        devices = CastRouteSelection.prioritizeDevices(merged.devices, lastSelectedSpeakerIds),
+                    )
                     renderDevices()
                 }
                 if (data?.getBooleanExtra(SettingsActivity.EXTRA_TRIGGER_DISCOVER, false) == true) {
@@ -3053,6 +3185,9 @@ class MainActivity : Activity() {
         val clamped = target.coerceIn(0, 100)
         val policy = settingsStore.volumeGuardPolicy()
         masterVolume = clamped
+        if (!BuildConfig.IS_ACCEPTANCE) {
+            settingsStore.saveMasterVolume(clamped)
+        }
         masterVolumeConfirmedHigh = when {
             !VolumeSafetyGuard.isInHighVolumeZone(policy, clamped) -> false
             confirmed -> true
@@ -3066,6 +3201,9 @@ class MainActivity : Activity() {
             speakerVolume[id] = clamped
             speakerVolumeViews[id]?.first?.progress = clamped
             applySpeakerVolumeVisual(id, clamped)
+        }
+        if (!BuildConfig.IS_ACCEPTANCE && routeState.selectedSpeakerIds.isNotEmpty()) {
+            settingsStore.saveSpeakerVolumes(speakerVolume)
         }
         if (CastService.running.get() || castRequested) {
             setVolume("", clamped, confirmed = confirmed)
@@ -3081,6 +3219,9 @@ class MainActivity : Activity() {
     private fun commitSpeakerVolume(deviceId: String, target: Int, confirmed: Boolean) {
         val clamped = target.coerceIn(0, 100)
         speakerVolume[deviceId] = clamped
+        if (!BuildConfig.IS_ACCEPTANCE) {
+            settingsStore.saveSpeakerVolume(deviceId, clamped)
+        }
         speakerVolumeViews[deviceId]?.first?.progress = clamped
         applySpeakerVolumeVisual(deviceId, clamped)
         if (CastService.running.get() || castRequested) {

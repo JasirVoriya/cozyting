@@ -99,6 +99,8 @@
     <string name="main_output_devices">出力デバイス</string>
     <string name="main_multiroom_support">マルチルーム同期に対応</string>
     <string name="main_found_castable_count">%1$d 台の対応機器を検出</string>
+    <string name="main_restore_last_speakers">前回を復元</string>
+    <string name="main_restore_last_speakers_multi">前回 · %1$d台</string>
     <string name="main_refresh_devices_desc">出力デバイスを再スキャン</string>
     <string name="main_this_device_name">本機再生</string>
     <string name="main_this_device_active_sub">スマホスピーカー · 出力中</string>

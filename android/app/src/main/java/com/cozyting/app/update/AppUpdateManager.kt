@@ -57,7 +57,7 @@ object AppUpdateManager {
     var state: UpdateCheckState = UpdateCheckState.Idle
         private set
 
-    /** 本次进程内用户已手动点 × 关掉主界面顶部轻提示条的版本 tag。 */
+    /** 用户已手动点 × 关掉主界面顶部轻提示条的版本 tag（与本地持久化保持同步）。 */
     @Volatile
     private var bannerDismissedTag: String = ""
 
@@ -90,8 +90,24 @@ object AppUpdateManager {
     fun currentDisplayVersion(): String =
         UpdateChannel.stripBuildSuffixes(currentVersionProvider())
 
+    /** 从本地偏好恢复已点 × 关闭的更新提示横幅版本 tag。 */
+    fun hydrateDismissedBanner(context: Context) {
+        val persisted = PrefsCastSettingsStore(context.applicationContext).dismissedUpdateBannerTag
+        if (persisted.isNotEmpty() && bannerDismissedTag.isEmpty()) {
+            bannerDismissedTag = persisted
+        }
+    }
+
     fun dismissBannerForTag(tag: String) {
         bannerDismissedTag = tag.trim()
+        notifyListeners(state)
+    }
+
+    /** 关闭主界面更新提示横幅并持久化该版本 tag，重启后同版本不再反复弹出。 */
+    fun dismissBannerForTag(context: Context, tag: String) {
+        val clean = tag.trim()
+        PrefsCastSettingsStore(context.applicationContext).dismissedUpdateBannerTag = clean
+        bannerDismissedTag = clean
         notifyListeners(state)
     }
 
@@ -128,6 +144,7 @@ object AppUpdateManager {
 
     /** 切换更新通道后，若本地已有缓存清单则立即用 L1 重新裁决，无需等待网络。 */
     fun reevaluateFromCache(context: Context, manual: Boolean = false) {
+        hydrateDismissedBanner(context)
         val settings = PrefsCastSettingsStore(context)
         val cached = settings.cachedUpdateManifestJson
         if (cached.isBlank()) return
@@ -150,6 +167,7 @@ object AppUpdateManager {
      */
     fun maybeAutoCheck(context: Context) {
         val appCtx = context.applicationContext
+        hydrateDismissedBanner(appCtx)
         val settings = PrefsCastSettingsStore(appCtx)
         if (isAcceptanceProvider()) {
             return
@@ -186,6 +204,7 @@ object AppUpdateManager {
 
     /** 同步执行一次检测（便于单元测试与后台工作线程复用）。 */
     internal fun checkBlocking(context: Context, manual: Boolean): UpdateCheckState {
+        hydrateDismissedBanner(context)
         val settings = PrefsCastSettingsStore(context)
         val now = clockMs()
         var primaryError: String? = null

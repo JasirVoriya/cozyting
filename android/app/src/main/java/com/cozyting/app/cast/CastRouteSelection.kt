@@ -290,6 +290,35 @@ object CastRouteSelection {
     }
 
     /**
+     * 按上次使用的音箱 ID 顺序将常用可投设备置顶到「本机播放」紧下方，其余设备保持原相对顺序。
+     */
+    fun prioritizeDevices(devices: List<Device>, preferredSpeakerIds: List<String>): List<Device> {
+        if (preferredSpeakerIds.isEmpty()) return devices
+        val rank = preferredSpeakerIds.withIndex().associate { (i, id) -> id to i }
+        val thisDevices = devices.filter { it.kind == Kind.THIS_DEVICE }
+        val others = devices.filter { it.kind != Kind.THIS_DEVICE }
+        val prioritized = others
+            .filter { it.isCastSink && it.castable && it.id in rank }
+            .sortedBy { rank.getValue(it.id) }
+        val prioritizedIds = prioritized.map { it.id }.toSet()
+        val remaining = others.filter { it.id !in prioritizedIds }
+        return thisDevices + prioritized + remaining
+    }
+
+    /**
+     * 从上次选中的音箱 ID 列表中过滤出当前仍存在于设备列表且可投送的设备（保持原序）。
+     */
+    fun resolveRestorableSpeakerIds(devices: List<Device>, lastSelectedIds: List<String>): List<String> {
+        if (lastSelectedIds.isEmpty()) return emptyList()
+        val castableIds = devices
+            .asSequence()
+            .filter { it.isCastSink && it.castable }
+            .map { it.id }
+            .toSet()
+        return lastSelectedIds.filter { it in castableIds }.distinct()
+    }
+
+    /**
      * 提取可持久化缓存的常驻设备（仅保留可投送的音箱/电视，去重并限制上限）。
      */
     fun extractCacheableDevices(devices: List<Device>, limit: Int = 16): List<Device> =

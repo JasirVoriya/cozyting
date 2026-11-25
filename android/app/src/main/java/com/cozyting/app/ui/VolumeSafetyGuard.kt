@@ -44,6 +44,16 @@ object VolumeSafetyGuard {
     fun isInHighVolumeZone(policy: Policy, volume: Int): Boolean =
         policy.enabled && volume.coerceIn(0, 100) > policy.normalizedSafeLimit
 
+    /**
+     * 冷启动恢复持久化音量时的安全钳制：
+     * - 开启高音量保护时，若上次保存值超过安全上限，则恢复时钳制回安全上限，避免重启后首次开投直接爆音；
+     * - 关闭高音量保护时，原样恢复用户上次设置的音量。
+     */
+    fun clampForColdStartRestore(policy: Policy, savedVolume: Int): Int {
+        val clamped = savedVolume.coerceIn(0, 100)
+        return if (policy.enabled) clamped.coerceAtMost(policy.normalizedSafeLimit) else clamped
+    }
+
     fun syncToNative(policy: Policy) {
         try {
             NativeBridge.setVolumeGuardPolicy(policy.enabled, policy.normalizedSafeLimit)

@@ -99,6 +99,8 @@
     <string name="main_output_devices">输出设备</string>
     <string name="main_multiroom_support">支持多音箱同频投送</string>
     <string name="main_found_castable_count">发现 %1$d 台可投设备</string>
+    <string name="main_restore_last_speakers">恢复上次</string>
+    <string name="main_restore_last_speakers_multi">恢复上次 · %1$d台</string>
     <string name="main_refresh_devices_desc">重新发现输出设备</string>
     <string name="main_this_device_name">本机播放</string>
     <string name="main_this_device_active_sub">手机扬声器 · 当前输出</string>
