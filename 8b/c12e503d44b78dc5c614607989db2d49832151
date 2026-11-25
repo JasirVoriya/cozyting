@@ -1,0 +1,24 @@
+android/app/src/main/java/com/cozyting/app/QuickCastPanelActivity.kt
+  h_75f437d5bc136b 30-31,33,98-99,109,188-189,195-197,240-241,248-253,327-333,335,337,339,341,343-362,367,369,387,391,395,401,408,412,447,451,457,464,468,474,482,489,503-504,507-518,521,553,566-602,604-605,607-612,614-641,644,676,749-760,774,779,783,905
+android/app/src/main/java/com/cozyting/app/compat/QuickSettingsTileCompat.kt
+  h_75f437d5bc136b 4,63-64,71-82,89-93,150-154
+android/app/src/main/java/com/cozyting/app/ui/NowPlayingCardController.kt
+  h_75f437d5bc136b 37,74-75,86-87,95,98-99,127-133,139,142,152,156,172,176-178,182,186-187,210,214,219,223-227,233,264,401-402,418
+android/app/src/main/res/values/themes.xml
+  h_75f437d5bc136b 12,16
+android/app/src/test/java/com/cozyting/app/QuickCastPanelAndTileTest.kt
+  h_75f437d5bc136b 29-36,74-80
+design/UI_SPEC.md
+  h_75f437d5bc136b 140-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8bc12e503d44b78dc5c614607989db2d49832151",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
