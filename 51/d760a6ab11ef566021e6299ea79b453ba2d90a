@@ -1,0 +1,14 @@
+AGENTS.md
+  h_75f437d5bc136b 9-11,13,56-59,69,80,82,87-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51d760a6ab11ef566021e6299ea79b453ba2d90a",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
