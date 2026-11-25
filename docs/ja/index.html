@@ -955,21 +955,20 @@
       }
 
       .sponsor-qr-card {
-        background: var(--bg-soft);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 0.75rem;
+        background: transparent;
+        border: 0;
+        padding: 0;
         text-align: center;
       }
 
       .sponsor-qr-card img {
         width: 100%;
-        max-width: 180px;
-        aspect-ratio: 1 / 1;
-        object-fit: cover;
-        border-radius: 10px;
+        max-width: 210px;
+        aspect-ratio: 640 / 760;
+        object-fit: contain;
+        border-radius: 16px;
         margin-inline: auto;
-        background: #ffffff;
+        background: transparent;
       }
 
       .sponsor-qr-card figcaption {
@@ -1379,12 +1378,10 @@
           </div>
           <div class="sponsor-qrs">
             <figure class="sponsor-qr-card">
-              <img src="../assets/sponsor/wechat-tip.jpg" alt="CozyTing WeChat Pay 応援用 QR コード" width="640" height="640" loading="lazy">
-              <figcaption>WeChat Pay</figcaption>
+              <img src="../assets/sponsor/wechat-tip.png" alt="CozyTing WeChat Pay 応援用 QR コード" width="640" height="760" loading="lazy">
             </figure>
             <figure class="sponsor-qr-card">
-              <img src="../assets/sponsor/alipay-tip.png" alt="CozyTing Alipay 応援用 QR コード" width="640" height="640" loading="lazy">
-              <figcaption>Alipay</figcaption>
+              <img src="../assets/sponsor/alipay-tip.png" alt="CozyTing Alipay 応援用 QR コード" width="640" height="760" loading="lazy">
             </figure>
           </div>
         </div>

@@ -128,8 +128,8 @@ object SponsorDialogController {
                 drawableRes = R.drawable.sponsor_wechat_tip,
                 label = activity.getString(R.string.sponsor_qr_wechat),
                 saveButtonLabel = activity.getString(R.string.sponsor_btn_save_qr),
-                saveFileName = "CozyTing_WeChat_Tip.jpg",
-                mimeType = "image/jpeg",
+                saveFileName = "CozyTing_WeChat_Tip.png",
+                mimeType = "image/png",
                 savedToast = activity.getString(R.string.sponsor_saved_wechat),
             ).apply {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
@@ -216,14 +216,17 @@ object SponsorDialogController {
             setPadding(dp(8), dp(8), dp(8), dp(8))
         }
 
-        val qrSize = dp(124)
+        val qrW = dp(128)
+        val qrH = dp(152)
         card.addView(
-            UiComponents.roundedImageView(activity, UiComponents.dpf(activity, 10f)).apply {
+            ImageView(activity).apply {
                 setImageResource(drawableRes)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                setBackgroundColor(Color.WHITE)
+                setBackgroundColor(Color.TRANSPARENT)
                 contentDescription = label
-                layoutParams = LinearLayout.LayoutParams(qrSize, qrSize)
+                layoutParams = LinearLayout.LayoutParams(qrW, qrH).apply {
+                    bottomMargin = dp(6)
+                }
             },
         )
         card.addView(
