@@ -516,6 +516,7 @@
     <string name="cast_notif_status_paused">Paused</string>
     <string name="cast_notif_status_playing">Playing</string>
     <string name="cast_notif_more_devices">… %1$d devices total</string>
+    <string name="cast_notif_tap_to_control">%1$s · Tap for controls</string>
     <string name="cast_mute_status_idle">Phone audio active (mute not applied)</string>
     <string name="cast_mute_status_stopped">Phone audio active (casting stopped)</string>
     <string name="cast_mute_status_single_app">Single-app mute active (silent loopback, other apps unaffected)</string>

@@ -47,6 +47,7 @@ object CastNotificationFormatter {
         val partConnecting: (Int) -> String,
         val statusLabel: (ReceiverStatus) -> String,
         val moreDevices: (Int) -> String,
+        val collapsedWithTapHint: (String) -> String = { "$it · 点击打开控制卡" },
     ) {
         companion object {
             val DEFAULT_ZH = Strings(
@@ -71,6 +72,7 @@ object CastNotificationFormatter {
                 partConnecting = { "${it} 台连接中" },
                 statusLabel = { it.labelZh },
                 moreDevices = { "…等共 $it 台设备" },
+                collapsedWithTapHint = { "$it · 点击打开控制卡" },
             )
 
             fun fromContext(context: Context): Strings = Strings(
@@ -103,6 +105,7 @@ object CastNotificationFormatter {
                     }
                 },
                 moreDevices = { context.getString(R.string.cast_notif_more_devices, it) },
+                collapsedWithTapHint = { context.getString(R.string.cast_notif_tap_to_control, it) },
             )
         }
     }
@@ -189,12 +192,13 @@ object CastNotificationFormatter {
         if (receivers.isEmpty()) return strings.preparing
         if (receivers.size == 1) {
             val only = receivers.first()
-            return when (only.status) {
+            val base = when (only.status) {
                 ReceiverStatus.ERROR -> strings.singleError(only.displayName)
                 ReceiverStatus.RECONNECTING -> strings.singleReconnecting(only.displayName)
                 ReceiverStatus.CONNECTING -> strings.singleConnecting(only.displayName)
                 ReceiverStatus.PAUSED, ReceiverStatus.PLAYING -> only.displayName
             }
+            return strings.collapsedWithTapHint(base)
         }
         val total = receivers.size
         val errorCount = receivers.count { it.status == ReceiverStatus.ERROR }
@@ -205,13 +209,17 @@ object CastNotificationFormatter {
             if (reconnectingCount > 0) add(strings.partReconnecting(reconnectingCount))
             if (errorCount > 0) add(strings.partError(errorCount))
         }
-        return when {
+        if (abnormalParts.size > 1) {
+            return strings.multiAbnormal(total, abnormalParts.joinToString(" · "))
+        }
+        val base = when {
             allConnecting -> strings.multiConnecting(total)
             abnormalParts.isNotEmpty() -> strings.multiAbnormal(total, abnormalParts.joinToString(" · "))
             paused -> strings.multiPaused(total)
             connectingCount > 0 -> strings.multiAbnormal(total, strings.partConnecting(connectingCount))
             else -> strings.multiSynced(total)
         }
+        return strings.collapsedWithTapHint(base)
     }
 
     private fun formatExpanded(receivers: List<ReceiverSnapshot>, strings: Strings): String? {
