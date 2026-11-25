@@ -343,13 +343,11 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 <div align="center">
   <table>
     <tr>
-      <td align="center" width="240">
-        <img src="docs/assets/sponsor/wechat-tip.jpg" alt="微信赞赏码（窝爱听 CozyTing）" width="200" /><br />
-        <strong>微信赞赏码</strong>
+      <td align="center" width="260">
+        <img src="docs/assets/sponsor/wechat-tip.png" alt="微信赞赏码（窝爱听 CozyTing）" width="220" />
       </td>
-      <td align="center" width="240">
-        <img src="docs/assets/sponsor/alipay-tip.png" alt="支付宝收款码（窝爱听 CozyTing）" width="200" /><br />
-        <strong>支付宝扫一扫</strong>
+      <td align="center" width="260">
+        <img src="docs/assets/sponsor/alipay-tip.png" alt="支付宝收款码（窝爱听 CozyTing）" width="220" />
       </td>
     </tr>
   </table>
