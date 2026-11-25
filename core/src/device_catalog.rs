@@ -370,6 +370,20 @@ pub fn extract_cacheable_devices(devices: &[Device], limit: usize) -> Vec<Device
 }
 
 pub fn merge_cached_and_discovered(cached: &[Device], discovered: &[Device]) -> Vec<Device> {
+    merge_cached_and_discovered_with_options(cached, discovered, true, &HashSet::new())
+}
+
+/// 合并历史缓存与本次扫描到的设备列表：
+/// - 对于本次扫到的设备：若本次未查到 `miName`/`roomName`（如超时或投送中跳过），沿用缓存中已确认的展示元数据；
+/// - `retain_offline_cached == true`（冷启动/后台自动扫描）：保留本次未扫到的历史缓存可投设备，防止瞬时丢包闪隐；
+/// - `retain_offline_cached == false`（用户手动刷新）：仅保留本次真实扫到的在线设备，以及仍处于 `active_cast_ids`
+///   活跃投送中的缓存设备，避免已断电/离线设备长期滞留在列表与缓存中。
+pub fn merge_cached_and_discovered_with_options(
+    cached: &[Device],
+    discovered: &[Device],
+    retain_offline_cached: bool,
+    active_cast_ids: &HashSet<&str>,
+) -> Vec<Device> {
     let cached_by_id: HashMap<&str, &Device> = cached
         .iter()
         .filter(|d| d.kind != DeviceKind::ThisDevice)
@@ -400,7 +414,9 @@ pub fn merge_cached_and_discovered(cached: &[Device], discovered: &[Device]) -> 
         .collect();
     let fresh_ids: HashSet<String> = merged.iter().map(|d| d.id.clone()).collect();
     for d in extract_cacheable_devices(cached, DEFAULT_CACHE_LIMIT) {
-        if !fresh_ids.contains(&d.id) {
+        if !fresh_ids.contains(&d.id)
+            && (retain_offline_cached || active_cast_ids.contains(d.id.as_str()))
+        {
             merged.push(d);
         }
     }
@@ -1237,5 +1253,71 @@ mod tests {
         assert!(after_check.contains("\"this_device_selected\":false"));
         assert!(after_check.contains("\"type\":\"start_cast\""));
         assert!(after_check.contains("\"speaker_ids\":[\"s1\"]"));
+    }
+
+    #[test]
+    fn manual_refresh_evicts_offline_cached_devices_but_keeps_active_casting_and_metadata() {
+        let online_cached = Device {
+            id: "192.0.2.34".into(),
+            name: "客厅小米音箱".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: true,
+            room_name: "客厅".into(),
+            room_info_queried: true,
+        };
+        let offline_cached = Device {
+            id: "192.0.2.234".into(),
+            name: "卧室小爱音箱Pro".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: true,
+            room_name: "卧室".into(),
+            room_info_queried: true,
+        };
+        let casting_cached = Device {
+            id: "192.0.2.88".into(),
+            name: "书房音箱".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: true,
+            room_name: "书房".into(),
+            room_info_queried: true,
+        };
+        let cached = vec![online_cached, offline_cached, casting_cached];
+        // 本次扫描只扫到了 192.0.2.34（且 8899 查名未命中，需继承缓存里的 miName/roomName）
+        let fresh = vec![Device {
+            id: "192.0.2.34".into(),
+            name: "L17A-0001".into(),
+            kind: DeviceKind::Speaker,
+            castable: true,
+            selected: false,
+            detail: String::new(),
+            protocol: Some(CastProtocol::MiPlay),
+            name_from_device_info: false,
+            room_name: String::new(),
+            room_info_queried: false,
+        }];
+        let active: HashSet<&str> = HashSet::from(["192.0.2.88"]);
+
+        // 后台自动扫描（retain_offline_cached=true）：保留全部缓存设备
+        let auto_merged = merge_cached_and_discovered_with_options(&cached, &fresh, true, &active);
+        assert_eq!(auto_merged.len(), 3);
+
+        // 用户手动刷新（retain_offline_cached=false）：淘汰离线缓存 192.0.2.234，保留在线 192.0.2.34（继承自定义名/房间）与投送中 192.0.2.88
+        let manual_merged = merge_cached_and_discovered_with_options(&cached, &fresh, false, &active);
+        let ids: Vec<&str> = manual_merged.iter().map(|d| d.id.as_str()).collect();
+        assert_eq!(ids, vec!["192.0.2.34", "192.0.2.88"]);
+        assert_eq!(manual_merged[0].name, "客厅小米音箱");
+        assert_eq!(manual_merged[0].room_name, "客厅");
     }
 }

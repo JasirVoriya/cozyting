@@ -28,6 +28,22 @@ pub const STARTUP_RUNWAY_AUS: usize = 14;
 pub const MAX_RECEIVERS: usize = 63;
 pub const MIN_PLAYBACK_DELAY_US: i64 = 50_000;
 pub const MAX_PLAYBACK_DELAY_US: i64 = 5_000_000;
+/// 单台音箱连续自动重连失败熔断上限，避免反复 Open/CLOSE 拍打嵌入式音箱固件导致其离线死机。
+pub const MAX_RECONNECT_ATTEMPTS: u32 = 3;
+/// 首次晚加入失败后重试前的冷却时长，给音箱留出 CLOSE 状态回收窗口。
+const LATE_JOIN_RETRY_COOLDOWN: Duration = Duration::from_millis(1500);
+
+/// 判断单台音箱在已连续失败 `attempts_so_far` 次后，是否仍允许继续自动重连。
+pub fn should_attempt_reconnect(attempts_so_far: u32, max_attempts: u32) -> bool {
+    attempts_so_far < max_attempts
+}
+
+/// 仅强制静音保护（`Some(0)`）需要独立的 `premute` 8899 短连接预先把音箱压到 0 并校验；
+/// 普通目标音量（`> 0`）直接复用单条 8899 长连接在 `PLAY` 就绪后设音量，与官方单连接行为一致，
+/// 避免每次建连/重连都对音箱执行「建连 → SetVolume → CLOSE → 300ms → 再建连」。
+pub fn needs_separate_premute_session(premute: Option<u8>) -> bool {
+    premute == Some(0)
+}
 
 pub fn clamp_playback_delay_us(delay_us: i64) -> i64 {
     delay_us.clamp(MIN_PLAYBACK_DELAY_US, MAX_PLAYBACK_DELAY_US)
@@ -356,6 +372,7 @@ impl ReceiverHandle {
     fn shutdown(&self, send_close: bool) {
         self.alive.store(false, Ordering::Relaxed);
         if send_close { let _ = self.runtime.close(); std::thread::sleep(Duration::from_millis(50)); }
+        self.runtime.shutdown_socket();
         for s in &self.sockets { let _ = s.shutdown(Shutdown::Both); }
         self.timer_stop.store(true, Ordering::Relaxed);
     }
@@ -503,6 +520,26 @@ pub fn close_after_open_failure(ctl: &ControlSession, ip: Ipv4Addr) {
     }
 }
 
+/// 握手半途失败时的统一清理：发 CLOSE → 短暂等待落盘 → 强制 shutdown 8899 与已接受的反向 TCP → 停计时器。
+fn cleanup_open_failure(
+    ctl: ControlSession,
+    ip: Ipv4Addr,
+    sockets: &[&TcpStream],
+    timer_stop: &AtomicBool,
+    alive: Option<&AtomicBool>,
+) {
+    if let Some(a) = alive {
+        a.store(false, Ordering::Relaxed);
+    }
+    close_after_open_failure(&ctl, ip);
+    std::thread::sleep(Duration::from_millis(50));
+    ctl.tcp_shutdown_only();
+    for s in sockets {
+        let _ = s.shutdown(Shutdown::Both);
+    }
+    timer_stop.store(true, Ordering::Relaxed);
+}
+
 /// 晚加入/扩组时选用的 `SetPlaySource.ref_function`。
 ///
 /// 代码契约：组内已有 ≥1 存活成员时不得继续宣称 `single_room`（`stereo` 不变）。
@@ -612,7 +649,9 @@ fn connect_receiver(
     offset_provider: Box<dyn FnOnce() -> Result<i64> + Send>,
 ) -> Result<ReceiverHandle> {
     let phase = |p: &str| { log::info!("[{ip}] {p}"); stats.lock().unwrap().phase = p.to_string(); };
-    if let Some(v) = cfg.premute {
+    let use_separate_premute = needs_separate_premute_session(cfg.premute);
+    if use_separate_premute {
+        let v = cfg.premute.unwrap();
         phase("premute: bootstrap + SetVolume");
         let (orig, ack) = premute_with(ip, &cfg.identity, v, cfg.auth)?;
         let mut s = stats.lock().unwrap();
@@ -645,11 +684,13 @@ fn connect_receiver(
         s.mirror_mode = ctl.status.mirror_mode;
         s.state = ctl.status.state;
     }
-    if let (Some(v), Some(now)) = (cfg.premute, ctl.status.volume) {
-        if !check_premute_volume(v, now)? {
-            log::warn!(
-                "[{ip}] premute volume quantized: requested {v}, receiver reports {now} (within tolerance)"
-            );
+    if use_separate_premute {
+        if let (Some(v), Some(now)) = (cfg.premute, ctl.status.volume) {
+            if !check_premute_volume(v, now)? {
+                log::warn!(
+                    "[{ip}] premute volume quantized: requested {v}, receiver reports {now} (within tolerance)"
+                );
+            }
         }
     }
     phase(&format!("preparePlayback + SetPlaySource ref={}", cfg.identity.ref_function));
@@ -692,8 +733,7 @@ fn connect_receiver(
     let rtsp_sock = match accept_timeout(&listener, Duration::from_secs(10), "RTSP") {
         Ok(s) => s,
         Err(e) => {
-            close_after_open_failure(&ctl, ip);
-            timer_stop.store(true, Ordering::Relaxed);
+            cleanup_open_failure(ctl, ip, &[], &timer_stop, None);
             return Err(e);
         }
     };
@@ -753,18 +793,18 @@ fn connect_receiver(
 
     let aux = match accept_timeout(&listener, Duration::from_secs(10), "auxiliary") {
         Ok(s) => s,
-        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+        Err(e) => { cleanup_open_failure(ctl, ip, &[&rtsp_sock], &timer_stop, Some(&alive)); return Err(e) }
     };
     let audio = match accept_timeout(&listener, Duration::from_secs(10), "audio") {
         Ok(s) => s,
-        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+        Err(e) => { cleanup_open_failure(ctl, ip, &[&rtsp_sock, &aux], &timer_stop, Some(&alive)); return Err(e) }
     };
     drop(listener);
     phase("3 reverse connections up; waiting PLAY/TIME_OFFSET");
     let offset = match ready_rx.recv_timeout(Duration::from_secs(45)).map_err(|_| Error::Timeout("RTSP PLAY".into())) {
         Ok(Ok(o)) => o,
-        Ok(Err(e)) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
-        Err(e) => { close_after_open_failure(&ctl, ip); timer_stop.store(true, Ordering::Relaxed); alive.store(false, Ordering::Relaxed); return Err(e) }
+        Ok(Err(e)) => { cleanup_open_failure(ctl, ip, &[&rtsp_sock, &aux, &audio], &timer_stop, Some(&alive)); return Err(e) }
+        Err(e) => { cleanup_open_failure(ctl, ip, &[&rtsp_sock, &aux, &audio], &timer_stop, Some(&alive)); return Err(e) }
     };
     stats.lock().unwrap().time_offset_us = Some(offset);
     phase(&format!("PLAY ok, TIME_OFFSET={offset}"));
@@ -778,7 +818,7 @@ fn connect_receiver(
     let bh3 = blackhole_until.clone();
     let ctl_mute = runtime.mute_handle();
     std::thread::Builder::new().name(format!("ctl-{ip}")).spawn(move || {
-        let r = ctl.runtime_read_loop(rw, |f, status| {
+        let r = ctl.runtime_read_loop_until(rw, al.clone(), |f, status| {
             if !stall.load(Ordering::Relaxed) && now_us() >= bh3.load(Ordering::Relaxed) { lr.store(now_us(), Ordering::Relaxed); }
             let mut s = st3.lock().unwrap();
             s.state = status.state.or(s.state);
@@ -853,7 +893,10 @@ fn connect_receiver(
         sockets: vec![rtsp_sock, aux, audio], timer_stop, alive,
         rtsp_writer, rtsp, rtsp_cseq, last_rx_us, rx_stall, blackhole_until, timer_mute, ctl_mute,
     };
-    if let Some(v) = cfg.volume_after_play {
+    let target_vol_after_play = cfg
+        .volume_after_play
+        .or_else(|| cfg.premute.filter(|&v| v > 0));
+    if let Some(v) = target_vol_after_play {
         match h.set_volume(v) {
             Ok(got) => { stats.lock().unwrap().volume_after_play_ack = Some(got); log::info!("[{ip}] volume_after_play {v} -> ack {got}"); }
             Err(e) => {
@@ -934,7 +977,7 @@ impl Inner {
                         ..Default::default()
                     };
                 }
-                std::thread::sleep(Duration::from_millis(300));
+                std::thread::sleep(LATE_JOIN_RETRY_COOLDOWN);
                 if !self.stop.load(Ordering::Relaxed)
                     && !cancelled.load(Ordering::SeqCst)
                     && !self.removed.lock().unwrap().contains(&ip)
@@ -1387,7 +1430,8 @@ impl CastSession {
     }
 }
 
-/// 监督线程：每秒检查成员健康；15 s 没收到控制帧或连接出错 → 断开并按中途加入的方式重连（指数退避，最多 30 s）。
+/// 监督线程：每秒检查成员健康；15 s 没收到控制帧或连接出错 → 尽力发送 CLOSE 并强制关闭全部连接，
+/// 按中途加入的方式退避重连，连续失败达到 `MAX_RECONNECT_ATTEMPTS` 后自动熔断，防止反复拍打音箱导致其离线。
 fn supervise(inner: Arc<Inner>) {
     let mut backoff: std::collections::HashMap<Ipv4Addr, (Instant, u32)> = Default::default();
     while !inner.stop.load(Ordering::Relaxed) {
@@ -1401,16 +1445,21 @@ fn supervise(inner: Arc<Inner>) {
                     let r = rs.remove(i);
                     let st = r.stats.lock().unwrap().clone();
                     log::warn!("[{}] unhealthy (error={:?}); disconnecting", r.ip, st.error);
-                    r.shutdown(false);
+                    r.shutdown(true);
                     dead.push((r.ip, st));
                 } else { i += 1 }
             }
         }
-        for (ip, st) in dead { backoff.entry(ip).or_insert((Instant::now(), 0)); pending_insert(&inner, ip, st); }
+        for (ip, st) in dead {
+            backoff.entry(ip).or_insert((Instant::now() + Duration::from_secs(2), 0));
+            pending_insert(&inner, ip, st);
+        }
         {
             let p = inner.pending.lock().unwrap();
-            for (ip, _) in p.iter() {
-                backoff.entry(*ip).or_insert((Instant::now() + Duration::from_secs(2), 0));
+            for (ip, st) in p.iter() {
+                if !st.phase.eq_ignore_ascii_case("failed") {
+                    backoff.entry(*ip).or_insert((Instant::now() + Duration::from_secs(2), 0));
+                }
             }
         }
         if !inner.cfg.auto_reconnect || inner.paused.load(Ordering::SeqCst) { continue }
@@ -1423,14 +1472,22 @@ fn supervise(inner: Arc<Inner>) {
                 Ok(s) => { log::info!("[{ip}] reconnected: {}", s.to_json()); backoff.remove(&ip); inner.pending.lock().unwrap().retain(|(i, _)| *i != ip); }
                 Err(e) => {
                     let (_, n) = backoff[&ip];
-                    if let Some(mut p) = prior {
-                        p.reconnects += 1;
-                        p.error = Some(e.to_string());
-                        pending_insert(&inner, ip, p);
+                    let next_attempts = n + 1;
+                    let mut next_pending = prior.unwrap_or_else(|| ReceiverStats { ip: ip.to_string(), ..Default::default() });
+                    next_pending.reconnects += 1;
+                    next_pending.error = Some(e.to_string());
+                    if should_attempt_reconnect(next_attempts, MAX_RECONNECT_ATTEMPTS) {
+                        next_pending.phase = "reconnecting".into();
+                        pending_insert(&inner, ip, next_pending);
+                        let wait = Duration::from_secs((2u64 << n.min(4)).min(30));
+                        log::warn!("[{ip}] reconnect failed ({next_attempts}/{MAX_RECONNECT_ATTEMPTS}): {e}; retry in {wait:?}");
+                        backoff.insert(ip, (Instant::now() + wait, next_attempts));
+                    } else {
+                        next_pending.phase = "failed".into();
+                        pending_insert(&inner, ip, next_pending);
+                        backoff.remove(&ip);
+                        log::error!("[{ip}] reconnect circuit-breaker tripped after {next_attempts} failures: {e}");
                     }
-                    let wait = Duration::from_secs((2u64 << n.min(4)).min(30));
-                    log::warn!("[{ip}] reconnect failed: {e}; retry in {wait:?}");
-                    backoff.insert(ip, (Instant::now() + wait, n + 1));
                 }
             }
         }
@@ -1463,7 +1520,7 @@ pub fn merge_active_and_connecting_stats(
     active
 }
 
-/// 将等待重连退避的接收端合并进统计视图，保持多音箱断线重连期间状态连续可见。
+/// 将等待重连退避或已熔断失败的接收端合并进统计视图，保持多音箱断线期间状态连续可见。
 pub fn merge_active_and_pending_stats(
     mut active: Vec<ReceiverStats>,
     pending: &[(Ipv4Addr, ReceiverStats)],
@@ -1472,9 +1529,16 @@ pub fn merge_active_and_pending_stats(
         let ip_str = ip.to_string();
         if active.iter().all(|a| a.ip != ip_str) {
             let mut p = st.clone();
-            p.phase = "reconnecting".into();
-            if p.error.is_none() {
-                p.error = Some("reconnecting".into());
+            if p.phase.eq_ignore_ascii_case("failed") {
+                p.phase = "failed".into();
+                if p.error.is_none() {
+                    p.error = Some("reconnect failed".into());
+                }
+            } else {
+                p.phase = "reconnecting".into();
+                if p.error.is_none() {
+                    p.error = Some("reconnecting".into());
+                }
             }
             p.latency_e2e_est_ms = None;
             p.latency_schedule_ahead_ms = None;
@@ -1717,5 +1781,49 @@ mod tests {
         // 显著高于目标音量（超出分档容差）：仍拒绝推流防炸耳
         assert!(check_premute_volume(18, 29).is_err());
         assert!(check_premute_volume(18, 80).is_err());
+    }
+
+    #[test]
+    fn separate_premute_session_is_only_used_for_zero_mute_guard() {
+        assert!(needs_separate_premute_session(Some(0)));
+        assert!(!needs_separate_premute_session(None));
+        assert!(!needs_separate_premute_session(Some(1)));
+        assert!(!needs_separate_premute_session(Some(30)));
+        assert!(!needs_separate_premute_session(Some(100)));
+    }
+
+    #[test]
+    fn reconnect_circuit_breaker_stops_after_max_attempts_and_exposes_error_ui_state() {
+        assert!(should_attempt_reconnect(0, MAX_RECONNECT_ATTEMPTS));
+        assert!(should_attempt_reconnect(1, MAX_RECONNECT_ATTEMPTS));
+        assert!(should_attempt_reconnect(2, MAX_RECONNECT_ATTEMPTS));
+        assert!(!should_attempt_reconnect(3, MAX_RECONNECT_ATTEMPTS));
+        assert!(!should_attempt_reconnect(10, MAX_RECONNECT_ATTEMPTS));
+
+        let active = vec![ReceiverStats {
+            ip: "192.0.2.34".into(),
+            phase: "streaming".into(),
+            ..Default::default()
+        }];
+        let pending = vec![(
+            "192.0.2.234".parse().unwrap(),
+            ReceiverStats {
+                ip: "192.0.2.234".into(),
+                phase: "failed".into(),
+                reconnects: 3,
+                error: Some("timeout: reverse RTSP connection".into()),
+                ..Default::default()
+            },
+        )];
+        let merged = merge_active_and_pending_stats(active, &pending);
+        let failed = merged.iter().find(|s| s.ip == "192.0.2.234").unwrap();
+        assert_eq!(failed.phase, "failed");
+        let (ui_state, lat) = latency::resolve_receiver_ui_state(
+            &failed.phase,
+            failed.latency_e2e_est_ms,
+            failed.error.as_deref(),
+        );
+        assert_eq!(ui_state, latency::UiReceiverState::Error);
+        assert!(lat.is_none());
     }
 }
