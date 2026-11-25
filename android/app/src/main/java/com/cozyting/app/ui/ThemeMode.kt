@@ -7,6 +7,7 @@ import com.cozyting.app.R
 import com.cozyting.app.capture.CaptureEngineMode
 import com.cozyting.app.capture.CaptureScopeMode
 import com.cozyting.app.update.UpdateChannel
+import org.json.JSONObject
 
 /**
  * 跨端主题模式（与 `design/tokens.json` 和后续 iOS SwiftUI 对齐）。
@@ -138,6 +139,66 @@ class PrefsCastSettingsStore(context: Context) {
         get() = prefs.getString(KEY_UPDATE_IGNORED_TAG, "").orEmpty()
         set(value) = prefs.edit().putString(KEY_UPDATE_IGNORED_TAG, value.trim()).apply()
 
+    /** 用户点击主界面更新轻提示条右侧 × 关闭的版本 tag（如 v0.9.8），重启后同版本不再反复弹出，新版本到来自动重新提醒。 */
+    var dismissedUpdateBannerTag: String
+        get() = prefs.getString(KEY_UPDATE_DISMISSED_BANNER_TAG, "").orEmpty()
+        set(value) = prefs.edit().putString(KEY_UPDATE_DISMISSED_BANNER_TAG, value.trim()).apply()
+
+    /** 持久化总音量（0..100）；未设置过时返回 [defaultVolume]。 */
+    fun loadMasterVolume(defaultVolume: Int): Int {
+        val raw = prefs.getInt(KEY_MASTER_VOLUME, UNSET_VOLUME)
+        return if (raw == UNSET_VOLUME) defaultVolume.coerceIn(0, 100) else raw.coerceIn(0, 100)
+    }
+
+    fun saveMasterVolume(volume: Int) {
+        prefs.edit().putInt(KEY_MASTER_VOLUME, volume.coerceIn(0, 100)).apply()
+    }
+
+    /** 按设备 ID 持久化的单音箱独立音量（0..100）。 */
+    fun loadSpeakerVolumes(): Map<String, Int> {
+        val raw = prefs.getString(KEY_SPEAKER_VOLUMES, null).orEmpty()
+        if (raw.isBlank()) return emptyMap()
+        val out = linkedMapOf<String, Int>()
+        runCatching {
+            val obj = JSONObject(raw)
+            val keys = obj.keys()
+            while (keys.hasNext()) {
+                val id = keys.next().trim()
+                if (id.isEmpty()) continue
+                val v = obj.optInt(id, UNSET_VOLUME)
+                if (v in 0..100) out[id] = v
+            }
+        }
+        return out
+    }
+
+    fun saveSpeakerVolume(deviceId: String, volume: Int) {
+        val id = deviceId.trim()
+        if (id.isEmpty()) return
+        val updated = LinkedHashMap(loadSpeakerVolumes())
+        updated.remove(id)
+        updated[id] = volume.coerceIn(0, 100)
+        saveSpeakerVolumes(updated)
+    }
+
+    fun saveSpeakerVolumes(volumes: Map<String, Int>) {
+        val trimmed = linkedMapOf<String, Int>()
+        volumes.entries.forEach { (rawId, v) ->
+            val id = rawId.trim()
+            if (id.isNotEmpty()) {
+                trimmed[id] = v.coerceIn(0, 100)
+            }
+        }
+        val capped = if (trimmed.size > MAX_SPEAKER_VOLUMES) {
+            trimmed.entries.drop(trimmed.size - MAX_SPEAKER_VOLUMES)
+        } else {
+            trimmed.entries
+        }
+        val obj = JSONObject()
+        capped.forEach { (id, v) -> obj.put(id, v) }
+        prefs.edit().putString(KEY_SPEAKER_VOLUMES, obj.toString()).apply()
+    }
+
     var lastUpdateCheckMs: Long
         get() = prefs.getLong(KEY_UPDATE_LAST_CHECK_MS, 0L).coerceAtLeast(0L)
         set(value) = prefs.edit().putLong(KEY_UPDATE_LAST_CHECK_MS, value.coerceAtLeast(0L)).apply()
@@ -175,6 +236,11 @@ class PrefsCastSettingsStore(context: Context) {
         private const val KEY_UPDATE_AUTO_CHECK = "update_auto_check"
         private const val KEY_UPDATE_CHANNEL = "update_channel"
         private const val KEY_UPDATE_IGNORED_TAG = "update_ignored_tag"
+        private const val KEY_UPDATE_DISMISSED_BANNER_TAG = "update_dismissed_banner_tag"
+        private const val KEY_MASTER_VOLUME = "master_volume"
+        private const val KEY_SPEAKER_VOLUMES = "speaker_volumes_json"
+        private const val UNSET_VOLUME = -1
+        private const val MAX_SPEAKER_VOLUMES = 32
         private const val KEY_UPDATE_LAST_CHECK_MS = "update_last_check_ms"
         private const val KEY_UPDATE_ETAG = "update_etag"
         private const val KEY_UPDATE_CACHED_JSON = "update_cached_manifest_json"

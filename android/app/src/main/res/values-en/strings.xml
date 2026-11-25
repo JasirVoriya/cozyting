@@ -99,6 +99,8 @@
     <string name="main_output_devices">Output Devices</string>
     <string name="main_multiroom_support">Multi-room sync ready</string>
     <string name="main_found_castable_count">%1$d castable found</string>
+    <string name="main_restore_last_speakers">Last used</string>
+    <string name="main_restore_last_speakers_multi">Last · %1$d</string>
     <string name="main_refresh_devices_desc">Rescan output devices</string>
     <string name="main_this_device_name">This device</string>
     <string name="main_this_device_active_sub">Phone speaker · Active</string>

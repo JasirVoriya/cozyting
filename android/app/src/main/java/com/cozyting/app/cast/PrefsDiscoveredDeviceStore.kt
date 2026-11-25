@@ -74,9 +74,41 @@ class PrefsDiscoveredDeviceStore(context: Context) {
         prefs.edit().putString(KEY_DEVICES, arr.toString()).apply()
     }
 
+    /** 读取上次选中的可投音箱/电视 ID 列表（有序，供冷启动置顶排序与一键恢复组合使用）。 */
+    fun loadLastSelectedSpeakerIds(): List<String> {
+        val raw = prefs.getString(KEY_LAST_SELECTED_SPEAKERS, null).orEmpty()
+        if (raw.isBlank()) return emptyList()
+        val out = mutableListOf<String>()
+        runCatching {
+            val arr = JSONArray(raw)
+            for (i in 0 until arr.length()) {
+                val id = arr.optString(i).trim()
+                if (id.isNotEmpty() && id !in out) {
+                    out += id
+                }
+            }
+        }
+        return out.take(MAX_DEVICES)
+    }
+
+    /** 保存上次选中的可投音箱/电视 ID 列表（去重保序）。 */
+    fun saveLastSelectedSpeakerIds(ids: Collection<String>) {
+        val clean = LinkedHashSet<String>()
+        ids.forEach { raw ->
+            val id = raw.trim()
+            if (id.isNotEmpty() && id != "this") {
+                clean += id
+            }
+        }
+        val arr = JSONArray()
+        clean.take(MAX_DEVICES).forEach { arr.put(it) }
+        prefs.edit().putString(KEY_LAST_SELECTED_SPEAKERS, arr.toString()).apply()
+    }
+
     companion object {
         private const val PREFS = "cozyting_discovered_devices"
         private const val KEY_DEVICES = "devices_json"
+        private const val KEY_LAST_SELECTED_SPEAKERS = "last_selected_speakers_json"
         private const val MAX_DEVICES = 16
     }
 }
