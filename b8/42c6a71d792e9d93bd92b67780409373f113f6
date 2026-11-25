@@ -1,0 +1,18 @@
+docs/en/index.html
+  h_75f437d5bc136b 381-383,393-420,1256-1266,1445-1547
+docs/index.html
+  h_75f437d5bc136b 381-383,393-420,1256-1266,1445-1547
+docs/ja/index.html
+  h_75f437d5bc136b 381-383,393-420,1256-1266,1445-1547
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b842c6a71d792e9d93bd92b67780409373f113f6",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
