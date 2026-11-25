@@ -10,7 +10,7 @@ use crate::clock::now_us;
 use crate::control::{fetch_device_info_meta, SourceIdentity};
 use crate::device_catalog::{
     self, apply_resolved_device_info, coerce_auth_mode, discovered_result_to_json,
-    extract_cacheable_devices, merge_cached_and_discovered, parse_devices_json,
+    extract_cacheable_devices, merge_cached_and_discovered_with_options, parse_devices_json,
     should_query_mi_name, DEFAULT_CACHE_LIMIT,
 };
 use crate::frame::DeviceInfoMeta;
@@ -269,7 +269,12 @@ pub fn discover_json_with_options(
             }
 
             let fresh_devices: Vec<_> = fresh_rows.iter().map(|r| r.device.clone()).collect();
-            let merged = merge_cached_and_discovered(&cached, &fresh_devices);
+            let merged = merge_cached_and_discovered_with_options(
+                &cached,
+                &fresh_devices,
+                !force_refresh_names,
+                &active_refs,
+            );
             let cacheable = extract_cacheable_devices(&merged, DEFAULT_CACHE_LIMIT);
             discovered_result_to_json(&fresh_rows, &merged, &cacheable)
         }

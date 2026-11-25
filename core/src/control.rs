@@ -574,10 +574,24 @@ impl ControlSession {
         Ok(result)
     }
 
-    pub fn runtime_read_loop(mut self, w: RuntimeWriter, mut on_frame: impl FnMut(&Frame, &ReceiverStatus)) -> Result<()> {
+    pub fn runtime_read_loop(self, w: RuntimeWriter, on_frame: impl FnMut(&Frame, &ReceiverStatus)) -> Result<()> {
+        self.runtime_read_loop_until(w, Arc::new(std::sync::atomic::AtomicBool::new(true)), on_frame)
+    }
+
+    /// 运行期控制读循环，支持外部 `alive` 退出标志；当 `alive` 置 `false` 或底层 8899 连接被
+    /// `RuntimeWriter::shutdown_socket()` 关闭时立即退出，避免残留僵尸连接继续回复心跳。
+    pub fn runtime_read_loop_until(
+        mut self,
+        w: RuntimeWriter,
+        alive: Arc<std::sync::atomic::AtomicBool>,
+        mut on_frame: impl FnMut(&Frame, &ReceiverStatus),
+    ) -> Result<()> {
         self.reader.get_ref().set_read_timeout(Some(Duration::from_secs(15)))?;
-        loop {
+        while alive.load(std::sync::atomic::Ordering::Relaxed) {
             let f = self.read_frame()?; // 15s 超时 == 心跳看门狗
+            if !alive.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
             match f.command {
                 c::HEARTBEAT => w.write_with_seq(Frame::empty(c::HEARTBEAT_ACK, f.sequence))?,
                 c::NOTIFY => self.absorb_notify(&f),
@@ -585,6 +599,7 @@ impl ControlSession {
             }
             on_frame(&f, &self.status);
         }
+        Ok(())
     }
 }
 
@@ -716,6 +731,13 @@ impl RuntimeWriter {
         Ok(())
     }
     pub fn close(&self) -> Result<u16> { self.write(c::CLOSE, vec![]) }
+    /// 强制关闭 8899 控制通道底层 TCP，立即唤醒阻塞在 `runtime_read_loop_until` 中的读线程。
+    pub fn shutdown_socket(&self) {
+        if let Ok(mut w) = self.writer.lock() {
+            let _ = w.w.flush();
+            let _ = w.w.get_ref().shutdown(Shutdown::Both);
+        }
+    }
     pub fn mute_handle(&self) -> Arc<std::sync::atomic::AtomicI64> { self.writer.lock().unwrap().mute_until.clone() }
 }
 
@@ -804,5 +826,46 @@ mod tests {
         assert_eq!(seen_cmds, vec![c::NATIVE_VERSION, c::LEGACY_CHALLENGE_ACK, c::GET_DEVICE_INFO]);
         assert!(!seen_cmds.contains(&c::CLOSE));
         assert!(!seen_cmds.contains(&c::OPEN));
+    }
+
+    #[test]
+    fn runtime_writer_shutdown_socket_unblocks_read_loop_immediately() {
+        use std::net::TcpListener;
+        use std::sync::atomic::{AtomicBool, Ordering};
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = match listener.local_addr().unwrap() {
+            SocketAddr::V4(v4) => v4,
+            _ => unreachable!(),
+        };
+        let server = std::thread::spawn(move || {
+            let (_stream, _) = listener.accept().unwrap();
+            // 保持服务端不主动断开，验证客户端 shutdown_socket 会立刻唤醒阻塞在 15s 读超时的循环
+            std::thread::sleep(Duration::from_millis(800));
+        });
+
+        let ctl = ControlSession::connect_peer_with_timeout(
+            addr,
+            Duration::from_secs(2),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+        let rw = ctl.runtime_writer();
+        let alive = Arc::new(AtomicBool::new(true));
+        let alive_bg = alive.clone();
+        let rw_bg = rw.clone();
+        let started = Instant::now();
+        let loop_handle = std::thread::spawn(move || {
+            ctl.runtime_read_loop_until(rw_bg, alive_bg, |_, _| {})
+        });
+        std::thread::sleep(Duration::from_millis(40));
+        alive.store(false, Ordering::Relaxed);
+        rw.shutdown_socket();
+        let _ = loop_handle.join().unwrap();
+        assert!(
+            started.elapsed() < Duration::from_secs(2),
+            "read loop should exit promptly after shutdown_socket, took {:?}",
+            started.elapsed()
+        );
+        server.join().unwrap();
     }
 }
