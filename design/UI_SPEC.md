@@ -110,7 +110,7 @@
 - **收起态正文（严格单行定长，不随设备数增长）**：
   - **1 台设备**：直接显示真实设备名（如 `客厅音箱`；异常时追加 ` · 重连中` / ` · 已断开` / ` · 连接中`；无缓存名时回退完整 IP）。
   - **≥ 2 台设备**：统一简洁纯计数（正常：`N 台设备同步播放`；全部连接中：`正在连接 N 台设备`；已暂停：`N 台设备`；存在异常时聚合提醒：`N 台设备 · K 台重连中` / `M 台已断开`）。
-- **下拉展开态（`BigTextStyle`）**：≥ 2 台设备时列出具体音箱明细（`• 设备名 · 状态`），异常设备置顶排序，最多展示前 5 台，超出末尾折叠为 `…等共 N 台设备`；操作按钮保留 `暂停/恢复` 与 `停止`。通知渠道名称统一为 `窝爱听 · 投送状态`。
+- **下拉展开态（`BigTextStyle`）**：≥ 2 台设备时列出具体音箱明细（`• 设备名 · 状态`），异常设备置顶排序，最多展示前 5 台，超出末尾折叠为 `…等共 N 台设备`；操作按钮保留 `设备与音量`（直达 `QuickCastPanelActivity` 悬浮控制卡）、`暂停/恢复` 与 `停止`，且点击通知正文同样拉起悬浮控制卡。通知渠道名称统一为 `窝爱听 · 投送状态`。
 - **iOS 边界说明**：iOS 无 Android 前台服务常驻通知，播控与连接状态由 App 内顶栏胶囊及系统「控制中心 / 正在播放」（或后续 Live Activities）承载，文案沿用同等去工程化口径。
 
 ## 6. 本地运行日志浏览与导出（设置页 · 连接与调试）
@@ -129,3 +129,16 @@
     - 打开/刷新默认定位至最新日志（底部）。
   - 底部操作栏：`导出分享`（主按钮，生成含诊断头的临时 `.txt` 并调起系统分享）、`复制`（复制当前筛选结果）、`清空`（柔和危险色按钮，二次确认弹窗后调用 `clearAll` + `cozyting_clear_logs`）。
 - **iOS SwiftUI 对齐实现**：使用 `NavigationLink` 进入 `LogViewerView`，采用 `ScrollViewReader` + `LazyVStack` 实现同款日期分割线、左侧色条卡片、`FlowLayout` 参数胶囊与 `DisclosureGroup` JSON 格式化展开（支持 `.searchable` 与原始/结构化切换）；通过 C ABI `cozyting_init_log_file` 将 Rust 核心日志落盘到 App Group / `Library/Caches` 或 `Application Support` 私有目录，导出采用 SwiftUI 原生 `ShareLink(item: url)` 分享临时诊断快照 `.txt`。
+
+## 7. 系统控制中心快捷磁贴与悬浮控制卡（Android & iOS 双端对齐）
+
+- **Android 端入口与生命周期（API 29–36 全兼容）**：
+  - **控制中心快捷磁贴（`CastTileService`）**：复用 `ic_stat_miplay` 单色矢量图标；空闲为 `STATE_INACTIVE`（副标题 `点击选择音箱`），投送中为 `STATE_ACTIVE`（副标题 `%d 台 · %d%%` 或 `%d 台 · 已暂停`；小米 HyperOS 等 1×1 圆形磁贴以图标亮/暗反显状态）。点击通过 `compat/QuickSettingsTileCompat.startActivityAndCollapse`（API 34+ 自动走 `PendingIntent` 重载，锁屏经 `unlockAndRun` 解锁后触发）收起系统栏并弹出透明悬浮控制卡，不拉起主界面。
+  - **通知栏直达入口（`CastService`）**：投送中常驻通知正文与首枚按钮 `设备与音量` 均直达同一悬浮控制卡。
+  - **设置页一键添加与引导（`SettingsActivity`）**：API 33+ 调用 `StatusBarManager.requestAddTileService` 一键弹出系统添加确认；API 29–32 或用户取消/OEM 限制时展示 Style B 手动添加步骤指引，并提供「立即试弹悬浮卡」预览入口。
+- **悬浮控制卡视觉与复用结构（`QuickCastPanelActivity`）**：
+  - 独立透明任务栈（`Theme.CozyTing.QuickPanel`、`taskAffinity=""`、`excludeFromRecents="true"`），Android 12+（API 31+）启用 `FLAG_BLUR_BEHIND` 窗口背景模糊、API 29–30 回退纯半透明暗色遮罩，点击空白遮罩或返回键直接关闭并留在原音乐 App。
+  - **1:1 共享核心 UI**：与主界面共用 `NowPlayingCardController`（`96dp` 左侧封面+音源角标、右侧居中歌名/歌手/播控、全宽 `4dp` 进度条，未授权通知使用权时折为引导条）、同款总音量细轨道滑块（含高音量保护与「全部音箱联动」调节）、以及「输出设备」标题栏（含按需 `恢复上次` 胶囊与刷新按钮）+ `本机播放` + 样式 B 多选音箱行与行内独立音量滑块（限高滚动防溢出）；底部提供 `打开完整应用 ↗` 与 `完成`。
+- **iOS 端对齐与平台边界（SwiftUI / WidgetKit）**：
+  - iOS 18+ 在系统控制中心通过 `ControlWidget`（WidgetKit）提供对等「CozyTing / 窝爱听」快捷控制项，支持点击 Deep Link 呼出 App 内轻量 `.sheet` / `.presentationDetents([.medium, .large])` 悬浮控制卡（复用主界面的正在播放卡、总音量条与样式 B 音箱列表）。
+  - 受 iOS 沙箱与 `ControlWidget` 交互限制，iOS 无法在第三方 App 画面上方直接叠透底层页面级浮窗，也无法通过 `ControlWidget` 跳过系统 `RPSystemBroadcastPickerView` 首次录屏授权弹窗；需统一由 Deep Link 唤起 App 轻量控制面板承载。
