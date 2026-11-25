@@ -1,62 +1,70 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-25T15:37:42Z",
+  "generated_at": "2026-11-25T16:44:49Z",
   "repo": "JasirVoriya/cozyting",
   "channels": {
     "stable": {
-      "tag": "v0.9.11",
-      "version": "0.9.11",
+      "tag": "v0.9.12",
+      "version": "0.9.12",
       "prerelease": false,
-      "published_at": "2026-11-25T15:37:41Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
-      "notes": "> 正式版（Stable Release）：新增系统控制中心快捷磁贴与通透磨砂悬浮控制卡（样式 B 紧凑布局、品牌小标直达主界面、柔和进出场动效与物理音量键直控投送总音量），修复多音箱连接生命周期、离散硬件音量档位兼容与手动刷新离线设备滞留问题，并补齐纯静态自愿赞赏支持入口。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 全兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 控制中心快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步设备数与音量副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起系统栏并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关），采用样式 B 极致紧凑布局与轻透磨砂玻璃视觉（Android 12+ 启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃，API 29–30 自动提高不透明度回退），配备柔和协同的弹出/关闭缓动动画：\n    - 抽离共享 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标跳转、自适应 2 行歌名/歌手/播控与 `4dp` 可拖进度条）；\n    - 复用总音量联动滑块（含高音量二次确认保护）及「输出设备」多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊，标题栏右侧紧邻刷新按钮提供窝爱听品牌单色小标圆钮一键进入完整主界面。\n  - 投送中前台服务通知正文追加三语点击提示（如 `2 台设备同步播放 · 点击打开控制卡`），新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡；设置页「投送与系统权限」新增一键添加磁贴（Android 13+ `requestAddTileService`）与手动添加指引，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范。\n- **物理音量键快捷控制投送总音量（Android 主界面 & 悬浮控制卡）**：\n  - 在主界面与悬浮控制卡前台展示且已选音箱/投送中时，拦截物理音量 `+ / -` 按键直接调节投送总音量（单次 ±`5%`、长按即时预览 + `100ms` 合并防抖提交、不弹出系统音量条，跨安全上限联动高音量二次确认）；切回「本机播放」或离开界面后自动交还系统。\n- **全链路自愿赞赏支持入口（纯静态、零支付 SDK、所有功能永久免费开源）**：\n  - 在「关于窝爱听」页面、GitHub 仓库（`.github/FUNDING.yml` 与三语 README）及三语产品官网 `#sponsor` 区块新增低干扰自愿赞赏入口，支持手机端一键唤起支付宝及 Android 10+ `MediaStore` 一键保存暖燕麦主题赞赏码至相册。\n\n### Fixed\n- **修复 8899 控制连接泄漏与无限重连风暴（L1 Rust 核心，双端同步）**：\n  - `ReceiverHandle::shutdown()` 强制关闭 TCP 8899 控制连接并在反向 RTSP / 音频通道握手失败时统一清理套接字；普通目标音量（`> 0`）复用单条 8899 长连接设音量，自动重连新增连续失败 3 次熔断与晚加入 1.5s 冷却间隔，避免并发重连拍打音箱固件。\n- **修复分档硬件音量音箱投送被误拦截（L1 Rust 核心，双端同步）**：\n  - 强制静音保护（`0`）继续严格校验防误播；普通目标音量（`> 0`）允许离散硬件分档容差（`<= +10`）并记录告警正常推流，不再误拦投送与多音箱扩组。\n- **修复手动刷新设备列表时已离线缓存设备滞留展示（L1 Rust 核心 + 跨端规范同步）**：\n  - 冷启动与后台扫描继续合并历史缓存防瞬时丢包；用户手动刷新时以本次局域网真实扫描结果为事实来源，自动淘汰未扫到的离线缓存设备（保留活跃投送中设备与自定义命名）。",
+      "published_at": "2026-11-25T16:44:47Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.12",
+      "notes": "> 正式版（Stable Release）：打磨系统控制中心快捷磁贴与悬浮控制卡交互体验——悬浮卡收窄至单侧 `24dp` 舒展留白、打开主界面圆钮移至卡片右上角防误触并升级为新版 F2 深夜亮灯小屋单色真镂空品牌图标（同步覆盖控制中心磁贴与状态栏通知小图标），新增**长按磁贴直达 App 首页**与**首页底部可关闭「添加到控制中心」轻引导条**。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **长按控制中心快捷磁贴直达 App 首页**：\n  - `MainActivity` 注册 `android.service.quicksettings.action.QS_TILE_PREFERENCES`，在系统控制中心长按「窝爱听」磁贴时直接进入 App 首页（不再兜底跳转系统应用信息页）；轻点磁贴仍保持收起系统栏并弹出悬浮控制卡。\n- **控制中心磁贴状态自动感知与首页轻引导条（三语同步 + `UI_SPEC` 双端对齐）**：\n  - `CastTileService` 通过 `onTileAdded` / `onStartListening` / `onTileRemoved` 与 `requestAddTileService` 回调自动维护磁贴添加状态。\n  - 首页输出设备卡片下方在「未添加且未关闭」时展示紧凑 Style B 轻引导条（Android 13+ 一键调起系统添加确认，Android 10–12 展示 3 步指引并支持试弹悬浮卡），添加成功或点击 `×` 后自动隐藏不再打扰；设置页「控制中心快捷磁贴」同步展示绿色 `已添加` 状态徽标与长按说明。\n\n### Changed\n- **全处单色品牌小图标升级为新版 F2 深夜亮灯小屋（`ic_stat_miplay.xml`）**：\n  - 以新版品牌图标（深夜亮灯小屋 + 垂尾小猫 + 节拍音符）为母版重绘 `24dp` 纯白 `evenOdd` 真镂空单色矢量并微调小尺寸笔触，同步替换系统控制中心快捷磁贴、悬浮控制卡跳转圆钮与状态栏常驻通知小图标。\n- **悬浮控制卡视觉比例与右上角防误触布局优化**：\n  - 悬浮控制卡左右外边距由单侧 `12dp` 放宽至 `24dp`（最大宽 `360dp`、小屏保底 `280dp`），视觉呼吸感更舒展；\n  - 将打开主界面圆钮从「输出设备」标题栏（原紧邻刷新按钮）移至悬浮卡片**右上角**，并调整紧凑模式正在播放区的歌名/播控列间距（`marginStart=8dp / marginEnd=34dp`），既贴近专辑封面又为右上角圆钮保留独立安全列，避免长歌名/副标题重叠与误触。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.11-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.11/cozyting-v0.9.11-arm64-v8a.apk",
-            "size_bytes": 3082569,
-            "sha256": "a7632bddb4d016a005e3d53f1bdb139e3da30b20834a0e1da8f673da2e4ef663",
+            "name": "cozyting-v0.9.12-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.12/cozyting-v0.9.12-arm64-v8a.apk",
+            "size_bytes": 3084461,
+            "sha256": "0ef994505fa6f617779568090d14b0b0a86156f327cb113982d9bb02c046b026",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.12",
         "app_store_url": ""
       }
     },
     "prerelease": {
-      "tag": "v0.9.11",
-      "version": "0.9.11",
+      "tag": "v0.9.12",
+      "version": "0.9.12",
       "prerelease": false,
-      "published_at": "2026-11-25T15:37:41Z",
-      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
-      "notes": "> 正式版（Stable Release）：新增系统控制中心快捷磁贴与通透磨砂悬浮控制卡（样式 B 紧凑布局、品牌小标直达主界面、柔和进出场动效与物理音量键直控投送总音量），修复多音箱连接生命周期、离散硬件音量档位兼容与手动刷新离线设备滞留问题，并补齐纯静态自愿赞赏支持入口。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **系统控制中心快捷磁贴与悬浮控制卡（Android API 29–36 全兼容 + `UI_SPEC` 双端对齐）**：\n  - 新增 `CastTileService` 控制中心快捷设置磁贴（复用单色矢量图标 `ic_stat_miplay`），空闲暗显、投送中亮起并实时同步设备数与音量副标题；点击通过 `QuickSettingsTileCompat`（Android 14+ 自动使用 `PendingIntent` 重载，锁屏支持解锁后拉起）收起系统栏并在当前应用上方弹出悬浮控制卡。\n  - 新增独立透明悬浮控制卡 `QuickCastPanelActivity`（独立任务栈、不进最近任务、点空白遮罩或返回键即关），采用样式 B 极致紧凑布局与轻透磨砂玻璃视觉（Android 12+ 启用 `FLAG_BLUR_BEHIND` 窗口背景毛玻璃，API 29–30 自动提高不透明度回退），配备柔和协同的弹出/关闭缓动动画：\n    - 抽离共享 `NowPlayingCardController`（悬浮卡启用紧凑模式：`70dp` 封面 + `20dp` 音源角标跳转、自适应 2 行歌名/歌手/播控与 `4dp` 可拖进度条）；\n    - 复用总音量联动滑块（含高音量二次确认保护）及「输出设备」多选音箱高亮行与行内独立音量滑块、`恢复上次` 快捷胶囊，标题栏右侧紧邻刷新按钮提供窝爱听品牌单色小标圆钮一键进入完整主界面。\n  - 投送中前台服务通知正文追加三语点击提示（如 `2 台设备同步播放 · 点击打开控制卡`），新增「设备与音量」操作按钮并将通知正文直达入口切换至悬浮控制卡；设置页「投送与系统权限」新增一键添加磁贴（Android 13+ `requestAddTileService`）与手动添加指引，同步补齐中/英/日三语文案与 `design/UI_SPEC.md` 第 7 节跨端规范。\n- **物理音量键快捷控制投送总音量（Android 主界面 & 悬浮控制卡）**：\n  - 在主界面与悬浮控制卡前台展示且已选音箱/投送中时，拦截物理音量 `+ / -` 按键直接调节投送总音量（单次 ±`5%`、长按即时预览 + `100ms` 合并防抖提交、不弹出系统音量条，跨安全上限联动高音量二次确认）；切回「本机播放」或离开界面后自动交还系统。\n- **全链路自愿赞赏支持入口（纯静态、零支付 SDK、所有功能永久免费开源）**：\n  - 在「关于窝爱听」页面、GitHub 仓库（`.github/FUNDING.yml` 与三语 README）及三语产品官网 `#sponsor` 区块新增低干扰自愿赞赏入口，支持手机端一键唤起支付宝及 Android 10+ `MediaStore` 一键保存暖燕麦主题赞赏码至相册。\n\n### Fixed\n- **修复 8899 控制连接泄漏与无限重连风暴（L1 Rust 核心，双端同步）**：\n  - `ReceiverHandle::shutdown()` 强制关闭 TCP 8899 控制连接并在反向 RTSP / 音频通道握手失败时统一清理套接字；普通目标音量（`> 0`）复用单条 8899 长连接设音量，自动重连新增连续失败 3 次熔断与晚加入 1.5s 冷却间隔，避免并发重连拍打音箱固件。\n- **修复分档硬件音量音箱投送被误拦截（L1 Rust 核心，双端同步）**：\n  - 强制静音保护（`0`）继续严格校验防误播；普通目标音量（`> 0`）允许离散硬件分档容差（`<= +10`）并记录告警正常推流，不再误拦投送与多音箱扩组。\n- **修复手动刷新设备列表时已离线缓存设备滞留展示（L1 Rust 核心 + 跨端规范同步）**：\n  - 冷启动与后台扫描继续合并历史缓存防瞬时丢包；用户手动刷新时以本次局域网真实扫描结果为事实来源，自动淘汰未扫到的离线缓存设备（保留活跃投送中设备与自定义命名）。",
+      "published_at": "2026-11-25T16:44:47Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.12",
+      "notes": "> 正式版（Stable Release）：打磨系统控制中心快捷磁贴与悬浮控制卡交互体验——悬浮卡收窄至单侧 `24dp` 舒展留白、打开主界面圆钮移至卡片右上角防误触并升级为新版 F2 深夜亮灯小屋单色真镂空品牌图标（同步覆盖控制中心磁贴与状态栏通知小图标），新增**长按磁贴直达 App 首页**与**首页底部可关闭「添加到控制中心」轻引导条**。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **长按控制中心快捷磁贴直达 App 首页**：\n  - `MainActivity` 注册 `android.service.quicksettings.action.QS_TILE_PREFERENCES`，在系统控制中心长按「窝爱听」磁贴时直接进入 App 首页（不再兜底跳转系统应用信息页）；轻点磁贴仍保持收起系统栏并弹出悬浮控制卡。\n- **控制中心磁贴状态自动感知与首页轻引导条（三语同步 + `UI_SPEC` 双端对齐）**：\n  - `CastTileService` 通过 `onTileAdded` / `onStartListening` / `onTileRemoved` 与 `requestAddTileService` 回调自动维护磁贴添加状态。\n  - 首页输出设备卡片下方在「未添加且未关闭」时展示紧凑 Style B 轻引导条（Android 13+ 一键调起系统添加确认，Android 10–12 展示 3 步指引并支持试弹悬浮卡），添加成功或点击 `×` 后自动隐藏不再打扰；设置页「控制中心快捷磁贴」同步展示绿色 `已添加` 状态徽标与长按说明。\n\n### Changed\n- **全处单色品牌小图标升级为新版 F2 深夜亮灯小屋（`ic_stat_miplay.xml`）**：\n  - 以新版品牌图标（深夜亮灯小屋 + 垂尾小猫 + 节拍音符）为母版重绘 `24dp` 纯白 `evenOdd` 真镂空单色矢量并微调小尺寸笔触，同步替换系统控制中心快捷磁贴、悬浮控制卡跳转圆钮与状态栏常驻通知小图标。\n- **悬浮控制卡视觉比例与右上角防误触布局优化**：\n  - 悬浮控制卡左右外边距由单侧 `12dp` 放宽至 `24dp`（最大宽 `360dp`、小屏保底 `280dp`），视觉呼吸感更舒展；\n  - 将打开主界面圆钮从「输出设备」标题栏（原紧邻刷新按钮）移至悬浮卡片**右上角**，并调整紧凑模式正在播放区的歌名/播控列间距（`marginStart=8dp / marginEnd=34dp`），既贴近专辑封面又为右上角圆钮保留独立安全列，避免长歌名/副标题重叠与误触。",
       "android": {
         "min_sdk": 29,
         "assets": [
           {
             "abi": "arm64-v8a",
-            "name": "cozyting-v0.9.11-arm64-v8a.apk",
-            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.11/cozyting-v0.9.11-arm64-v8a.apk",
-            "size_bytes": 3082569,
-            "sha256": "a7632bddb4d016a005e3d53f1bdb139e3da30b20834a0e1da8f673da2e4ef663",
+            "name": "cozyting-v0.9.12-arm64-v8a.apk",
+            "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.9.12/cozyting-v0.9.12-arm64-v8a.apk",
+            "size_bytes": 3084461,
+            "sha256": "0ef994505fa6f617779568090d14b0b0a86156f327cb113982d9bb02c046b026",
             "signed": true
           }
         ]
       },
       "ios": {
         "min_os": "16.0",
-        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.11",
+        "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.12",
         "app_store_url": ""
       }
     }
   },
   "releases": [
+    {
+      "tag": "v0.9.12",
+      "version": "0.9.12",
+      "prerelease": false,
+      "published_at": "2026-11-25T16:44:47Z",
+      "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.9.12",
+      "notes": "> 正式版（Stable Release）：打磨系统控制中心快捷磁贴与悬浮控制卡交互体验——悬浮卡收窄至单侧 `24dp` 舒展留白、打开主界面圆钮移至卡片右上角防误触并升级为新版 F2 深夜亮灯小屋单色真镂空品牌图标（同步覆盖控制中心磁贴与状态栏通知小图标），新增**长按磁贴直达 App 首页**与**首页底部可关闭「添加到控制中心」轻引导条**。纯局域网运行，零云端、零账号、零遥测。\n\n### Added\n- **长按控制中心快捷磁贴直达 App 首页**：\n  - `MainActivity` 注册 `android.service.quicksettings.action.QS_TILE_PREFERENCES`，在系统控制中心长按「窝爱听」磁贴时直接进入 App 首页（不再兜底跳转系统应用信息页）；轻点磁贴仍保持收起系统栏并弹出悬浮控制卡。\n- **控制中心磁贴状态自动感知与首页轻引导条（三语同步 + `UI_SPEC` 双端对齐）**：\n  - `CastTileService` 通过 `onTileAdded` / `onStartListening` / `onTileRemoved` 与 `requestAddTileService` 回调自动维护磁贴添加状态。\n  - 首页输出设备卡片下方在「未添加且未关闭」时展示紧凑 Style B 轻引导条（Android 13+ 一键调起系统添加确认，Android 10–12 展示 3 步指引并支持试弹悬浮卡），添加成功或点击 `×` 后自动隐藏不再打扰；设置页「控制中心快捷磁贴」同步展示绿色 `已添加` 状态徽标与长按说明。\n\n### Changed\n- **全处单色品牌小图标升级为新版 F2 深夜亮灯小屋（`ic_stat_miplay.xml`）**：\n  - 以新版品牌图标（深夜亮灯小屋 + 垂尾小猫 + 节拍音符）为母版重绘 `24dp` 纯白 `evenOdd` 真镂空单色矢量并微调小尺寸笔触，同步替换系统控制中心快捷磁贴、悬浮控制卡跳转圆钮与状态栏常驻通知小图标。\n- **悬浮控制卡视觉比例与右上角防误触布局优化**：\n  - 悬浮控制卡左右外边距由单侧 `12dp` 放宽至 `24dp`（最大宽 `360dp`、小屏保底 `280dp`），视觉呼吸感更舒展；\n  - 将打开主界面圆钮从「输出设备」标题栏（原紧邻刷新按钮）移至悬浮卡片**右上角**，并调整紧凑模式正在播放区的歌名/播控列间距（`marginStart=8dp / marginEnd=34dp`），既贴近专辑封面又为右上角圆钮保留独立安全列，避免长歌名/副标题重叠与误触。"
+    },
     {
       "tag": "v0.9.11",
       "version": "0.9.11",
