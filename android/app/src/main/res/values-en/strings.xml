@@ -587,4 +587,23 @@
     <string name="shared_uid_consent_cancel">Cancel</string>
     <string name="shared_uid_consent_allow">Allow casting</string>
     <string name="status_banner_dismiss_cd">Dismiss notice</string>
+
+    <!-- Quick Settings tile & floating Quick Cast panel -->
+    <string name="qs_tile_label">CozyTing</string>
+    <string name="qs_tile_sub_idle">Tap to pick speakers</string>
+    <string name="qs_tile_sub_casting_fmt">%1$d spk · %2$d%%</string>
+    <string name="qs_tile_sub_paused_fmt">%1$d spk · Paused</string>
+    <string name="cast_action_devices_volume">Speakers &amp; Vol</string>
+    <string name="quick_panel_open_app">Open full app ↗</string>
+    <string name="quick_panel_done">Done</string>
+    <string name="settings_qs_tile_title">Quick Settings tile</string>
+    <string name="settings_qs_tile_sub">Pop up the floating speaker &amp; volume sheet from Quick Settings</string>
+    <string name="settings_qs_tile_add_btn">Add tile</string>
+    <string name="settings_qs_tile_guide_btn">How to add</string>
+    <string name="settings_qs_tile_added">CozyTing has been added to Quick Settings. Swipe down from the top and tap the tile anytime.</string>
+    <string name="settings_qs_tile_already_added">CozyTing is already in your Quick Settings panel. Swipe down and tap it anytime.</string>
+    <string name="settings_qs_tile_guide_title">Add to Quick Settings</string>
+    <string name="settings_qs_tile_guide_msg">1. Swipe down from the top to open Quick Settings;\n2. Tap the Edit (pencil) button;\n3. Drag \"CozyTing\" from the available tiles into your active panel, then tap it anytime to open the floating cast card.</string>
+    <string name="settings_qs_tile_guide_ok">Got it</string>
+    <string name="settings_qs_tile_preview_btn">Preview floating card</string>
 </resources>
