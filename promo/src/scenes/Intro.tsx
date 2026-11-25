@@ -259,17 +259,17 @@ export const Intro: React.FC<{ locale: PromoLocale }> = ({ locale }) => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
-      {/* Dual ambient glow: coral behind brand, album blue behind real hero phone */}
+      {/* Dual ambient glow: warm lamp amber + coral behind brand, soft ambient behind real hero phone */}
       <AbsoluteFill
         style={{
-          background: `radial-gradient(circle at 24% 46%, rgba(229,109,72,${0.14 * snapBrand}) 0%, rgba(229,109,72,0) 38%), radial-gradient(circle at 73% 54%, rgba(46,108,246,${0.24 * phoneSnap}) 0%, rgba(46,108,246,0) 44%)`,
+          background: `radial-gradient(circle at 22% 42%, rgba(255,209,102,${0.14 * snapBrand}) 0%, rgba(229,109,72,${0.12 * snapBrand}) 18%, rgba(229,109,72,0) 42%), radial-gradient(circle at 73% 54%, rgba(76,141,255,${0.16 * phoneSnap}) 0%, rgba(255,209,102,${0.05 * phoneSnap}) 24%, rgba(46,108,246,0) 46%)`,
         }}
       />
 
-      {/* Crisp radial ripples on the 2.0s reveal beat */}
+      {/* Crisp warm ripples on the 2.0s reveal beat */}
       <svg width="1920" height="1080" style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
         <Ripple cx={202} cy={329} t={bf / 48} maxR={480} color={C.coral} width={2.2} />
-        <Ripple cx={202} cy={329} t={(bf - 10) / 54} maxR={560} color={C.ink} width={1.2} />
+        <Ripple cx={202} cy={329} t={(bf - 10) / 54} maxR={560} color={C.warmGold} width={1.4} />
       </svg>
 
       {/* Left Column: Fully Formed Logo + Brand Wordmark + Tagline + 3 Pills */}
