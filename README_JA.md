@@ -28,7 +28,7 @@
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
-  <a href="https://afdian.com/a/voriya"><img alt="Sponsor on Afdian" src="https://img.shields.io/badge/Sponsor-Afdian-946CE6?style=flat-square&logo=githubsponsors&logoColor=white"></a>
+  <a href="https://jasirvoriya.github.io/cozyting/ja/#sponsor"><img alt="CozyTing を応援" src="https://img.shields.io/badge/Sponsor-Support%20CozyTing-E56D48?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -253,8 +253,8 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 
 CozyTing のすべての機能は**完全無料・オープンソース・完全 LAN 動作**であり、課金制限や限定機能は一切ありません。もし CozyTing が毎日の音楽時間を少しでも心地よくできたなら、GitHub での **Star** や任意の応援をいただけると励みになります：
 
-- **Afdian（PayPal・国際クレジットカード・WeChat Pay・Alipay 対応）**：<https://afdian.com/a/voriya>
 - **QR コードでの応援（WeChat Pay / Alipay）**：[製品サイトの応援カードを開く](https://jasirvoriya.github.io/cozyting/ja/#sponsor)
+- **Alipay**：[Alipay で直接開く](https://qr.alipay.com/fkx13666yfftru6suyvjk59)
 
 ### コントリビューター
 

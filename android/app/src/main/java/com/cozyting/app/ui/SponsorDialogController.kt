@@ -29,7 +29,6 @@ import com.cozyting.app.R
  */
 object SponsorDialogController {
 
-    const val AFDIAN_URL = "https://afdian.com/a/voriya"
     const val ALIPAY_DIRECT_URL = "https://qr.alipay.com/fkx13666yfftru6suyvjk59"
 
     fun show(
@@ -75,32 +74,14 @@ object SponsorDialogController {
             },
         )
 
-        // 顶部快捷外链按钮：爱发电（主） + 支付宝直达（次）
-        container.addView(
-            actionButton(
-                activity = activity,
-                text = activity.getString(R.string.sponsor_btn_afdian),
-                bgColor = palette.accent,
-                textColor = Color.WHITE,
-                strokeColor = Color.TRANSPARENT,
-                rippleColor = palette.ripple,
-                radiusPx = btnRadius,
-            ) {
-                openUrl(activity, AFDIAN_URL)
-            }.apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).apply { bottomMargin = dp(8) }
-            },
-        )
+        // 顶部快捷外链按钮：支付宝直达
         container.addView(
             actionButton(
                 activity = activity,
                 text = activity.getString(R.string.sponsor_btn_alipay_direct),
-                bgColor = palette.controlSurface,
-                textColor = palette.textPrimary,
-                strokeColor = palette.panelBorder,
+                bgColor = palette.accent,
+                textColor = Color.WHITE,
+                strokeColor = Color.TRANSPARENT,
                 rippleColor = palette.ripple,
                 radiusPx = btnRadius,
             ) {

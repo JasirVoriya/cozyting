@@ -23,7 +23,7 @@
   - English: https://jasirvoriya.github.io/cozyting/en/
   - 日本語: https://jasirvoriya.github.io/cozyting/ja/
 - **Downloads (Android APK & `cozyting-cli`)**: https://github.com/JasirVoriya/cozyting/releases
-- **Voluntary Sponsorship (100% Free & Open-Source, No Paywalls)**: https://afdian.com/a/voriya (also listed at https://jasirvoriya.github.io/cozyting/#sponsor)
+- **Voluntary Sponsorship (100% Free & Open-Source, No Paywalls)**: https://jasirvoriya.github.io/cozyting/#sponsor (WeChat Pay & Alipay)
 - **Interactive Architecture Explorer**:
   - 简体中文: https://jasirvoriya.github.io/cozyting/architecture.html
   - English: https://jasirvoriya.github.io/cozyting/en/architecture.html
