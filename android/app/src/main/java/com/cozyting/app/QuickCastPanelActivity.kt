@@ -372,9 +372,9 @@ class QuickCastPanelActivity : Activity() {
         }
         scrimView = scrim
 
-        val cardMaxW = dp(396)
+        val cardMaxW = dp(360)
         val screenW = resources.displayMetrics.widthPixels
-        val cardW = (screenW - dp(24)).coerceAtMost(cardMaxW).coerceAtLeast(dp(280))
+        val cardW = (screenW - dp(48)).coerceAtMost(cardMaxW).coerceAtLeast(dp(280))
         val maxDeviceListH = (resources.displayMetrics.heightPixels * 0.44f).toInt().coerceAtLeast(dp(220))
 
         val cardFill = when {
@@ -545,7 +545,7 @@ class QuickCastPanelActivity : Activity() {
             iconRes = R.drawable.ic_stat_miplay,
             contentDesc = getString(R.string.quick_panel_open_app),
             sizeDp = 28,
-            iconDp = 15,
+            iconDp = 16,
         ) {
             openFullApp()
         }

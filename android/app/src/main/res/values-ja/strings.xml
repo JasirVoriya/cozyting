@@ -598,9 +598,13 @@
     <string name="quick_panel_open_app">アプリを開く ↗</string>
     <string name="quick_panel_done">完了</string>
     <string name="settings_qs_tile_title">クイック設定タイル</string>
-    <string name="settings_qs_tile_sub">コントロールセンターから機器と音量のフローティングカードを呼び出す</string>
+    <string name="settings_qs_tile_sub">タップでフローティングカード、長押しでホームを直接開く</string>
     <string name="settings_qs_tile_add_btn">ワンタップ追加</string>
+    <string name="settings_qs_tile_added_badge">追加済み</string>
     <string name="settings_qs_tile_guide_btn">追加ガイド</string>
+    <string name="main_qs_tile_tip_title">クイック設定に追加</string>
+    <string name="main_qs_tile_tip_sub">スワイプで機器切替・音量調整、長押しでホームへ</string>
+    <string name="main_qs_tile_tip_dismiss_cd">クイック設定ヒントを閉じる</string>
     <string name="settings_qs_tile_added">クイック設定に「CozyTing」タイルを追加しました。上からスワイプしていつでも開けます。</string>
     <string name="settings_qs_tile_already_added">「CozyTing」タイルはすでにクイック設定に追加されています。そのままタップして使えます。</string>
     <string name="settings_qs_tile_guide_title">クイック設定への追加方法</string>

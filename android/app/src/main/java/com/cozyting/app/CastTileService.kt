@@ -18,12 +18,19 @@ class CastTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
+        PrefsCastSettingsStore(this).qsTileAdded = true
         refreshTile()
     }
 
     override fun onTileAdded() {
         super.onTileAdded()
+        PrefsCastSettingsStore(this).qsTileAdded = true
         refreshTile()
+    }
+
+    override fun onTileRemoved() {
+        super.onTileRemoved()
+        PrefsCastSettingsStore(this).qsTileAdded = false
     }
 
     override fun onClick() {

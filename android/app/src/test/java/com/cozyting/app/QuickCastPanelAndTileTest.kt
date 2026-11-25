@@ -1,8 +1,11 @@
 package com.cozyting.app
 
+import android.content.Intent
+import android.service.quicksettings.TileService
 import com.cozyting.app.compat.QuickSettingsTileCompat
 import com.cozyting.app.ui.AppLanguage
 import com.cozyting.app.ui.AppLocaleManager
+import com.cozyting.app.ui.PrefsCastSettingsStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -51,6 +54,10 @@ class QuickCastPanelAndTileTest {
             assertTrue(ctx.getString(R.string.quick_panel_open_app).isNotBlank())
             assertTrue(ctx.getString(R.string.quick_panel_done).isNotBlank())
             assertTrue(ctx.getString(R.string.settings_qs_tile_guide_msg).isNotBlank())
+            assertTrue(ctx.getString(R.string.settings_qs_tile_added_badge).isNotBlank())
+            assertTrue(ctx.getString(R.string.main_qs_tile_tip_title).isNotBlank())
+            assertTrue(ctx.getString(R.string.main_qs_tile_tip_sub).isNotBlank())
+            assertTrue(ctx.getString(R.string.main_qs_tile_tip_dismiss_cd).isNotBlank())
 
             labels += ctx.getString(R.string.qs_tile_label)
             actions += ctx.getString(R.string.cast_action_devices_volume)
@@ -87,5 +94,35 @@ class QuickCastPanelAndTileTest {
         val activity = controller.get()
         assertNotNull(activity.window.decorView)
         controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun qsTilePreferencesIntent_resolvesToMainActivity() {
+        val app = RuntimeEnvironment.getApplication()
+        val intent = Intent(TileService.ACTION_QS_TILE_PREFERENCES).setPackage(app.packageName)
+        val resolved = app.packageManager.queryIntentActivities(intent, 0)
+        assertTrue(
+            "Expected MainActivity to handle ACTION_QS_TILE_PREFERENCES",
+            resolved.any { it.activityInfo.name == MainActivity::class.java.name },
+        )
+    }
+
+    @Test
+    fun qsTileOnboardingFlags_persistAndControlVisibility() {
+        val app = RuntimeEnvironment.getApplication()
+        val store = PrefsCastSettingsStore(app)
+        assertFalse(store.qsTileAdded)
+        assertFalse(store.qsTileTipDismissed)
+
+        store.qsTileAdded = true
+        assertTrue(PrefsCastSettingsStore(app).qsTileAdded)
+
+        store.qsTileAdded = false
+        store.qsTileTipDismissed = true
+        assertFalse(PrefsCastSettingsStore(app).qsTileAdded)
+        assertTrue(PrefsCastSettingsStore(app).qsTileTipDismissed)
+
+        // Reset clean state
+        store.qsTileTipDismissed = false
     }
 }
