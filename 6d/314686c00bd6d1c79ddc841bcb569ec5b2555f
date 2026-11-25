@@ -1,0 +1,22 @@
+promo/README.md
+  h_75f437d5bc136b 46-49
+promo/package.json
+  h_75f437d5bc136b 15-17
+promo/scripts/covers.mjs
+  h_75f437d5bc136b 1-67
+promo/src/Cover.tsx
+  h_75f437d5bc136b 1-535
+promo/src/index.tsx
+  h_75f437d5bc136b 2,4,36-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d314686c00bd6d1c79ddc841bcb569ec5b2555f",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
