@@ -28,6 +28,7 @@ import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import com.cozyting.app.diag.AppLog
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -72,6 +73,7 @@ import com.cozyting.app.compat.BlurCompat
 import com.cozyting.app.compat.NotificationPermissionCompat
 import com.cozyting.app.compat.WindowInsetsApplyCompat
 import com.cozyting.app.ui.AppLocaleManager
+import com.cozyting.app.ui.HardwareVolumeKeyController
 import com.cozyting.app.ui.LatencyModePreset
 import com.cozyting.app.ui.LatencyModeSelection
 import com.cozyting.app.ui.LatencyModeTone
@@ -131,6 +133,26 @@ class MainActivity : Activity() {
     private lateinit var nowPlayingCard: NowPlayingCardController
     private lateinit var volumeBar: UiComponents.VolumeGuardSeekBar
     private lateinit var volumePctView: TextView
+    private val volumeKeyController by lazy {
+        HardwareVolumeKeyController(
+            shouldIntercept = {
+                ::routeState.isInitialized &&
+                    ::volumeBar.isInitialized &&
+                    (routeState.selectedSpeakerIds.isNotEmpty() || (CastService.running.get() && !stopRequested)) &&
+                    volumeConfirmDialog?.isShowing != true
+            },
+            currentVolume = { masterVolume },
+            onPreview = { next ->
+                volumeBar.progress = next
+                applyMasterVolumeVisual(next)
+                routeState.selectedSpeakerIds.forEach { id ->
+                    speakerVolumeViews[id]?.first?.progress = next
+                    applySpeakerVolumeVisual(id, next)
+                }
+            },
+            onCommit = { target -> handleMasterVolumeReleased(target) },
+        )
+    }
     private lateinit var mainTargetIcon: ImageView
     private lateinit var mainTargetTitle: TextView
     private lateinit var mainTargetAutoBadge: TextView
@@ -331,6 +353,7 @@ class MainActivity : Activity() {
         runCatching { sharedUidConsentDialog?.dismiss() }
         sharedUidConsentDialog = null
         quickChipDragController?.cancel()
+        volumeKeyController.cancel()
         main.removeCallbacks(refreshRunnable)
         stopRefreshSpinner()
         if (CastService.targetChangeListener === castTargetChangeCallback) {
@@ -338,6 +361,16 @@ class MainActivity : Activity() {
         }
         nowPlayingTracker?.stop()
         super.onDestroy()
+    }
+
+    override fun onPause() {
+        volumeKeyController.cancel()
+        super.onPause()
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (volumeKeyController.onDispatchKeyEvent(event)) return true
+        return super.dispatchKeyEvent(event)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {

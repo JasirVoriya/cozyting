@@ -25,6 +25,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -55,6 +56,7 @@ import com.cozyting.app.compat.AcceptanceAudioDefaults
 import com.cozyting.app.compat.QuickSettingsTileCompat
 import com.cozyting.app.diag.AppLog
 import com.cozyting.app.ui.AppLocaleManager
+import com.cozyting.app.ui.HardwareVolumeKeyController
 import com.cozyting.app.ui.NowPlayingCardController
 import com.cozyting.app.ui.PrefsCastSettingsStore
 import com.cozyting.app.ui.UiComponents
@@ -107,6 +109,27 @@ class QuickCastPanelActivity : Activity() {
     private lateinit var alertBanner: LinearLayout
     private lateinit var alertText: TextView
     private var dismissing = false
+    private val volumeKeyController by lazy {
+        HardwareVolumeKeyController(
+            shouldIntercept = {
+                !dismissing &&
+                    ::routeState.isInitialized &&
+                    ::volumeBar.isInitialized &&
+                    (routeState.selectedSpeakerIds.isNotEmpty() || (CastService.running.get() && !stopRequested)) &&
+                    volumeConfirmDialog?.isShowing != true
+            },
+            currentVolume = { masterVolume },
+            onPreview = { next ->
+                volumeBar.progress = next
+                applyMasterVolumeVisual(next)
+                routeState.selectedSpeakerIds.forEach { id ->
+                    speakerVolumeViews[id]?.first?.progress = next
+                    applySpeakerVolumeVisual(id, next)
+                }
+            },
+            onCommit = { target -> handleMasterVolumeReleased(target) },
+        )
+    }
 
     private var nowPlaying: NowPlayingInfo = NowPlayingInfo.unavailable("")
     private var nowPlayingUpdatedAtMs: Long = 0L
@@ -234,7 +257,13 @@ class QuickCastPanelActivity : Activity() {
         renderDevices()
     }
 
+    override fun onPause() {
+        volumeKeyController.cancel()
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        volumeKeyController.cancel()
         main.removeCallbacks(poll)
         main.removeCallbacks(clearAlertRunnable)
         if (::scrimView.isInitialized) scrimView.animate().cancel()
@@ -243,6 +272,11 @@ class QuickCastPanelActivity : Activity() {
         nowPlayingTracker?.stop()
         runCatching { volumeConfirmDialog?.dismiss() }
         super.onDestroy()
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (volumeKeyController.onDispatchKeyEvent(event)) return true
+        return super.dispatchKeyEvent(event)
     }
 
     @Deprecated("Deprecated in Java")
