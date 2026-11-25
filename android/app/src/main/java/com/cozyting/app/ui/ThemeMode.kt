@@ -144,6 +144,16 @@ class PrefsCastSettingsStore(context: Context) {
         get() = prefs.getString(KEY_UPDATE_DISMISSED_BANNER_TAG, "").orEmpty()
         set(value) = prefs.edit().putString(KEY_UPDATE_DISMISSED_BANNER_TAG, value.trim()).apply()
 
+    /** 是否已将控制中心快捷磁贴添加到系统快捷面板（由 CastTileService 生命周期与 requestAddTileService 自动同步）。 */
+    var qsTileAdded: Boolean
+        get() = prefs.getBoolean(KEY_QS_TILE_ADDED, false)
+        set(value) = prefs.edit().putBoolean(KEY_QS_TILE_ADDED, value).apply()
+
+    /** 用户是否手动关闭了首页底部「添加到控制中心」轻引导条。 */
+    var qsTileTipDismissed: Boolean
+        get() = prefs.getBoolean(KEY_QS_TILE_TIP_DISMISSED, false)
+        set(value) = prefs.edit().putBoolean(KEY_QS_TILE_TIP_DISMISSED, value).apply()
+
     /** 持久化总音量（0..100）；未设置过时返回 [defaultVolume]。 */
     fun loadMasterVolume(defaultVolume: Int): Int {
         val raw = prefs.getInt(KEY_MASTER_VOLUME, UNSET_VOLUME)
@@ -237,6 +247,8 @@ class PrefsCastSettingsStore(context: Context) {
         private const val KEY_UPDATE_CHANNEL = "update_channel"
         private const val KEY_UPDATE_IGNORED_TAG = "update_ignored_tag"
         private const val KEY_UPDATE_DISMISSED_BANNER_TAG = "update_dismissed_banner_tag"
+        private const val KEY_QS_TILE_ADDED = "qs_tile_added"
+        private const val KEY_QS_TILE_TIP_DISMISSED = "qs_tile_tip_dismissed"
         private const val KEY_MASTER_VOLUME = "master_volume"
         private const val KEY_SPEAKER_VOLUMES = "speaker_volumes_json"
         private const val UNSET_VOLUME = -1

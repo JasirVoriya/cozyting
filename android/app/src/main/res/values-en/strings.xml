@@ -598,9 +598,13 @@
     <string name="quick_panel_open_app">Open full app ↗</string>
     <string name="quick_panel_done">Done</string>
     <string name="settings_qs_tile_title">Quick Settings tile</string>
-    <string name="settings_qs_tile_sub">Pop up the floating speaker &amp; volume sheet from Quick Settings</string>
+    <string name="settings_qs_tile_sub">Tap from Quick Settings for floating controls; long-press to open home</string>
     <string name="settings_qs_tile_add_btn">Add tile</string>
+    <string name="settings_qs_tile_added_badge">Added</string>
     <string name="settings_qs_tile_guide_btn">How to add</string>
+    <string name="main_qs_tile_tip_title">Add to Quick Settings</string>
+    <string name="main_qs_tile_tip_sub">Swipe down to switch speakers; long-press to open home</string>
+    <string name="main_qs_tile_tip_dismiss_cd">Dismiss Quick Settings tip</string>
     <string name="settings_qs_tile_added">CozyTing has been added to Quick Settings. Swipe down from the top and tap the tile anytime.</string>
     <string name="settings_qs_tile_already_added">CozyTing is already in your Quick Settings panel. Swipe down and tap it anytime.</string>
     <string name="settings_qs_tile_guide_title">Add to Quick Settings</string>

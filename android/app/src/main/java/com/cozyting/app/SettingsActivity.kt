@@ -744,6 +744,7 @@ class SettingsActivity : Activity() {
 
     private fun buildQuickTileRow(): View {
         val canDirectAdd = QuickSettingsTileCompat.canRequestAddTile()
+        val added = settingsStore.qsTileAdded
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -785,10 +786,18 @@ class SettingsActivity : Activity() {
         row.addView(
             UiComponents.pillBadge(
                 context = this,
-                bgColor = palette.accentSoftBg,
-                textColor = palette.accentBright,
+                bgColor = if (added) {
+                    if (palette.isDark) Color.argb(38, 52, 211, 153) else Color.argb(28, 16, 185, 129)
+                } else {
+                    palette.accentSoftBg
+                },
+                textColor = if (added) palette.statusSuccess else palette.accentBright,
                 label = getString(
-                    if (canDirectAdd) R.string.settings_qs_tile_add_btn else R.string.settings_qs_tile_guide_btn,
+                    when {
+                        added -> R.string.settings_qs_tile_added_badge
+                        canDirectAdd -> R.string.settings_qs_tile_add_btn
+                        else -> R.string.settings_qs_tile_guide_btn
+                    },
                 ),
             ),
         )
@@ -796,6 +805,13 @@ class SettingsActivity : Activity() {
     }
 
     private fun triggerQuickTileAction() {
+        if (settingsStore.qsTileAdded) {
+            showQuickTileGuideDialog(
+                title = getString(R.string.settings_qs_tile_title),
+                message = getString(R.string.settings_qs_tile_already_added),
+            )
+            return
+        }
         if (!QuickSettingsTileCompat.canRequestAddTile()) {
             showQuickTileGuideDialog(
                 title = getString(R.string.settings_qs_tile_guide_title),
@@ -810,14 +826,22 @@ class SettingsActivity : Activity() {
         ) { result ->
             if (isFinishing || isDestroyed) return@requestAddTile
             when (result) {
-                QuickSettingsTileCompat.ADD_RESULT_ADDED -> showQuickTileGuideDialog(
-                    title = getString(R.string.settings_qs_tile_title),
-                    message = getString(R.string.settings_qs_tile_added),
-                )
-                QuickSettingsTileCompat.ADD_RESULT_ALREADY_ADDED -> showQuickTileGuideDialog(
-                    title = getString(R.string.settings_qs_tile_title),
-                    message = getString(R.string.settings_qs_tile_already_added),
-                )
+                QuickSettingsTileCompat.ADD_RESULT_ADDED -> {
+                    settingsStore.qsTileAdded = true
+                    renderUi()
+                    showQuickTileGuideDialog(
+                        title = getString(R.string.settings_qs_tile_title),
+                        message = getString(R.string.settings_qs_tile_added),
+                    )
+                }
+                QuickSettingsTileCompat.ADD_RESULT_ALREADY_ADDED -> {
+                    settingsStore.qsTileAdded = true
+                    renderUi()
+                    showQuickTileGuideDialog(
+                        title = getString(R.string.settings_qs_tile_title),
+                        message = getString(R.string.settings_qs_tile_already_added),
+                    )
+                }
                 else -> showQuickTileGuideDialog(
                     title = getString(R.string.settings_qs_tile_guide_title),
                     message = getString(R.string.settings_qs_tile_guide_msg),

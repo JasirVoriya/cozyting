@@ -1,22 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 24dp 状态栏 / 前台服务通知单色小图标 -->
+<!-- 24dp 状态栏 / 控制中心快捷磁贴 / 悬浮控制卡单色品牌小图标（F2 深夜亮灯小屋 + 垂尾小猫 + 音符 · 纯白 evenOdd 真镂空） -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.01"
-        android:pathData="M9.84,12.00 m-6.83,0 a6.83,6.83 0 1,0 13.66,0 a6.83,6.83 0 1,0 -13.66,0" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M8.47,9.99 L8.47,14.01 Q8.47,14.88 9.30,14.41 L12.61,12.47 Q13.44,12.00 12.61,11.53 L9.30,9.59 Q8.47,9.12 8.47,9.99 Z" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.88"
-        android:strokeLineCap="round"
-        android:pathData="M17.15,4.16 A10.72,10.72 0 0,1 17.15,19.84" />
+    <group
+        android:translateX="12"
+        android:translateY="12"
+        android:scaleX="0.056"
+        android:scaleY="0.056">
+        <group
+            android:translateX="-255"
+            android:translateY="-261.5">
+            <!-- 左上饱满小弯月 -->
+            <group
+                android:translateX="141"
+                android:translateY="128"
+                android:scaleX="1.38"
+                android:scaleY="1.38">
+                <group
+                    android:translateX="-156"
+                    android:translateY="-142">
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:pathData="M155,107 C134,111 122,131 128,151 C134,171 155,182 175,176 C181,174 186,170 190,166 C176,168 162,161 155,149 C148,136 151,120 160,110 C161,108 158,106 155,107 Z" />
+                </group>
+            </group>
+
+            <!-- 主双音符 ♫（针对 15–24dp 小尺寸加粗笔触以防发糊） -->
+            <group
+                android:translateX="312"
+                android:translateY="122"
+                android:rotation="-10"
+                android:scaleX="1.66"
+                android:scaleY="1.66">
+                <group
+                    android:translateX="-24"
+                    android:translateY="-26">
+                    <path
+                        android:fillColor="#00000000"
+                        android:strokeColor="#FFFFFF"
+                        android:strokeWidth="13"
+                        android:strokeLineCap="round"
+                        android:strokeLineJoin="round"
+                        android:pathData="M13,47 L13,12 L45,4 L45,39" />
+                    <path
+                        android:fillColor="#00000000"
+                        android:strokeColor="#FFFFFF"
+                        android:strokeWidth="17"
+                        android:strokeLineCap="round"
+                        android:pathData="M13,12 L45,4" />
+                    <group
+                        android:rotation="-18"
+                        android:pivotX="4.5"
+                        android:pivotY="49.5">
+                        <path
+                            android:fillColor="#FFFFFF"
+                            android:pathData="M-8.5,49.5 A13,10 0 1,0 17.5,49.5 A13,10 0 1,0 -8.5,49.5 Z" />
+                    </group>
+                    <group
+                        android:rotation="-18"
+                        android:pivotX="36.5"
+                        android:pivotY="41.5">
+                        <path
+                            android:fillColor="#FFFFFF"
+                            android:pathData="M23.5,41.5 A13,10 0 1,0 49.5,41.5 A13,10 0 1,0 23.5,41.5 Z" />
+                    </group>
+                </group>
+            </group>
+
+            <!-- 伴随单音符 ♪ -->
+            <group
+                android:translateX="389"
+                android:translateY="98"
+                android:rotation="16"
+                android:scaleX="1.15"
+                android:scaleY="1.15">
+                <group
+                    android:translateX="-14"
+                    android:translateY="-24">
+                    <path
+                        android:fillColor="#00000000"
+                        android:strokeColor="#FFFFFF"
+                        android:strokeWidth="13"
+                        android:strokeLineCap="round"
+                        android:strokeLineJoin="round"
+                        android:pathData="M12,40 L12,4 C24,6 32,15 29,26" />
+                    <group
+                        android:rotation="-18"
+                        android:pivotX="4"
+                        android:pivotY="42.5">
+                        <path
+                            android:fillColor="#FFFFFF"
+                            android:pathData="M-9,42.5 A13,10 0 1,0 17,42.5 A13,10 0 1,0 -9,42.5 Z" />
+                    </group>
+                </group>
+            </group>
+
+            <!-- 小屋、屋顶与窗内垂尾小猫（纯单色 evenOdd 真镂空） -->
+            <group
+                android:translateX="256"
+                android:translateY="296"
+                android:scaleX="0.92"
+                android:scaleY="0.92">
+                <group
+                    android:translateX="-256"
+                    android:translateY="-256">
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:pathData="M332,156 L349,156 Q358,156 358,165 L358,215 Q358,224 349,224 L332,224 Q323,224 323,215 L323,165 Q323,156 332,156 Z" />
+                    <path
+                        android:fillColor="#00000000"
+                        android:strokeColor="#FFFFFF"
+                        android:strokeWidth="40"
+                        android:strokeLineCap="round"
+                        android:strokeLineJoin="round"
+                        android:pathData="M107,254 L236,160 Q256,146 276,160 L405,254" />
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:fillType="evenOdd"
+                        android:pathData="M128,242 L256,154 L384,242 L384,374 Q384,422 336,422 L176,422 Q128,422 128,374 Z M184,304 A72,72 0 0,1 328,304 L328,358 C328,374 325,392 315,402 C303,415 276,415 264,401 C258,393 262,380 272,380 C282,380 288,386 293,384 C298,382 299,378 296,374 L198,374 Q184,374 184,360 Z" />
+                    <path
+                        android:fillColor="#FFFFFF"
+                        android:pathData="M204,318 L207,297 Q209,287 220,293 L232,303 L244,293 Q255,287 257,297 L259,310 C276,306 294,311 304,323 C313,333 313,347 311,356 L254,356 A11.5,9.5 0 0,1 231.5,356 L226.5,356 A11.5,9.5 0 0,1 203.5,355.5 C203.5,352 205,349 208,347 C203,342 200.5,335 200.5,328 C200.5,324 202,321 204,318 Z" />
+                    <path
+                        android:fillColor="#00000000"
+                        android:strokeColor="#FFFFFF"
+                        android:strokeWidth="18"
+                        android:strokeLineCap="round"
+                        android:pathData="M301,344 C314,352 316,377 307,392 C299,404 280,404 273,394" />
+                </group>
+            </group>
+        </group>
+    </group>
 </vector>

@@ -598,9 +598,13 @@
     <string name="quick_panel_open_app">打开完整应用 ↗</string>
     <string name="quick_panel_done">完成</string>
     <string name="settings_qs_tile_title">控制中心快捷磁贴</string>
-    <string name="settings_qs_tile_sub">从系统控制中心一键弹出悬浮设备与音量卡</string>
+    <string name="settings_qs_tile_sub">从系统控制中心点击弹悬浮卡，长按直达首页</string>
     <string name="settings_qs_tile_add_btn">一键添加</string>
+    <string name="settings_qs_tile_added_badge">已添加</string>
     <string name="settings_qs_tile_guide_btn">添加引导</string>
+    <string name="main_qs_tile_tip_title">添加到控制中心</string>
+    <string name="main_qs_tile_tip_sub">下拉一键切音箱调音量，长按直达首页</string>
+    <string name="main_qs_tile_tip_dismiss_cd">关闭控制中心磁贴提示</string>
     <string name="settings_qs_tile_added">已将「窝爱听」磁贴添加到控制中心。下拉控制中心点击即可随时呼出悬浮控制卡。</string>
     <string name="settings_qs_tile_already_added">控制中心里已经添加过「窝爱听」磁贴了，下拉控制中心即可直接使用。</string>
     <string name="settings_qs_tile_guide_title">如何添加到控制中心</string>

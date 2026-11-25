@@ -71,6 +71,7 @@ import com.cozyting.app.cast.ProtocolBadge
 import com.cozyting.app.compat.AcceptanceAudioDefaults
 import com.cozyting.app.compat.BlurCompat
 import com.cozyting.app.compat.NotificationPermissionCompat
+import com.cozyting.app.compat.QuickSettingsTileCompat
 import com.cozyting.app.compat.WindowInsetsApplyCompat
 import com.cozyting.app.ui.AppLocaleManager
 import com.cozyting.app.ui.HardwareVolumeKeyController
@@ -167,6 +168,8 @@ class MainActivity : Activity() {
     private lateinit var statusBanner: LinearLayout
     private lateinit var statusDot: View
     private lateinit var statusLine: TextView
+    private var qsTileTipBanner: LinearLayout? = null
+    private var quickTileDialog: Dialog? = null
 
     private var cachedLaunchableApps: List<LaunchableApp> = emptyList()
     private var favoriteSources: List<FavoriteAudioSource> = emptyList()
@@ -352,6 +355,8 @@ class MainActivity : Activity() {
         volumeConfirmDialog = null
         runCatching { sharedUidConsentDialog?.dismiss() }
         sharedUidConsentDialog = null
+        runCatching { quickTileDialog?.dismiss() }
+        quickTileDialog = null
         quickChipDragController?.cancel()
         volumeKeyController.cancel()
         main.removeCallbacks(refreshRunnable)
@@ -403,6 +408,7 @@ class MainActivity : Activity() {
         syncCastStateFromService(forceSyncRoute = true)
         updateLatencyCapsuleUi()
         refreshUpdateUi()
+        refreshQsTileTipUi()
         renderDevices()
         refreshAllVolumeGuardVisuals()
         nowPlayingTracker?.refresh()
@@ -458,6 +464,180 @@ class MainActivity : Activity() {
             }
             banner.visibility = View.VISIBLE
         }
+    }
+
+    private fun buildQsTileTipBanner(): LinearLayout {
+        val canDirectAdd = QuickSettingsTileCompat.canRequestAddTile()
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UiComponents.roundedDrawable(
+                fillColor = palette.panelBg,
+                radiusPx = dpf(16f),
+                strokeColor = palette.panelBorder,
+                strokeWidthPx = dp(1).coerceAtLeast(1),
+            )
+            setPadding(dp(12), dp(10), dp(8), dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                topMargin = dp(10)
+            }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { triggerQuickTileFromHome() }
+        }
+        val iconBox = FrameLayout(this).apply {
+            background = UiComponents.roundedDrawable(palette.accentSoftBg, dpf(10f))
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(10) }
+            addView(
+                ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_stat_miplay)
+                    setColorFilter(palette.accentBright)
+                    layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
+                },
+            )
+        }
+        bar.addView(iconBox)
+
+        val textCol = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dp(8)
+            }
+        }
+        textCol.addView(
+            TextView(this).apply {
+                text = getString(R.string.main_qs_tile_tip_title)
+                textSize = 12.5f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(palette.textPrimary)
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
+            },
+        )
+        textCol.addView(
+            TextView(this).apply {
+                text = getString(R.string.main_qs_tile_tip_sub)
+                textSize = 11f
+                setTextColor(palette.textSecondary)
+                maxLines = 2
+                ellipsize = TextUtils.TruncateAt.END
+                setPadding(0, dp(1), 0, 0)
+            },
+        )
+        bar.addView(textCol)
+
+        bar.addView(
+            TextView(this).apply {
+                text = getString(
+                    if (canDirectAdd) R.string.settings_qs_tile_add_btn else R.string.settings_qs_tile_guide_btn,
+                )
+                textSize = 11f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.WHITE)
+                background = UiComponents.rippleSurface(
+                    fillColor = palette.accent,
+                    radiusPx = dpf(999f),
+                    rippleColor = Color.argb(56, 255, 255, 255),
+                )
+                setPadding(dp(10), dp(5), dp(10), dp(5))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { marginEnd = dp(4) }
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { triggerQuickTileFromHome() }
+            },
+        )
+
+        bar.addView(
+            FrameLayout(this).apply {
+                val size = dp(26)
+                layoutParams = LinearLayout.LayoutParams(size, size)
+                background = UiComponents.rippleSurface(Color.TRANSPARENT, size / 2f, palette.ripple)
+                isClickable = true
+                isFocusable = true
+                contentDescription = getString(R.string.main_qs_tile_tip_dismiss_cd)
+                setOnClickListener {
+                    settingsStore.qsTileTipDismissed = true
+                    refreshQsTileTipUi()
+                }
+                addView(
+                    ImageView(this@MainActivity).apply {
+                        setImageResource(R.drawable.ic_ui_close)
+                        setColorFilter(palette.textTertiary)
+                        layoutParams = FrameLayout.LayoutParams(dp(13), dp(13), Gravity.CENTER)
+                    },
+                )
+            },
+        )
+        return bar
+    }
+
+    private fun refreshQsTileTipUi() {
+        val bar = qsTileTipBanner ?: return
+        val shouldShow = !settingsStore.qsTileAdded && !settingsStore.qsTileTipDismissed
+        bar.visibility = if (shouldShow) View.VISIBLE else View.GONE
+    }
+
+    private fun triggerQuickTileFromHome() {
+        if (!QuickSettingsTileCompat.canRequestAddTile()) {
+            showQuickTileGuideDialog(
+                title = getString(R.string.settings_qs_tile_guide_title),
+                message = getString(R.string.settings_qs_tile_guide_msg),
+            )
+            return
+        }
+        QuickSettingsTileCompat.requestAddTile(
+            context = this,
+            label = getString(R.string.qs_tile_label),
+            executor = { r -> main.post(r) },
+        ) { result ->
+            if (isFinishing || isDestroyed) return@requestAddTile
+            when (result) {
+                QuickSettingsTileCompat.ADD_RESULT_ADDED -> {
+                    settingsStore.qsTileAdded = true
+                    refreshQsTileTipUi()
+                    showQuickTileGuideDialog(
+                        title = getString(R.string.settings_qs_tile_title),
+                        message = getString(R.string.settings_qs_tile_added),
+                    )
+                }
+                QuickSettingsTileCompat.ADD_RESULT_ALREADY_ADDED -> {
+                    settingsStore.qsTileAdded = true
+                    refreshQsTileTipUi()
+                    showQuickTileGuideDialog(
+                        title = getString(R.string.settings_qs_tile_title),
+                        message = getString(R.string.settings_qs_tile_already_added),
+                    )
+                }
+                else -> showQuickTileGuideDialog(
+                    title = getString(R.string.settings_qs_tile_guide_title),
+                    message = getString(R.string.settings_qs_tile_guide_msg),
+                )
+            }
+        }
+    }
+
+    private fun showQuickTileGuideDialog(title: String, message: String) {
+        if (isFinishing || isDestroyed) return
+        runCatching { quickTileDialog?.dismiss() }
+        quickTileDialog = UiComponents.showStyleBDialog(
+            activity = this,
+            palette = palette,
+            title = title,
+            message = message,
+            primaryLabel = getString(R.string.settings_qs_tile_guide_ok),
+            onPrimary = {},
+            secondaryLabel = getString(R.string.settings_qs_tile_preview_btn),
+            onSecondary = {
+                startActivity(QuickCastPanelActivity.createLaunchIntent(this))
+            },
+            onDismissed = { quickTileDialog = null },
+        )
     }
 
     private fun clearStatusBanner() {
@@ -554,6 +734,8 @@ class MainActivity : Activity() {
         volumeConfirmDialog = null
         runCatching { sharedUidConsentDialog?.dismiss() }
         sharedUidConsentDialog = null
+        runCatching { quickTileDialog?.dismiss() }
+        quickTileDialog = null
         val isDark = settingsStore.isDark(this)
         lastRenderedDark = isDark
         palette = UiPalette.forMode(isDark)
@@ -1087,6 +1269,11 @@ class MainActivity : Activity() {
         applyStatusBannerUi()
 
         content.addView(mainCard)
+
+        val qsTip = buildQsTileTipBanner()
+        qsTileTipBanner = qsTip
+        content.addView(qsTip)
+        refreshQsTileTipUi()
 
         val scroll = ScrollView(this).apply {
             addView(content)
