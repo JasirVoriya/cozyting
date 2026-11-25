@@ -307,6 +307,11 @@
     <string name="update_dialog_acceptance_notice">現在は検証版（%1$s）です。通常版 APK はブラウザから個別にインストールしてください。</string>
     <string name="update_dialog_changelog_header">v%1$s 以降の %2$d 件の変更点</string>
     <string name="update_dialog_changelog_truncated">… それ以前の変更は省略されています。「ブラウザで開く」から全履歴を確認できます。</string>
+    <string name="update_changelog_sec_added">追加</string>
+    <string name="update_changelog_sec_changed">変更・改善</string>
+    <string name="update_changelog_sec_fixed">修正</string>
+    <string name="update_changelog_sec_removed">削除</string>
+    <string name="update_changelog_sec_security">セキュリティ</string>
     <string name="update_fallback_empty_notes">機能改善と安定性向上を含みます。詳細はリリースページをご確認ください。</string>
     <string name="update_dialog_need_install_perm">システム設定で CozyTing からの提供元不明アプリインストールを許可し、戻ってから「今すぐインストール」をタップしてください。</string>
     <string name="update_dialog_btn_install_after_perm">許可済・今すぐインストール</string>

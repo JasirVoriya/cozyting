@@ -307,6 +307,11 @@
     <string name="update_dialog_acceptance_notice">当前为验收包（%1$s），正式版安装包请通过浏览器独立安装。</string>
     <string name="update_dialog_changelog_header">自 v%1$s 以来共 %2$d 个版本变更</string>
     <string name="update_dialog_changelog_truncated">… 更早版本变更已省略，可点击「前往浏览器下载」查看完整历史</string>
+    <string name="update_changelog_sec_added">新增</string>
+    <string name="update_changelog_sec_changed">优化与变更</string>
+    <string name="update_changelog_sec_fixed">问题修复</string>
+    <string name="update_changelog_sec_removed">移除</string>
+    <string name="update_changelog_sec_security">安全</string>
     <string name="update_fallback_empty_notes">本版本包含功能改进与稳定性修复，可前往 Release 页面查看完整变更记录。</string>
     <string name="update_dialog_need_install_perm">请在系统设置中允许「窝爱听」安装未知应用，授权后返回再点「立即安装」。</string>
     <string name="update_dialog_btn_install_after_perm">已授权，立即安装</string>

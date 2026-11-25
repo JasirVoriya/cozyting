@@ -92,7 +92,7 @@ def clean_notes(raw: str) -> str:
                 lines.append("")
         else:
             blank_run = 0
-            lines.append(t)
+            lines.append(line.rstrip())
     while lines and not lines[-1]:
         lines.pop()
     return "\n".join(lines)

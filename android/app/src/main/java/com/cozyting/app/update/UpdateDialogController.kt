@@ -157,10 +157,10 @@ object UpdateDialogController {
             card.addView(noticeBanner(activity, palette, activity.getString(R.string.update_dialog_acceptance_notice, activity.packageName), warning = true))
         }
 
-        // —— 中部：可滚动更新日志（单版直出 / 跨多版按版本分节） ——
+        // —— 中部：可滚动更新日志（单版直出 / 跨多版按版本分节，结构化渲染 Markdown） ——
         val notesContainer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
+            setPadding(dp(12), dp(12), dp(12), dp(14))
         }
         val entries = decision.changelogEntries
         if (entries.size > 1) {
@@ -170,7 +170,7 @@ object UpdateDialogController {
                     textSize = 11.5f
                     setTypeface(null, Typeface.BOLD)
                     setTextColor(palette.accentBright)
-                    setPadding(0, 0, 0, dp(8))
+                    setPadding(0, 0, 0, dp(10))
                 },
             )
             entries.forEachIndexed { idx, entry ->
@@ -182,33 +182,71 @@ object UpdateDialogController {
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 dp(1).coerceAtLeast(1),
                             ).apply {
-                                topMargin = dp(8)
-                                bottomMargin = dp(8)
+                                topMargin = dp(10)
+                                bottomMargin = dp(10)
                             }
                         },
                     )
                 }
-                val verHeader = buildString {
-                    append(entry.tag)
-                    if (entry.shortDate.isNotBlank()) append(" · ${entry.shortDate}")
-                    if (entry.prerelease) append(" · ").append(activity.getString(R.string.update_dialog_preview_badge))
+                val verHeaderRow = LinearLayout(activity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { bottomMargin = dp(8) }
                 }
-                notesContainer.addView(
+                val leftMeta = LinearLayout(activity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                leftMeta.addView(
                     TextView(activity).apply {
-                        text = verHeader
-                        textSize = 12.5f
+                        text = entry.tag
+                        textSize = 12f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(palette.textPrimary)
-                        setPadding(0, 0, 0, dp(4))
+                        background = UiComponents.roundedDrawable(palette.controlSurface, dpf(6f))
+                        setPadding(dp(7), dp(2), dp(7), dp(2))
                     },
                 )
-                notesContainer.addView(
-                    TextView(activity).apply {
-                        text = entry.displayNotes(activity)
-                        textSize = 12.5f
-                        setTextColor(palette.textSecondary)
-                        setLineSpacing(dpf(2f), 1f)
-                    },
+                if (entry.prerelease) {
+                    leftMeta.addView(
+                        TextView(activity).apply {
+                            text = activity.getString(R.string.update_dialog_preview_badge)
+                            textSize = 10.5f
+                            setTypeface(null, Typeface.BOLD)
+                            setTextColor(palette.statusWarning)
+                            background = UiComponents.roundedDrawable(
+                                Color.argb(36, Color.red(palette.statusWarning), Color.green(palette.statusWarning), Color.blue(palette.statusWarning)),
+                                dpf(999f),
+                            )
+                            setPadding(dp(6), dp(2), dp(6), dp(2))
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ).apply { marginStart = dp(6) }
+                        },
+                    )
+                }
+                verHeaderRow.addView(leftMeta)
+                if (entry.shortDate.isNotBlank()) {
+                    verHeaderRow.addView(
+                        TextView(activity).apply {
+                            text = entry.shortDate
+                            textSize = 11f
+                            setTextColor(palette.textTertiary)
+                        },
+                    )
+                }
+                notesContainer.addView(verHeaderRow)
+                ChangelogMarkdownRenderer.renderInto(
+                    context = activity,
+                    container = notesContainer,
+                    rawNotes = entry.displayNotes(activity),
+                    palette = palette,
+                    isPrerelease = entry.prerelease,
                 )
             }
             if (decision.changelogTruncated) {
@@ -222,29 +260,31 @@ object UpdateDialogController {
                 )
             }
         } else {
-            val singleText = entries.firstOrNull()?.displayNotes(activity)
+            val singleEntry = entries.firstOrNull()
+            val singleText = singleEntry?.displayNotes(activity)
                 ?: decision.localizedReleaseNotes(activity)
-            notesContainer.addView(
-                TextView(activity).apply {
-                    text = singleText
-                    textSize = 13f
-                    setTextColor(palette.textSecondary)
-                    setLineSpacing(dpf(2.5f), 1f)
-                },
+            ChangelogMarkdownRenderer.renderInto(
+                context = activity,
+                container = notesContainer,
+                rawNotes = singleText,
+                palette = palette,
+                isPrerelease = singleEntry?.prerelease ?: decision.isPrerelease,
             )
         }
 
-        // 在 onMeasure 阶段直接钳制日志区最大高度（<= 230dp 且 <= 屏高 36%），
+        // 在 onMeasure 阶段直接钳制日志区最大高度（<= 260dp 且 <= 屏高 40%），
         // 避免在 onLayoutChange 中同步改 layoutParams 被 Dialog 窗口吞掉而将底部下载按钮顶出屏幕。
         val screenHeightPx = activity.resources.displayMetrics.heightPixels
         val maxScrollHeight = if (screenHeightPx > 0) {
-            minOf(dp(230), (screenHeightPx * 0.36f).toInt().coerceAtLeast(dp(120)))
+            minOf(dp(260), (screenHeightPx * 0.40f).toInt().coerceAtLeast(dp(120)))
         } else {
-            dp(230)
+            dp(260)
         }
         val notesScroll = MaxHeightScrollView(activity, maxScrollHeight).apply {
             isVerticalScrollBarEnabled = true
             isScrollbarFadingEnabled = false
+            isVerticalFadingEdgeEnabled = true
+            setFadingEdgeLength(dp(18))
             background = UiComponents.roundedDrawable(
                 fillColor = palette.rowIdleBg,
                 radiusPx = dpf(UiPalette.RADIUS_CONTROL_DP.toFloat()),
