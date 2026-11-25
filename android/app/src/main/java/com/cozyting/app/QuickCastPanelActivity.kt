@@ -400,7 +400,7 @@ class QuickCastPanelActivity : Activity() {
         }
         cardView = card
 
-        // 1. 正在播放区（与 MainActivity 100% 共享同一组件，悬浮卡启用紧凑模式）
+        // 1. 正在播放区（与 MainActivity 100% 共享同一组件，悬浮卡启用紧凑模式）+ 卡片右上角窝爱听主界面圆钮
         nowPlayingCard = NowPlayingCardController(
             context = this,
             palette = palette,
@@ -420,7 +420,33 @@ class QuickCastPanelActivity : Activity() {
             },
             compact = true,
         )
-        card.addView(nowPlayingCard.rootView)
+        val openAppBtn = UiComponents.iconCircleButton(
+            context = this,
+            palette = palette,
+            iconRes = R.drawable.ic_stat_miplay,
+            contentDesc = getString(R.string.quick_panel_open_app),
+            sizeDp = 28,
+            iconDp = 16,
+        ) {
+            openFullApp()
+        }.apply {
+            layoutParams = FrameLayout.LayoutParams(dp(28), dp(28), Gravity.TOP or Gravity.END)
+        }
+        val topSection = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+            addView(
+                nowPlayingCard.rootView,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            addView(openAppBtn)
+        }
+        card.addView(topSection)
 
         // 2. 总音量条（与 MainActivity volRow 布局一致，收紧垂直留白）
         val volRow = LinearLayout(this).apply {
@@ -478,7 +504,7 @@ class QuickCastPanelActivity : Activity() {
         volRow.addView(volumePctView)
         card.addView(volRow)
 
-        // 3. 输出设备标题栏（样式 B：左标题 + 右计数/恢复上次/刷新按钮/窝爱听品牌主界面圆钮）
+        // 3. 输出设备标题栏（样式 B：左标题 + 右计数/恢复上次/刷新按钮）
         val deviceHeader = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -534,22 +560,8 @@ class QuickCastPanelActivity : Activity() {
             iconDp = 15,
         ) {
             discover(forceRefreshNames = true)
-        }.apply {
-            (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(6)
         }
         deviceHeader.addView(refreshBtn)
-
-        val openAppBtn = UiComponents.iconCircleButton(
-            context = this,
-            palette = palette,
-            iconRes = R.drawable.ic_stat_miplay,
-            contentDesc = getString(R.string.quick_panel_open_app),
-            sizeDp = 28,
-            iconDp = 16,
-        ) {
-            openFullApp()
-        }
-        deviceHeader.addView(openAppBtn)
         card.addView(deviceHeader)
 
         // 4. 可滚动输出设备列表（限高防溢出，底部直接以最后一张设备卡干净收口）
