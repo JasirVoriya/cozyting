@@ -124,39 +124,11 @@
 
 ## 三、界面实机一览（深色 / 浅色双主题）
 
-> 以下全部界面均由 Android 真实视图代码直接渲染输出，采用匿名示例歌单与示例局域网地址，直观展示日常投送、延迟热切、常用音源、无感配对、设置与更新等完整体验。
-
-### 1. 主界面 · 多音箱同频投送（专辑氛围底 · 房间名同行 · 实时 `ms` 延迟 · 独立音量）
+> 以下界面由 Android 真实视图代码直接渲染输出，采用匿名示例歌单与示例局域网地址，直观展示日常多音箱投送与双主题体验。
 
 ![窝爱听 CozyTing 主界面多音箱同步投送深色浅色双主题截图，显示专辑封面氛围、独立音量条与毫秒级实时延迟](docs/assets/screenshots/01-main-casting-dark-vs-light.png)
 
-### 2. 4 档播放延迟一键热切换（投送中免重连实时生效）
-
-![窝爱听 CozyTing 四档播放延迟切换弹窗截图，包含标准、均衡、低延迟与极速模式说明](docs/assets/screenshots/02-latency-tiers-dark-vs-light.png)
-
-### 3. 常用音源管理（自由增删 · 单 App 自动识别开关 · 长按拖动排序）
-
-![窝爱听 CozyTing 常用音源管理界面截图，支持单 App 自动识别开关与长按排序](docs/assets/screenshots/03-app-picker-dark-vs-light.png)
-
-### 4. 内置无线调试 · 4 步免投屏无感采集向导（免 Root · 免电脑 · 免 Shizuku）
-
-![窝爱听 CozyTing Android 13+ 内置无线调试 4 步配对向导界面截图，支持免投屏弹窗与单 App 静音](docs/assets/screenshots/04-wireless-guide-dark-vs-light.png)
-
-### 5. 设置页 · 主题模式、标准/无感采集引擎切换与本机静音策略
-
-![窝爱听 CozyTing 设置页核心配置截图，包含深浅主题、采集引擎切换、单 App 隔离与本机静音](docs/assets/screenshots/05-settings-core-dark-vs-light.png)
-
-### 6. 设置页 · 自定义延迟调试与「关于与更新」卡片
-
-![窝爱听 CozyTing 设置页高级调试与关于更新卡片截图](docs/assets/screenshots/06-settings-update-dark-vs-light.png)
-
-### 7. 主界面无打扰新版本轻提示（仅非投送态显示，可随时关闭）
-
-![窝爱听 CozyTing 主界面无打扰更新轻提示条截图](docs/assets/screenshots/07-main-update-banner-dark-vs-light.png)
-
-### 8. 跨版本更新日志汇总与安全下载安装弹窗
-
-![窝爱听 CozyTing 跨版本区间更新日志与 SHA-256 校验安全安装弹窗截图](docs/assets/screenshots/08-update-dialog-dark-vs-light.png)
+> 📸 **想看更多界面？** 前往 **[产品官网 · 完整界面实机画廊（8 组深浅双主题截图）](https://jasirvoriya.github.io/cozyting/#screenshots)**，查看 4 档延迟热切、常用音源管理、4 步无线调试无感向导、设置页与安全更新弹窗。
 
 ---
 
@@ -209,40 +181,17 @@
 
 ### 1. 核心技术底座
 
-![窝爱听（CozyTing）核心技术底座与能力一览](docs/assets/feature-highlights.svg)
-
 - **严格单 UID 捕获校验（Fail-Closed）**：标准模式下通过 Android `AudioPlaybackCapture` 白名单捕获单 UID，并在启动前实时校验目标包同用户、非共享 UID 与 SHA-256 签名，严禁静默退化为全系统录屏或麦克风采集；内置 `PcmProbe` 6 拍有声验证锁定，消除切歌间隙手机/音箱短暂双出声。
 - **内置无线调试 `AudioPolicy` 无感引擎（Android 13+）**：通过本机无线 ADB（mDNS + SPAKE2 / TLS 1.3）拉起同应用 `uid=2000` 辅助进程，绕开 `MediaProjection` 弹窗与投屏提示；采用本机环回 `127.0.0.1` + 一次性 256-bit Token 通信，在单一 `AudioPolicy` 上同时挂载单 App `AudioMix` 与 `AudioPolicyFocusListener` 实现双区音频焦点隔离。
 - **63 台音箱确定性毫秒级同步**：L1 纯 Rust 核心（`miplay-core`）完全基于确定性实时线程与有界通道（**零异步运行时**），通过 `EPOCH` 单调时基、`UDP 40B TimerServer` 时钟主与 `OffsetBarrier` 14 AU 预读对齐实现全组同频，并支持投送中 `TIME_OFFSET` 热重锚切档、随时加减音箱与慢端单端剔除。
 - **双认证控制链路严格隔离**：完整实现局域网 MiPlay 发现与 TCP `8899` 控制协议，严格隔离 Legacy（`MD5 + HMAC-SHA1`）与 Safety（`OPack + 双向 HMAC + 链式 AES-128-CBC`）两条认证链路。
 - **跨端共享 L1 核心 + 只读诊断 CLI**：Android（Kotlin + 16KB 页对齐 JNI `.so`）与规划中的 iOS（Swift + C11 `cozyting_core.h` / `.xcframework`）共用 100% 平台无关的 L1 Rust 核心与 `design/` 跨端视觉规范；桌面端 `cozyting-cli inspect` 仅发 `GET_*` 并以 `TCP shutdown` 退出，绝不发 `CLOSE` 打断正在播放的音乐。
 
-### 2. 架构可视化总览
+### 2. 架构流程图与模块总览
 
-> 🧭 **深入探索源码与模块上下游**：
-> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/cozyting/architecture.html](https://jasirvoriya.github.io/cozyting/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块高亮追踪其全部 **↑ 上游来源 / ↓ 下游消费者**。
+> 🧭 **查看完整技术流程图、数据流向与线程模型**：
+> - **在线交互式架构浏览器**：访问 **[https://jasirvoriya.github.io/cozyting/architecture.html](https://jasirvoriya.github.io/cozyting/architecture.html)**（或打开本地零依赖 [`docs/architecture.html`](docs/architecture.html)），点击任意模块即可高亮追踪其 **↑ 上游来源 / ↓ 下流消费者**，并查看跨端三层架构、四条正交数据流向与单进程实时线程模型。
 > - **全仓源码深度手册**：查阅 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**（含 41 个 Android 源码、24 个 Rust 核心模块、19 组 JVM 契约单测与 6 阶段生命周期不变量详表）。
-
-#### （1）跨端三层架构（L3 表现层 · L2 系统层 · FFI 桥接 · L1 Rust 核心）
-
-![窝爱听（CozyTing）L1 Rust 核心与 Android iOS 跨端三层架构图](docs/assets/cross-platform-architecture.svg)
-
-- **L1 公共核心层（Rust `core/`，100% 跨端共享）**：统一承载 mDNS 发现、8899 控制与双认证、WFD RTSP、UDP 时钟主、多箱同步、流媒体封装、跨版本更新裁决（`update`），以及下沉的 `engine` 多箱并发协调器和 `device_catalog` 路由状态机。
-- **FFI 薄桥接 + L2/L3 原生层**：Android 通过 JNI（16KB 页对齐 `.so`）连接 Kotlin，iOS 通过 C11 头文件（`cozyting_core.h` / `.xcframework`）连接 Swift；双端共用 `design/`（`tokens.json` + 20 枚统一矢量图标 + `UI_SPEC.md`）。
-
-#### （2）四条正交数据流向（媒体 · 控制 · 时钟同步 · 发现遥测）
-
-![窝爱听（CozyTing）媒体控制时钟与遥测四条正交数据流向图](docs/assets/architecture-overview.svg)
-
-- **青色主音频流**：目标 App → 单 UID `AudioRecord` (48kHz) → `MediaCodec` (256kbps 裸 AAC) → `sync_channel(96)` → `media-clock` (21.333ms 节拍) → 每台接收端独立 `Packetizer` (`ADTS → PES → MPEG-TS → RTP PT=33`) → 音箱反向 Audio TCP。
-- **琥珀控制流 & 翡翠时钟流 & 紫色遥测流**：`engine` 串行协调正向 TCP `8899` 控制认证；`UDP TimerServer` 与反向 `SourceRtsp` 汇合于 `OffsetBarrier` 锁定共享 `TIME_OFFSET`；1Hz 统计与 `PcmProbe` 驱动 UI 原位刷新。
-
-#### （3）单进程实时线程模型与 6 条局域网通路
-
-![窝爱听（CozyTing）单进程实时线程模型与六条局域网通路架构图](docs/assets/runtime-architecture.svg)
-
-- **单进程零 IPC 拷贝**：原生采集线程（`MAX_PRIORITY`）与 Rust 引擎在同一地址空间内通过有界通道解耦；每台接收端拥有独立 5 线程（`media` / `rtsp` / `ctl` / `hb` / `timer`），慢端满队单端剔除，绝不阻塞全组。
-- **无死锁停止协议**：停止投送时 `Engine::stop` **先 `drop(feed)` 唤醒 `media-clock`**，再 `join` 全部工作线程并向每台音箱下发 `CLOSE(0x0002)` 释放会话。
 
 ### 3. 目录结构
 

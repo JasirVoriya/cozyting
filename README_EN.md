@@ -123,39 +123,11 @@ When you get home and just want to unwind with music playing through your Xiaomi
 
 ## 3. App UI Showcase (Dark / Light Dual Theme)
 
-> All screenshots below are rendered directly from the real Android View hierarchy via JVM native Skia with anonymized demo tracks and RFC 5737 mock LAN addresses (`192.0.2.x`).
-
-### 1. Main Screen · Synchronized Multi-Speaker Casting
+> Rendered directly from the real Android View hierarchy via JVM native Skia with anonymized demo tracks and RFC 5737 mock LAN addresses (`192.0.2.x`).
 
 ![CozyTing main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/en/01-main-casting-dark-vs-light.png)
 
-### 2. 4-Tier Live Latency Switching (Hot-Switch Without Reconnecting)
-
-![CozyTing 4-tier latency mode selector showing Standard, Balanced, Low Latency, and Ultra-Low presets](docs/assets/screenshots/en/02-latency-tiers-dark-vs-light.png)
-
-### 3. Favorite Audio Sources (Per-App Auto-Detect & Drag Reorder)
-
-![CozyTing favorite audio source manager with per-app auto-detect toggles and drag reordering](docs/assets/screenshots/en/03-app-picker-dark-vs-light.png)
-
-### 4. Built-In Wireless Debugging 4-Step Seamless Capture Wizard
-
-![CozyTing 4-step built-in wireless debugging setup wizard for rootless zero-popup audio capture on Android 13+](docs/assets/screenshots/en/04-wireless-guide-dark-vs-light.png)
-
-### 5. Settings · Theme, Capture Engine, Single-App Mute & Permissions
-
-![CozyTing settings screen for dark/light theme, standard vs seamless capture engine, per-app isolation, and local mute](docs/assets/screenshots/en/05-settings-core-dark-vs-light.png)
-
-### 6. Settings · Advanced Connection Tuning & About / Updates Card
-
-![CozyTing settings screen showing custom latency tuning and verified in-app updates card](docs/assets/screenshots/en/06-settings-update-dark-vs-light.png)
-
-### 7. Non-Intrusive Update Banner & Badge (Idle State Only)
-
-![CozyTing non-intrusive update notification banner shown only when not actively casting](docs/assets/screenshots/en/07-main-update-banner-dark-vs-light.png)
-
-### 8. Cross-Version Changelog & SHA-256 Verified In-App Update Dialog
-
-![CozyTing cross-version changelog dialog with SHA-256 and signing certificate verification before installation](docs/assets/screenshots/en/08-update-dialog-dark-vs-light.png)
+> 📸 **Want to see all screens?** Visit the **[Product Website · Full UI Gallery (8 Dark & Light Dual-Theme Screenshots)](https://jasirvoriya.github.io/cozyting/en/#screenshots)** for 4-tier latency switching, favorite audio sources, the 4-step wireless debugging wizard, settings, and verified in-app update dialogs.
 
 ---
 
@@ -201,31 +173,17 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 
 ### 1. Engineering Foundation
 
-![CozyTing Core Technical Capabilities](docs/assets/feature-highlights.svg)
-
 - **Strict Per-App Isolation (Fail-Closed)**: Uses Android `AudioPlaybackCapture` with single-UID allowlisting plus real-time same-user, non-shared-UID, and SHA-256 package signature verification—never silently falling back to full-system capture or microphone input. A 6-beat `PcmProbe` energy lock prevents dual-output glitches during track transitions.
 - **Rootless Wireless Debugging `AudioPolicy` Engine (Android 13+)**: Launches an internal `uid=2000` helper via built-in mDNS + SPAKE2/TLS 1.3 wireless ADB over an ephemeral `127.0.0.1` loopback channel authenticated with a one-time 256-bit token, combining single-app `AudioMix` capture with `AudioPolicyFocusListener` dual-zone AudioFocus isolation.
 - **63-Speaker Deterministic Rust Sync Engine**: Pure-Rust L1 core (`miplay-core`) built on `std::thread` and bounded `sync_channel` (**zero async runtime**), with monotonic `EPOCH`, UDP 40B `TimerServer` clock master, `OffsetBarrier` 14-AU preroll alignment, runtime `TIME_OFFSET` hot rebasing, and per-sink slow-consumer eviction.
 - **Isolated Legacy & Safety Auth Channels**: Strictly separates Legacy (`MD5 + HMAC-SHA1`) and Safety (`OPack + mutual HMAC + chained AES-128-CBC`) TCP `8899` control sessions.
 - **Cross-Platform L1 Core + Read-Only CLI**: Shared L1 Rust core (`engine` / `device_catalog` / `update`) across Android (Kotlin + 16KB-aligned JNI `.so`), iOS (`cozyting_core.h` C ABI + `.xcframework` script), and `cozyting-cli inspect` (read-only diagnostics exiting via `TCP shutdown` without sending `CLOSE`).
 
-### 2. Visual Architecture Overview
+### 2. Architecture Diagrams & Deep-Dive
 
-> 🧭 **Explore Deeper**:
-> - **Interactive Graph**: Open the **[Interactive Architecture Explorer](https://jasirvoriya.github.io/cozyting/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**.
+> 🧭 **Explore Visual Diagrams, Data Flows & Source Modules**:
+> - **Interactive Architecture Explorer**: Open **[https://jasirvoriya.github.io/cozyting/en/architecture.html](https://jasirvoriya.github.io/cozyting/en/architecture.html)** (local file: [`docs/en/architecture.html`](docs/en/architecture.html)) to click any module and trace all **↑ upstream producers** and **↓ downstream consumers**, alongside the 3-layer cross-platform diagram, 4 orthogonal data flows, and single-process real-time threading model.
 > - **Full Source Dictionary**: Read **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** for complete file-by-file responsibility tables (41 Android files, 24 Rust modules, 19 JVM test suites, and 6-stage lifecycle invariants).
-
-#### (1) Cross-Platform 3-Layer Architecture (L3 UI · L2 System · FFI · L1 Rust Core)
-
-![CozyTing Cross-Platform 3-Layer Architecture spanning L1 Rust Core, JNI and C ABI bridges, Android Kotlin, and planned iOS SwiftUI](docs/assets/cross-platform-architecture.svg)
-
-#### (2) Four Orthogonal Data Flows (Media · Control · Clock Sync · Telemetry)
-
-![CozyTing Four Orthogonal Data Flows diagram covering Audio Media, TCP 8899 Control, UDP Clock Sync, and mDNS Telemetry](docs/assets/architecture-overview.svg)
-
-#### (3) Single-Process Real-Time Threading & 6 LAN Channels
-
-![CozyTing Single-Process Real-Time Threading Model and 6 LAN Network Channels](docs/assets/runtime-architecture.svg)
 
 ### 3. Repository Structure
 

@@ -122,39 +122,11 @@
 
 ## 3. 画面プレビュー（ダーク・ライト両対応）
 
-> 以下のスクリーンショットはすべて Android 実機ビュー階層から Skia で直接レンダリングした日本語版 UI です（プレースホルダ曲名および RFC 5737 アドレス `192.0.2.x` を使用）。
-
-### 1. メイン画面・複数スピーカー同期キャスト
+> Android 実機ビュー階層から Skia で直接レンダリングした日本語版 UI です（プレースホルダ曲名および RFC 5737 アドレス `192.0.2.x` を使用）。
 
 ![CozyTing 日本語メイン画面：マルチルーム同期キャスト、アルバム連動背景、部屋名、リアルタイム ms 遅延、個別音量スライダー](docs/assets/screenshots/ja/01-main-casting-dark-vs-light.png)
 
-### 2. 4 段階遅延モードのリアルタイム切替
-
-![CozyTing 4 段階遅延モード選択ダイアログ（標準・バランス・低遅延・超低遅延）](docs/assets/screenshots/ja/02-latency-tiers-dark-vs-light.png)
-
-### 3. よく使う音源管理（自動検出・ドラッグ並べ替え）
-
-![CozyTing よく使う音源管理画面：アプリ別自動検出トグルと長押しドラッグ並替](docs/assets/screenshots/ja/03-app-picker-dark-vs-light.png)
-
-### 4. 内蔵ワイヤレスデバッグ・サイレントキャプチャ設定ガイド
-
-![CozyTing Android 13+ Root 不要サイレントキャプチャ設定ガイド](docs/assets/screenshots/ja/04-wireless-guide-dark-vs-light.png)
-
-### 5. 設定画面・テーマ・表示言語・キャプチャエンジン・スマホミュート
-
-![CozyTing 設定画面：テーマ・表示言語・キャプチャエンジン・単一アプリミュート](docs/assets/screenshots/ja/05-settings-core-dark-vs-light.png)
-
-### 6. 設定画面・大音量ガードとアップデート確認
-
-![CozyTing 設定画面：大音量ガード・詳細設定・アップデート確認カード](docs/assets/screenshots/ja/06-settings-update-dark-vs-light.png)
-
-### 7. 控えめなアップデート通知バナー（待機中のみ表示）
-
-![CozyTing 待機時のみ表示されるアップデート通知バナー](docs/assets/screenshots/ja/07-main-update-banner-dark-vs-light.png)
-
-### 8. バージョン横断変更履歴と SHA-256 署名検証アップデートダイアログ
-
-![CozyTing バージョン横断変更履歴と SHA-256 署名検証ダイアログ](docs/assets/screenshots/ja/08-update-dialog-dark-vs-light.png)
+> 📸 **すべての画面を見る**：**[製品サイト · UI スクリーンショットギャラリー（ダーク/ライト全 8 枚）](https://jasirvoriya.github.io/cozyting/ja/#screenshots)** で、4 段階遅延切替・よく使う音源管理・4 ステップ無線デバッグガイド・設定画面・アップデート確認ダイアログをご覧いただけます。
 
 ---
 
@@ -200,8 +172,6 @@ Bluetooth（単体・近距離・全音声出力）とは異なり、CozyTing �
 
 ### 1. エンジニアリング基盤
 
-![CozyTing コア技術ハイライト](docs/assets/feature-highlights.svg)
-
 - **厳格な単一アプリ分離（Fail-Closed）**：単一 UID 許可リストによる `AudioPlaybackCapture` に加え、同一ユーザー・非共有 UID・SHA-256 署名ダイジェストをリアルタイム検証し、全端末録音やマイク入力へフォールバックしません。
 - **Root 不要ワイヤレスデバッグ `AudioPolicy` エンジン（Android 13+）**：内蔵 mDNS＋SPAKE2/TLS 1.3 無線 ADB でワンタイム 256-bit トークン認証の `127.0.0.1` ループバック経由 `uid=2000` ヘルパーを起動し、単一アプリ `AudioMix` 収集と `AudioPolicyFocusListener` デュアルゾーン分離を統合します。
 - **最大 63 台対応の決定論的 Rust 同期エンジン**：`std::thread` と有界 `sync_channel` のみで構成された純 Rust L1 コア（**非同期ランタイム不使用**）。単調クロック `EPOCH`、40B UDP `TimerServer`、`OffsetBarrier` 14 AU プリロール、ランタイム `TIME_OFFSET` 再基準化、遅延受信機の個別切り離しを実装。
@@ -210,15 +180,9 @@ Bluetooth（単体・近距離・全音声出力）とは異なり、CozyTing �
 
 ### 2. アーキテクチャ図と詳細資料
 
-> 🧭 **さらに詳しく見る**：
-> - **インタラクティブ図**：**[インタラクティブ・アーキテクチャブラウザ（日本語）](https://jasirvoriya.github.io/cozyting/ja/architecture.html)**（ローカル：[`docs/ja/architecture.html`](docs/ja/architecture.html)）で任意のモジュールをクリックし **↑ 上流ソース** と **↓ 下流コンシューマ** を追跡できます。
+> 🧭 **技術フロー図・データフロー・スレッド構成を見る**：
+> - **インタラクティブ・アーキテクチャブラウザ**：**[https://jasirvoriya.github.io/cozyting/ja/architecture.html](https://jasirvoriya.github.io/cozyting/ja/architecture.html)**（ローカル：[`docs/ja/architecture.html`](docs/ja/architecture.html)）で任意のモジュールをクリックし **↑ 上流ソース** と **↓ 下流コンシューマ**、3 層アーキテクチャ・4 系統データフロー・リアルタイムスレッド図を確認できます。
 > - **設計マニュアル**：全モジュールの責務一覧・データフロー・6 段階ライフサイクル不変条件は **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** を参照してください。
-
-![CozyTing クロスプラットフォーム 3 層アーキテクチャ](docs/assets/cross-platform-architecture.svg)
-
-![CozyTing 4 系統データフロー構成図](docs/assets/architecture-overview.svg)
-
-![CozyTing 単一プロセス・リアルタイムスレッド＆6 LAN チャネル構成](docs/assets/runtime-architecture.svg)
 
 ---
 
