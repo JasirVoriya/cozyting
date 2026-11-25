@@ -28,7 +28,7 @@
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/JasirVoriya/cozyting/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml"><img alt="GitHub Pages" src="https://github.com/JasirVoriya/cozyting/actions/workflows/pages.yml/badge.svg"></a>
   <a href="https://github.com/JasirVoriya/cozyting/releases"><img alt="Download Releases" src="https://img.shields.io/badge/Download-Latest%20APK-E56D48?style=flat-square&logo=github&logoColor=white"></a>
-  <a href="https://afdian.com/a/voriya"><img alt="请作者喝杯热茶 / Afdian" src="https://img.shields.io/badge/Sponsor-%E7%88%B1%E5%8F%91%E7%94%B5%20%2F%20%E8%B5%9E%E8%B5%8F-946CE6?style=flat-square&logo=githubsponsors&logoColor=white"></a>
+  <a href="#支持窝爱听"><img alt="请作者喝杯热茶" src="https://img.shields.io/badge/Sponsor-%E8%B5%9E%E8%B5%8F%E6%94%AF%E6%8C%81-E56D48?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
@@ -337,8 +337,7 @@ cd android && ./gradlew --no-daemon test lintStandardDebug
 
 窝爱听（CozyTing）的所有功能**永久免费开源、纯局域网零云端**，不会设置任何付费墙或特权功能。如果它陪你度过了几个放松的夜晚、或者帮你重新盘活了家里的小爱音箱，欢迎随手点个 **Star**，或自愿请作者喝杯热茶：
 
-- **爱发电（支持微信 / 支付宝 / 国际卡）**：<https://afdian.com/a/voriya>
-- **支付宝手机端直达**：<https://qr.alipay.com/fkx13666yfftru6suyvjk59>
+- **支付宝直达**：[手机端点击直接打开支付宝](https://qr.alipay.com/fkx13666yfftru6suyvjk59)
 
 <div align="center">
   <table>

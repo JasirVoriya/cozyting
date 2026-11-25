@@ -248,7 +248,6 @@
     <string name="about_sponsor_sub">あたたかい一杯を贈る · 完全無料・任意</string>
     <string name="sponsor_dialog_title">開発を応援する</string>
     <string name="sponsor_dialog_desc">CozyTing の全機能は完全無料・オープンソース・完全 LAN 動作で、課金制限や限定機能はありません。毎日の音楽時間が心地よくなったなら、任意の応援で継続開発を支えていただけると嬉しいです。</string>
-    <string name="sponsor_btn_afdian">Afdian で応援する</string>
     <string name="sponsor_btn_alipay_direct">Alipay で開く</string>
     <string name="sponsor_qr_wechat">WeChat Pay</string>
     <string name="sponsor_qr_alipay">Alipay QR</string>

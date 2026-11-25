@@ -248,7 +248,6 @@
     <string name="about_sponsor_sub" formatted="false">Buy the author a warm drink · 100% free &amp; optional</string>
     <string name="sponsor_dialog_title">Buy the Author a Warm Drink</string>
     <string name="sponsor_dialog_desc" formatted="false">CozyTing is 100% free, open-source, and pure-LAN with no paywalls or locked features. If it brings your Xiaomi / XiaoAi speakers back to life, a voluntary tip helps keep development going.</string>
-    <string name="sponsor_btn_afdian">Support on Afdian</string>
     <string name="sponsor_btn_alipay_direct">Open in Alipay</string>
     <string name="sponsor_qr_wechat">WeChat Pay Tip</string>
     <string name="sponsor_qr_alipay">Alipay QR</string>
