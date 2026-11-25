@@ -1,0 +1,32 @@
+android/app/src/main/java/com/cozyting/app/capture/shell/HelperHeartbeatPolicy.kt
+  h_75f437d5bc136b 1-62
+android/app/src/main/java/com/cozyting/app/capture/shell/ShellAudioFocusPolicyBridge.kt
+  h_75f437d5bc136b 58-69,71-83,86-98
+android/app/src/main/java/com/cozyting/app/capture/shell/ShellAudioHelperMain.kt
+  h_75f437d5bc136b 27
+android/app/src/main/java/com/cozyting/app/capture/shell/ShellCaptureBackend.kt
+  h_75f437d5bc136b 4-5,8-9,18,22,34-35,42-65,67,69-70,83-84,91-190,193,197,202-205,210-211,228,233,243,248,260-262,286-287,294-295,298-299,303-304,309-310,327-339,352-359,361-364,368-373,377-386,388-389,392,395,398,404-440,444,451,460,464-472,476,479,485-542,544-546,549-567,575,581,596,610-628
+android/app/src/main/java/com/cozyting/app/capture/shell/ShellCaptureProtocol.kt
+  h_75f437d5bc136b 21-26
+android/app/src/main/res/values-en/strings.xml
+  h_75f437d5bc136b 518-527
+android/app/src/main/res/values-ja/strings.xml
+  h_75f437d5bc136b 518-527
+android/app/src/main/res/values/strings.xml
+  h_75f437d5bc136b 518-527
+android/app/src/test/java/com/cozyting/app/capture/shell/HelperHeartbeatPolicyTest.kt
+  h_75f437d5bc136b 1-45
+android/app/src/test/java/com/cozyting/app/capture/shell/ShellCaptureProtocolTest.kt
+  h_75f437d5bc136b 69-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b032788eb092bbbc5ac107fa364b2a8ed0693a8",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
