@@ -130,7 +130,11 @@ class NowPlayingCardController(
                 if (compact) ViewGroup.LayoutParams.WRAP_CONTENT else artSize,
                 1f,
             ).apply {
-                marginStart = dp(if (compact) 12 else 16)
+                marginStart = dp(if (compact) 8 else 16)
+                if (compact) {
+                    // 为悬浮卡右上角 28dp 主界面圆钮预留独立右侧安全列，同时整体左移贴近封面
+                    marginEnd = dp(34)
+                }
             }
         }
         titleView = TextView(context).apply {
@@ -141,10 +145,6 @@ class NowPlayingCardController(
             gravity = Gravity.CENTER_HORIZONTAL
             maxLines = if (compact) 2 else 1
             ellipsize = TextUtils.TruncateAt.END
-            if (compact) {
-                // 紧凑悬浮卡右上角保留 28dp 窝爱听主界面圆钮，对称留白防止长歌名与圆钮重叠
-                setPadding(dp(28), 0, dp(28), 0)
-            }
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
