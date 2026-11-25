@@ -244,6 +244,20 @@
     <string name="about_beta_updates_sub">Get early access to preview (RC) builds before stable release</string>
     <string name="about_releases_title">Releases &amp; Changelog</string>
     <string name="about_releases_sub">GitHub Releases · AGPL-3.0</string>
+    <string name="about_sponsor_title">Support CozyTing</string>
+    <string name="about_sponsor_sub" formatted="false">Buy the author a warm drink · 100% free &amp; optional</string>
+    <string name="sponsor_dialog_title">Buy the Author a Warm Drink</string>
+    <string name="sponsor_dialog_desc" formatted="false">CozyTing is 100% free, open-source, and pure-LAN with no paywalls or locked features. If it brings your Xiaomi / XiaoAi speakers back to life, a voluntary tip helps keep development going.</string>
+    <string name="sponsor_btn_afdian">Support on Afdian</string>
+    <string name="sponsor_btn_alipay_direct">Open in Alipay</string>
+    <string name="sponsor_qr_wechat">WeChat Pay Tip</string>
+    <string name="sponsor_qr_alipay">Alipay QR</string>
+    <string name="sponsor_btn_save_qr">Save QR</string>
+    <string name="sponsor_btn_close">Close</string>
+    <string name="sponsor_saved_wechat">Saved to Photos — scan in WeChat</string>
+    <string name="sponsor_saved_alipay">Saved to Photos — scan in Alipay</string>
+    <string name="sponsor_save_failed">Could not save image</string>
+    <string name="sponsor_open_link_failed">No app found to open this link</string>
     <string name="about_footer_note">Local LAN only · Zero cloud · AGPL-3.0</string>
     <string name="settings_ver_acceptance">QA</string>
     <string name="settings_ver_preview">Preview</string>

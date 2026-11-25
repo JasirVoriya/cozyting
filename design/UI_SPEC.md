@@ -72,10 +72,11 @@
    - **设置首页单入口**：底部卡片仅保留一行清爽入口 `关于窝爱听 / About CozyTing`（副标题展示当前检查状态或新版本提示；有新版本时右侧亮主题蓝圆点 + `vX.Y.Z` 实心胶囊 + `›`，无新版本时右侧仅显示低调当前版本号 `vX.Y.Z` + `›`），与上方「高级与调试」列表风格完全统一。
    - **独立「关于」二级页（Android `AboutActivity` / iOS SwiftUI `NavigationLink` → `AboutView`）**：
      - 顶部独立居中品牌头：`64dp/pt` 圆角 App 图标 + 品牌名 + 版本号（自动剥离 `-release` 构建后缀，预览版/验收版附状态标注）。
-     - 单张 Style B 无框分割线卡片平铺 3 行：
+     - 单张 Style B 无框分割线卡片平铺 4 行：
        1. `检查更新`（整行点击原地触发手动检查或弹出更新详情弹窗；右侧展示 `已是最新` / `vX.Y.Z` 胶囊 / `检测中…` + `›`）；冷启动自动检查更新默认常开（每 24h 向公开静态清单发起一次只读 HTTPS + ETag 304 请求、零遥测、绝不冷启动强弹窗），不提供冗余开关。
        2. `接收测试版更新`（平铺无框 Switch 开关：关闭 = 稳定版 `Stable`，开启 = 预览版 `Preview (RC)`，切换后立即基于本地缓存重算状态）。
        3. `版本发布与更新日志`（外链打开公开 GitHub Releases 页面）。
+       4. `赞赏支持`（由构建开关 `ENABLE_SPONSOR_ENTRY` 控制，开源直装发行版默认开启；严禁引入第三方支付 SDK、统计埋点或弹窗推销）：点击弹出 Style B 纯静态赞赏弹窗，明确声明所有功能永久免费开源、纯属自愿，提供爱发电与支付宝直达外链以及本地打包的微信赞赏码 / 支付宝收款码（Android 通过 API 29+ 原生 `MediaStore` 一键保存至相册、无需存储权限）；**iOS 端平台边界**：自签/开源 IPA 分发版在 `AboutView` 对等提供 `.sheet` 纯静态赞赏卡片（使用 `PHPhotoLibrary` / `ShareLink` 保存二维码），App Store 商店分发版受 App Store Review Guidelines 3.1.1 约束默认通过编译开关关闭外部赞赏入口。
      - 底部居中展示极轻开源与纯局域网声明（`纯局域网 · 零云端 · AGPL-3.0`）。
    - **Style B 更新详情弹窗（Android `Dialog` / iOS `.sheet`）**：消费 L1 Rust `cozyting_update_evaluate_json` 返回的 `(current_version, target_version]` **跨版本区间更新日志**——相邻版本直出条目，跨多版本升级按新到旧分节展示各版本变更（版本胶囊 + 预览徽标 + 右对齐发布日期；正式版自动过滤已被汇总覆盖的中间 RC）；**更新日志结构化渲染（双端同步）**：L1 Rust `clean_release_notes` 保留列表嵌套缩进，客户端严禁裸露原始 Markdown 符号，须将 `> ` 摘要渲染为左侧带语义色条的导语块、将 `### Added / Changed / Fixed / Removed / Security` 映射为三语语义色分组徽标（`新增 / 优化与变更 / 问题修复 / 移除 / 安全`）、将父级功能点加粗提亮（`textPrimary`）并以左侧细竖线缩进承接子级说明（`textSecondary`）、并将行内 `**加粗**` / `` `code` `` / `[文案](url)` 转为原生富文本（Android 由零依赖 `ChangelogMarkdownRenderer` + `SpannableStringBuilder` 渲染，iOS SwiftUI 使用对应块级 `VStack` + `AttributedString` 渲染）；中部更新日志滚动区必须硬性限高（`≤ 260dp/pt` 且 `≤ 屏高 40%`，并开启垂直边缘渐隐提示可滚动；Android 通过自定义 `MaxHeightScrollView` 在 `onMeasure()` 首轮即完成钳制，iOS SwiftUI 使用 `ScrollView { ... }.frame(maxHeight: 260)`），确保长日志绝不将底部操作按钮顶出屏幕；Android 支持应用内流式下载（`4dp` 胶囊进度条）+ 强制 SHA-256 与签名证书双重校验 + `FileProvider` 调起系统安装，并保留「前往浏览器下载」「稍后提醒」「跳过此版本」；iOS App Store 分发版走商店更新、自签/IPA 分发版跳转 Safari 打开 Release 页。
 

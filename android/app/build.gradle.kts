@@ -33,6 +33,7 @@ android {
         ndk { abiFilters += listOf("arm64-v8a") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "IS_ACCEPTANCE", "false")
+        buildConfigField("boolean", "ENABLE_SPONSOR_ENTRY", "true")
     }
 
     signingConfigs {
