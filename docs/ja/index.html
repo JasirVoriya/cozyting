@@ -378,6 +378,9 @@
         margin: 0 auto;
         max-width: 1080px;
       }
+      .promo-video-stage {
+        position: relative;
+      }
       .promo-video video {
         display: block;
         width: 100%;
@@ -386,6 +389,34 @@
         background: #05070b;
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
+      }
+      .promo-video-sound {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: rgba(15, 23, 42, 0.78);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #ffffff;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+      .promo-video-sound:hover {
+        background: rgba(15, 23, 42, 0.92);
+        transform: translateY(-1px);
+      }
+      .promo-video-sound[hidden] {
+        display: none;
       }
       .promo-video figcaption {
         margin-top: 12px;
@@ -1222,12 +1253,17 @@
           <p>ナレーションなしのビジュアルデモ：端末メーカー不問の接続、音楽アプリの自動切替追従、ショート動画再生とスピーカー音楽の分離、家じゅう同期×4 段階遅延切替、完全 LAN プライバシー設計を紹介。</p>
         </div>
         <figure class="promo-video">
-          <video controls playsinline loading="lazy" preload="none" width="1280" height="720"
-                 poster="../assets/video/cozyting-promo-ja-poster.jpg"
-                 aria-describedby="promo-video-caption">
-            <source src="../assets/video/cozyting-promo-ja.mp4" type="video/mp4">
-            お使いのブラウザは HTML5 動画に対応していません。<a href="../assets/video/cozyting-promo-ja.mp4">デモ動画（MP4）を直接ダウンロード</a>してください。
-          </video>
+          <div class="promo-video-stage">
+            <video id="promo-video-player" controls playsinline muted preload="metadata" width="1280" height="720"
+                   poster="../assets/video/cozyting-promo-ja-poster.jpg"
+                   aria-describedby="promo-video-caption">
+              <source src="../assets/video/cozyting-promo-ja.mp4" type="video/mp4">
+              お使いのブラウザは HTML5 動画に対応していません。<a href="../assets/video/cozyting-promo-ja.mp4">デモ動画（MP4）を直接ダウンロード</a>してください。
+            </video>
+            <button type="button" class="promo-video-sound" id="promo-video-sound" hidden aria-label="動画の音声をオンにする">
+              <span aria-hidden="true">🔇</span> タップして音声をオン
+            </button>
+          </div>
           <figcaption id="promo-video-caption">CozyTing 製品デモ・1280×720・デモ用描画画面およびプレースホルダ機器名・RFC 5737 アドレスを使用しています。</figcaption>
         </figure>
       </div>
@@ -1406,5 +1442,108 @@
       </p>
     </div>
   </footer>
+  <script>
+    (function () {
+      var video = document.getElementById('promo-video-player');
+      var soundBtn = document.getElementById('promo-video-sound');
+      if (!video) return;
+
+      var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var userPaused = false;
+      var userUnmuted = false;
+      var programmaticPause = false;
+      var retryCount = 0;
+
+      function syncSoundBtn() {
+        if (!soundBtn) return;
+        var show = !video.paused && !video.ended && video.muted && !userUnmuted;
+        soundBtn.hidden = !show;
+      }
+
+      function tryAutoPlay() {
+        if (prefersReducedMotion || userPaused) return;
+        if (video.preload !== 'auto') video.preload = 'auto';
+        if (!userUnmuted) video.muted = true;
+        var p = video.play();
+        if (p && typeof p.then === 'function') {
+          p.then(syncSoundBtn).catch(syncSoundBtn);
+        } else {
+          syncSoundBtn();
+        }
+      }
+
+      video.addEventListener('error', function () {
+        if (retryCount >= 2) return;
+        retryCount += 1;
+        setTimeout(function () {
+          var currentTime = video.currentTime || 0;
+          video.load();
+          if (currentTime > 0) {
+            try { video.currentTime = currentTime; } catch (e) {}
+          }
+        }, retryCount * 500);
+      });
+
+      video.addEventListener('play', function () {
+        userPaused = false;
+        syncSoundBtn();
+      });
+
+      video.addEventListener('pause', function () {
+        if (programmaticPause) {
+          programmaticPause = false;
+        } else if (!video.ended) {
+          userPaused = true;
+        }
+        syncSoundBtn();
+      });
+
+      video.addEventListener('ended', syncSoundBtn);
+
+      video.addEventListener('volumechange', function () {
+        if (!video.muted && video.volume > 0) {
+          userUnmuted = true;
+        }
+        syncSoundBtn();
+      });
+
+      if (soundBtn) {
+        soundBtn.addEventListener('click', function () {
+          userUnmuted = true;
+          video.muted = false;
+          if (video.volume === 0) video.volume = 0.8;
+          if (video.paused) {
+            var p = video.play();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
+          }
+          syncSoundBtn();
+        });
+      }
+
+      if ('IntersectionObserver' in window) {
+        var preloadObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting && video.preload !== 'auto') {
+              video.preload = 'auto';
+              preloadObserver.disconnect();
+            }
+          });
+        }, { rootMargin: '240px 0px' });
+        preloadObserver.observe(video);
+
+        var playObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              tryAutoPlay();
+            } else if (!video.paused) {
+              programmaticPause = true;
+              video.pause();
+            }
+          });
+        }, { threshold: 0.35 });
+        playObserver.observe(video);
+      }
+    })();
+  </script>
 </body>
 </html>
