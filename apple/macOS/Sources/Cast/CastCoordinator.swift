@@ -59,6 +59,9 @@ public final class CastCoordinator {
     public private(set) var appLanguage: AppLanguage
     public private(set) var lastSelectedSpeakerIds: [String]
     public var pendingVolumeConfirmation: PendingVolumeConfirmation?
+    public private(set) var availableUpdateBanner: UpdateDecision?
+    public private(set) var hasUpdateBadge: Bool = false
+    public var presentedUpdateDecision: UpdateDecision?
 
     // MARK: - Internal Session Handles
 
@@ -581,6 +584,25 @@ public final class CastCoordinator {
     public func setAppLanguage(_ language: AppLanguage) {
         appLanguage = language
         preferences.appLanguage = language
+    }
+
+    public func syncUpdatePresentation(from updateService: UpdateService) async {
+        availableUpdateBanner = await updateService.activeBannerDecision()
+        hasUpdateBadge = await updateService.shouldShowUpdateBadge()
+    }
+
+    public func dismissUpdateBanner(using updateService: UpdateService) async {
+        if let tag = availableUpdateBanner?.latestTag {
+            await updateService.dismissBanner(for: tag)
+        }
+        availableUpdateBanner = nil
+    }
+
+    public func skipUpdateVersion(_ tag: String, using updateService: UpdateService) async {
+        _ = await updateService.ignoreVersion(tag)
+        availableUpdateBanner = nil
+        hasUpdateBadge = false
+        presentedUpdateDecision = nil
     }
 
     // MARK: - Teardown (Strict 4-Step Deadlock-Free Stop)

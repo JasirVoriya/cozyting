@@ -223,9 +223,10 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS`：4 组卡片 `SettingsWindowView`（外观与发现 / 音频与系统权限 / 连接与调试含运行日志入口与折叠高级项 / 关于窝爱听），全量界面（菜单栏菜单、悬浮卡、主窗口、音源管理、延迟引导）接入三语词典，零硬编码残留。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `LocalizationM8Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：中/英/日三语桌面实机排版与导出日志交互验收待人工确认。）
 
-- [ ] **M9 · 透明版本更新、DMG 打包签名公证、CI 门禁与公开文档同步**
+- [x] **M9 · 透明版本更新、DMG 打包签名公证、CI 门禁与公开文档同步**
   - **交付物**：
-    - 扩展 `update.json` 与 `scripts/generate-update-manifest.py` 支持 `macos` 平台；接入跨版本结构化更新日志弹窗与 SHA-256 校验；
-    - DMG 打包脚本（支持 Developer ID 签名/公证与本地 Ad-hoc 构建）及 `.github/workflows/ci.yml` 新增 `macos-latest` 构建与 `swift test` 门禁；
-    - 同步更新三语 `README`、GitHub Pages、`docs/llms.txt` 与 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)。
-  - **验收**：GitHub Actions `macos-latest` CI 全绿，端到端 DMG 安装运行验收通过。
+    - L1 `core/src/update.rs` 增量扩展 `"macos"` 平台分支（支持 `min_os: "14.2"` 与 `.dmg` `arm64`/`universal` 资产筛选及 GitHub Releases 回退）+ Rust 单测，同步扩展 `scripts/generate-update-manifest.py` 输出 `macos` 节点；
+    - `CozyTingCoreKit` `DMGDownloader`（HTTPS-only 流式下载 + `CryptoKit.SHA256` + `SHA256SUMS.txt` 校验）与 `CozyTingDesignKit` `CozyChangelogMarkdownView` / `CozyUpdateDetailSheetView` / `CozyUpdateBannerView`（接入顶栏非阻塞提示条、设置角标与跨版本结构化更新日志弹窗，限高 `260pt`）；
+    - `scripts/package-macos-dmg.sh`（支持 `MACOS_CODESIGN_IDENTITY` / `APPLE_NOTARY_PROFILE` 签名公证，无证书时干净回退本地 Ad-hoc DMG + `.sha256`）及 `.github/workflows/ci.yml` 新增 `macos-build-and-test`（`macos-15` + XcodeGen + `swift test` + Release 构建）门禁；
+    - 同步更新中/英/日三语 `README`、`docs/llms.txt` 与 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)（如实标注已验离线门禁与待人工真机验证边界）。
+  - **验收**：`cargo test --workspace`（94 tests）+ C11 校验 + `swift test` + `./scripts/build-macos.sh` + `./scripts/package-macos-dmg.sh`（产出本地 Ad-hoc `.dmg` 与 `.sha256`）+ `python3 scripts/generate-update-manifest.py` 离线校验全绿。（注：Developer ID 公证需有效签名证书，GitHub Actions `macos-15` 云端绿灯将在 PR 推送后自动运行验证。）

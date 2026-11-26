@@ -34,7 +34,7 @@
 ## 二、发送端（Android / iOS 设备与系统版本）
 
 > **Android 端**：最低要求 **Android 10（API 29）**，当前正式包构建 **`arm64-v8a`**（支持 16KB ELF 页对齐）。  
-> **macOS 端**：最低要求 **macOS 14.2（Sonoma）**，基于原生 Core Audio Process Tap（`AudioHardwareCreateProcessTap` + `CATapDescription(.mutedWhenTapped)`）与 `AudioToolbox` 48 kHz 256 kbps AAC-LC 硬件编码，免虚拟声卡；L1 Rust 静态库 + `CozyTingShared` + `ProcessTapAudioEngine` 已完成离线编译与多格式单测，真机 TCC 授权与实机音源听感待交互实测登记。  
+> **macOS 端**：最低要求 **macOS 14.2（Sonoma）**，基于原生 Core Audio Process Tap（`AudioHardwareCreateProcessTap` + `CATapDescription(.mutedWhenTapped)`）与 `AudioToolbox` 48 kHz 256 kbps AAC-LC 硬件编码，免虚拟声卡；M1–M9（`CozyTingShared` 三子库 + `apple/macOS` 菜单栏悬浮卡/三语/日志/更新器/DMG 打包脚本）均已通过离线编译与单测，真机 TCC 系统音频录制授权、五类音源 DRM 表现与实箱多机听感待人工交互验收后逐项更新。  
 > **iOS 端**：L1 Rust C ABI（`ffi_c.rs` / `cozyting_core.h` / `build-ios-xcframework.sh`）与跨端共享设计规范 `design/` 已就绪，L2/L3 原生客户端（`ReplayKit` / `AudioToolbox` / `SwiftUI`）规划推进中。
 
 | 设备型号 / 平台 | 系统 / ROM | 版本 / API | 冷启动与发现 | 投送实测 | 后台保活 / 备注 |

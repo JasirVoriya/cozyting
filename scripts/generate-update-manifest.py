@@ -163,6 +163,40 @@ def extract_android_assets(
     return out
 
 
+def extract_macos_assets(
+    release: Dict[str, Any],
+    sha256_by_name: Dict[str, str],
+) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for asset in release.get("assets") or []:
+        name = str(asset.get("name") or "")
+        lower = name.lower()
+        if not lower.endswith(".dmg"):
+            continue
+        if "-unsigned" in lower or "-debug" in lower:
+            continue
+        url = str(asset.get("browser_download_url") or "")
+        if not url.startswith("https://"):
+            continue
+        if "universal" in lower:
+            arch = "universal"
+        elif "x86_64" in lower or "x64" in lower:
+            arch = "x86_64"
+        else:
+            arch = "arm64"
+        out.append(
+            {
+                "arch": arch,
+                "name": name,
+                "download_url": url,
+                "size_bytes": int(asset.get("size") or 0),
+                "sha256": sha256_by_name.get(name, ""),
+                "signed": True,
+            }
+        )
+    return out
+
+
 def fetch_release_sha256_map(
     release: Dict[str, Any],
     token: str = "",
@@ -186,6 +220,7 @@ def build_channel_entry(
     release: Dict[str, Any],
     sha_map: Dict[str, str],
     min_android_sdk: int = 29,
+    min_macos: str = "14.2",
     min_ios: str = "16.0",
     ios_app_store_url: str = "",
 ) -> Dict[str, Any]:
@@ -202,6 +237,11 @@ def build_channel_entry(
             "min_sdk": min_android_sdk,
             "assets": extract_android_assets(release, sha_map),
         },
+        "macos": {
+            "min_os": min_macos,
+            "release_url": rel_url,
+            "assets": extract_macos_assets(release, sha_map),
+        },
         "ios": {
             "min_os": min_ios,
             "release_url": rel_url,
@@ -216,6 +256,7 @@ def generate_manifest(
     token: str = "",
     offline_sha_by_tag: Optional[Dict[str, Dict[str, str]]] = None,
     min_android_sdk: int = 29,
+    min_macos: str = "14.2",
     min_ios: str = "16.0",
     ios_app_store_url: str = "",
 ) -> Dict[str, Any]:
@@ -251,6 +292,7 @@ def generate_manifest(
             latest_stable,
             get_sha(latest_stable),
             min_android_sdk=min_android_sdk,
+            min_macos=min_macos,
             min_ios=min_ios,
             ios_app_store_url=ios_app_store_url,
         )
@@ -259,6 +301,7 @@ def generate_manifest(
             latest_prerelease,
             get_sha(latest_prerelease),
             min_android_sdk=min_android_sdk,
+            min_macos=min_macos,
             min_ios=min_ios,
             ios_app_store_url=ios_app_store_url,
         )
@@ -296,6 +339,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--out", required=True, help="输出 update.json 路径")
     parser.add_argument("--input-json", default="", help="可选：离线测试用 Releases JSON 文件路径")
     parser.add_argument("--min-android-sdk", type=int, default=29)
+    parser.add_argument("--min-macos", default="14.2")
     parser.add_argument("--min-ios", default="16.0")
     parser.add_argument("--ios-app-store-url", default="")
     args = parser.parse_args(argv)
@@ -314,6 +358,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         token=token,
         offline_sha_by_tag=offline_sha,
         min_android_sdk=args.min_android_sdk,
+        min_macos=args.min_macos,
         min_ios=args.min_ios,
         ios_app_store_url=args.ios_app_store_url,
     )

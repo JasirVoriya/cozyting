@@ -112,17 +112,17 @@ public struct SettingsWindowView: View {
                 alipayQRImage: loadBundledQR(named: "alipay-tip"),
                 onCheckUpdates: {
                     Task {
-                        if hasNewUpdate, let onOpenUpdateDetail {
+                        if hasNewUpdate, case .ready(let decision, _, _) = updateState {
                             showAboutSheet = false
-                            onOpenUpdateDetail()
+                            coordinator.presentedUpdateDecision = decision
                         } else {
                             let next = await updateService.checkManually()
                             updateState = next
+                            await coordinator.syncUpdatePresentation(from: updateService)
                             if case .ready(let decision, _, _) = next,
-                               decision.status == .updateAvailable,
-                               let onOpenUpdateDetail {
+                               decision.status == .updateAvailable {
                                 showAboutSheet = false
-                                onOpenUpdateDetail()
+                                coordinator.presentedUpdateDecision = decision
                             }
                         }
                     }
@@ -141,6 +141,31 @@ public struct SettingsWindowView: View {
                 onSaveAlipayQR: { saveBundledQRToDownloads(named: "alipay-tip", outName: "cozyting-alipay-tip.png") },
                 onClose: { showAboutSheet = false }
             )
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { coordinator.presentedUpdateDecision != nil },
+                set: { if !$0 { coordinator.presentedUpdateDecision = nil } }
+            )
+        ) {
+            if let decision = coordinator.presentedUpdateDecision {
+                CozyUpdateDetailSheetView(
+                    decision: decision,
+                    language: lang,
+                    palette: palette,
+                    onOpenReleasePage: { url in NSWorkspace.shared.open(url) },
+                    onOpenDownloadedDMG: { url in
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    },
+                    onSkipVersion: {
+                        Task {
+                            await coordinator.skipUpdateVersion(decision.latestTag, using: updateService)
+                            updateState = await updateService.state
+                        }
+                    },
+                    onDismiss: { coordinator.presentedUpdateDecision = nil }
+                )
+            }
         }
     }
 

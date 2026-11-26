@@ -55,6 +55,22 @@ public struct PopoverControlCardView: View {
         ZStack {
             VStack(spacing: DesignTokens.Spacing.md) {
                 headerBar
+                if let bannerDecision = coordinator.availableUpdateBanner {
+                    CozyUpdateBannerView(
+                        latestTag: bannerDecision.latestTag,
+                        language: lang,
+                        palette: palette,
+                        onView: { coordinator.presentedUpdateDecision = bannerDecision },
+                        onDismiss: {
+                            coordinator.preferences.dismissedUpdateBannerTag = bannerDecision.latestTag
+                            Task {
+                                await coordinator.syncUpdatePresentation(
+                                    from: UpdateService(preferences: coordinator.preferences)
+                                )
+                            }
+                        }
+                    )
+                }
                 nowPlayingAndMasterVolumeCard
                 audioSourceStrip
                 outputDevicesSection
@@ -123,6 +139,34 @@ public struct PopoverControlCardView: View {
                 onClose: { showSourcePicker = false }
             )
         }
+        .sheet(
+            isPresented: Binding(
+                get: { coordinator.presentedUpdateDecision != nil },
+                set: { if !$0 { coordinator.presentedUpdateDecision = nil } }
+            )
+        ) {
+            if let decision = coordinator.presentedUpdateDecision {
+                CozyUpdateDetailSheetView(
+                    decision: decision,
+                    language: lang,
+                    palette: palette,
+                    onOpenReleasePage: { url in NSWorkspace.shared.open(url) },
+                    onOpenDownloadedDMG: { url in
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    },
+                    onSkipVersion: {
+                        coordinator.preferences.ignoredUpdateTag = decision.latestTag
+                        coordinator.presentedUpdateDecision = nil
+                        Task {
+                            await coordinator.syncUpdatePresentation(
+                                from: UpdateService(preferences: coordinator.preferences)
+                            )
+                        }
+                    },
+                    onDismiss: { coordinator.presentedUpdateDecision = nil }
+                )
+            }
+        }
         .background {
             // In-panel keyboard shortcuts for ±5% master volume (zero Accessibility permissions).
             HStack(spacing: 0) {
@@ -172,10 +216,18 @@ public struct PopoverControlCardView: View {
             .buttonStyle(.plain)
 
             Button(action: onOpenSettings) {
-                CozyTingIconView(.settings, size: 13, weight: .medium)
-                    .foregroundStyle(palette.textSecondary)
-                    .frame(width: 26, height: 26)
-                    .background(palette.controlSurface, in: Circle())
+                ZStack(alignment: .topTrailing) {
+                    CozyTingIconView(.settings, size: 13, weight: .medium)
+                        .foregroundStyle(palette.textSecondary)
+                        .frame(width: 26, height: 26)
+                        .background(palette.controlSurface, in: Circle())
+                    if coordinator.hasUpdateBadge {
+                        Circle()
+                            .fill(palette.accent)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 1, y: -1)
+                    }
+                }
             }
             .buttonStyle(.plain)
         }

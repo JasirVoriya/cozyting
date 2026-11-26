@@ -31,6 +31,7 @@
   <a href="https://jasirvoriya.github.io/cozyting/ja/#sponsor"><img alt="CozyTing を応援" src="https://img.shields.io/badge/Sponsor-Support%20CozyTing-E56D48?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <img alt="macOS 14.2+ Native Client (Process Tap)" src="https://img.shields.io/badge/macOS-14.2%2B%20Process%20Tap-0A84FF?style=flat-square&logo=apple&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
   <img alt="Multi-Room Up to 63 Speakers" src="https://img.shields.io/badge/Multi--Room-Up%20to%2063%20Speakers-10B981?style=flat-square">
@@ -39,7 +40,9 @@
 </div>
 
 > **CozyTing（窝爱听）とは？**
-> **CozyTing** は無料・オープンソースのサードパーティ製 **MiPlay 完全 LAN 音声送信アプリ**（Android 10+ 対応、共通 Rust コア上の iOS SwiftUI 版を計画中）です。**Pixel・Galaxy・Xperia・OnePlus・OPPO・vivo・Huawei・Xiaomi など端末メーカーを問わず**、Root 不要・Xiaomi アカウント不要・クラウド不要で、選んだ 1 つの音楽・ポッドキャストアプリ（Spotify、Apple Music、YouTube Music、NetEase Cloud Music など）の音声だけを自宅 Wi-Fi 経由で最大 63 台の **Xiaomi / XiaoAi スピーカー** へミリ秒同期再生します。日本語・英語・簡体字中国語の 3 言語にネイティブ対応しています。
+> **CozyTing** は無料・オープンソースのサードパーティ製 **MiPlay 完全 LAN 音声送信アプリ**（**Android 10+** および仮想ドライバ不要のネイティブ **macOS 14.2+** メニューバー版に対応、共通 Rust コア上の iOS SwiftUI 版を計画中）です。**Pixel・Galaxy・Xperia・OnePlus・OPPO・vivo・Huawei・Xiaomi など端末メーカーを問わず（および macOS 14.2+ の Core Audio Process Tap 単一アプリ分離・個別消音）**、Root 不要・Xiaomi アカウント不要・クラウド不要で、選んだ 1 つの音楽・ポッドキャストアプリ（Spotify、Apple Music、YouTube Music、NetEase Cloud Music など）の音声だけを自宅 Wi-Fi 経由で最大 63 台の **Xiaomi / XiaoAi スピーカー** へミリ秒同期再生します。日本語・英語・簡体字中国語の 3 言語にネイティブ対応しています。
+>
+> *（※ 検証境界の明示：macOS 14.2+ ネイティブクライアント M1–M9 はオフラインビルド・単体テスト・DMG パッケージ生成まで検証済みです。実機での TCC 録音許可・5 音源の DRM 挙動・複数スピーカー実聴確認は [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) にて人間による実機検証待ちとして記録しています。）*
 >
 > 🏠 **「CozyTing（窝爱听）」に込めた想い**：一日の終わりに自分の部屋へ戻り、あたたかい灯りをつけて好きな音楽を流す——スマホのメーカー制限にも、仕事の通知やボイスメッセージの音漏れにも邪魔されない心地よい時間。その風景が名前と小さな家のアイコンの原点です。
 >

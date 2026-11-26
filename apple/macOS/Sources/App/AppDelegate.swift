@@ -39,7 +39,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched (MenuBar + Style B)")
         castCoordinator.refreshWifiFrequency()
         Task { [weak self] in
-            await self?.castCoordinator.discoverDevices(manual: false)
+            guard let self else { return }
+            await self.castCoordinator.discoverDevices(manual: false)
+            _ = await self.updateService.maybeAutoCheck()
+            await self.castCoordinator.syncUpdatePresentation(from: self.updateService)
         }
     }
 

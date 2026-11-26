@@ -25,5 +25,6 @@ apple/**/.build/
 DerivedData/
 .swiftpm/
 build/
+dist/
 
 

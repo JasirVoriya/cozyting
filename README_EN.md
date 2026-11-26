@@ -31,6 +31,7 @@
   <a href="https://jasirvoriya.github.io/cozyting/en/#sponsor"><img alt="Sponsor CozyTing" src="https://img.shields.io/badge/Sponsor-Support%20CozyTing-E56D48?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <img alt="macOS 14.2+ Native Client (Process Tap)" src="https://img.shields.io/badge/macOS-14.2%2B%20Process%20Tap-0A84FF?style=flat-square&logo=apple&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
   <img alt="Multi-Room Up to 63 Speakers" src="https://img.shields.io/badge/Multi--Room-Up%20to%2063%20Speakers-10B981?style=flat-square">
@@ -39,7 +40,9 @@
 </div>
 
 > **What is CozyTing (窝爱听)?**
-> **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for Android 10+ (with an iOS SwiftUI client planned on the same Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi**—cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
+> **CozyTing** is a free, open-source third-party **MiPlay LAN audio casting app** for **Android 10+** and **macOS 14.2+** (native menu bar client using Core Audio Process Tap—no virtual audio driver required; iOS SwiftUI client planned on the same shared Rust core). It lets **any Android phone—Samsung, Pixel, OnePlus, OPPO, vivo, Huawei, or Xiaomi—and macOS 14.2+ Macs** cast audio directly from a single chosen music or podcast app (Spotify, Apple Music, NetEase Cloud Music, QQ Music, Pocket Casts, etc.) to one or multiple **Xiaomi / XiaoAi Wi-Fi speakers** (up to 63 synchronized speakers) over your local Wi-Fi network, with **zero cloud servers, zero Xiaomi account login, and no root required**.
+>
+> *(Honest verification boundary: macOS 14.2+ M1–M9 offline builds, unit tests, and DMG packaging pass; live TCC audio-capture consent, 5-source DRM matrix, and physical multi-speaker listening await interactive desktop verification in [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md).)*
 >
 > 🏠 **Why "CozyTing" (窝爱听)?** After a long day, you step into your warm home, switch on a soft lamp, and just want your favorite music filling the room—free from phone-brand lock-in and uninterrupted by work voice notes or alerts. That quiet evening ritual inspired both our name and warm-lit house icon.
 >
