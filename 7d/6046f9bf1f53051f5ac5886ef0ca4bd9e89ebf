@@ -1,0 +1,28 @@
+apple/CozyTingShared/Sources/CozyTingCoreKit/VolumeGroupEvaluator.swift
+  h_75f437d5bc136b 1-76
+apple/CozyTingShared/Sources/CozyTingDesignKit/LatencyControlComponents.swift
+  h_75f437d5bc136b 1-385
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/VolumeAndLatencyM5Tests.swift
+  h_75f437d5bc136b 1-115
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 40
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 121-129,136-141,148,338-366
+apple/macOS/Sources/System/WiFiFrequencyProbe.swift
+  h_75f437d5bc136b 1-29
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 13,81-107,152-160,162,274,278
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 199,201-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d6046f9bf1f53051f5ac5886ef0ca4bd9e89ebf",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
