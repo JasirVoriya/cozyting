@@ -171,12 +171,12 @@ cozyting_engine_push_aac(handle, ptr, len)
 
 > 所有内部开发任务均在此清单追踪（不在公开 GitHub Issues 刷屏拆分细碎工程任务单；公开社区进展仅在单个 Roadmap Issue 汇总）。每完成一项，在对应 PR 中勾选 `[x]` 并附简短实测说明。
 
-- [ ] **M1 · Apple 方案 A 工程骨架、L1 静态库打包脚本与 `CozyTingCoreKit` 桥接**
+- [x] **M1 · Apple 方案 A 工程骨架、L1 静态库打包脚本与 `CozyTingCoreKit` 桥接**
   - **交付物**：
     - `apple/CozyTingShared/Package.swift`（声明 `CozyTingCoreKit`、`CozyTingAudioKit`、`CozyTingDesignKit` 三子库）与最小 macOS 应用工程骨架；
     - `scripts/build-macos.sh`（编译 `aarch64-apple-darwin` 静态库并组装头文件 / 可选 Universal）；
     - `CozyTingCoreKit` 全量类型安全封装 [`cozyting_core.h`](../core/include/cozyting_core.h)（RAII `cozyting_string_free`、发现/路由/引擎/高音量/日志/更新 API）及 `CozyTingCoreKitTests`。
-  - **验收**：`cargo test --workspace` + C11 头文件校验 + `swift test` + `scripts/build-macos.sh` 全绿。
+  - **验收**：`cargo test --workspace`（93 tests）+ C11 头文件校验（`clang -std=c11 -Wall -Wextra -Werror -fsyntax-only`）+ `swift test`（33 tests / 6 suites）+ `./scripts/build-macos.sh`（`aarch64-apple-darwin` XCFramework + XcodeGen + Release ad-hoc `xcodebuild`）全绿。（注：`--universal` 路径未在本机编译，因当前 `rustup` 未安装 `x86_64-apple-darwin`；音频捕获与真实音箱建连将在 M2/M3 实测。）
 
 - [ ] **M2 · 生产级单 App 音频捕获、原生静音与 AAC 编码管线（含真机音源与 DRM 验收）**
   - **交付物**：

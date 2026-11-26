@@ -378,21 +378,48 @@ impl ReceiverHandle {
     }
 }
 
+struct BarrierState {
+    expected: usize,
+    arrived: usize,
+    fired: bool,
+    value: Option<std::result::Result<i64, String>>,
+}
+
 /// 组共享 TIME_OFFSET：初始成员在 PLAY 处汇合；最后一个到达者预读起播 AU 并定值。
 struct OffsetBarrier {
-    expected: Mutex<usize>,
-    arrived: Mutex<usize>,
-    value: Mutex<Option<std::result::Result<i64, String>>>,
+    state: Mutex<BarrierState>,
     cv: Condvar,
 }
 
 impl OffsetBarrier {
     fn new(n: usize) -> Self {
-        Self { expected: Mutex::new(n), arrived: Mutex::new(0), value: Mutex::new(None), cv: Condvar::new() }
+        Self {
+            state: Mutex::new(BarrierState {
+                expected: n,
+                arrived: 0,
+                fired: false,
+                value: None,
+            }),
+            cv: Condvar::new(),
+        }
     }
     fn try_fire(&self, media: &Mutex<MediaState>, delay: i64) {
-        let ready = *self.arrived.lock().unwrap() >= *self.expected.lock().unwrap();
-        if !ready || self.value.lock().unwrap().is_some() { return }
+        {
+            let mut s = self.state.lock().unwrap();
+            if s.fired || s.value.is_some() {
+                return;
+            }
+            if s.expected == 0 {
+                s.fired = true;
+                s.value = Some(Err("no receivers left".to_string()));
+                self.cv.notify_all();
+                return;
+            }
+            if s.arrived < s.expected {
+                return;
+            }
+            s.fired = true;
+        }
         let v = {
             let mut m = media.lock().unwrap();
             // 可证伪降延迟：丢掉连接期间 AudioPlaybackCapture 灌入的积压，
@@ -413,29 +440,40 @@ impl OffsetBarrier {
             }
             if ok { Ok(now_us() + delay) } else { Err("source ended during prewarm".to_string()) }
         };
-        *self.value.lock().unwrap() = Some(v);
+        let mut s = self.state.lock().unwrap();
+        s.value = Some(v);
         self.cv.notify_all();
     }
     fn arrive(&self, media: &Mutex<MediaState>, delay: i64) -> Result<i64> {
-        *self.arrived.lock().unwrap() += 1;
+        {
+            let mut s = self.state.lock().unwrap();
+            s.arrived += 1;
+        }
         self.try_fire(media, delay);
-        let mut g = self.value.lock().unwrap();
+        let mut g = self.state.lock().unwrap();
         let deadline = Instant::now() + Duration::from_secs(30);
-        while g.is_none() {
+        while g.value.is_none() {
             let left = deadline.saturating_duration_since(Instant::now());
             if left.is_zero() { return Err(Error::Timeout("TIME_OFFSET barrier".into())) }
             g = self.cv.wait_timeout(g, left).unwrap().0;
         }
-        g.clone().unwrap().map_err(Error::Protocol)
+        g.value.clone().unwrap().map_err(Error::Protocol)
     }
     fn abandon(&self, media: &Mutex<MediaState>, delay: i64) {
-        let mut e = self.expected.lock().unwrap();
-        *e = e.saturating_sub(1);
-        drop(e);
+        {
+            let mut s = self.state.lock().unwrap();
+            s.expected = s.expected.saturating_sub(1);
+            if s.expected == 0 && !s.fired && s.value.is_none() {
+                s.fired = true;
+                s.value = Some(Err("no receivers left".to_string()));
+                self.cv.notify_all();
+                return;
+            }
+        }
         self.try_fire(media, delay);
     }
     fn current(&self) -> Option<i64> {
-        self.value.lock().unwrap().as_ref().and_then(|r| r.as_ref().ok().copied())
+        self.state.lock().unwrap().value.as_ref().and_then(|r| r.as_ref().ok().copied())
     }
 }
 
@@ -1825,5 +1863,88 @@ mod tests {
         );
         assert_eq!(ui_state, latency::UiReceiverState::Error);
         assert!(lat.is_none());
+    }
+
+    #[test]
+    fn offset_barrier_abandon_to_zero_does_not_block_on_channel_source() {
+        let (tx, rx) = sync_channel(8);
+        let media = Arc::new(Mutex::new(MediaState {
+            source: Box::new(ChannelSource(rx)),
+            runway: VecDeque::new(),
+            flushed_at_start: 0,
+        }));
+        let barrier = Arc::new(OffsetBarrier::new(1));
+        let b2 = barrier.clone();
+        let m2 = media.clone();
+        let start = Instant::now();
+        let j = std::thread::spawn(move || b2.abandon(&m2, 0));
+        j.join().unwrap();
+        assert!(start.elapsed() < Duration::from_millis(500));
+        assert!(barrier.current().is_none());
+        assert!(tx.try_send(CapturedAu { capture_us: 1, aac: vec![1, 2, 3] }).is_ok());
+
+        let (tx2, rx2) = sync_channel(8);
+        let media2 = Arc::new(Mutex::new(MediaState {
+            source: Box::new(ChannelSource(rx2)),
+            runway: VecDeque::new(),
+            flushed_at_start: 0,
+        }));
+        let barrier2 = Arc::new(OffsetBarrier::new(2));
+        barrier2.abandon(&media2, 0);
+        barrier2.abandon(&media2, 0);
+        assert!(barrier2.current().is_none());
+        assert!(tx2.try_send(CapturedAu { capture_us: 2, aac: vec![4, 5, 6] }).is_ok());
+    }
+
+    #[test]
+    fn offset_barrier_one_abandons_one_arrives_fires_normally() {
+        // Order 1: abandon first, then arrive
+        let media1 = Arc::new(Mutex::new(MediaState {
+            source: Box::new(SilenceSource { remaining: None }),
+            runway: VecDeque::new(),
+            flushed_at_start: 0,
+        }));
+        let barrier1 = Arc::new(OffsetBarrier::new(2));
+        barrier1.abandon(&media1, 200_000);
+        assert!(barrier1.current().is_none());
+        let off1 = barrier1.arrive(&media1, 200_000).unwrap();
+        assert_eq!(barrier1.current(), Some(off1));
+
+        // Order 2: arrive blocks on condvar first, then abandon fires barrier
+        let media2 = Arc::new(Mutex::new(MediaState {
+            source: Box::new(SilenceSource { remaining: None }),
+            runway: VecDeque::new(),
+            flushed_at_start: 0,
+        }));
+        let barrier2 = Arc::new(OffsetBarrier::new(2));
+        let b2 = barrier2.clone();
+        let m2 = media2.clone();
+        let j = std::thread::spawn(move || b2.arrive(&m2, 200_000));
+        std::thread::sleep(Duration::from_millis(20));
+        barrier2.abandon(&media2, 200_000);
+        let off2 = j.join().unwrap().unwrap();
+        assert_eq!(barrier2.current(), Some(off2));
+    }
+
+    #[test]
+    fn offset_barrier_prewarm_unblocks_when_channel_source_closes() {
+        let (tx, rx) = sync_channel(8);
+        let media = Arc::new(Mutex::new(MediaState {
+            source: Box::new(ChannelSource(rx)),
+            runway: VecDeque::new(),
+            flushed_at_start: 0,
+        }));
+        let barrier = Arc::new(OffsetBarrier::new(1));
+        let b2 = barrier.clone();
+        let m2 = media.clone();
+        let j = std::thread::spawn(move || b2.arrive(&m2, 0));
+        std::thread::sleep(Duration::from_millis(20));
+        drop(tx);
+        let res = j.join().unwrap();
+        match res {
+            Err(Error::Protocol(msg)) => assert_eq!(msg, "source ended during prewarm"),
+            other => panic!("expected source ended during prewarm error, got {other:?}"),
+        }
+        assert!(barrier.current().is_none());
     }
 }
