@@ -1,0 +1,24 @@
+apple/CozyTingShared/Sources/CozyTingCoreKit/DeviceDisplayFormatter.swift
+  h_75f437d5bc136b 1-97
+apple/CozyTingShared/Sources/CozyTingCoreKit/NetworkInterfaceHelper.swift
+  h_75f437d5bc136b 1-91
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/DiscoveryAndFormatterTests.swift
+  h_75f437d5bc136b 1-90
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 8-11,23-25,29
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 1-677
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 187,189-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc932a92ac616b5ccdb6a0eca2131e0844a21a0b",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
