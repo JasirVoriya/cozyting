@@ -1,0 +1,32 @@
+apple/CozyTingShared/Sources/CozyTingDesignKit/CozyTingIcons.swift
+  h_75f437d5bc136b 1-152
+apple/CozyTingShared/Sources/CozyTingDesignKit/PlatformAdapters.swift
+  h_75f437d5bc136b 1,21-51,67-74
+apple/CozyTingShared/Sources/CozyTingDesignKit/StyleBComponents.swift
+  h_75f437d5bc136b 1-403
+apple/CozyTingShared/Tests/CozyTingDesignKitTests/DesignTokensAndBrandTests.swift
+  h_75f437d5bc136b 34-67
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 3-4,16-18,27-39,51-93
+apple/macOS/Sources/App/CozyTingMacApp.swift
+  h_75f437d5bc136b 12-16,18-33,35-36
+apple/macOS/Sources/UI/MainWindowView.swift
+  h_75f437d5bc136b 1-92
+apple/macOS/Sources/UI/MenuBarStatusController.swift
+  h_75f437d5bc136b 1-215
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 1-342
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 193,195-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f8d5df93843afd2729296002d2134ae5a3e1ddee",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
