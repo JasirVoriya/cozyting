@@ -17,10 +17,11 @@ import Observation
 public final class NowPlayingBridge {
     public private(set) var snapshot: NowPlayingSnapshot?
     public private(set) var artworkImage: NSImage?
+    public private(set) var isActiveSourceOutputtingAudio: Bool = false
 
     private let scriptQueue = DispatchQueue(label: "com.cozyting.macos.nowplaying-script", qos: .utility)
     @ObservationIgnored nonisolated(unsafe) private var pollTask: Task<Void, Never>?
-    private var lastArtworkURL: String?
+    private var lastArtworkKey: String?
     @ObservationIgnored nonisolated(unsafe) private var artworkFetchTask: Task<Void, Never>?
 
     public init() {}
@@ -64,12 +65,18 @@ public final class NowPlayingBridge {
         guard let source, !source.bundleIdentifier.isEmpty else {
             snapshot = nil
             artworkImage = nil
-            lastArtworkURL = nil
+            lastArtworkKey = nil
+            isActiveSourceOutputtingAudio = false
             return
         }
 
         let bid = source.bundleIdentifier
         let name = source.displayName
+
+        // Query Core Audio `kAudioProcessPropertyIsRunningOutput` off `@MainActor` so non-scriptable
+        // players (QQ Music, NetEase, Chrome, Podcasts, etc.) still accurately reflect live Playing state.
+        let isOutputActive = await queryIsOutputtingAudio(bundleIdentifier: bid)
+        isActiveSourceOutputtingAudio = isOutputActive
 
         #if !COZYTING_APP_STORE
         if NowPlayingParser.isScriptablePlayer(bundleIdentifier: bid),
@@ -82,14 +89,15 @@ public final class NowPlayingBridge {
         }
         #endif
 
-        // Honest Layer 2 fallback: clear remote artwork and reflect actual selected source.
+        // Honest Layer 2 fallback: clear remote artwork and reflect live audio output state.
         artworkImage = nil
-        lastArtworkURL = nil
+        lastArtworkKey = nil
         snapshot = NowPlayingSnapshot.honestFallback(
             bundleIdentifier: bid,
             appDisplayName: name,
             isCasting: isCasting,
-            isPaused: isPaused
+            isPaused: isPaused,
+            isAudioOutputActive: isOutputActive
         )
     }
 
@@ -221,26 +229,69 @@ public final class NowPlayingBridge {
         }
     }
 
+    private func queryIsOutputtingAudio(bundleIdentifier: String) async -> Bool {
+        await withCheckedContinuation { cont in
+            scriptQueue.async {
+                let active = ProcessTreeResolver.activeOutputBundleIdentifiers()
+                let matched = active.contains {
+                    $0.caseInsensitiveCompare(bundleIdentifier) == .orderedSame
+                }
+                cont.resume(returning: matched)
+            }
+        }
+    }
+
     private func updateArtworkIfNeeded(for snapshot: NowPlayingSnapshot) {
-        guard let urlStr = snapshot.artworkURLString,
-              urlStr != lastArtworkURL,
-              let url = URL(string: urlStr) else {
-            if snapshot.artworkURLString == nil {
-                artworkImage = nil
-                lastArtworkURL = nil
+        if let urlStr = snapshot.artworkURLString, let url = URL(string: urlStr) {
+            guard urlStr != lastArtworkKey else { return }
+            lastArtworkKey = urlStr
+            artworkFetchTask?.cancel()
+            artworkFetchTask = Task { [weak self] in
+                guard let (data, _) = try? await URLSession.shared.data(from: url),
+                      !Task.isCancelled,
+                      let image = NSImage(data: data) else {
+                    return
+                }
+                self?.artworkImage = image
             }
             return
         }
-        lastArtworkURL = urlStr
-        artworkFetchTask?.cancel()
-        artworkFetchTask = Task { [weak self] in
-            guard let (data, _) = try? await URLSession.shared.data(from: url),
-                  !Task.isCancelled,
-                  let image = NSImage(data: data) else {
-                return
+
+        #if !COZYTING_APP_STORE
+        if snapshot.bundleIdentifier.lowercased() == "com.apple.music" {
+            let trackKey = "applemusic:\(snapshot.title)|\(snapshot.album)"
+            guard trackKey != lastArtworkKey else { return }
+            lastArtworkKey = trackKey
+            artworkFetchTask?.cancel()
+            artworkFetchTask = Task { [weak self] in
+                guard let self else { return }
+                let imageData: Data? = await withCheckedContinuation { cont in
+                    self.scriptQueue.async {
+                        let script = """
+                        tell application "Music"
+                            if (count of artworks of current track) > 0 then
+                                return raw data of artwork 1 of current track
+                            end if
+                        end tell
+                        """
+                        var errInfo: NSDictionary?
+                        let desc = NSAppleScript(source: script)?.executeAndReturnError(&errInfo)
+                        cont.resume(returning: desc?.data)
+                    }
+                }
+                guard !Task.isCancelled else { return }
+                if let imageData, !imageData.isEmpty, let img = NSImage(data: imageData) {
+                    self.artworkImage = img
+                } else {
+                    self.artworkImage = nil
+                }
             }
-            self?.artworkImage = image
+            return
         }
+        #endif
+
+        artworkImage = nil
+        lastArtworkKey = nil
     }
 
     private func postSystemMediaKey(_ keyType: Int32) {

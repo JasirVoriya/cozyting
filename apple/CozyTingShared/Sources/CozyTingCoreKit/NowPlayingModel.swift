@@ -54,7 +54,8 @@ public struct NowPlayingSnapshot: Sendable, Equatable {
         bundleIdentifier: String,
         appDisplayName: String,
         isCasting: Bool,
-        isPaused: Bool
+        isPaused: Bool,
+        isAudioOutputActive: Bool = false
     ) -> NowPlayingSnapshot {
         NowPlayingSnapshot(
             bundleIdentifier: bundleIdentifier,
@@ -63,7 +64,7 @@ public struct NowPlayingSnapshot: Sendable, Equatable {
             artist: "",
             durationSeconds: 0,
             positionSeconds: 0,
-            isPlaying: isCasting && !isPaused,
+            isPlaying: isCasting ? !isPaused : isAudioOutputActive,
             mode: .honestAppFallback,
             canSeek: false
         )

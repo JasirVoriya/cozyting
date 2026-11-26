@@ -77,7 +77,7 @@ public struct PopoverControlCardView: View {
                     AudioSourcePickerView(
                         coordinator: coordinator,
                         palette: palette,
-                        preferredWidth: 352,
+                        preferredWidth: 356,
                         onClose: { inlineSubView = .main }
                     )
                 } else if !isEmbeddedInMainWindow && inlineSubView == .latencyGuide {
@@ -95,7 +95,7 @@ public struct PopoverControlCardView: View {
                         },
                         onClose: { inlineSubView = .main }
                     )
-                    .frame(width: 352)
+                    .frame(width: 356)
                 } else {
                     mainCardBody
                 }
@@ -162,8 +162,8 @@ public struct PopoverControlCardView: View {
                 .padding(18)
             }
         }
-        .frame(width: isEmbeddedInMainWindow ? nil : 352)
-        .frame(maxWidth: isEmbeddedInMainWindow ? .infinity : 352)
+        .frame(width: isEmbeddedInMainWindow ? nil : 356)
+        .frame(maxWidth: isEmbeddedInMainWindow ? .infinity : 356)
         .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
         .sheet(isPresented: $showLatencyGuideSheet) {
             CozyLatencyGuideSheetView(
@@ -258,7 +258,9 @@ public struct PopoverControlCardView: View {
             audioSourceSection
             outputDevicesSection
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.top, isEmbeddedInMainWindow ? 2 : 14)
+        .padding(.bottom, 14)
     }
 
     private func openSourcePicker() {
@@ -282,15 +284,15 @@ public struct PopoverControlCardView: View {
     private var headerBar: some View {
         HStack(spacing: 8) {
             if !isEmbeddedInMainWindow {
-                CozyTingIconView(.cozyHouse, size: 16)
+                CozyTingIconView(.cozyHouse, size: 15)
                     .foregroundStyle(DesignTokens.Brand.coral)
 
                 Text(brandTitle)
-                    .font(.headline)
+                    .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(.primary)
             }
 
-            // Native Control Center status pill
+            // Native Control Center frosted status pill
             HStack(spacing: 5) {
                 Circle()
                     .fill(statusDotColor)
@@ -300,42 +302,43 @@ public struct PopoverControlCardView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3.5)
-            .background(.quaternary.opacity(0.6), in: Capsule())
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(Color.primary.opacity(0.07), in: Capsule())
+            .overlay(
+                Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 0.5)
+            )
 
             Spacer(minLength: 4)
 
             latencyMenuButton
 
             if !isEmbeddedInMainWindow {
-                Button(action: onOpenMainWindow) {
+                GlassCircleIconButton(size: 26, action: onOpenMainWindow) {
                     Image(systemName: "macwindow")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
 
-                Button(action: onOpenSettings) {
+                GlassCircleIconButton(size: 26, action: onOpenSettings) {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "gearshape")
                             .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
                         if coordinator.hasUpdateBadge {
                             Circle()
-                                .fill(Color.accentColor)
+                                .fill(DesignTokens.Brand.coral)
                                 .frame(width: 6, height: 6)
-                                .offset(x: 3, y: -3)
+                                .offset(x: 2, y: -2)
                         }
                     }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
             }
         }
     }
 
     private var statusDotColor: Color {
-        if !coordinator.isCasting { return .secondary.opacity(0.6) }
+        if !coordinator.isCasting { return .secondary.opacity(0.55) }
         return coordinator.isPaused ? .orange : .green
     }
 
@@ -382,11 +385,18 @@ public struct PopoverControlCardView: View {
                 Text(label)
                     .font(.caption.monospacedDigit().weight(.medium))
             }
-            .foregroundStyle(preset == .ultra ? .orange : .primary)
+            .foregroundStyle(preset == .ultra ? .orange : .secondary)
         }
-        .menuStyle(.borderedButton)
-        .controlSize(.small)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(Color.primary.opacity(0.07), in: Capsule())
+        .overlay(
+            Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 0.5)
+        )
+        .focusEffectDisabled()
     }
 
     @ViewBuilder
@@ -402,182 +412,225 @@ public struct PopoverControlCardView: View {
         }
     }
 
-    // MARK: - Section 2: Native Glass Now Playing & Master Volume Module
+    // MARK: - Section 2: Centered macOS Control Center Now Playing & Volume Module
 
     private var nowPlayingAndMasterVolumeModule: some View {
         let np = coordinator.nowPlayingBridge.snapshot
         let sourceRunning = coordinator.isActiveSourceRunning
+        let isOutputtingAudio = coordinator.nowPlayingBridge.isActiveSourceOutputtingAudio
 
-        return VStack(spacing: 10) {
-            HStack(spacing: 12) {
-                Button {
-                    if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
-                        coordinator.sourceCatalog.launchApplication(bundleIdentifier: bid)
-                    } else {
-                        openSourcePicker()
-                    }
-                } label: {
-                    ZStack(alignment: .bottomTrailing) {
-                        if let art = coordinator.nowPlayingBridge.artworkImage {
-                            Image(nsImage: art)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 52, height: 52)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        } else if let bid = coordinator.activeSource?.bundleIdentifier,
-                                  let icon = coordinator.sourceCatalog.icon(for: bid) {
-                            Image(nsImage: icon)
-                                .resizable()
-                                .interpolation(.high)
-                                .frame(width: 52, height: 52)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        let isMediaPlaying: Bool = {
+            if let np, np.mode == .scriptablePlayer { return np.isPlaying }
+            if coordinator.isCasting { return !coordinator.isPaused }
+            return isOutputtingAudio
+        }()
+
+        let primaryTitle: String = {
+            if let np, np.mode == .scriptablePlayer, !np.title.isEmpty {
+                return np.title
+            }
+            if let source = coordinator.activeSource {
+                return coordinator.isCasting
+                    ? CozyTingL10n.format(.nowPlayingCastingPrefix, language: lang, source.displayName)
+                    : source.displayName
+            }
+            return t(.nowPlayingSelectSource)
+        }()
+
+        let secondarySubtitle: String = {
+            if coordinator.isCasting, coordinator.isStandbyWaitingForAudio,
+               let name = coordinator.activeSource?.displayName {
+                return CozyTingL10n.format(.sourceWaitingAudioHint, language: lang, name)
+            }
+            if let np, np.mode == .scriptablePlayer {
+                return np.artist.isEmpty ? np.appDisplayName : np.artist
+            }
+            if coordinator.isCasting {
+                return t(coordinator.muteLocalAudio ? .nowPlayingLocalMuted : .nowPlayingLocalKept)
+            }
+            if coordinator.activeSource != nil && !sourceRunning && coordinator.sourceMode == .app {
+                return t(.sourceNotRunningHint)
+            }
+            if isOutputtingAudio {
+                return t(.nowPlayingPlaying)
+            }
+            return t(.nowPlayingReadyLan)
+        }()
+
+        let subtitleIsWarning = coordinator.activeSource != nil
+            && !sourceRunning
+            && !coordinator.isCasting
+            && coordinator.sourceMode == .app
+
+        return ZStack(alignment: .topTrailing) {
+            VStack(spacing: 12) {
+                // Centered Media Artwork + Track/App Info
+                VStack(spacing: 8) {
+                    Button {
+                        if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
+                            coordinator.sourceCatalog.launchApplication(bundleIdentifier: bid)
                         } else {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.accentColor.opacity(0.14))
-                                .frame(width: 52, height: 52)
-                                .overlay(
-                                    Image(systemName: "music.note")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundStyle(Color.accentColor)
-                                )
+                            openSourcePicker()
                         }
-
-                        if coordinator.nowPlayingBridge.artworkImage != nil,
-                           let bid = coordinator.activeSource?.bundleIdentifier,
-                           let badgeIcon = coordinator.sourceCatalog.icon(for: bid) {
-                            Image(nsImage: badgeIcon)
-                                .resizable()
-                                .interpolation(.high)
-                                .frame(width: 18, height: 18)
-                                .clipShape(Circle())
-                                .shadow(radius: 2)
-                                .offset(x: 3, y: 3)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    let primaryTitle: String = {
-                        if let np, np.mode == .scriptablePlayer, !np.title.isEmpty {
-                            return np.title
-                        }
-                        if let source = coordinator.activeSource {
-                            return coordinator.isCasting
-                                ? CozyTingL10n.format(.nowPlayingCastingPrefix, language: lang, source.displayName)
-                                : source.displayName
-                        }
-                        return t(.nowPlayingSelectSource)
-                    }()
-
-                    let secondarySubtitle: String = {
-                        if coordinator.isCasting, coordinator.isStandbyWaitingForAudio,
-                           let name = coordinator.activeSource?.displayName {
-                            return CozyTingL10n.format(.sourceWaitingAudioHint, language: lang, name)
-                        }
-                        if let np, np.mode == .scriptablePlayer {
-                            return np.artist.isEmpty ? np.appDisplayName : np.artist
-                        }
-                        if coordinator.isCasting {
-                            return t(coordinator.muteLocalAudio ? .nowPlayingLocalMuted : .nowPlayingLocalKept)
-                        }
-                        if coordinator.activeSource != nil && !sourceRunning && coordinator.sourceMode == .app {
-                            return t(.sourceNotRunningHint)
-                        }
-                        return t(.nowPlayingReadyLan)
-                    }()
-
-                    Text(primaryTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text(secondarySubtitle)
-                        .font(.caption)
-                        .foregroundStyle(
-                            (coordinator.activeSource != nil && !sourceRunning && !coordinator.isCasting && coordinator.sourceMode == .app)
-                                ? .orange
-                                : .secondary
-                        )
-                        .lineLimit(1)
-
-                    HStack(spacing: 8) {
-                        Button {
-                            coordinator.nowPlayingBridge.previousTrack(source: coordinator.activeSource)
-                        } label: {
-                            Image(systemName: "backward.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                                .frame(width: 24, height: 24)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        Button {
-                            let isScriptable = coordinator.activeSource.map {
-                                NowPlayingParser.isScriptablePlayer(bundleIdentifier: $0.bundleIdentifier)
-                            } ?? false
-                            if isScriptable && sourceRunning {
-                                coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
-                            } else if coordinator.isCasting {
-                                Task { await coordinator.togglePauseResume() }
+                    } label: {
+                        ZStack(alignment: .bottomTrailing) {
+                            if let art = coordinator.nowPlayingBridge.artworkImage {
+                                Image(nsImage: art)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 54, height: 54)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .strokeBorder(Color.primary.opacity(0.14), lineWidth: 0.5)
+                                    )
+                                    .shadow(color: .black.opacity(0.22), radius: 8, y: 4)
+                            } else if let bid = coordinator.activeSource?.bundleIdentifier,
+                                      let icon = coordinator.sourceCatalog.icon(for: bid) {
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .interpolation(.high)
+                                    .frame(width: 54, height: 54)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .shadow(color: .black.opacity(0.20), radius: 8, y: 4)
                             } else {
-                                coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color.primary.opacity(0.10))
+                                    .frame(width: 54, height: 54)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 22, weight: .medium))
+                                            .foregroundStyle(.secondary)
+                                    )
                             }
-                        } label: {
-                            let playing: Bool = {
-                                if let np, np.mode == .scriptablePlayer { return np.isPlaying }
-                                return coordinator.isCasting && !coordinator.isPaused
-                            }()
-                            Image(systemName: playing ? "pause.fill" : "play.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                                .frame(width: 28, height: 24)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
 
-                        Button {
-                            coordinator.nowPlayingBridge.nextTrack(source: coordinator.activeSource)
-                        } label: {
-                            Image(systemName: "forward.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                                .frame(width: 24, height: 24)
+                            if coordinator.nowPlayingBridge.artworkImage != nil,
+                               let bid = coordinator.activeSource?.bundleIdentifier,
+                               let badgeIcon = coordinator.sourceCatalog.icon(for: bid) {
+                                Image(nsImage: badgeIcon)
+                                    .resizable()
+                                    .interpolation(.high)
+                                    .frame(width: 18, height: 18)
+                                    .clipShape(Circle())
+                                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                                    .offset(x: 3, y: 3)
+                            }
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
                     }
-                    .padding(.top, 2)
+                    .buttonStyle(GlassPressButtonStyle())
+
+                    VStack(spacing: 2.5) {
+                        Text(primaryTitle)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.center)
+
+                        HStack(spacing: 4) {
+                            if isOutputtingAudio && !coordinator.isCasting && np?.mode != .scriptablePlayer {
+                                Circle()
+                                    .fill(.green)
+                                    .frame(width: 5.5, height: 5.5)
+                            }
+                            Text(secondarySubtitle)
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(subtitleIsWarning ? .orange : .secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
 
-                Spacer(minLength: 0)
-            }
+                // Sleek glass progress bar (Apple Music / Spotify when seekable)
+                if let np, np.mode == .scriptablePlayer, np.canSeek, np.durationSeconds > 0 {
+                    VStack(spacing: 4) {
+                        GeometryReader { geo in
+                            let ratio = min(max(np.positionSeconds / np.durationSeconds, 0), 1)
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.12))
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.75))
+                                    .frame(width: max(geo.size.width * ratio, 4))
+                            }
+                        }
+                        .frame(height: 4)
 
-            if let np, np.mode == .scriptablePlayer, np.canSeek, np.durationSeconds > 0 {
-                VStack(spacing: 2) {
-                    ProgressView(value: min(max(np.positionSeconds, 0), np.durationSeconds), total: np.durationSeconds)
-                        .progressViewStyle(.linear)
-                    HStack {
-                        Text(NowPlayingParser.formatTime(np.positionSeconds))
-                        Spacer()
-                        Text(NowPlayingParser.formatTime(np.durationSeconds))
+                        HStack {
+                            Text(NowPlayingParser.formatTime(np.positionSeconds))
+                            Spacer()
+                            Text(NowPlayingParser.formatTime(np.durationSeconds))
+                        }
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
                     }
-                    .font(.caption2.monospacedDigit())
+                    .padding(.horizontal, 4)
+                }
+
+                // Centered Apple Control Center Borderless Frosted-Glass Transport Controls
+                HStack(spacing: 24) {
+                    GlassCircleIconButton(size: 34) {
+                        coordinator.nowPlayingBridge.previousTrack(source: coordinator.activeSource)
+                    } content: {
+                        Image(systemName: "backward.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.primary.opacity(0.86))
+                    }
+
+                    GlassCircleIconButton(size: 42, prominent: true) {
+                        let isScriptable = coordinator.activeSource.map {
+                            NowPlayingParser.isScriptablePlayer(bundleIdentifier: $0.bundleIdentifier)
+                        } ?? false
+                        if isScriptable && sourceRunning {
+                            coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                        } else if coordinator.isCasting {
+                            Task { await coordinator.togglePauseResume() }
+                        } else {
+                            coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                        }
+                    } content: {
+                        Image(systemName: isMediaPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .offset(x: isMediaPlaying ? 0 : 1)
+                    }
+
+                    GlassCircleIconButton(size: 34) {
+                        coordinator.nowPlayingBridge.nextTrack(source: coordinator.activeSource)
+                    } content: {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.primary.opacity(0.86))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                // Authentic macOS Control Center Glass Capsule Volume Slider
+                ControlCenterVolumeBar(
+                    value: coordinator.masterVolume,
+                    safeLimit: coordinator.volumeGuardSafeLimit,
+                    guardEnabled: coordinator.volumeGuardEnabled,
+                    height: 22
+                ) { newVol in
+                    Task { await coordinator.requestMasterVolume(newVol) }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+
+            // Live animated audio waveform indicator in top-right corner when playing
+            if isMediaPlaying {
+                Image(systemName: "waveform")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
-                }
-            }
-
-            NativeMacVolumeSlider(
-                value: coordinator.masterVolume,
-                safeLimit: coordinator.volumeGuardSafeLimit,
-                guardEnabled: coordinator.volumeGuardEnabled
-            ) { newVol in
-                Task { await coordinator.requestMasterVolume(newVol) }
+                    .symbolEffect(.variableColor.iterative, isActive: isMediaPlaying)
+                    .padding(12)
             }
         }
-        .padding(12)
-        .background(.regularMaterial.opacity(0.65), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(.regularMaterial.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5)
         )
     }
 
@@ -593,10 +646,10 @@ public struct PopoverControlCardView: View {
                 if coordinator.lastSourceSwitchWasAuto {
                     Text(t(.sourceAutoBadge))
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(.primary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1.5)
-                        .background(Color.accentColor.opacity(0.14), in: Capsule())
+                        .background(Color.primary.opacity(0.12), in: Capsule())
                 }
 
                 Spacer()
@@ -641,11 +694,11 @@ public struct PopoverControlCardView: View {
                     }
 
                     if coordinator.favoriteSources.isEmpty && coordinator.activeSource == nil {
-                        Button(t(.sourceChooseApp)) {
-                            openSourcePicker()
+                        GlassPillButton(action: openSourcePicker) {
+                            Text(t(.sourceChooseApp))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.primary)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
                     }
                 }
             }
@@ -655,45 +708,19 @@ public struct PopoverControlCardView: View {
     @ViewBuilder
     private func sourceChip(bundleIdentifier: String, name: String, selected: Bool) -> some View {
         let running = coordinator.sourceCatalog.isRunning(bundleIdentifier: bundleIdentifier)
-        Button {
+        SourceGlassChip(
+            icon: coordinator.sourceCatalog.icon(for: bundleIdentifier),
+            name: name,
+            selected: selected,
+            running: running
+        ) {
             Task {
                 await coordinator.selectAudioSource(
                     AudioSourceSelection(bundleIdentifier: bundleIdentifier, displayName: name),
                     manual: true
                 )
             }
-        } label: {
-            HStack(spacing: 5) {
-                if let icon = coordinator.sourceCatalog.icon(for: bundleIdentifier) {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .interpolation(.high)
-                        .frame(width: 15, height: 15)
-                        .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
-                } else {
-                    Image(systemName: "music.note")
-                        .font(.system(size: 11))
-                }
-                Text(name)
-                    .font(.caption.weight(selected ? .semibold : .regular))
-                    .lineLimit(1)
-                if running {
-                    Circle()
-                        .fill(.green)
-                        .frame(width: 5, height: 5)
-                }
-            }
-            .foregroundStyle(selected ? Color.accentColor : .primary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(
-                Capsule().fill(selected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.06))
-            )
-            .overlay(
-                Capsule().strokeBorder(selected ? Color.accentColor.opacity(0.55) : Color.primary.opacity(0.08), lineWidth: 0.75)
-            )
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Section 4: Native Output Devices List
@@ -709,26 +736,27 @@ public struct PopoverControlCardView: View {
 
                 if coordinator.canRestoreLastSelection {
                     let count = coordinator.restorableLastSpeakerCount
-                    Button(count > 1 ? CozyTingL10n.format(.restoreLastMulti, language: lang, count) : t(.restoreLast)) {
+                    GlassPillButton {
                         Task { await coordinator.restoreLastSelectedSpeakers() }
+                    } content: {
+                        Text(count > 1 ? CozyTingL10n.format(.restoreLastMulti, language: lang, count) : t(.restoreLast))
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.primary)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.mini)
                 }
 
-                Button {
+                GlassCircleIconButton(size: 22) {
                     Task { await coordinator.discoverDevices(manual: true) }
-                } label: {
+                } content: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(coordinator.isDiscovering ? 360 : 0))
                         .animation(
                             coordinator.isDiscovering ? .linear(duration: 1).repeatForever(autoreverses: false) : .default,
                             value: coordinator.isDiscovering
                         )
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.mini)
                 .disabled(coordinator.isDiscovering)
             }
             .padding(.horizontal, 2)
@@ -782,9 +810,9 @@ public struct PopoverControlCardView: View {
                 }
             }
             .frame(
-                minHeight: isEmbeddedInMainWindow ? 180 : 170,
-                idealHeight: isEmbeddedInMainWindow ? 260 : 210,
-                maxHeight: isEmbeddedInMainWindow ? .infinity : 260
+                minHeight: isEmbeddedInMainWindow ? 170 : 165,
+                idealHeight: isEmbeddedInMainWindow ? 240 : 200,
+                maxHeight: isEmbeddedInMainWindow ? .infinity : 250
             )
         }
     }
@@ -816,11 +844,13 @@ public struct PopoverControlCardView: View {
             }
 
             if let buttonTitle = actionTitle(for: notice.action) {
-                Button(buttonTitle) {
+                GlassPillButton {
                     Task { await coordinator.performErrorAction(notice.action) }
+                } content: {
+                    Text(buttonTitle)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
             }
         }
         .padding(10)
@@ -849,52 +879,64 @@ public struct PopoverControlCardView: View {
     }
 }
 
-// MARK: - Native macOS Control Center Volume Slider & Device Row
+// MARK: - Frosted-Glass Source Chip & Output Device Row
 
-private struct NativeMacVolumeSlider: View {
-    let value: Int
-    let safeLimit: Int
-    let guardEnabled: Bool
-    let onCommit: (Int) -> Void
+private struct SourceGlassChip: View {
+    let icon: NSImage?
+    let name: String
+    let selected: Bool
+    let running: Bool
+    let action: () -> Void
 
-    @State private var localValue: Double?
-
-    private var displayed: Double {
-        localValue ?? Double(value)
-    }
-
-    private var isAboveSafeLimit: Bool {
-        guardEnabled && Int(displayed.rounded()) > safeLimit
-    }
+    @State private var isHovered: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: displayed <= 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(isAboveSafeLimit ? .orange : .secondary)
-                .frame(width: 16)
-
-            Slider(
-                value: Binding(
-                    get: { displayed },
-                    set: { localValue = $0 }
-                ),
-                in: 0...100,
-                onEditingChanged: { editing in
-                    if !editing {
-                        let finalVal = Int((localValue ?? Double(value)).rounded())
-                        localValue = nil
-                        onCommit(finalVal)
-                    }
+        Button(action: action) {
+            HStack(spacing: 5) {
+                if let icon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 15, height: 15)
+                        .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                } else {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 11))
                 }
+                Text(name)
+                    .font(.caption.weight(selected ? .semibold : .regular))
+                    .lineLimit(1)
+                if running {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 5, height: 5)
+                }
+            }
+            .foregroundStyle(selected ? Color.primary : Color.primary.opacity(0.78))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                Capsule().fill(
+                    selected
+                        ? Color.primary.opacity(0.17)
+                        : Color.primary.opacity(isHovered ? 0.11 : 0.06)
+                )
             )
-            .tint(isAboveSafeLimit ? .orange : .accentColor)
-            .controlSize(.small)
-
-            Text("\(Int(displayed.rounded()))%")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(isAboveSafeLimit ? .orange : .secondary)
-                .frame(width: 34, alignment: .trailing)
+            .overlay(
+                Capsule().strokeBorder(
+                    selected
+                        ? Color.primary.opacity(0.28)
+                        : Color.primary.opacity(isHovered ? 0.14 : 0.08),
+                    lineWidth: selected ? 0.75 : 0.5
+                )
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(GlassPressButtonStyle())
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.12)) {
+                isHovered = hovering
+            }
         }
     }
 }
@@ -912,6 +954,8 @@ private struct NativeMacDeviceRow: View {
     let onTap: () -> Void
     let onVolumeCommit: ((Int) -> Void)?
 
+    @State private var isHovered: Bool = false
+
     private var isSelected: Bool { device.selected }
 
     private var symbolName: String {
@@ -923,12 +967,12 @@ private struct NativeMacDeviceRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Button(action: onTap) {
                 HStack(spacing: 10) {
                     ZStack {
                         Circle()
-                            .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.08))
+                            .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.10))
                             .frame(width: 28, height: 28)
                         Image(systemName: symbolName)
                             .font(.system(size: 12, weight: .semibold))
@@ -965,46 +1009,58 @@ private struct NativeMacDeviceRow: View {
                     if let protocolBadge, !protocolBadge.isEmpty {
                         Text(protocolBadge)
                             .font(.caption2.weight(.medium))
-                            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                            .padding(.horizontal, 6)
+                            .foregroundStyle(isSelected ? .primary : .secondary)
+                            .padding(.horizontal, 6.5)
                             .padding(.vertical, 2)
                             .background(
-                                isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06),
+                                isSelected ? Color.primary.opacity(0.14) : Color.primary.opacity(0.06),
                                 in: Capsule()
                             )
                     }
 
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(isSelected ? Color.accentColor : .secondary.opacity(0.5))
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary.opacity(0.45))
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
             if isSelected, device.kind != .thisDevice, let onVolumeCommit {
-                NativeMacVolumeSlider(
+                ControlCenterVolumeBar(
                     value: volume,
                     safeLimit: safeLimit,
                     guardEnabled: guardEnabled,
+                    height: 18,
                     onCommit: onVolumeCommit
                 )
-                .padding(.leading, 36)
+                .padding(.leading, 38)
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.vertical, 8.5)
         .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.045))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    isSelected
+                        ? Color.primary.opacity(0.12)
+                        : Color.primary.opacity(isHovered ? 0.085 : 0.05)
+                )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(
-                    isSelected ? Color.accentColor.opacity(0.45) : Color.primary.opacity(0.07),
-                    lineWidth: isSelected ? 1 : 0.5
+                    isSelected
+                        ? Color.primary.opacity(0.22)
+                        : Color.primary.opacity(isHovered ? 0.12 : 0.07),
+                    lineWidth: isSelected ? 0.75 : 0.5
                 )
         )
         .opacity(device.castable || device.kind == .thisDevice ? 1.0 : 0.6)
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
     }
 }

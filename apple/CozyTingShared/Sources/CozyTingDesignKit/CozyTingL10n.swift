@@ -61,6 +61,9 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case nowPlayingLocalMuted
     case nowPlayingLocalKept
     case nowPlayingReadyLan
+    case nowPlayingPlaying
+    case nowPlayingPaused
+    case themeCycleTooltip
     case volumeGuardTitle
     case volumeGuardMsgMaster
     case volumeGuardMsgSpeaker
@@ -319,6 +322,9 @@ public enum CozyTingL10n {
         .nowPlayingLocalMuted: "已静音本机该应用",
         .nowPlayingLocalKept: "保留本机出声",
         .nowPlayingReadyLan: "纯局域网直连就绪",
+        .nowPlayingPlaying: "正在播放",
+        .nowPlayingPaused: "已暂停",
+        .themeCycleTooltip: "切换外观（当前：%@）",
         .volumeGuardTitle: "音量超过安全上限（%d%%）",
         .volumeGuardMsgMaster: "确定要将总音量从 %d%% 调至 %d%% 吗？",
         .volumeGuardMsgSpeaker: "确定要将「%@」的音量从 %d%% 调至 %d%% 吗？",
@@ -524,6 +530,9 @@ public enum CozyTingL10n {
         .nowPlayingLocalMuted: "Local app muted",
         .nowPlayingLocalKept: "Local audio kept",
         .nowPlayingReadyLan: "Pure LAN ready",
+        .nowPlayingPlaying: "Playing",
+        .nowPlayingPaused: "Paused",
+        .themeCycleTooltip: "Appearance: %@",
         .volumeGuardTitle: "Volume Above Safe Limit (%d%%)",
         .volumeGuardMsgMaster: "Raise master volume from %d%% to %d%%?",
         .volumeGuardMsgSpeaker: "Raise \"%@\" volume from %d%% to %d%%?",
@@ -729,6 +738,9 @@ public enum CozyTingL10n {
         .nowPlayingLocalMuted: "対象アプリのみ消音中",
         .nowPlayingLocalKept: "Mac 本機出力を維持",
         .nowPlayingReadyLan: "完全 LAN 送信待機中",
+        .nowPlayingPlaying: "再生中",
+        .nowPlayingPaused: "一時停止",
+        .themeCycleTooltip: "外観を切替（現在：%@）",
         .volumeGuardTitle: "安全音量の上限（%d%%）を超過",
         .volumeGuardMsgMaster: "マスター音量を %d%% から %d%% に上げますか？",
         .volumeGuardMsgSpeaker: "「%@」の音量を %d%% から %d%% に上げますか？",

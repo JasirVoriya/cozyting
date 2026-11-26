@@ -61,4 +61,35 @@ struct NowPlayingModelTests {
         #expect(NowPlayingParser.formatTime(3725) == "1:02:05")
         #expect(NowPlayingParser.formatTime(-5) == "00:00")
     }
+
+    @Test("Honest fallback reflects live Core Audio output when idle and cast pause state when casting")
+    func honestFallbackAudioActivity() {
+        let localPlaying = NowPlayingSnapshot.honestFallback(
+            bundleIdentifier: "com.example.player",
+            appDisplayName: "Example Player",
+            isCasting: false,
+            isPaused: false,
+            isAudioOutputActive: true
+        )
+        #expect(localPlaying.mode == .honestAppFallback)
+        #expect(localPlaying.isPlaying == true)
+
+        let localIdle = NowPlayingSnapshot.honestFallback(
+            bundleIdentifier: "com.example.player",
+            appDisplayName: "Example Player",
+            isCasting: false,
+            isPaused: false,
+            isAudioOutputActive: false
+        )
+        #expect(localIdle.isPlaying == false)
+
+        let castPaused = NowPlayingSnapshot.honestFallback(
+            bundleIdentifier: "com.example.player",
+            appDisplayName: "Example Player",
+            isCasting: true,
+            isPaused: true,
+            isAudioOutputActive: true
+        )
+        #expect(castPaused.isPlaying == false)
+    }
 }

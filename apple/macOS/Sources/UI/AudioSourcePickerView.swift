@@ -77,21 +77,19 @@ public struct AudioSourcePickerView: View {
 
                     Spacer()
 
-                    Button {
+                    GlassCircleIconButton(size: 26) {
                         coordinator.sourceCatalog.refreshCatalog()
-                    } label: {
+                    } content: {
                         Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
 
-                    Button(action: onClose) {
+                    GlassCircleIconButton(size: 26, action: onClose) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
 
                 // Native macOS search field
@@ -321,11 +319,13 @@ public struct AudioSourcePickerView: View {
 
             Spacer(minLength: 4)
 
-            Button(t(.pickerAddFav)) {
+            GlassPillButton {
                 coordinator.addFavoriteSource(bundleIdentifier: app.bundleIdentifier)
+            } content: {
+                Text(t(.pickerAddFav))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.primary)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.mini)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
