@@ -38,7 +38,7 @@
   1. 执行 `git worktree list` 并只读扫描 `agent-sessions/*.txt`，查看是否存在其他进行中的会话。
   2. 将本会话信息写入 `agent-sessions/<type>-<topic>.txt`，内容包含：分支名、worktree 路径、创建时间、任务简述、**预计修改的目录/高冲突文件**、**是否需要占用 ADB 真机**。
   3. **冲突预警（先报后做）**：若发现与其他活跃会话存在以下重叠，必须先暂停并向用户报告、等待确认后再继续：
-     - 共同修改高冲突公共契约文件（如 `AGENTS.md`、`core/src/ffi.rs`、`core/src/ffi_c.rs`、`core/include/cozyting_core.h`、`design/UI_SPEC.md`、`design/tokens.json`、`README.md`、`README_EN.md`）。
+     - 共同修改高冲突公共契约文件（如 `AGENTS.md`、`apple/AGENTS.md`、`core/src/ffi.rs`、`core/src/ffi_c.rs`、`core/include/cozyting_core.h`、`design/UI_SPEC.md`、`design/tokens.json`、`README.md`、`README_EN.md`）。
      - 共同需要占用同一台 ADB 真机。
 
 #### 4. 本地忽略文件挂载（项目构建初始化）
@@ -90,8 +90,8 @@
 
 #### 1. 分级合入标准（A 档走 PR / B 档本地快速通道）
 - **A 档：走 GitHub Pull Request（CI 合入前门禁）**
-  - **适用范围**：涉及 `core/` 协议/状态机/FFI/C ABI、Android/iOS 核心功能或架构改动、代码重构、依赖升级（含 Dependabot），以及所有外部贡献。
-  - **执行方式**：在 worktree 完成验证并 `git rebase origin/main` 后，推送分支并通过 `gh pr create`（或 GitHub Web）创建 PR，等待云端 CI（Rust 单测/C11 头文件校验、Android 16KB ELF 对齐 + JVM 单测 + `lintStandardDebug`）绿灯后在 GitHub 合并（同时删除远程功能分支）。
+  - **适用范围**：涉及 `core/` 协议/状态机/FFI/C ABI、Android / macOS / iOS（`android/`、`apple/`）核心功能或架构改动、代码重构、依赖升级（含 Dependabot），以及所有外部贡献。
+  - **执行方式**：在 worktree 完成验证并 `git rebase origin/main` 后，推送分支并通过 `gh pr create`（或 GitHub Web）创建 PR，等待云端 CI（Rust 单测/C11 头文件校验、Android 16KB ELF 对齐 + JVM 单测 + `lintStandardDebug`，以及落地后的 Apple `swift test` / macOS 构建检查）绿灯后在 GitHub 合并（同时删除远程功能分支）。
 - **B 档：本地直推 `main`（个人快速通道，仅限仓库维护者）**
   - **适用范围**：低风险、小颗粒变更，如纯文档、`README`、`docs/`、`design/`、极小 UI 样式微调、`chore(release)` 等（其中文档与设计改动默认已被 `ci.yml` `paths-ignore` 跳过）。
   - **执行方式**：按 `0.3` 第 6 节在本地持锁 `git merge --no-ff` 合回 `main`，确认后推送 `origin main`。
@@ -128,22 +128,24 @@
      - 签名密钥、口令、`keystore.properties`、`local.properties`、`.pcapng` 原始抓包文件
    - 单测、示例代码与文档中的占位数据统一使用 **RFC 5737 文档网段**（`192.0.2.x` / `198.51.100.x` / `203.0.113.x`）或通用示例地址（`192.168.1.10` / `192.168.1.100`）与匿名占位设备名（如 `小爱音箱-0001`、`A1B2C3D4`）。
 
-## 2. Android & iOS 双端同步约束（强制红线）
+## 2. Android / macOS / iOS 三端同步约束（强制红线）
 
-本项目采用「**L1 共享 Rust 核心 + L2/L3 Android 与 iOS 双端原生**」架构。**后续所有功能、架构、协议、状态机与 UI/交互改动，必须同时兼顾 Android 与 iOS 两套工程**，严禁只考虑单端导致双端分裂：
+本项目采用「**L1 共享 Rust 核心 + L2/L3 Android 原生与 Apple（`apple/` 共享包 + macOS / iOS 独立壳）原生**」架构。**后续所有功能、架构、协议、状态机与 UI/交互改动，必须同时兼顾 Android 与 Apple（macOS / 规划中的 iOS）三端**，严禁只考虑单端导致跨端分裂：
 
 1. **业务逻辑、协议与状态机（L1 优先下沉）**：
-   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 iOS C ABI（`core/src/ffi_c.rs` + `core/include/cozyting_core.h`），保证 C11 头文件与 Rust 单测双通过。
-2. **UI 布局、视觉与交互（`design/` 同步更新）**：
+   - 凡与操作系统无关的逻辑（设备发现、过滤、路由状态机、并发协调、延迟归一化、高音量保护裁决、更新裁决、核心日志轮转、协议控制等），必须优先实现在 L1 公共层 `core/`，并**同步维护** Android JNI（`core/src/ffi.rs`）与 Apple C ABI（`core/src/ffi_c.rs` + `core/include/cozyting_core.h`），保证 C11 头文件与 Rust 单测双通过。
+2. **Apple 端开发必须严格遵循 `apple/AGENTS.md` 与既定蓝图**：
+   - 任何涉及 `apple/`、macOS 或 iOS 客户端的规划、架构与开发任务，**开工前必须先读取 `apple/AGENTS.md`**，并严格顺着 `docs/MACOS_CLIENT_DESIGN.md`（macOS M1–M9 任务清单）或 `docs/IOS_CLIENT_DESIGN.md` 推进，**严禁脱离既定方案 A 架构与蓝图另起炉灶**。
+3. **UI 布局、视觉与交互（`design/` 同步更新）**：
    - 任何界面排版、组件尺寸、滑块/按钮样式、色板 Token、图标或交互流改动，**必须同步更新跨端单一事实来源 `design/`**（`design/UI_SPEC.md`、`design/tokens.json`、`design/icons/*.svg`）。
-   - 若某项能力存在平台差异（例如 Android 可按包名读取任意第三方 App 图标并 `getLaunchIntentForPackage` 跳转，而 iOS 受沙箱限制需按已知音源/URL Scheme 降级），必须在 `design/UI_SPEC.md` 中**明确写清 iOS 端对应的 SwiftUI 实现与降级边界**。
-3. **双端工程同步演进**：
-   - 每次改动提交前，除验证 Android 端外，须核对 iOS C ABI / `design/` 规范是否同步；待 iOS 原生工程目录落地后，核心功能与 UI 改动须双端同步实现与验证。
+   - 若某项能力存在平台差异（例如 Android 可按包名读取任意第三方 App 图标与通知媒资；macOS 14.2+ 可按进程树单 App 捕获与原生静音但受 macOS 15.4+ `mediaremoted` 限制需分层降级「正在播放」；iOS 受沙箱限制走 `ReplayKit` 与 URL Scheme 降级），必须在 `design/UI_SPEC.md` 中**明确写清各端对应实现与降级边界**。
+4. **多端工程同步演进**：
+   - 每次改动提交前，除验证本端外，须核对 L1 C ABI、`apple/CozyTingShared` 与 `design/` 规范是否同步；待 macOS / iOS 原生工程目录落地后，核心功能与 UI 改动须按规范同步实现与验证。
 
 ## 3. 工程红线
 
 - **纯局域网 · 零云端**：不引入任何云端 API、账号登录或统计上报。
-- **严格单 App 捕获（Fail-Closed）**：不得破坏单 UID 音频捕获校验，绝不静默退化为全系统录屏或麦克风采集。
+- **严格单 App 捕获（Fail-Closed）**：Android 不得破坏单 UID 音频捕获校验，macOS（14.2+）不得破坏 Process Tap 进程树单 App 隔离校验，绝不静默退化为全系统录屏或麦克风采集。
 - **API 29 真实兼容**：`minSdk = 29`，Android Lint `NewApi` 为 `fatal`，高版本 API 必须隔离在 `compat/` 封装层内。
 - **16KB ELF 页对齐**：`arm64-v8a` `.so` 保持 `-C link-arg=-Wl,-z,max-page-size=16384`。
 - **诚实测试边界**：不扩大未验证结论；编译通过 ≠ 全机型兼容，协议估算延迟 ≠ 声学实测。
@@ -169,8 +171,8 @@
    - 任何新增或变更功能、页面或分镜时，必须**同步补全全部已支持语言（至少中/英/日）的文案与资源**，禁止仅更新单一语言导致多语种漂移。
    - 品牌与协议专有名词（如 `CozyTing`、`MiPlay`、`AGPL-3.0`）保持统一规范，其余面向用户的文本禁止跨语种混杂或残留未翻译占位符。
 
-2. **App 双端（Android & iOS + `design/`）**：
-   - **禁止硬编码文案**：Android 端所有用户可见文本统一放入 `res/values/`、`res/values-en/`、`res/values-ja/` 等 `strings.xml`（正确处理格式化占位符与复数）；iOS 端同步使用 `Localizable.xcstrings`（或 `.lproj`），并与 `design/UI_SPEC.md` 保持文案键与交互一致。
+2. **App 多端（Android & Apple macOS / iOS + `design/`）**：
+   - **禁止硬编码文案**：Android 端所有用户可见文本统一放入 `res/values/`、`res/values-en/`、`res/values-ja/` 等 `strings.xml`（正确处理格式化占位符与复数）；Apple 端（macOS / iOS）统一收敛至 `apple/CozyTingShared` 的 `Localizable.xcstrings`，并与 `design/UI_SPEC.md` 保持文案键与交互一致。
    - **核心层与文案解耦**：L1 Rust 核心（`core/`）对外输出结构化状态/错误码而非硬编码自然语言句子，由各端按当前语言本地化展示。
    - **语言切换与排版适配**：支持跟随系统语言（及按需应用内切换）；UI 布局须同时兼容中文、英文长词与日文断行/字宽特性，避免按钮、标签、弹窗文本截断或重叠；UI 预览/截图脚本应支持按语种输出校验。
 
