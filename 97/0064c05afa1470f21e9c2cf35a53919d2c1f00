@@ -1,0 +1,42 @@
+apple/CozyTingShared/Package.swift
+  h_75f437d5bc136b 34-36,39
+apple/CozyTingShared/Sources/CozyTingAudioAtomics/CozyTingAudioAtomics.c
+  h_75f437d5bc136b 1-38
+apple/CozyTingShared/Sources/CozyTingAudioAtomics/include/CozyTingAudioAtomics.h
+  h_75f437d5bc136b 1-26
+apple/CozyTingShared/Sources/CozyTingAudioAtomics/include/module.modulemap
+  h_75f437d5bc136b 1-4
+apple/CozyTingShared/Sources/CozyTingAudioKit/AudioToolboxAACEncoder.swift
+  h_75f437d5bc136b 1-682
+apple/CozyTingShared/Sources/CozyTingAudioKit/LockFreeRingBuffer.swift
+  h_75f437d5bc136b 1-415
+apple/CozyTingShared/Sources/CozyTingAudioKit/PcmProbe.swift
+  h_75f437d5bc136b 1-237
+apple/CozyTingShared/Tests/CozyTingAudioKitTests/AudioToolboxAACEncoderTests.swift
+  h_75f437d5bc136b 1-202
+apple/CozyTingShared/Tests/CozyTingAudioKitTests/LockFreeRingBufferAndProbeTests.swift
+  h_75f437d5bc136b 1-117
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 11,18,22-23
+apple/macOS/Sources/Audio/MuteGuard.swift
+  h_75f437d5bc136b 1-86
+apple/macOS/Sources/Audio/ProcessTapAudioEngine.swift
+  h_75f437d5bc136b 1-481
+apple/macOS/Sources/Audio/ProcessTreeResolver.swift
+  h_75f437d5bc136b 1-286
+docs/COMPATIBILITY.md
+  h_75f437d5bc136b 37,47,54,59-70
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 181,183-185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "970064c05afa1470f21e9c2cf35a53919d2c1f00",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
