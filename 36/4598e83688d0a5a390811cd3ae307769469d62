@@ -1,0 +1,30 @@
+apple/CozyTingShared/Sources/CozyTingCoreKit/NowPlayingModel.swift
+  h_75f437d5bc136b 1-153
+apple/CozyTingShared/Sources/CozyTingCoreKit/PreferencesStore.swift
+  h_75f437d5bc136b 154,236-247
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/NowPlayingModelTests.swift
+  h_75f437d5bc136b 1-64
+apple/macOS/Info.plist
+  h_75f437d5bc136b 27-28
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 29,44,67,81,95,122-140,398-411,414-415
+apple/macOS/Sources/System/HardwareVolumeKeyInterceptor.swift
+  h_75f437d5bc136b 1-127
+apple/macOS/Sources/System/NowPlayingBridge.swift
+  h_75f437d5bc136b 1-270
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 177-178,187-195,199,204,210-221,226-247,252,256-289,292-321,323-326,328-329
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 213,215-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "364598e83688d0a5a390811cd3ae307769469d62",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
