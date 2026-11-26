@@ -6,20 +6,24 @@ import SwiftUI
 public struct MainWindowView: View {
     @Bindable public var coordinator: CastCoordinator
     public let onOpenSettings: () -> Void
+    public let onAppearanceChanged: ((ThemeMode) -> Void)?
 
     @Environment(\.colorScheme) private var systemColorScheme
-    @State private var themeMode: ThemeMode = .system
 
     public init(
         coordinator: CastCoordinator,
-        onOpenSettings: @escaping () -> Void
+        onOpenSettings: @escaping () -> Void,
+        onAppearanceChanged: ((ThemeMode) -> Void)? = nil
     ) {
         self.coordinator = coordinator
         self.onOpenSettings = onOpenSettings
+        self.onAppearanceChanged = onAppearanceChanged
     }
 
+    private var lang: AppLanguage { coordinator.appLanguage }
+
     private var effectiveScheme: ColorScheme {
-        PlatformAdapters.preferredColorScheme(for: themeMode) ?? systemColorScheme
+        PlatformAdapters.preferredColorScheme(for: coordinator.themeMode) ?? systemColorScheme
     }
 
     private var palette: DesignTokens.ThemePalette {
@@ -40,23 +44,26 @@ public struct MainWindowView: View {
                     HStack(spacing: DesignTokens.Spacing.sm) {
                         CozyTingIconView(.cozyHouse, size: 22)
                             .foregroundStyle(DesignTokens.Brand.coral)
-                        Text(BrandStrings.appDisplayName(for: coordinator.preferences.appLanguage))
+                        Text(BrandStrings.appDisplayName(for: lang))
                             .font(.system(size: DesignTokens.Typography.pageTitle, weight: .bold))
                             .foregroundStyle(palette.textPrimary)
                     }
 
                     Spacer()
 
-                    Picker("", selection: $themeMode) {
-                        Text("System").tag(ThemeMode.system)
-                        Text("Light").tag(ThemeMode.light)
-                        Text("Dark").tag(ThemeMode.dark)
+                    Picker("", selection: Binding(
+                        get: { coordinator.themeMode },
+                        set: { newMode in
+                            coordinator.setThemeMode(newMode)
+                            onAppearanceChanged?(newMode)
+                        }
+                    )) {
+                        Text(CozyTingL10n.text(.themeSystem, language: lang)).tag(ThemeMode.system)
+                        Text(CozyTingL10n.text(.themeLight, language: lang)).tag(ThemeMode.light)
+                        Text(CozyTingL10n.text(.themeDark, language: lang)).tag(ThemeMode.dark)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 190)
-                    .onChange(of: themeMode) { _, newValue in
-                        coordinator.preferences.themeMode = newValue
-                    }
+                    .frame(width: 210)
 
                     Button(action: onOpenSettings) {
                         CozyTingIconView(.settings, size: 15)
@@ -84,9 +91,6 @@ public struct MainWindowView: View {
             .padding(DesignTokens.Spacing.xl)
         }
         .frame(minWidth: 460, minHeight: 560)
-        .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: themeMode))
-        .onAppear {
-            themeMode = coordinator.preferences.themeMode
-        }
+        .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
     }
 }

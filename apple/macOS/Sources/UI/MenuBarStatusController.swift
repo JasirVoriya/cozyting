@@ -123,31 +123,51 @@ public final class MenuBarStatusController: NSObject {
 
     private func showContextMenu(for button: NSStatusBarButton) {
         let menu = NSMenu()
-        let appName = BrandStrings.appDisplayName(for: castCoordinator.preferences.appLanguage)
+        let lang = castCoordinator.appLanguage
+        let appName = BrandStrings.appDisplayName(for: lang)
 
         if castCoordinator.isCasting {
-            let pauseTitle = castCoordinator.isPaused ? "Resume Cast" : "Pause Cast"
+            let pauseTitle = CozyTingL10n.text(
+                castCoordinator.isPaused ? .menuResumeCast : .menuPauseCast,
+                language: lang
+            )
             let pauseItem = NSMenuItem(title: pauseTitle, action: #selector(menuTogglePause), keyEquivalent: "")
             pauseItem.target = self
             menu.addItem(pauseItem)
 
-            let stopItem = NSMenuItem(title: "Switch Back to Mac", action: #selector(menuStopCast), keyEquivalent: "")
+            let stopItem = NSMenuItem(
+                title: CozyTingL10n.text(.menuSwitchBackToMac, language: lang),
+                action: #selector(menuStopCast),
+                keyEquivalent: ""
+            )
             stopItem.target = self
             menu.addItem(stopItem)
             menu.addItem(.separator())
         }
 
-        let mainItem = NSMenuItem(title: "Open \(appName)", action: #selector(menuOpenMainWindow), keyEquivalent: "")
+        let mainItem = NSMenuItem(
+            title: CozyTingL10n.format(.menuOpenApp, language: lang, appName),
+            action: #selector(menuOpenMainWindow),
+            keyEquivalent: ""
+        )
         mainItem.target = self
         menu.addItem(mainItem)
 
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(menuOpenSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(
+            title: CozyTingL10n.text(.menuSettings, language: lang),
+            action: #selector(menuOpenSettings),
+            keyEquivalent: ","
+        )
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(menuQuit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(
+            title: CozyTingL10n.format(.menuQuitApp, language: lang, appName),
+            action: #selector(menuQuit),
+            keyEquivalent: "q"
+        )
         quitItem.target = self
         menu.addItem(quitItem)
 

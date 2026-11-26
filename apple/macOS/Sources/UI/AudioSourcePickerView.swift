@@ -3,7 +3,7 @@ import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
 
-/// Style B Favorite Audio Sources manager (`M6`).
+/// Style B Favorite Audio Sources manager (`M6`, localized in `zh-CN` / `en` / `ja` in `M8`).
 ///
 /// Opening or managing favorites NEVER stops an active cast session. Selecting a new app
 /// while casting performs a fail-closed Process Tap hot-switch without disconnecting speakers.
@@ -14,7 +14,6 @@ public struct AudioSourcePickerView: View {
 
     @State private var searchText: String = ""
     @State private var showAllOtherApps: Bool = false
-    @State private var draggedBundleID: String?
 
     public init(
         coordinator: CastCoordinator,
@@ -24,6 +23,12 @@ public struct AudioSourcePickerView: View {
         self.coordinator = coordinator
         self.palette = palette
         self.onClose = onClose
+    }
+
+    private var lang: AppLanguage { coordinator.appLanguage }
+
+    private func t(_ key: L10nKey) -> String {
+        CozyTingL10n.text(key, language: lang)
     }
 
     private var favoriteBundleSet: Set<String> {
@@ -54,11 +59,11 @@ public struct AudioSourcePickerView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Favorite Audio Sources")
+                    Text(t(.pickerTitle))
                         .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
                         .foregroundStyle(palette.textPrimary)
                     let autoCount = coordinator.favoriteSources.filter(\.autoDetectEnabled).count
-                    Text("\(coordinator.favoriteSources.count) favorites (\(autoCount) auto-detect) · Click row to select")
+                    Text(CozyTingL10n.format(.pickerSummary, language: lang, coordinator.favoriteSources.count, autoCount))
                         .font(.system(size: DesignTokens.Typography.micro))
                         .foregroundStyle(palette.textSecondary)
                 }
@@ -88,7 +93,7 @@ public struct AudioSourcePickerView: View {
             HStack(spacing: DesignTokens.Spacing.sm) {
                 CozyTingIconView(.search, size: 13)
                     .foregroundStyle(palette.textTertiary)
-                TextField("Search app name or bundle ID…", text: $searchText)
+                TextField(t(.pickerSearchHint), text: $searchText)
                     .textFieldStyle(.plain)
                     .font(.system(size: DesignTokens.Typography.body))
                     .foregroundStyle(palette.textPrimary)
@@ -106,21 +111,20 @@ public struct AudioSourcePickerView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                    // Favorites Section
                     HStack {
-                        Text("Favorites (\(filteredFavorites.count))")
+                        Text(CozyTingL10n.format(.pickerFavoritesHeader, language: lang, filteredFavorites.count))
                             .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
                             .foregroundStyle(palette.textSecondary)
                         Spacer()
                         if filteredFavorites.count >= 2 && searchText.isEmpty {
-                            Text("Drag to reorder")
+                            Text(t(.pickerDragHint))
                                 .font(.system(size: DesignTokens.Typography.micro))
                                 .foregroundStyle(palette.textTertiary)
                         }
                     }
 
                     if filteredFavorites.isEmpty {
-                        Text("No favorite sources yet. Add apps below to enable quick-switch and auto-detect.")
+                        Text(t(.pickerFavoritesEmpty))
                             .font(.system(size: DesignTokens.Typography.caption))
                             .foregroundStyle(palette.textTertiary)
                             .padding(.vertical, 6)
@@ -144,7 +148,6 @@ public struct AudioSourcePickerView: View {
                         }
                     }
 
-                    // Other Installed Apps Section
                     let otherApps = filteredOtherApps
                     Button {
                         withAnimation(.easeInOut(duration: 0.16)) {
@@ -154,8 +157,8 @@ public struct AudioSourcePickerView: View {
                         HStack {
                             Text(
                                 (showAllOtherApps || !searchText.isEmpty)
-                                    ? "Other Apps (\(otherApps.count))"
-                                    : "Add More Apps (\(otherApps.count))"
+                                    ? CozyTingL10n.format(.pickerOtherAppsHeader, language: lang, otherApps.count)
+                                    : CozyTingL10n.format(.pickerAddMoreApps, language: lang, otherApps.count)
                             )
                             .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
                             .foregroundStyle(palette.accentBright)
@@ -227,7 +230,7 @@ public struct AudioSourcePickerView: View {
                         .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textSecondary)
                 }
                 .buttonStyle(.plain)
-                .help("Open \(name)")
+                .help("\(t(.commonOpen)) \(name)")
 
                 if filteredFavorites.count >= 2 && searchText.isEmpty {
                     CozyTingIconView(.dragHandle, size: 12)
@@ -251,7 +254,7 @@ public struct AudioSourcePickerView: View {
                         coordinator.setFavoriteAutoDetect(bundleIdentifier: fav.bundleIdentifier, enabled: enabled)
                     }
                 )) {
-                    Text(fav.autoDetectEnabled ? "Auto-detect: On" : "Auto-detect: Off")
+                    Text(t(fav.autoDetectEnabled ? .pickerAutoDetectOn : .pickerAutoDetectOff))
                         .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
                         .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textSecondary)
                 }
@@ -263,7 +266,7 @@ public struct AudioSourcePickerView: View {
                 Button {
                     coordinator.removeFavoriteSource(bundleIdentifier: fav.bundleIdentifier)
                 } label: {
-                    Text("Remove")
+                    Text(t(.pickerRemove))
                         .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
                         .foregroundStyle(palette.statusError)
                 }
@@ -312,7 +315,7 @@ public struct AudioSourcePickerView: View {
             Button {
                 coordinator.addFavoriteSource(bundleIdentifier: app.bundleIdentifier)
             } label: {
-                Text("+ Fav")
+                Text(t(.pickerAddFav))
                     .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
                     .foregroundStyle(palette.accentBright)
                     .padding(.horizontal, 8)

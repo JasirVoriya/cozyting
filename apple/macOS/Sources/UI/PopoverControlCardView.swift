@@ -10,7 +10,6 @@ public struct PopoverControlCardView: View {
     public let onOpenSettings: () -> Void
 
     @Environment(\.colorScheme) private var systemColorScheme
-    @State private var themeMode: ThemeMode = .system
     @State private var showLatencyGuide: Bool = false
     @State private var showSourcePicker: Bool = false
 
@@ -24,8 +23,14 @@ public struct PopoverControlCardView: View {
         self.onOpenSettings = onOpenSettings
     }
 
+    private var lang: AppLanguage { coordinator.appLanguage }
+
+    private func t(_ key: L10nKey) -> String {
+        CozyTingL10n.text(key, language: lang)
+    }
+
     private var effectiveScheme: ColorScheme {
-        PlatformAdapters.preferredColorScheme(for: themeMode) ?? systemColorScheme
+        PlatformAdapters.preferredColorScheme(for: coordinator.themeMode) ?? systemColorScheme
     }
 
     private var palette: DesignTokens.ThemePalette {
@@ -33,15 +38,17 @@ public struct PopoverControlCardView: View {
     }
 
     private var brandTitle: String {
-        BrandStrings.appDisplayName(for: coordinator.preferences.appLanguage)
+        BrandStrings.appDisplayName(for: lang)
     }
 
     private var statusLabel: String {
         if coordinator.isCasting {
             let count = coordinator.selectedSpeakerIds.count
-            return coordinator.isPaused ? "Paused · \(count)" : "Casting · \(count)"
+            return coordinator.isPaused
+                ? CozyTingL10n.format(.statusPausedCount, language: lang, count)
+                : CozyTingL10n.format(.statusCastingCount, language: lang, count)
         }
-        return "Idle"
+        return t(.statusIdle)
     }
 
     public var body: some View {
@@ -59,11 +66,30 @@ public struct PopoverControlCardView: View {
                     .ignoresSafeArea()
                     .onTapGesture { coordinator.cancelPendingHighVolume() }
 
+                let msg: String = {
+                    if let speakerID = pending.speakerID,
+                       let device = coordinator.devices.first(where: { $0.id == speakerID }) {
+                        return CozyTingL10n.format(
+                            .volumeGuardMsgSpeaker,
+                            language: lang,
+                            DeviceDisplayFormatter.displayTitle(for: device),
+                            pending.currentVolume,
+                            pending.targetVolume
+                        )
+                    }
+                    return CozyTingL10n.format(
+                        .volumeGuardMsgMaster,
+                        language: lang,
+                        pending.currentVolume,
+                        pending.targetVolume
+                    )
+                }()
+
                 CozyHighVolumeConfirmView(
-                    title: "Volume Above Safe Limit (\(pending.safeLimit)%)",
-                    message: "Raise volume from \(pending.currentVolume)% to \(pending.targetVolume)%?",
-                    keepLabel: "Keep \(pending.currentVolume)%",
-                    confirmLabel: "Set to \(pending.targetVolume)%",
+                    title: CozyTingL10n.format(.volumeGuardTitle, language: lang, pending.safeLimit),
+                    message: msg,
+                    keepLabel: CozyTingL10n.format(.volumeGuardKeep, language: lang, pending.currentVolume),
+                    confirmLabel: CozyTingL10n.format(.volumeGuardConfirm, language: lang, pending.targetVolume),
                     palette: palette,
                     onCancel: { coordinator.cancelPendingHighVolume() },
                     onConfirm: {
@@ -76,14 +102,12 @@ public struct PopoverControlCardView: View {
         .frame(width: 352)
         .background(.ultraThinMaterial)
         .background(palette.panelBg.opacity(0.65))
-        .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: themeMode))
-        .onAppear {
-            themeMode = coordinator.preferences.themeMode
-        }
+        .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
         .sheet(isPresented: $showLatencyGuide) {
             CozyLatencyGuideSheetView(
                 currentDelayMs: coordinator.delayMs,
                 wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
+                language: lang,
                 palette: palette,
                 onSelectDelayMs: { ms in
                     Task { await coordinator.setPlaybackDelay(ms) }
@@ -162,6 +186,12 @@ public struct PopoverControlCardView: View {
             delayMs: coordinator.delayMs,
             wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
             palette: palette,
+            standardLabel: t(.latencyStandard),
+            balancedLabel: t(.latencyBalanced),
+            lowLabel: t(.latencyLow),
+            ultraLabel: t(.latencyUltra),
+            customLabel: t(.latencyCustom),
+            guideLabel: t(.latencyGuideButton),
             onSelectDelayMs: { ms in
                 Task { await coordinator.setPlaybackDelay(ms) }
             },
@@ -229,9 +259,11 @@ public struct PopoverControlCardView: View {
                             return np.title
                         }
                         if let source = coordinator.activeSource {
-                            return coordinator.isCasting ? "Casting · \(source.displayName)" : source.displayName
+                            return coordinator.isCasting
+                                ? CozyTingL10n.format(.nowPlayingCastingPrefix, language: lang, source.displayName)
+                                : source.displayName
                         }
-                        return "Select Audio Source"
+                        return t(.nowPlayingSelectSource)
                     }()
 
                     let secondarySubtitle: String = {
@@ -239,9 +271,9 @@ public struct PopoverControlCardView: View {
                             return np.artist.isEmpty ? np.appDisplayName : np.artist
                         }
                         if coordinator.isCasting {
-                            return coordinator.muteLocalAudio ? "Local app muted" : "Local audio kept"
+                            return t(coordinator.muteLocalAudio ? .nowPlayingLocalMuted : .nowPlayingLocalKept)
                         }
-                        return "Ready to cast over LAN"
+                        return t(.nowPlayingReadyLan)
                     }()
 
                     Text(primaryTitle)
@@ -292,7 +324,6 @@ public struct PopoverControlCardView: View {
                 Spacer(minLength: 0)
             }
 
-            // Progress scrubber shown honestly ONLY for scriptable players with valid duration
             if let np, np.mode == .scriptablePlayer, np.canSeek, np.durationSeconds > 0 {
                 VStack(spacing: 3) {
                     GeometryReader { geo in
@@ -356,12 +387,12 @@ public struct PopoverControlCardView: View {
     private var audioSourceStrip: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: DesignTokens.Spacing.sm) {
-                Text("Source")
+                Text(t(.sourceSectionTitle))
                     .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
                     .foregroundStyle(palette.textSecondary)
 
                 if coordinator.lastSourceSwitchWasAuto {
-                    Text("Auto")
+                    Text(t(.sourceAutoBadge))
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(palette.accentBright)
                         .padding(.horizontal, 6)
@@ -375,7 +406,7 @@ public struct PopoverControlCardView: View {
                     showSourcePicker = true
                 } label: {
                     HStack(spacing: 3) {
-                        Text("Manage")
+                        Text(t(.commonManage))
                             .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
                         CozyTingIconView(.chevronRight, size: 9, weight: .semibold)
                     }
@@ -386,7 +417,6 @@ public struct PopoverControlCardView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    // If current source is not in favorites, surface it first.
                     if let active = coordinator.activeSource,
                        !coordinator.favoriteSources.contains(where: {
                            $0.bundleIdentifier.caseInsensitiveCompare(active.bundleIdentifier) == .orderedSame
@@ -413,7 +443,7 @@ public struct PopoverControlCardView: View {
                         Button {
                             showSourcePicker = true
                         } label: {
-                            Text("Choose Audio App…")
+                            Text(t(.sourceChooseApp))
                                 .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
                                 .foregroundStyle(palette.accentBright)
                                 .padding(.horizontal, 10)
@@ -470,7 +500,7 @@ public struct PopoverControlCardView: View {
     private var outputDevicesSection: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: DesignTokens.Spacing.sm) {
-                Text("Output Devices")
+                Text(t(.outputDevicesTitle))
                     .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
                     .foregroundStyle(palette.textSecondary)
 
@@ -481,7 +511,7 @@ public struct PopoverControlCardView: View {
                     Button {
                         Task { await coordinator.restoreLastSelectedSpeakers() }
                     } label: {
-                        Text(count > 1 ? "Last · \(count)" : "Restore Last")
+                        Text(count > 1 ? CozyTingL10n.format(.restoreLastMulti, language: lang, count) : t(.restoreLast))
                             .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
                             .foregroundStyle(palette.accentBright)
                             .padding(.horizontal, 8)
@@ -522,17 +552,21 @@ public struct PopoverControlCardView: View {
                         let statusDesc: String? = {
                             guard device.selected, device.kind != .thisDevice, let stats else { return nil }
                             switch stats.uiState {
-                            case .connecting: return "Connecting…"
-                            case .reconnecting: return "Reconnecting…"
-                            case .error: return stats.error ?? "Error"
+                            case .connecting: return t(.statusConnecting)
+                            case .reconnecting: return t(.statusReconnecting)
+                            case .error: return stats.error ?? t(.statusError)
                             case .streaming: return nil
                             }
                         }()
 
+                        let title = device.kind == .thisDevice
+                            ? t(.thisDeviceName)
+                            : DeviceDisplayFormatter.displayTitle(for: device)
+
                         CozyDeviceRowCard(
                             device: device,
-                            title: DeviceDisplayFormatter.displayTitle(for: device),
-                            subtitle: device.kind == .thisDevice ? "Mac Speakers" : nil,
+                            title: title,
+                            subtitle: device.kind == .thisDevice ? t(.commonMacSpeakers) : nil,
                             latencyBadge: DeviceDisplayFormatter.formattedLatency(for: stats),
                             statusText: statusDesc,
                             protocolBadge: device.protocol?.rawValue == "MIPLAY" ? BrandStrings.protocolName : device.protocol?.rawValue,

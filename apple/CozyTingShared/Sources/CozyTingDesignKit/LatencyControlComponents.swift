@@ -180,11 +180,8 @@ public struct CozyLatencyPillMenu: View {
 public struct CozyLatencyGuideSheetView: View {
     public let currentDelayMs: Int
     public let wifiFrequencyMHz: Int32
+    public let language: AppLanguage
     public let palette: DesignTokens.ThemePalette
-    public let title: String
-    public let subtitle: String
-    public let customSettingsLabel: String
-    public let closeLabel: String
     public let onSelectDelayMs: (Int) -> Void
     public let onOpenSettings: () -> Void
     public let onClose: () -> Void
@@ -192,25 +189,23 @@ public struct CozyLatencyGuideSheetView: View {
     public init(
         currentDelayMs: Int,
         wifiFrequencyMHz: Int32,
+        language: AppLanguage = .system,
         palette: DesignTokens.ThemePalette,
-        title: String = "Latency Modes",
-        subtitle: String = "Switch live without disconnecting speakers. Cold-start runway scales automatically via L1 core.",
-        customSettingsLabel: String = "Custom ms in Settings",
-        closeLabel: String = "Done",
         onSelectDelayMs: @escaping (Int) -> Void,
         onOpenSettings: @escaping () -> Void,
         onClose: @escaping () -> Void
     ) {
         self.currentDelayMs = currentDelayMs
         self.wifiFrequencyMHz = wifiFrequencyMHz
+        self.language = language
         self.palette = palette
-        self.title = title
-        self.subtitle = subtitle
-        self.customSettingsLabel = customSettingsLabel
-        self.closeLabel = closeLabel
         self.onSelectDelayMs = onSelectDelayMs
         self.onOpenSettings = onOpenSettings
         self.onClose = onClose
+    }
+
+    private func t(_ key: L10nKey) -> String {
+        CozyTingL10n.text(key, language: language)
     }
 
     private struct TierRowModel: Identifiable {
@@ -236,10 +231,10 @@ public struct CozyLatencyGuideSheetView: View {
                 id: "standard",
                 preset: .standard,
                 icon: .latencyStandard,
-                name: "Standard (Auto)",
+                name: "\(t(.latencyStandard)) (\(t(.commonAuto)))",
                 delayLabel: "\(stdMs)ms",
                 runwayLabel: "\(stdAUs) AU",
-                summary: "5 GHz 800ms / 2.4 GHz or fallback 1000ms. Best stability across rooms.",
+                summary: t(.latencyStandardDesc),
                 accent: palette.textSecondary,
                 targetDelayMs: 0
             ),
@@ -247,10 +242,10 @@ public struct CozyLatencyGuideSheetView: View {
                 id: "balanced",
                 preset: .balanced,
                 icon: .latencyBalanced,
-                name: "Balanced",
+                name: t(.latencyBalanced),
                 delayLabel: "400ms",
                 runwayLabel: "\(balAUs) AU",
-                summary: "Snappier play/pause & seek response on healthy 5 GHz Wi-Fi.",
+                summary: t(.latencyBalancedDesc),
                 accent: palette.accentBright,
                 targetDelayMs: 400
             ),
@@ -258,10 +253,10 @@ public struct CozyLatencyGuideSheetView: View {
                 id: "low",
                 preset: .low,
                 icon: .latencyLow,
-                name: "Low Latency",
+                name: t(.latencyLow),
                 delayLabel: "250ms",
                 runwayLabel: "\(lowAUs) AU",
-                summary: "Tight lip-sync for videos on clean 5 GHz / Ethernet.",
+                summary: t(.latencyLowDesc),
                 accent: palette.accentBright,
                 targetDelayMs: 250
             ),
@@ -269,10 +264,10 @@ public struct CozyLatencyGuideSheetView: View {
                 id: "ultra",
                 preset: .ultra,
                 icon: .latencyUltra,
-                name: "Ultra",
+                name: t(.latencyUltra),
                 delayLabel: "150ms",
                 runwayLabel: "\(ultAUs) AU",
-                summary: "Minimum buffer; requires near-zero jitter LAN.",
+                summary: t(.latencyUltraDesc),
                 accent: palette.statusWarning,
                 targetDelayMs: 150
             ),
@@ -283,7 +278,7 @@ public struct CozyLatencyGuideSheetView: View {
         let activePreset = LatencyPreset(delayMs: currentDelayMs)
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
             HStack {
-                Text(title)
+                Text(t(.latencyGuideTitle))
                     .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
                     .foregroundStyle(palette.textPrimary)
                 Spacer()
@@ -296,7 +291,7 @@ public struct CozyLatencyGuideSheetView: View {
                 .buttonStyle(.plain)
             }
 
-            Text(subtitle)
+            Text(t(.latencyGuideSubtitle))
                 .font(.system(size: DesignTokens.Typography.caption))
                 .foregroundStyle(palette.textSecondary)
 
@@ -356,7 +351,7 @@ public struct CozyLatencyGuideSheetView: View {
                     onClose()
                     onOpenSettings()
                 } label: {
-                    Text(customSettingsLabel)
+                    Text(t(.latencyGoSettingsCustom))
                         .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
                         .foregroundStyle(palette.accentBright)
                         .padding(.horizontal, 12)
@@ -368,7 +363,7 @@ public struct CozyLatencyGuideSheetView: View {
                 Spacer()
 
                 Button(action: onClose) {
-                    Text(closeLabel)
+                    Text(t(.commonDone))
                         .font(.system(size: DesignTokens.Typography.caption, weight: .semibold))
                         .foregroundStyle(palette.textPrimary)
                         .padding(.horizontal, 14)

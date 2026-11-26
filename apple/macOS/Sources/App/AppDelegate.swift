@@ -68,11 +68,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             existing.makeKeyAndOrderFront(nil)
             return
         }
-        let title = BrandStrings.appDisplayName(for: preferences.appLanguage)
+        let title = BrandStrings.appDisplayName(for: castCoordinator.appLanguage)
         let content = MainWindowView(
             coordinator: castCoordinator,
             onOpenSettings: { [weak self] in
                 self?.openSettingsWindow()
+            },
+            onAppearanceChanged: { [weak self] mode in
+                self?.applyAppAppearance(mode)
             }
         )
         let window = NSWindow(

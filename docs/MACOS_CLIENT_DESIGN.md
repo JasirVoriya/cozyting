@@ -217,12 +217,11 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS/Info.plist` 补齐 `NSAppleEventsUsageDescription`，悬浮卡升级「正在播放」封面/角标、上一首/播停/下一首与按需 4pt 进度条。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `NowPlayingModelTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：Apple Music / Spotify 真实 Automation 授权弹窗与非脚本播放器系统媒体键实操待人工桌面交互验收。）
 
-- [ ] **M8 · 中/英/日三语 i18n、本地运行日志查看导出与设置/关于页**
+- [x] **M8 · 中/英/日三语 i18n、本地运行日志查看导出与设置/关于页**
   - **交付物**：
-    - `CozyTingDesignKit` `Localizable.xcstrings` 补齐 `zh-CN` / `en` / `ja` 全量文案与应用内语言切换；
-    - 4 组设置页卡片、「关于窝爱听」与受 `ENABLE_SPONSOR_ENTRY` 控制的纯静态赞赏弹窗；
-    - `LogViewerView` 独立日志窗口（结构化时间线 + JSON 折叠 + 搜索 + `.txt` 导出 + 清空，复用 L1 `diag_log`）。
-  - **验收**：三语切换无硬编码残留与文本截断，日志轮转/导出/清空功能正常。
+    - `CozyTingDesignKit`：`CozyTingL10n`（`L10nKey` 全量三语词典 + 即时应用内语言切换 + 品牌名与 `MiPlay` 解耦）、`Resources/Localizable.xcstrings`、`CozyLogViewerView`（4 段筛选 / 搜索 / 结构化时间线与原始模式 / 日期分割线 / `key=value` 胶囊 / 长 JSON 折叠格式化 / `.txt` 导出 / 复制 / 二次确认清空）、`CozyAboutView`（F2 居中品牌头 / 检查更新 / Beta 开关 / Releases 外链 / `ENABLE_SPONSOR_ENTRY` 静态赞赏码弹窗）及 `LocalizationM8Tests`（100% 三语键完整性校验）；
+    - `apple/macOS`：4 组卡片 `SettingsWindowView`（外观与发现 / 音频与系统权限 / 连接与调试含运行日志入口与折叠高级项 / 关于窝爱听），全量界面（菜单栏菜单、悬浮卡、主窗口、音源管理、延迟引导）接入三语词典，零硬编码残留。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `LocalizationM8Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：中/英/日三语桌面实机排版与导出日志交互验收待人工确认。）
 
 - [ ] **M9 · 透明版本更新、DMG 打包签名公证、CI 门禁与公开文档同步**
   - **交付物**：

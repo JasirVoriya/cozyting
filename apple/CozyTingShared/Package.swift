@@ -40,7 +40,10 @@ let package = Package(
         ),
         .target(
             name: "CozyTingDesignKit",
-            dependencies: ["CozyTingCoreKit"]
+            dependencies: ["CozyTingCoreKit"],
+            resources: [
+                .process("Resources"),
+            ]
         ),
         .testTarget(
             name: "CozyTingCoreKitTests",

@@ -55,6 +55,8 @@ public final class CastCoordinator {
     public private(set) var volumeGuardSafeLimit: Int
     public private(set) var authMode: AuthMode
     public private(set) var sourceMode: SourceMode
+    public private(set) var themeMode: ThemeMode
+    public private(set) var appLanguage: AppLanguage
     public private(set) var lastSelectedSpeakerIds: [String]
     public var pendingVolumeConfirmation: PendingVolumeConfirmation?
 
@@ -90,6 +92,8 @@ public final class CastCoordinator {
         self.showAllDiscovered = preferences.showAllDiscovered
         self.authMode = preferences.authMode
         self.sourceMode = preferences.sourceMode
+        self.themeMode = preferences.themeMode
+        self.appLanguage = preferences.appLanguage
         self.lastSelectedSpeakerIds = preferences.loadLastSelectedSpeakerIds()
         self.autoDetectAudioSource = preferences.autoDetectAudioSource
         self.hardwareVolumeKeysEnabled = preferences.hardwareVolumeKeysEnabled
@@ -567,6 +571,16 @@ public final class CastCoordinator {
     public func setSourceMode(_ mode: SourceMode) {
         sourceMode = mode
         preferences.sourceMode = mode
+    }
+
+    public func setThemeMode(_ mode: ThemeMode) {
+        themeMode = mode
+        preferences.themeMode = mode
+    }
+
+    public func setAppLanguage(_ language: AppLanguage) {
+        appLanguage = language
+        preferences.appLanguage = language
     }
 
     // MARK: - Teardown (Strict 4-Step Deadlock-Free Stop)

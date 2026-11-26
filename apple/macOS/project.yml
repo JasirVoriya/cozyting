@@ -13,6 +13,9 @@ targets:
     deploymentTarget: "14.2"
     sources:
       - path: Sources
+      - path: Resources
+        excludes:
+          - CozyTingMac.entitlements
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cozyting.app
@@ -21,6 +24,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         MACOSX_DEPLOYMENT_TARGET: "14.2"
         SWIFT_VERSION: "6.0"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ENABLE_SPONSOR_ENTRY"
         INFOPLIST_FILE: Info.plist
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_IDENTITY: "-"
