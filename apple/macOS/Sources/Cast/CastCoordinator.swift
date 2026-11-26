@@ -25,6 +25,7 @@ public final class CastCoordinator {
     public let logManager: CozyTingLogManager
     public let discoveryClient: CozyTingDiscoveryClient
     public let audioEngine: ProcessTapAudioEngine
+    public let sourceCatalog: AppSourceCatalog
 
     // MARK: - Published UI State
 
@@ -37,6 +38,9 @@ public final class CastCoordinator {
     public private(set) var engineStats: EngineStats?
     public private(set) var lastError: String?
     public private(set) var activeSource: AudioSourceSelection?
+    public private(set) var favoriteSources: [FavoriteAudioSource] = []
+    public private(set) var autoDetectAudioSource: Bool = true
+    public private(set) var lastSourceSwitchWasAuto: Bool = false
     public private(set) var activeWifiFrequencyMHz: Int32 = 0
 
     // Volume & Delay reactive mirrors of PreferencesStore
@@ -57,6 +61,7 @@ public final class CastCoordinator {
     private var l1Engine: CozyTingEngine?
     private var statsPollingTask: Task<Void, Never>?
     private var connectTask: Task<Void, Never>?
+    private var autoDetector: AudioSourceAutoDetector?
     private var thisDeviceNameProvider: () -> String
 
     public init(
@@ -69,6 +74,7 @@ public final class CastCoordinator {
         self.logManager = logManager
         self.discoveryClient = discoveryClient
         self.audioEngine = ProcessTapAudioEngine(logger: logManager.runtimeLogger)
+        self.sourceCatalog = AppSourceCatalog(preferences: preferences)
         self.thisDeviceNameProvider = thisDeviceNameProvider
 
         self.volumeGuardEnabled = preferences.volumeGuardEnabled
@@ -81,6 +87,10 @@ public final class CastCoordinator {
         self.authMode = preferences.authMode
         self.sourceMode = preferences.sourceMode
         self.lastSelectedSpeakerIds = preferences.loadLastSelectedSpeakerIds()
+        self.autoDetectAudioSource = preferences.autoDetectAudioSource
+
+        self.sourceCatalog.refreshCatalog()
+        self.favoriteSources = preferences.loadFavoriteAudioSources()
         self.activeSource = preferences.loadSelectedAudioSource()
 
         CozyTingCoreBridge.setVolumeGuardPolicy(
@@ -92,6 +102,18 @@ public final class CastCoordinator {
         // Hydrate initial list from cached devices immediately on cold start.
         let cached = preferences.loadCachedDevices()
         rebuildDeviceList(from: [makeThisDevice(selected: true)] + cached)
+
+        self.autoDetector = AudioSourceAutoDetector(
+            favoritesProvider: { [weak self] in self?.favoriteSources ?? [] },
+            currentBundleProvider: { [weak self] in self?.activeSource?.bundleIdentifier },
+            enabledProvider: { [weak self] in self?.autoDetectAudioSource ?? false },
+            onDetectedBundle: { [weak self] bundleID in
+                await self?.handleAutoDetectedAudioSource(bundleIdentifier: bundleID)
+            }
+        )
+        if autoDetectAudioSource {
+            self.autoDetector?.start()
+        }
     }
 
     // MARK: - Computed Helpers
@@ -266,28 +288,91 @@ public final class CastCoordinator {
         await startCastSession(speakerIds: targets)
     }
 
-    // MARK: - Audio Source Selection & Hot Switch
+    // MARK: - Audio Source Selection, Favorites & Auto-Detect Hot Switch
 
-    public func selectAudioSource(_ selection: AudioSourceSelection) async {
+    public func selectAudioSource(_ selection: AudioSourceSelection, manual: Bool = true) async {
+        let previous = activeSource
+        if manual {
+            autoDetector?.recordManualSelection(bundleIdentifier: selection.bundleIdentifier)
+        }
+        lastSourceSwitchWasAuto = !manual
+
+        if isCasting, sourceMode == .app, let engine = l1Engine {
+            if previous?.bundleIdentifier.caseInsensitiveCompare(selection.bundleIdentifier) == .orderedSame {
+                activeSource = selection
+                preferences.saveSelectedAudioSource(selection)
+                return
+            }
+            do {
+                try audioEngine.hotSwitchTargetApp(
+                    bundleIdentifier: selection.bundleIdentifier,
+                    muteLocalAudio: muteLocalAudio
+                )
+                _ = try? await engine.switchSource()
+                activeSource = selection
+                preferences.saveSelectedAudioSource(selection)
+                lastError = nil
+                logManager.castOpsLogger.record(
+                    "SOURCE hot_switch bundle=\(selection.bundleIdentifier) auto=\(!manual)"
+                )
+            } catch {
+                // Fail-closed: preserve previous source metadata when hot-switch fails.
+                lastError = String(describing: error)
+                logManager.runtimeLogger.warn(
+                    tag: "Cast",
+                    "Hot-switch failed bundle=\(selection.bundleIdentifier) err=\(error)"
+                )
+            }
+            return
+        }
+
         activeSource = selection
         preferences.saveSelectedAudioSource(selection)
-        logManager.castOpsLogger.record("SOURCE selected bundle=\(selection.bundleIdentifier)")
+        logManager.castOpsLogger.record("SOURCE selected bundle=\(selection.bundleIdentifier) auto=\(!manual)")
+    }
 
-        guard isCasting, sourceMode == .app, let engine = l1Engine else { return }
-        do {
-            try audioEngine.hotSwitchTargetApp(
-                bundleIdentifier: selection.bundleIdentifier,
-                muteLocalAudio: muteLocalAudio
-            )
-            _ = try? await engine.switchSource()
-            lastError = nil
-        } catch {
-            lastError = String(describing: error)
-            logManager.runtimeLogger.warn(
-                tag: "Cast",
-                "Hot-switch failed bundle=\(selection.bundleIdentifier) err=\(error)"
-            )
+    public func handleAutoDetectedAudioSource(bundleIdentifier: String) async {
+        let name = sourceCatalog.displayName(for: bundleIdentifier)
+        await selectAudioSource(
+            AudioSourceSelection(bundleIdentifier: bundleIdentifier, displayName: name),
+            manual: false
+        )
+    }
+
+    public func setAutoDetectAudioSource(_ enabled: Bool) {
+        autoDetectAudioSource = enabled
+        preferences.autoDetectAudioSource = enabled
+        if enabled {
+            autoDetector?.start()
+        } else {
+            autoDetector?.stop()
         }
+    }
+
+    public func addFavoriteSource(bundleIdentifier: String) {
+        favoriteSources = preferences.addFavoriteAudioSource(bundleIdentifier: bundleIdentifier, autoDetectEnabled: true)
+    }
+
+    public func removeFavoriteSource(bundleIdentifier: String) {
+        favoriteSources = preferences.removeFavoriteAudioSource(bundleIdentifier: bundleIdentifier)
+    }
+
+    public func setFavoriteAutoDetect(bundleIdentifier: String, enabled: Bool) {
+        favoriteSources = preferences.setFavoriteAudioSourceAutoDetect(
+            bundleIdentifier: bundleIdentifier,
+            enabled: enabled
+        )
+    }
+
+    public func reorderFavoriteSource(from: String, to: String) {
+        favoriteSources = preferences.reorderFavoriteAudioSources(
+            fromBundleIdentifier: from,
+            toBundleIdentifier: to
+        )
+    }
+
+    public func stopBackgroundMonitors() {
+        autoDetector?.stop()
     }
 
     public func setMuteLocalAudio(_ mute: Bool) {

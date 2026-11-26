@@ -203,11 +203,12 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS`：`WiFiFrequencyProbe`（`CoreWLAN` 频段探测，无定位权限/有线网安全回退 `0 → 1000ms`）、上次音箱组合置顶与 `Restore Last · N` 恢复胶囊、菜单栏滚轮与面板快捷键（`Cmd+↑/↓`、`=`/`-`）±5% 调节总音量。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `VolumeAndLatencyM5Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：真实局域网多箱投送中 4 档免断连热切听感与真机 Wi-Fi 切换频段实测待人工交互验收。）
 
-- [ ] **M6 · 常用音源管理、进程发声自动识别热切与一键唤起音源 App**
+- [x] **M6 · 常用音源管理、进程发声自动识别热切与一键唤起音源 App**
   - **交付物**：
-    - `NSWorkspace` 枚举已安装与运行中应用、高清原图标展示、常用音源增删与拖动排序、点击一键唤起；
-    - 基于 `kAudioProcessPropertyIsRunningOutput` + 常用音源白名单防抖的自动识别与投送中不断箱热切源。
-  - **验收**：切换音乐 App 自动识别热切不断音箱连接，系统提示音与非白名单 App 不误切。
+    - `CozyTingCoreKit`：`AudioSourceAutoDetectPolicy`（白名单 + 700ms 持续发声防抖 + 4s 手动切换冷却防回拉 + 上升沿优先策略）及 `AudioSourceAutoDetectPolicyTests` 契约单测；
+    - `apple/macOS/Sources/System/`：`AppSourceCatalog`（`NSWorkspace` 枚举已安装与运行中应用、原生高清图标缓存、首次自动带入本机已知音乐 App、点击一键唤起）与 `AudioSourceAutoDetector`（监听 `kAudioHardwarePropertyProcessObjectList` + `kAudioProcessPropertyIsRunningOutput` 驱动不断箱热切源）；
+    - `apple/macOS/Sources/UI/`：`AudioSourcePickerView`（搜索、拖动排序、独立自动识别开关、增删常用音源、打开时不中断当前投送）及悬浮卡横向常用音源快捷胶囊与封面点击唤起。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `AudioSourceAutoDetectPolicyTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多款音乐 App 真机发声自动热切与系统通知音现场听感验收待人工交互确认。）
 
 - [ ] **M7 · 「正在播放」分层适配与系统媒体控制（应对 macOS 15.4+ 限制）**
   - **交付物**：

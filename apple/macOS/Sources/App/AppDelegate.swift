@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        castCoordinator.stopBackgroundMonitors()
         castCoordinator.audioEngine.stopCapture()
         MuteGuard.shared.emergencyTeardownAll()
         logManager.runtimeLogger.info(tag: "App", "CozyTingMac terminating (MuteGuard teardown complete)")

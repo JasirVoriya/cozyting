@@ -1,3 +1,4 @@
+import AppKit
 import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
@@ -11,6 +12,7 @@ public struct PopoverControlCardView: View {
     @Environment(\.colorScheme) private var systemColorScheme
     @State private var themeMode: ThemeMode = .system
     @State private var showLatencyGuide: Bool = false
+    @State private var showSourcePicker: Bool = false
 
     public init(
         coordinator: CastCoordinator,
@@ -90,6 +92,13 @@ public struct PopoverControlCardView: View {
                 onClose: { showLatencyGuide = false }
             )
         }
+        .sheet(isPresented: $showSourcePicker) {
+            AudioSourcePickerView(
+                coordinator: coordinator,
+                palette: palette,
+                onClose: { showSourcePicker = false }
+            )
+        }
         .background {
             // In-panel keyboard shortcuts for ±5% master volume (zero Accessibility permissions).
             HStack(spacing: 0) {
@@ -167,13 +176,33 @@ public struct PopoverControlCardView: View {
     private var nowPlayingAndMasterVolumeCard: some View {
         VStack(spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: DesignTokens.Spacing.md) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(palette.accentSoftBg)
-                    .frame(width: 52, height: 52)
-                    .overlay(
-                        CozyTingIconView(.musicNote, size: 22, weight: .medium)
-                            .foregroundStyle(DesignTokens.Brand.coral)
-                    )
+                Button {
+                    if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
+                        coordinator.sourceCatalog.launchApplication(bundleIdentifier: bid)
+                    } else {
+                        showSourcePicker = true
+                    }
+                } label: {
+                    Group {
+                        if let bid = coordinator.activeSource?.bundleIdentifier,
+                           let icon = coordinator.sourceCatalog.icon(for: bid) {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        } else {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(palette.accentSoftBg)
+                                .frame(width: 52, height: 52)
+                                .overlay(
+                                    CozyTingIconView(.musicNote, size: 22, weight: .medium)
+                                        .foregroundStyle(DesignTokens.Brand.coral)
+                                )
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(coordinator.activeSource?.displayName ?? "Select Audio Source")
@@ -226,37 +255,115 @@ public struct PopoverControlCardView: View {
     // MARK: - Section 3: Audio Source Strip
 
     private var audioSourceStrip: some View {
-        HStack(spacing: DesignTokens.Spacing.sm) {
-            Text("Source")
-                .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                .foregroundStyle(palette.textSecondary)
-
-            if let source = coordinator.activeSource {
-                HStack(spacing: 4) {
-                    CozyTingIconView(.musicNote, size: 11)
-                    Text(source.displayName)
-                        .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                        .lineLimit(1)
-                }
-                .foregroundStyle(palette.textPrimary)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .background(palette.accentSoftBg, in: Capsule())
-            } else {
-                Text("None selected")
-                    .font(.system(size: DesignTokens.Typography.caption))
-                    .foregroundStyle(palette.textTertiary)
-            }
-
-            Spacer()
-
-            Button(action: onOpenMainWindow) {
-                CozyTingIconView(.chevronRight, size: 11, weight: .semibold)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: DesignTokens.Spacing.sm) {
+                Text("Source")
+                    .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
                     .foregroundStyle(palette.textSecondary)
+
+                if coordinator.lastSourceSwitchWasAuto {
+                    Text("Auto")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(palette.accentBright)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(palette.accentSoftBg, in: Capsule())
+                }
+
+                Spacer()
+
+                Button {
+                    showSourcePicker = true
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("Manage")
+                            .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
+                        CozyTingIconView(.chevronRight, size: 9, weight: .semibold)
+                    }
+                    .foregroundStyle(palette.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    // If current source is not in favorites, surface it first.
+                    if let active = coordinator.activeSource,
+                       !coordinator.favoriteSources.contains(where: {
+                           $0.bundleIdentifier.caseInsensitiveCompare(active.bundleIdentifier) == .orderedSame
+                       }) {
+                        sourceChip(
+                            bundleIdentifier: active.bundleIdentifier,
+                            name: active.displayName,
+                            selected: true
+                        )
+                    }
+
+                    ForEach(coordinator.favoriteSources, id: \.bundleIdentifier) { fav in
+                        let name = coordinator.sourceCatalog.displayName(for: fav.bundleIdentifier)
+                        let selected = coordinator.activeSource?.bundleIdentifier
+                            .caseInsensitiveCompare(fav.bundleIdentifier) == .orderedSame
+                        sourceChip(
+                            bundleIdentifier: fav.bundleIdentifier,
+                            name: name,
+                            selected: selected
+                        )
+                    }
+
+                    if coordinator.favoriteSources.isEmpty && coordinator.activeSource == nil {
+                        Button {
+                            showSourcePicker = true
+                        } label: {
+                            Text("Choose Audio App…")
+                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
+                                .foregroundStyle(palette.accentBright)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(palette.accentSoftBg, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
         .padding(.horizontal, 4)
+    }
+
+    @ViewBuilder
+    private func sourceChip(bundleIdentifier: String, name: String, selected: Bool) -> some View {
+        Button {
+            Task {
+                await coordinator.selectAudioSource(
+                    AudioSourceSelection(bundleIdentifier: bundleIdentifier, displayName: name),
+                    manual: true
+                )
+            }
+        } label: {
+            HStack(spacing: 5) {
+                if let icon = coordinator.sourceCatalog.icon(for: bundleIdentifier) {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 15, height: 15)
+                        .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
+                } else {
+                    CozyTingIconView(.musicNote, size: 11)
+                }
+                Text(name)
+                    .font(.system(size: DesignTokens.Typography.caption, weight: selected ? .semibold : .medium))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(selected ? palette.accentBright : palette.textPrimary)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                Capsule().fill(selected ? palette.accentSoftBg : palette.controlSurface)
+            )
+            .overlay(
+                Capsule().strokeBorder(selected ? palette.accent : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Section 4: Output Devices
