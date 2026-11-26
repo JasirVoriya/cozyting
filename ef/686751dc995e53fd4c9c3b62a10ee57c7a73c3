@@ -1,0 +1,46 @@
+apple/CozyTingShared/Package.swift
+  h_75f437d5bc136b 43-46
+apple/CozyTingShared/Sources/CozyTingDesignKit/AboutAndSponsorView.swift
+  h_75f437d5bc136b 1-321
+apple/CozyTingShared/Sources/CozyTingDesignKit/CozyTingL10n.swift
+  h_75f437d5bc136b 1-816
+apple/CozyTingShared/Sources/CozyTingDesignKit/LatencyControlComponents.swift
+  h_75f437d5bc136b 183,192,200,207-210,234,237,245,248,256,259,267,270,281,294,354,366
+apple/CozyTingShared/Sources/CozyTingDesignKit/LogViewerView.swift
+  h_75f437d5bc136b 1-459
+apple/CozyTingShared/Sources/CozyTingDesignKit/Resources/Localizable.xcstrings
+  h_75f437d5bc136b 1-94
+apple/CozyTingShared/Tests/CozyTingDesignKitTests/LocalizationM8Tests.swift
+  h_75f437d5bc136b 1-38
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 71,76-78
+apple/macOS/Sources/App/CozyTingMacApp.swift
+  h_75f437d5bc136b 10,17-19,26-32
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 58-59,95-96,576-585
+apple/macOS/Sources/UI/AudioSourcePickerView.swift
+  h_75f437d5bc136b 6,28-33,62,66,96,115,120,127,160-161,233,257,269,318
+apple/macOS/Sources/UI/MainWindowView.swift
+  h_75f437d5bc136b 9,15-16,20,23-24,26,47,54-63,66,94
+apple/macOS/Sources/UI/MenuBarStatusController.swift
+  h_75f437d5bc136b 126-127,130-133,138-142,148-152,156-160,166-170
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 26-31,33,41,47-49,51,69-87,89-92,105,110,189-194,262-264,266,274,276,390,395,409,446,503,514,555-557,562-565,568-569
+apple/macOS/Sources/UI/SettingsWindowView.swift
+  h_75f437d5bc136b 1-656
+apple/macOS/project.yml
+  h_75f437d5bc136b 16-18,27
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 220,222-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ef686751dc995e53fd4c9c3b62a10ee57c7a73c3",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
