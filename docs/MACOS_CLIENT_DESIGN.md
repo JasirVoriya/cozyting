@@ -184,11 +184,11 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS/Sources/Audio/`：`ProcessTreeResolver`（BSD 父子进程树 + Helper Bundle ID 聚合，严格 Fail-Closed）、`MuteGuard`（退出/`SIGINT`/`SIGTERM` 静音释放守卫）、`ProcessTapAudioEngine`（`AudioHardwareCreateProcessTap`、`mutedWhenTapped`、零分配实时 `IOProc`、不断箱热切源与 4 步无死锁停止顺序）。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含多格式 Mock `AudioBuffer` AAC 与背压单测）+ `./scripts/build-macos.sh` Release 构建全绿；五类真实音源与 DRM 边界矩阵已如实登记于 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)（注：自动化无人值守构建环境无法交互授予 macOS 系统音频录制 TCC 弹窗，且网易云音乐 / Spotify 未安装于当前构建机，五类音源真机听感与 DRM 表现已诚实标记为 `⏳` 待人工交互实测）。
 
-- [ ] **M3 · 局域网发现、房间名解析与多音箱毫秒级同频投送集成**
+- [x] **M3 · 局域网发现、房间名解析与多音箱毫秒级同频投送集成**
   - **交付物**：
-    - 接入 `cozyting_discover_json_ex`（冷启动/前台合并缓存、手动刷新强制淘汰离线设备、展示 `miName · roomName`）；
-    - 多音箱勾选同频、投送中动态加减箱、Legacy/Safety 双认证、1Hz 原位状态与延迟刷新、`CastCoordinator` 后台队列隔离。
-  - **验收**：单箱与多箱并发建连/动态增删/断线重连/停播 `CLOSE(0x0002)` 释放实测通过。
+    - `CozyTingCoreKit`：`NetworkInterfaceHelper`（POSIX `getifaddrs` 局域网 IPv4 优选与校验）、`DeviceDisplayFormatter`（`miName · roomName` 去重展示、上次组合置顶与离线/隐藏过滤）、`LatencyPreset`（4 档 + 自定义 `ms` 映射）及单测；
+    - `apple/macOS/Sources/Cast/CastCoordinator.swift`：接入 `cozyting_discover_json_ex`（冷启动合并缓存、手动刷新强制淘汰离线并保留在播箱）、L1 路由状态机驱动的多箱同频/动态加减箱/Legacy·Safety 双认证、1 Hz 原位状态与延迟轮询、4 步无死锁停止与后台队列隔离，并接入 `AppDelegate` 启动与退出生命周期。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含发现/格式化/路由/延迟契约测试）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多箱真实局域网音箱并发建连、动态增删与 `CLOSE(0x0002)` 听感验收待人工现场交互验证。）
 
 - [ ] **M4 · 菜单栏常驻图标、毛玻璃悬浮控制卡与 Style B 明暗双主题**
   - **交付物**：

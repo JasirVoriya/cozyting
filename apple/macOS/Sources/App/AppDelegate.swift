@@ -5,6 +5,10 @@ import CozyTingCoreKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let preferences = PreferencesStore()
     let logManager = CozyTingLogManager()
+    private(set) lazy var castCoordinator = CastCoordinator(
+        preferences: preferences,
+        logManager: logManager
+    )
     private(set) lazy var updateService = UpdateService(preferences: preferences)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -16,9 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         CozyTingCoreBridge.setAuthMode(preferences.authMode)
         logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched")
+        Task { [weak self] in
+            await self?.castCoordinator.discoverDevices(manual: false)
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        castCoordinator.audioEngine.stopCapture()
         MuteGuard.shared.emergencyTeardownAll()
         logManager.runtimeLogger.info(tag: "App", "CozyTingMac terminating (MuteGuard teardown complete)")
         logManager.runtimeLogger.flush()
