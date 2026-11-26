@@ -26,6 +26,7 @@ public final class CastCoordinator {
     public let discoveryClient: CozyTingDiscoveryClient
     public let audioEngine: ProcessTapAudioEngine
     public let sourceCatalog: AppSourceCatalog
+    public let nowPlayingBridge: NowPlayingBridge
 
     // MARK: - Published UI State
 
@@ -40,6 +41,7 @@ public final class CastCoordinator {
     public private(set) var activeSource: AudioSourceSelection?
     public private(set) var favoriteSources: [FavoriteAudioSource] = []
     public private(set) var autoDetectAudioSource: Bool = true
+    public private(set) var hardwareVolumeKeysEnabled: Bool = false
     public private(set) var lastSourceSwitchWasAuto: Bool = false
     public private(set) var activeWifiFrequencyMHz: Int32 = 0
 
@@ -62,6 +64,7 @@ public final class CastCoordinator {
     private var statsPollingTask: Task<Void, Never>?
     private var connectTask: Task<Void, Never>?
     private var autoDetector: AudioSourceAutoDetector?
+    private var hardwareVolumeKeyInterceptor: HardwareVolumeKeyInterceptor?
     private var thisDeviceNameProvider: () -> String
 
     public init(
@@ -75,6 +78,7 @@ public final class CastCoordinator {
         self.discoveryClient = discoveryClient
         self.audioEngine = ProcessTapAudioEngine(logger: logManager.runtimeLogger)
         self.sourceCatalog = AppSourceCatalog(preferences: preferences)
+        self.nowPlayingBridge = NowPlayingBridge()
         self.thisDeviceNameProvider = thisDeviceNameProvider
 
         self.volumeGuardEnabled = preferences.volumeGuardEnabled
@@ -88,6 +92,7 @@ public final class CastCoordinator {
         self.sourceMode = preferences.sourceMode
         self.lastSelectedSpeakerIds = preferences.loadLastSelectedSpeakerIds()
         self.autoDetectAudioSource = preferences.autoDetectAudioSource
+        self.hardwareVolumeKeysEnabled = preferences.hardwareVolumeKeysEnabled
 
         self.sourceCatalog.refreshCatalog()
         self.favoriteSources = preferences.loadFavoriteAudioSources()
@@ -114,6 +119,25 @@ public final class CastCoordinator {
         if autoDetectAudioSource {
             self.autoDetector?.start()
         }
+
+        self.hardwareVolumeKeyInterceptor = HardwareVolumeKeyInterceptor(
+            isCastingProvider: { [weak self] in self?.isCasting ?? false },
+            onVolumeStep: { [weak self] delta in
+                await self?.stepMasterVolume(by: delta)
+            }
+        )
+        if hardwareVolumeKeysEnabled {
+            let started = self.hardwareVolumeKeyInterceptor?.setEnabled(true) ?? false
+            if !started {
+                self.hardwareVolumeKeysEnabled = false
+                preferences.hardwareVolumeKeysEnabled = false
+            }
+        }
+
+        self.nowPlayingBridge.startPolling(
+            sourceProvider: { [weak self] in self?.activeSource },
+            castingStateProvider: { [weak self] in (self?.isCasting ?? false, self?.isPaused ?? false) }
+        )
     }
 
     // MARK: - Computed Helpers
@@ -371,8 +395,24 @@ public final class CastCoordinator {
         )
     }
 
+    public func setHardwareVolumeKeysEnabled(_ enabled: Bool) -> Bool {
+        if enabled {
+            let ok = hardwareVolumeKeyInterceptor?.setEnabled(true) ?? false
+            hardwareVolumeKeysEnabled = ok
+            preferences.hardwareVolumeKeysEnabled = ok
+            return ok
+        } else {
+            hardwareVolumeKeyInterceptor?.setEnabled(false)
+            hardwareVolumeKeysEnabled = false
+            preferences.hardwareVolumeKeysEnabled = false
+            return true
+        }
+    }
+
     public func stopBackgroundMonitors() {
         autoDetector?.stop()
+        nowPlayingBridge.stopPolling()
+        hardwareVolumeKeyInterceptor?.stopTap()
     }
 
     public func setMuteLocalAudio(_ mute: Bool) {

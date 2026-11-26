@@ -210,11 +210,12 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS/Sources/UI/`：`AudioSourcePickerView`（搜索、拖动排序、独立自动识别开关、增删常用音源、打开时不中断当前投送）及悬浮卡横向常用音源快捷胶囊与封面点击唤起。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `AudioSourceAutoDetectPolicyTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多款音乐 App 真机发声自动热切与系统通知音现场听感验收待人工交互确认。）
 
-- [ ] **M7 · 「正在播放」分层适配与系统媒体控制（应对 macOS 15.4+ 限制）**
+- [x] **M7 · 「正在播放」分层适配与系统媒体控制（应对 macOS 15.4+ 限制）**
   - **交付物**：
-    - `NowPlayingBridge`：对 Apple Music / Spotify 经 AppleScript 读取曲目、艺人、封面、进度与播控；对其他音源诚实降级展示音源 App 卡片 + 系统媒体键控制；
-    - 可选「硬件 F11/F12 音量键接管」高级开关（带显式辅助功能权限说明，默认关闭）。
-  - **验收**：AppleScript 已适配与未适配两类音源均有清晰、诚实的 UI 呈现，未授权时不弹窗打扰。
+    - `CozyTingCoreKit`：`NowPlayingModel`（`NowPlayingMode` / `NowPlayingSnapshot` / `NowPlayingParser` 结构化 AppleScript 输出解析与时间格式化）及 `NowPlayingModelTests` 单测；
+    - `apple/macOS/Sources/System/`：`NowPlayingBridge`（分层合规策略：仅当 Apple Music / Spotify 已在运行时经后台队列 AppleScript 读取曲目、艺人、封面、进度与播控，其余音源诚实降级展示音源 App 卡片 + 标准系统媒体键控制，零私有 `MediaRemote` 注入）与 `HardwareVolumeKeyInterceptor`（严格默认关闭的 `CGEventTap` F11/F12 接管，仅在投送中拦截、冷启动绝不静默弹辅助功能提示）；
+    - `apple/macOS/Info.plist` 补齐 `NSAppleEventsUsageDescription`，悬浮卡升级「正在播放」封面/角标、上一首/播停/下一首与按需 4pt 进度条。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `NowPlayingModelTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：Apple Music / Spotify 真实 Automation 授权弹窗与非脚本播放器系统媒体键实操待人工桌面交互验收。）
 
 - [ ] **M8 · 中/英/日三语 i18n、本地运行日志查看导出与设置/关于页**
   - **交付物**：

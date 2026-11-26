@@ -151,6 +151,7 @@ public final class PreferencesStore: @unchecked Sendable {
         public static let updateLastCheckMs = "update_last_check_ms"
         public static let updateEtag = "update_etag"
         public static let updateCachedManifestJSON = "update_cached_manifest_json"
+        public static let hardwareVolumeKeysEnabled = "hardware_volume_keys_enabled"
     }
 
     public static let defaultMasterVolume = 30
@@ -229,6 +230,18 @@ public final class PreferencesStore: @unchecked Sendable {
         }
         set {
             lock.withLock { defaults.set(newValue, forKey: Keys.autoDetectAudioSource) }
+        }
+    }
+
+    /// Opt-in global F11/F12 volume key interception (strictly `false` by default).
+    public var hardwareVolumeKeysEnabled: Bool {
+        get {
+            lock.withLock {
+                defaults.object(forKey: Keys.hardwareVolumeKeysEnabled) as? Bool ?? false
+            }
+        }
+        set {
+            lock.withLock { defaults.set(newValue, forKey: Keys.hardwareVolumeKeysEnabled) }
         }
     }
 

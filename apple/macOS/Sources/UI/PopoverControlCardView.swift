@@ -174,7 +174,8 @@ public struct PopoverControlCardView: View {
     // MARK: - Section 2: Now Playing & Master Volume
 
     private var nowPlayingAndMasterVolumeCard: some View {
-        VStack(spacing: DesignTokens.Spacing.sm) {
+        let np = coordinator.nowPlayingBridge.snapshot
+        return VStack(spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: DesignTokens.Spacing.md) {
                 Button {
                     if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
@@ -183,51 +184,149 @@ public struct PopoverControlCardView: View {
                         showSourcePicker = true
                     }
                 } label: {
-                    Group {
-                        if let bid = coordinator.activeSource?.bundleIdentifier,
-                           let icon = coordinator.sourceCatalog.icon(for: bid) {
+                    ZStack(alignment: .bottomTrailing) {
+                        if let art = coordinator.nowPlayingBridge.artworkImage {
+                            Image(nsImage: art)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 58, height: 58)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        } else if let bid = coordinator.activeSource?.bundleIdentifier,
+                                  let icon = coordinator.sourceCatalog.icon(for: bid) {
                             Image(nsImage: icon)
                                 .resizable()
                                 .interpolation(.high)
-                                .frame(width: 52, height: 52)
+                                .frame(width: 58, height: 58)
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         } else {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .fill(palette.accentSoftBg)
-                                .frame(width: 52, height: 52)
+                                .frame(width: 58, height: 58)
                                 .overlay(
                                     CozyTingIconView(.musicNote, size: 22, weight: .medium)
                                         .foregroundStyle(DesignTokens.Brand.coral)
                                 )
                         }
+
+                        if coordinator.nowPlayingBridge.artworkImage != nil,
+                           let bid = coordinator.activeSource?.bundleIdentifier,
+                           let badgeIcon = coordinator.sourceCatalog.icon(for: bid) {
+                            Image(nsImage: badgeIcon)
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(width: 20, height: 20)
+                                .clipShape(Circle())
+                                .overlay(Circle().strokeBorder(palette.panelBg, lineWidth: 1.5))
+                                .offset(x: 3, y: 3)
+                        }
                     }
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(coordinator.activeSource?.displayName ?? "Select Audio Source")
+                VStack(alignment: .leading, spacing: 4) {
+                    let primaryTitle: String = {
+                        if let np, np.mode == .scriptablePlayer, !np.title.isEmpty {
+                            return np.title
+                        }
+                        if let source = coordinator.activeSource {
+                            return coordinator.isCasting ? "Casting · \(source.displayName)" : source.displayName
+                        }
+                        return "Select Audio Source"
+                    }()
+
+                    let secondarySubtitle: String = {
+                        if let np, np.mode == .scriptablePlayer {
+                            return np.artist.isEmpty ? np.appDisplayName : np.artist
+                        }
+                        if coordinator.isCasting {
+                            return coordinator.muteLocalAudio ? "Local app muted" : "Local audio kept"
+                        }
+                        return "Ready to cast over LAN"
+                    }()
+
+                    Text(primaryTitle)
                         .font(.system(size: DesignTokens.Typography.body, weight: .semibold))
                         .foregroundStyle(palette.textPrimary)
                         .lineLimit(1)
 
-                    Text(coordinator.isCasting ? (coordinator.muteLocalAudio ? "Local app muted" : "Local audio kept") : "Ready to cast over LAN")
+                    Text(secondarySubtitle)
                         .font(.system(size: DesignTokens.Typography.caption))
                         .foregroundStyle(palette.textSecondary)
                         .lineLimit(1)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            coordinator.nowPlayingBridge.previousTrack(source: coordinator.activeSource)
+                        } label: {
+                            CozyTingIconView(.skipPrev, size: 12, weight: .semibold)
+                                .foregroundStyle(palette.textPrimary)
+                                .frame(width: 26, height: 26)
+                                .background(palette.controlSurface, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                        } label: {
+                            let playing = np?.isPlaying ?? (coordinator.isCasting && !coordinator.isPaused)
+                            CozyTingIconView(playing ? .pause : .play, size: 13, weight: .semibold)
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .background(palette.accent, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            coordinator.nowPlayingBridge.nextTrack(source: coordinator.activeSource)
+                        } label: {
+                            CozyTingIconView(.skipNext, size: 12, weight: .semibold)
+                                .foregroundStyle(palette.textPrimary)
+                                .frame(width: 26, height: 26)
+                                .background(palette.controlSurface, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.top, 2)
                 }
 
-                Spacer(minLength: 4)
+                Spacer(minLength: 0)
+            }
 
-                if coordinator.isCasting {
-                    Button {
-                        Task { await coordinator.togglePauseResume() }
-                    } label: {
-                        CozyTingIconView(coordinator.isPaused ? .play : .pause, size: 14, weight: .semibold)
-                            .foregroundStyle(palette.textPrimary)
-                            .frame(width: 30, height: 30)
-                            .background(palette.controlSurface, in: Circle())
+            // Progress scrubber shown honestly ONLY for scriptable players with valid duration
+            if let np, np.mode == .scriptablePlayer, np.canSeek, np.durationSeconds > 0 {
+                VStack(spacing: 3) {
+                    GeometryReader { geo in
+                        let ratio = min(max(np.positionSeconds / np.durationSeconds, 0), 1)
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(palette.trackIdle)
+                                .frame(height: 4)
+                            Capsule()
+                                .fill(palette.accent)
+                                .frame(width: max(4, geo.size.width * ratio), height: 4)
+                        }
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onEnded { value in
+                                    let frac = min(max(value.location.x / max(geo.size.width, 1), 0), 1)
+                                    coordinator.nowPlayingBridge.seek(
+                                        toSeconds: frac * np.durationSeconds,
+                                        source: coordinator.activeSource
+                                    )
+                                }
+                        )
                     }
-                    .buttonStyle(.plain)
+                    .frame(height: 12)
+
+                    HStack {
+                        Text(NowPlayingParser.formatTime(np.positionSeconds))
+                        Spacer()
+                        Text(NowPlayingParser.formatTime(np.durationSeconds))
+                    }
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(palette.textTertiary)
                 }
             }
 

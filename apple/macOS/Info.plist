@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>CozyTing captures audio only from the selected music application via Core Audio Process Tap to cast it to MiPlay speakers on your local network.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>CozyTing optionally reads current track metadata and playback controls from Apple Music or Spotify when selected as your audio source.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_mi-connect._udp</string>
