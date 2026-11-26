@@ -34,6 +34,7 @@
 ## 二、发送端（Android / iOS 设备与系统版本）
 
 > **Android 端**：最低要求 **Android 10（API 29）**，当前正式包构建 **`arm64-v8a`**（支持 16KB ELF 页对齐）。  
+> **macOS 端**：最低要求 **macOS 14.2（Sonoma）**，基于原生 Core Audio Process Tap（`AudioHardwareCreateProcessTap` + `CATapDescription(.mutedWhenTapped)`）与 `AudioToolbox` 48 kHz 256 kbps AAC-LC 硬件编码，免虚拟声卡；L1 Rust 静态库 + `CozyTingShared` + `ProcessTapAudioEngine` 已完成离线编译与多格式单测，真机 TCC 授权与实机音源听感待交互实测登记。  
 > **iOS 端**：L1 Rust C ABI（`ffi_c.rs` / `cozyting_core.h` / `build-ios-xcframework.sh`）与跨端共享设计规范 `design/` 已就绪，L2/L3 原生客户端（`ReplayKit` / `AudioToolbox` / `SwiftUI`）规划推进中。
 
 | 设备型号 / 平台 | 系统 / ROM | 版本 / API | 冷启动与发现 | 投送实测 | 后台保活 / 备注 |
@@ -43,15 +44,29 @@
 | **OnePlus / OPPO / realme (Android)** | ColorOS | API 29–36 | ⏳ | ⏳ | 等待社区实测上报 |
 | **vivo / iQOO (Android)** | OriginOS | API 29–36 | ⏳ | ⏳ | 等待社区实测上报 |
 | **Samsung / Pixel (Android)** | One UI / AOSP | API 29–36 | ⏳ | ⏳ | 等待社区实测上报（欢迎实测 Android 15/16 16KB 页设备） |
+| **Mac (Apple Silicon / macOS)** | macOS Sonoma / Sequoia+ | macOS 14.2+ | ⏳ | ⏳ | `aarch64-apple-darwin` 静态库、`CozyTingAudioKit` 多格式 AAC 单测与 `ProcessTapAudioEngine` 离线编译通过；真机系统音频录制授权（TCC）与实箱投送待人工交互验收 |
 | **iPhone / iPad (iOS / iPadOS)** | iOS / iPadOS | iOS 16+（规划） | ⏳ | ⏳ | L1 Rust C ABI / XCFramework 与 `design/` 规范已就绪，SwiftUI 客户端开发中 |
 
 ---
 
 ## 三、第三方音源 App 说明
 
+### 3.1 Android 端
 - 本项目基于 Android 标准 `AudioPlaybackCapture` API 实现**严格单 App UID 捕获**，不采用 Root 或系统级 Hook。
 - 若第三方 App 在其清单中显式设置 `android:allowAudioPlaybackCapture="false"`，系统层会返回静音或拒绝捕获，本项目**不会尝试绕过**，也不承诺所有第三方 App 均可捕获。
 - 在普通未 Root 权限下，Android 公开 API 不支持单独静音某一第三方 App 的本机输出，因此提供「全局媒体静音（默认）」与「保留本机出声」两种显式策略。
+
+### 3.2 macOS 端（macOS 14.2+ Core Audio Process Tap）
+- 基于原生 `AudioHardwareCreateProcessTap` + `CATapDescription(.mutedWhenTapped)` 实现**严格单 App 进程树隔离**（聚合主进程与 Chromium / Electron `Helper (Audio)` 子进程）与**真·单 App 本机静音**，免虚拟声卡，不绕过 FairPlay / Widevine DRM。
+- 以下五类核心音源的真机捕获、单 App 静音与 DRM 表现按诚实边界逐项登记（自动化无人值守环境无法交互授予 macOS 系统音频录制 TCC 弹窗，且网易云音乐 / Spotify 未安装于当前构建机，均保持 `⏳` 待人工交互实测后更新）：
+
+| 音源 App（macOS） | 单 App 进程树捕获 | 单 App 本机静音 | DRM / 边界说明 |
+| --- | :---: | :---: | --- |
+| **网易云音乐** | ⏳ | ⏳ | 待装机并完成 TCC 授权后实测（Electron/Chromium 子进程树聚合逻辑已实现） |
+| **QQ 音乐** | ⏳ | ⏳ | 待完成 TCC 授权与实箱播放后实测 |
+| **Spotify** | ⏳ | ⏳ | 待装机并完成 TCC 授权后实测（同步验证 AppleScript 元数据） |
+| **Apple Music（Music.app）** | ⏳ | ⏳ | 受 FairPlay DRM 保护流可能返回静音缓冲（不绕过，待 TCC 授权后实测本地曲库与流媒体差异） |
+| **Chrome / Safari 网页音频** | ⏳ | ⏳ | 待完成 TCC 授权后实测（普通 HTML5 音视频与 Widevine/FairPlay 受保护流将分别记录） |
 
 ---
 

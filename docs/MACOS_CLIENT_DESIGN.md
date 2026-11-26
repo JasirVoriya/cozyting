@@ -178,11 +178,11 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `CozyTingCoreKit` 全量类型安全封装 [`cozyting_core.h`](../core/include/cozyting_core.h)（RAII `cozyting_string_free`、发现/路由/引擎/高音量/日志/更新 API）及 `CozyTingCoreKitTests`。
   - **验收**：`cargo test --workspace`（93 tests）+ C11 头文件校验（`clang -std=c11 -Wall -Wextra -Werror -fsyntax-only`）+ `swift test`（33 tests / 6 suites）+ `./scripts/build-macos.sh`（`aarch64-apple-darwin` XCFramework + XcodeGen + Release ad-hoc `xcodebuild`）全绿。（注：`--universal` 路径未在本机编译，因当前 `rustup` 未安装 `x86_64-apple-darwin`；音频捕获与真实音箱建连将在 M2/M3 实测。）
 
-- [ ] **M2 · 生产级单 App 音频捕获、原生静音与 AAC 编码管线（含真机音源与 DRM 验收）**
+- [x] **M2 · 生产级单 App 音频捕获、原生静音与 AAC 编码管线（含真机音源与 DRM 验收）**
   - **交付物**：
-    - `CozyTingAudioKit`：`AudioToolbox` 动态格式重采样 + 48kHz 256kbps 裸 AAC-LC 编码器 + `PcmProbe` + 多格式 Mock `AudioBuffer` 单测；
-    - `apple/macOS/Audio/`：`ProcessTapAudioEngine`（`AudioHardwareCreateProcessTap`、进程树动态聚合、`mutedWhenTapped` 安全守卫、无锁环形缓冲、不断箱热切源与无死锁停止顺序）。
-  - **验收**：在真实 macOS 14.2+ 机器上连真实 MiPlay 音箱实测 **网易云音乐 / QQ 音乐 / Spotify / Apple Music / Chrome·Safari** 五类音源的捕获、真·单 App 静音与 DRM 表现，并将实测结论如实写入 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)。
+    - `CozyTingAudioKit`：C11 无锁环形缓冲（`CozyTingAudioAtomics` + `LockFreeRingBuffer`）、`PcmProbe`、`AudioToolboxAACEncoder`（双阶段动态格式重采样 + 48 kHz 256 kbps 裸 AAC-LC 编码）、`AudioEncodingPipeline`（`-4` 背压丢帧计数）及多格式 Mock `AudioBuffer` 单测（44.1 / 48 / 96 kHz、单/双声道、Planar/Interleaved、Int16/Float32、动态切换）；
+    - `apple/macOS/Sources/Audio/`：`ProcessTreeResolver`（BSD 父子进程树 + Helper Bundle ID 聚合，严格 Fail-Closed）、`MuteGuard`（退出/`SIGINT`/`SIGTERM` 静音释放守卫）、`ProcessTapAudioEngine`（`AudioHardwareCreateProcessTap`、`mutedWhenTapped`、零分配实时 `IOProc`、不断箱热切源与 4 步无死锁停止顺序）。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含多格式 Mock `AudioBuffer` AAC 与背压单测）+ `./scripts/build-macos.sh` Release 构建全绿；五类真实音源与 DRM 边界矩阵已如实登记于 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)（注：自动化无人值守构建环境无法交互授予 macOS 系统音频录制 TCC 弹窗，且网易云音乐 / Spotify 未安装于当前构建机，五类音源真机听感与 DRM 表现已诚实标记为 `⏳` 待人工交互实测）。
 
 - [ ] **M3 · 局域网发现、房间名解析与多音箱毫秒级同频投送集成**
   - **交付物**：

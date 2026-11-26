@@ -32,8 +32,11 @@ let package = Package(
             dependencies: ["CozyTingCore"]
         ),
         .target(
+            name: "CozyTingAudioAtomics"
+        ),
+        .target(
             name: "CozyTingAudioKit",
-            dependencies: ["CozyTingCoreKit"]
+            dependencies: ["CozyTingCoreKit", "CozyTingAudioAtomics"]
         ),
         .target(
             name: "CozyTingDesignKit",

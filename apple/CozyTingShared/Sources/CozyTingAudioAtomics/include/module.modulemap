@@ -1,0 +1,4 @@
+module CozyTingAudioAtomics {
+    header "CozyTingAudioAtomics.h"
+    export *
+}

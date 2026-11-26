@@ -8,18 +8,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var updateService = UpdateService(preferences: preferences)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MuteGuard.shared.installTerminationHooks()
         logManager.initializeCoreLog()
         CozyTingCoreBridge.setVolumeGuardPolicy(
             enabled: preferences.volumeGuardEnabled,
             safeLimit: Int32(preferences.volumeGuardSafeLimit)
         )
         CozyTingCoreBridge.setAuthMode(preferences.authMode)
-        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched (M1 shell)")
+        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // M2 will hook ProcessTapAudioEngine / MuteGuard teardown before L1 engine stop here.
-        logManager.runtimeLogger.info(tag: "App", "CozyTingMac terminating")
+        MuteGuard.shared.emergencyTeardownAll()
+        logManager.runtimeLogger.info(tag: "App", "CozyTingMac terminating (MuteGuard teardown complete)")
         logManager.runtimeLogger.flush()
     }
 }
