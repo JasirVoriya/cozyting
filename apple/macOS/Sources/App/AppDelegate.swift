@@ -1,5 +1,7 @@
 import AppKit
 import CozyTingCoreKit
+import CozyTingDesignKit
+import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -11,6 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     )
     private(set) lazy var updateService = UpdateService(preferences: preferences)
 
+    private var menuBarController: MenuBarStatusController?
+    private var mainWindowController: NSWindowController?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         MuteGuard.shared.installTerminationHooks()
         logManager.initializeCoreLog()
@@ -19,7 +24,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             safeLimit: Int32(preferences.volumeGuardSafeLimit)
         )
         CozyTingCoreBridge.setAuthMode(preferences.authMode)
-        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched")
+        applyAppAppearance(preferences.themeMode)
+
+        menuBarController = MenuBarStatusController(
+            castCoordinator: castCoordinator,
+            onOpenMainWindow: { [weak self] in
+                self?.openMainWindow()
+            },
+            onOpenSettings: { [weak self] in
+                self?.openSettingsWindow()
+            }
+        )
+
+        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched (MenuBar + Style B)")
         Task { [weak self] in
             await self?.castCoordinator.discoverDevices(manual: false)
         }
@@ -30,5 +47,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MuteGuard.shared.emergencyTeardownAll()
         logManager.runtimeLogger.info(tag: "App", "CozyTingMac terminating (MuteGuard teardown complete)")
         logManager.runtimeLogger.flush()
+    }
+
+    func applyAppAppearance(_ mode: ThemeMode) {
+        switch mode {
+        case .system:
+            NSApp.appearance = nil
+        case .light:
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
+    func openMainWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let existing = mainWindowController?.window {
+            existing.makeKeyAndOrderFront(nil)
+            return
+        }
+        let title = BrandStrings.appDisplayName(for: preferences.appLanguage)
+        let content = MainWindowView(
+            coordinator: castCoordinator,
+            onOpenSettings: { [weak self] in
+                self?.openSettingsWindow()
+            }
+        )
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 600),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.center()
+        window.contentViewController = NSHostingController(rootView: content)
+        let controller = NSWindowController(window: window)
+        mainWindowController = controller
+        controller.showWindow(nil)
+    }
+
+    func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 }

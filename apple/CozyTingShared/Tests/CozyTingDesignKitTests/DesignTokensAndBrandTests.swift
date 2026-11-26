@@ -31,4 +31,38 @@ struct DesignTokensAndBrandTests {
         #expect(BrandStrings.appDisplayName(for: .system, locale: Locale(identifier: "en-US")) == "CozyTing")
         #expect(BrandStrings.appDisplayName(for: .system, locale: Locale(identifier: "ja-JP")) == "CozyTing")
     }
+
+    @Test("CozyTingIcon catalog covers all 28 semantic icons with non-empty symbol names")
+    func iconCatalogCompleteness() {
+        #expect(CozyTingIcon.allCases.count == 28)
+        for icon in CozyTingIcon.allCases {
+            #expect(!icon.rawValue.isEmpty)
+            #expect(!icon.sfSymbolName.isEmpty)
+        }
+    }
+
+    @Test("CozyHouseBrandShape produces non-empty vector path within bounds")
+    func cozyHouseBrandShapePath() {
+        let shape = CozyHouseBrandShape()
+        let path = shape.path(in: CGRect(x: 0, y: 0, width: 24, height: 24))
+        #expect(!path.isEmpty)
+        #expect(path.boundingRect.width > 12)
+        #expect(path.boundingRect.height > 12)
+    }
+
+    @Test("PlatformAdapters maps theme modes and renders 18x18 template menu bar icon")
+    func platformAdaptersThemeAndMenuBarIcon() {
+        #expect(PlatformAdapters.preferredColorScheme(for: .system) == nil)
+        #expect(PlatformAdapters.preferredColorScheme(for: .light) == .light)
+        #expect(PlatformAdapters.preferredColorScheme(for: .dark) == .dark)
+
+        #if os(macOS)
+        let idle = PlatformAdapters.makeMenuBarBrandTemplateImage(active: false)
+        let active = PlatformAdapters.makeMenuBarBrandTemplateImage(active: true)
+        #expect(idle.isTemplate)
+        #expect(active.isTemplate)
+        #expect(idle.size == NSSize(width: 18, height: 18))
+        #expect(active.size == NSSize(width: 18, height: 18))
+        #endif
+    }
 }

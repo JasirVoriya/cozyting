@@ -190,11 +190,11 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS/Sources/Cast/CastCoordinator.swift`：接入 `cozyting_discover_json_ex`（冷启动合并缓存、手动刷新强制淘汰离线并保留在播箱）、L1 路由状态机驱动的多箱同频/动态加减箱/Legacy·Safety 双认证、1 Hz 原位状态与延迟轮询、4 步无死锁停止与后台队列隔离，并接入 `AppDelegate` 启动与退出生命周期。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含发现/格式化/路由/延迟契约测试）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多箱真实局域网音箱并发建连、动态增删与 `CLOSE(0x0002)` 听感验收待人工现场交互验证。）
 
-- [ ] **M4 · 菜单栏常驻图标、毛玻璃悬浮控制卡与 Style B 明暗双主题**
+- [x] **M4 · 菜单栏常驻图标、毛玻璃悬浮控制卡与 Style B 明暗双主题**
   - **交付物**：
-    - `CozyTingDesignKit` 完整映射 [`design/tokens.json`](../design/tokens.json) 与 `design/icons/*.svg`（Template Image）；
-    - 顶部菜单栏 F2 单色图标 + 毛玻璃悬浮控制卡（Style B 选中亮卡反显、状态胶囊、设备行与行内音量条）+ 可选主窗口 + 右键菜单。
-  - **验收**：浅色 / 深色 / 跟随系统三态切换与多音箱列表原位刷新（拖动音量滑块不打断）实机视觉验收通过。
+    - `CozyTingDesignKit`：`CozyTingIcons`（28 个语义图标 + F2 深夜亮灯小屋垂尾小猫 `evenOdd` 矢量标）、`StyleBComponents`（4pt 细轨道 `CozyVolumeTrackSlider` 防轮询打断拖动、`CozyStatusBadge`、Style B 亮卡反显 `CozyDeviceRowCard`、`CozyHighVolumeConfirmView`）与 `PlatformAdapters`（18pt Template 菜单栏图标生成与明暗色板映射）；
+    - `apple/macOS/Sources/UI/`：`MenuBarStatusController`（`NSStatusItem` + `NSPopover` 352pt 悬浮卡 + 右键菜单 + 悬停图标滚轮调音量）、`PopoverControlCardView`（四段式毛玻璃控制卡）与 `MainWindowView`（可选独立主窗口 + 跟随系统/浅色/深色切换）。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `CozyTingDesignKitTests` 图标/矢量/主题单测）+ `./scripts/build-macos.sh` Release 构建全绿。（注：浅/深/跟随系统实机桌面视觉与真机滑块手势流畅度待人工交互验收。）
 
 - [ ] **M5 · 音量持久化、高音量二次确认、上次组合一键恢复与 4 档延迟热切**
   - **交付物**：

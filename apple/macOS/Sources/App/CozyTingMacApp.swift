@@ -1,4 +1,3 @@
-import CozyTingAudioKit
 import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
@@ -6,29 +5,35 @@ import SwiftUI
 @main
 struct CozyTingMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some Scene {
-        let palette = DesignTokens.ThemePalette.palette(for: colorScheme)
         let title = BrandStrings.appDisplayName(for: appDelegate.preferences.appLanguage)
-        let canonical = AudioStreamFormat.canonical
 
-        MenuBarExtra(title, systemImage: "hifispeaker.2") {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-                Text(title)
-                    .font(.system(size: DesignTokens.Typography.pageTitle, weight: .bold))
-                    .foregroundStyle(palette.textPrimary)
-                Text("\(BrandStrings.protocolName) · \(Int(canonical.sampleRate)) Hz")
-                    .font(.system(size: DesignTokens.Typography.caption))
-                    .foregroundStyle(palette.textSecondary)
-                Divider()
-                Button("Quit \(title)") {
-                    NSApplication.shared.terminate(nil)
+        Window(title, id: "main") {
+            MainWindowView(
+                coordinator: appDelegate.castCoordinator,
+                onOpenSettings: {
+                    appDelegate.openSettingsWindow()
                 }
-            }
-            .padding(DesignTokens.Spacing.md)
-            .frame(width: 240)
+            )
         }
-        .menuBarExtraStyle(.window)
+        .defaultSize(width: 480, height: 600)
+
+        Settings {
+            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
+                Text("Settings")
+                    .font(.headline)
+                Toggle("Mute target app locally while casting", isOn: Binding(
+                    get: { appDelegate.castCoordinator.muteLocalAudio },
+                    set: { appDelegate.castCoordinator.setMuteLocalAudio($0) }
+                ))
+                Toggle("Show all discovered LAN devices", isOn: Binding(
+                    get: { appDelegate.castCoordinator.showAllDiscovered },
+                    set: { appDelegate.castCoordinator.setShowAllDiscovered($0) }
+                ))
+            }
+            .padding(DesignTokens.Spacing.lg)
+            .frame(width: 420)
+        }
     }
 }
