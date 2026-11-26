@@ -1,0 +1,62 @@
+.gitignore
+  h_75f437d5bc136b 16,19-29
+apple/CozyTingShared/Package.swift
+  h_75f437d5bc136b 1-55
+apple/CozyTingShared/Sources/CozyTingAudioKit/AudioFormatSpec.swift
+  h_75f437d5bc136b 1-69
+apple/CozyTingShared/Sources/CozyTingCoreKit/CozyTingCoreBridge.swift
+  h_75f437d5bc136b 1-574
+apple/CozyTingShared/Sources/CozyTingCoreKit/CozyTingCoreModels.swift
+  h_75f437d5bc136b 1-757
+apple/CozyTingShared/Sources/CozyTingCoreKit/Logging.swift
+  h_75f437d5bc136b 1-670
+apple/CozyTingShared/Sources/CozyTingCoreKit/PreferencesStore.swift
+  h_75f437d5bc136b 1-754
+apple/CozyTingShared/Sources/CozyTingCoreKit/UpdateService.swift
+  h_75f437d5bc136b 1-461
+apple/CozyTingShared/Sources/CozyTingDesignKit/BrandStrings.swift
+  h_75f437d5bc136b 1-29
+apple/CozyTingShared/Sources/CozyTingDesignKit/DesignTokens.swift
+  h_75f437d5bc136b 1-183
+apple/CozyTingShared/Sources/CozyTingDesignKit/PlatformAdapters.swift
+  h_75f437d5bc136b 1-36
+apple/CozyTingShared/Tests/CozyTingAudioKitTests/AudioFormatSpecTests.swift
+  h_75f437d5bc136b 1-24
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/CozyTingCoreBridgeTests.swift
+  h_75f437d5bc136b 1-348
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/LoggingTests.swift
+  h_75f437d5bc136b 1-187
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/PreferencesStoreTests.swift
+  h_75f437d5bc136b 1-175
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/UpdateServiceTests.swift
+  h_75f437d5bc136b 1-284
+apple/CozyTingShared/Tests/CozyTingDesignKitTests/DesignTokensAndBrandTests.swift
+  h_75f437d5bc136b 1-34
+apple/macOS/Info.plist
+  h_75f437d5bc136b 1-35
+apple/macOS/Resources/CozyTingMac.entitlements
+  h_75f437d5bc136b 1-8
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 1-25
+apple/macOS/Sources/App/CozyTingMacApp.swift
+  h_75f437d5bc136b 1-34
+apple/macOS/project.yml
+  h_75f437d5bc136b 1-37
+core/src/session.rs
+  h_75f437d5bc136b 381-387,390,396-404,407-422,443-444,448-451,453,455,460,463-472,476,1867-1949
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 174,179
+scripts/build-macos.sh
+  h_75f437d5bc136b 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74e37cc0ccf3edbae31ffb3f6779a1d3d07fa52b",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
