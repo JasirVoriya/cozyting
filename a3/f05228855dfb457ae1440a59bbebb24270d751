@@ -1,0 +1,22 @@
+apple/CozyTingShared/Sources/CozyTingCoreKit/CozyTingCoreModels.swift
+  h_75f437d5bc136b 748,753-765
+apple/macOS/Sources/Audio/MuteGuard.swift
+  h_75f437d5bc136b 45,51
+apple/macOS/Sources/Audio/ProcessTapAudioEngine.swift
+  h_75f437d5bc136b 622-624,628,633,635,641,646,649
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 226,234-241,881,883,895,902-903,916,942-943,947,956-969,1003,1017,1019,1024-1033,1062-1068
+core/src/engine.rs
+  h_75f437d5bc136b 921-923,989-997
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3f05228855dfb457ae1440a59bbebb24270d751",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
