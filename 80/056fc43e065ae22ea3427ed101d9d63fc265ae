@@ -1,0 +1,42 @@
+apple/CozyTingShared/Sources/CozyTingDesignKit/CozyTingL10n.swift
+  h_75f437d5bc136b 205-221,456-471,660-675,864-879
+apple/CozyTingShared/Sources/CozyTingDesignKit/LatencyControlComponents.swift
+  h_75f437d5bc136b 377
+apple/macOS/Info.plist
+  h_75f437d5bc136b 7-8,11-12,18
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 7,18,42-46,55-64,85,87,89,93,105,110-111,113-117,122,126,128-186
+apple/macOS/Sources/App/CozyTingMacApp.swift
+  h_75f437d5bc136b 10-12,22-29
+apple/macOS/Sources/Audio/ProcessTapAudioEngine.swift
+  h_75f437d5bc136b 21,35-37,41-42,56,60,62,64,96-163,168,180-181,188-211,225-230,252-253,257,260-275,290,292-295,303,310,313,321,329,361-365,367,406,420-507,535-557,602-646,649-650,652-654,660,662,675
+apple/macOS/Sources/Audio/ProcessTreeResolver.swift
+  h_75f437d5bc136b 72-84
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 1,4,17-36,40-41,58,62-63,94-95,208-266,319-325,330-361,400,416,456,463-464,470,481-483,542-543,553-555,574,589,736,742-743,754,758,791,807-808,818,823,825-833,837,839,841,885,887-888,910,932,941,951-1001
+apple/macOS/Sources/System/AppSourceCatalog.swift
+  h_75f437d5bc136b 142-148,159-180,191-201,203
+apple/macOS/Sources/System/AudioSourceAutoDetector.swift
+  h_75f437d5bc136b 12,70-74
+apple/macOS/Sources/UI/AudioSourcePickerView.swift
+  h_75f437d5bc136b 13,22,27,192,203,216-220
+apple/macOS/Sources/UI/MainWindowView.swift
+  h_75f437d5bc136b 5,42-43,66,69-80,87,91,98,100,102-104
+apple/macOS/Sources/UI/MenuBarStatusController.swift
+  h_75f437d5bc136b 62,87,97-99,108-110,122,124,181,207,212-213,216
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 6-7,9-14,16,21-23,27,32,67-78,81-88,90-92,134-135,139,148-152,155,159-160,208-249,254-256,258-261,274-277,281-295,298,318,327,334,390-393,400-402,413-417,432-441,443-446,549,587,606,628-632,689-690,738-803
+apple/macOS/Sources/UI/SettingsWindowView.swift
+  h_75f437d5bc136b 19,39,45,85,209-212,220,293-319
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80056fc43e065ae22ea3427ed101d9d63fc265ae",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
