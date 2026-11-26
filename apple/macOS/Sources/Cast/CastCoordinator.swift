@@ -1,5 +1,7 @@
+import AppKit
 import CozyTingAudioKit
 import CozyTingCoreKit
+import CozyTingDesignKit
 import Foundation
 import Observation
 
@@ -12,12 +14,31 @@ public struct PendingVolumeConfirmation: Sendable, Equatable, Identifiable {
     public let safeLimit: Int
 }
 
+/// Actionable, localized user-facing error banner displayed in Popover & Main Window.
+public struct CastErrorNotice: Sendable, Equatable {
+    public enum Action: Sendable, Equatable {
+        case none
+        case launchAndCast(bundleIdentifier: String, appName: String, speakerIds: [String])
+        case openAudioPermission
+        case openFirewallSettings
+        case openLocalNetworkSettings
+        case retryDiscovery
+    }
+
+    public let message: String
+    public let action: Action
+
+    public init(message: String, action: Action = .none) {
+        self.message = message
+        self.action = action
+    }
+}
+
 /// Central `@MainActor` coordinator integrating L1 discovery, multi-speaker sync engine,
 /// `ProcessTapAudioEngine`, 1 Hz stats polling, and volume / delay / source state.
 ///
-/// All blocking L1 calls (`discover`, `connect`, `addReceiver`, `removeReceiver`,
-/// `setPlaybackDelay`, `stop`) execute on dedicated background queues inside `CozyTingCoreKit`,
-/// keeping the macOS menu bar and popover strictly responsive.
+/// All blocking L1 and Core Audio HAL calls execute on dedicated background queues,
+/// keeping the macOS menu bar, popover, and windows strictly responsive.
 @MainActor
 @Observable
 public final class CastCoordinator {
@@ -34,10 +55,12 @@ public final class CastCoordinator {
     public private(set) var isDiscovering: Bool = false
     public private(set) var isCasting: Bool = false
     public private(set) var isPaused: Bool = false
+    public private(set) var isStandbyWaitingForAudio: Bool = false
     public private(set) var selectedSpeakerIds: [String] = []
     public private(set) var receiverStatsByIP: [String: ReceiverStats] = [:]
     public private(set) var engineStats: EngineStats?
-    public private(set) var lastError: String?
+    public private(set) var errorNotice: CastErrorNotice?
+    public var lastError: String? { errorNotice?.message }
     public private(set) var activeSource: AudioSourceSelection?
     public private(set) var favoriteSources: [FavoriteAudioSource] = []
     public private(set) var autoDetectAudioSource: Bool = true
@@ -68,6 +91,8 @@ public final class CastCoordinator {
     private var l1Engine: CozyTingEngine?
     private var statsPollingTask: Task<Void, Never>?
     private var connectTask: Task<Void, Never>?
+    private var coldRetryTask: Task<Void, Never>?
+    private var hasScheduledColdDiscoveryRetry: Bool = false
     private var autoDetector: AudioSourceAutoDetector?
     private var hardwareVolumeKeyInterceptor: HardwareVolumeKeyInterceptor?
     private var thisDeviceNameProvider: () -> String
@@ -180,6 +205,65 @@ public final class CastCoordinator {
         return lastSelectedSpeakerIds.filter { availableIDs.contains($0) }.count
     }
 
+    public var isActiveSourceRunning: Bool {
+        guard let bid = activeSource?.bundleIdentifier, !bid.isEmpty else { return false }
+        return sourceCatalog.isRunning(bundleIdentifier: bid)
+    }
+
+    public func clearError() {
+        errorNotice = nil
+    }
+
+    // MARK: - Actionable Error Recovery
+
+    public func performErrorAction(_ action: CastErrorNotice.Action) async {
+        switch action {
+        case .none:
+            clearError()
+        case let .launchAndCast(bundleID, _, speakerIds):
+            clearError()
+            let launched = await sourceCatalog.launchApplicationAndWait(bundleIdentifier: bundleID, timeoutSeconds: 5.0)
+            guard launched else {
+                let name = sourceCatalog.displayName(for: bundleID)
+                errorNotice = CastErrorNotice(
+                    message: CozyTingL10n.format(.errAppNotRunning, language: appLanguage, name),
+                    action: .launchAndCast(bundleIdentifier: bundleID, appName: name, speakerIds: speakerIds)
+                )
+                return
+            }
+            if !speakerIds.isEmpty {
+                var working = devices
+                for id in speakerIds {
+                    if let transition = try? CozyTingCoreBridge.routeApply(
+                        devices: working,
+                        action: .check,
+                        target: id
+                    ) {
+                        working = transition.state.devices
+                    }
+                }
+                rebuildDeviceList(from: working)
+                selectedSpeakerIds = speakerIds
+                await startCastSession(speakerIds: speakerIds)
+            }
+        case .openAudioPermission:
+            Self.openSystemSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")
+        case .openFirewallSettings:
+            Self.openSystemSettings("x-apple.systempreferences:com.apple.Network-Settings.extension")
+        case .openLocalNetworkSettings:
+            Self.openSystemSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")
+        case .retryDiscovery:
+            clearError()
+            await discoverDevices(manual: true)
+        }
+    }
+
+    public static func openSystemSettings(_ urlString: String) {
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     // MARK: - LAN Discovery
 
     public func updateWifiFrequencyMHz(_ mhz: Int32) {
@@ -212,7 +296,6 @@ public final class CastCoordinator {
             preferences.saveCachedDevices(result.cacheable)
 
             var incoming = result.merged
-            // On manual refresh, preserve currently active/selected speakers so live cast UI stays intact.
             if manual && !selectedSpeakerIds.isEmpty {
                 let incomingIDs = Set(incoming.map(\.id))
                 for existing in devices where selectedSpeakerIds.contains(existing.id) && !incomingIDs.contains(existing.id) {
@@ -233,12 +316,49 @@ public final class CastCoordinator {
             }
 
             rebuildDeviceList(from: mergedDevices)
+            hasScheduledColdDiscoveryRetry = false
+            // Clear stale discovery errors once a scan succeeds.
+            if case .openLocalNetworkSettings = errorNotice?.action {
+                errorNotice = nil
+            } else if case .retryDiscovery = errorNotice?.action {
+                errorNotice = nil
+            }
             logManager.castOpsLogger.record(
                 "DISCOVER done manual=\(manual) fresh=\(result.freshCount) castable=\(result.castableCount) hidden=\(result.hiddenCount)"
             )
         } catch {
-            lastError = String(describing: error)
-            logManager.runtimeLogger.warn(tag: "Discovery", "Discovery failed: \(error)")
+            let raw = String(describing: error)
+            logManager.runtimeLogger.warn(tag: "Discovery", "Discovery failed: \(raw)")
+
+            let isLocalNetBlock = raw.contains("os error 65")
+                || raw.localizedCaseInsensitiveContains("No route to host")
+                || raw.localizedCaseInsensitiveContains("Operation not permitted")
+                || raw.contains("os error 1")
+
+            // On cold start while macOS Local Network prompt may still be visible, silently schedule
+            // one delayed retry instead of immediately flashing an error banner.
+            if !manual && isLocalNetBlock && !hasScheduledColdDiscoveryRetry {
+                hasScheduledColdDiscoveryRetry = true
+                coldRetryTask?.cancel()
+                coldRetryTask = Task { [weak self] in
+                    try? await Task.sleep(for: .milliseconds(2500))
+                    guard let self, !Task.isCancelled else { return }
+                    await self.discoverDevices(manual: false)
+                }
+                return
+            }
+
+            if isLocalNetBlock {
+                errorNotice = CastErrorNotice(
+                    message: CozyTingL10n.text(.errLocalNetwork, language: appLanguage),
+                    action: .openLocalNetworkSettings
+                )
+            } else {
+                errorNotice = CastErrorNotice(
+                    message: formatFriendlyError(error),
+                    action: .retryDiscovery
+                )
+            }
         }
     }
 
@@ -277,7 +397,7 @@ public final class CastCoordinator {
             applyRouteState(transition.state)
             await executeRouteEffects(transition.effects)
         } catch {
-            lastError = String(describing: error)
+            errorNotice = CastErrorNotice(message: formatFriendlyError(error))
         }
     }
 
@@ -293,7 +413,7 @@ public final class CastCoordinator {
             applyRouteState(transition.state)
             await executeRouteEffects(transition.effects)
         } catch {
-            lastError = String(describing: error)
+            errorNotice = CastErrorNotice(message: formatFriendlyError(error))
         }
     }
 
@@ -303,7 +423,6 @@ public final class CastCoordinator {
         guard !targets.isEmpty else { return }
 
         var working = devices
-        var combinedEffects: [RouteEffect] = []
         for id in targets {
             if let transition = try? CozyTingCoreBridge.routeApply(
                 devices: working,
@@ -311,7 +430,6 @@ public final class CastCoordinator {
                 target: id
             ) {
                 working = transition.state.devices
-                combinedEffects.append(contentsOf: transition.effects)
             }
         }
         rebuildDeviceList(from: working)
@@ -335,20 +453,21 @@ public final class CastCoordinator {
                 return
             }
             do {
-                try audioEngine.hotSwitchTargetApp(
+                try await audioEngine.hotSwitchTargetAppAsync(
                     bundleIdentifier: selection.bundleIdentifier,
                     muteLocalAudio: muteLocalAudio
                 )
                 _ = try? await engine.switchSource()
                 activeSource = selection
                 preferences.saveSelectedAudioSource(selection)
-                lastError = nil
+                isStandbyWaitingForAudio = audioEngine.status().isStandbyWaitingForAudio
+                clearError()
                 logManager.castOpsLogger.record(
                     "SOURCE hot_switch bundle=\(selection.bundleIdentifier) auto=\(!manual)"
                 )
             } catch {
                 // Fail-closed: preserve previous source metadata when hot-switch fails.
-                lastError = String(describing: error)
+                errorNotice = makeErrorNotice(for: error, speakerIds: selectedSpeakerIds)
                 logManager.runtimeLogger.warn(
                     tag: "Cast",
                     "Hot-switch failed bundle=\(selection.bundleIdentifier) err=\(error)"
@@ -359,6 +478,9 @@ public final class CastCoordinator {
 
         activeSource = selection
         preferences.saveSelectedAudioSource(selection)
+        if case .launchAndCast = errorNotice?.action {
+            errorNotice = nil
+        }
         logManager.castOpsLogger.record("SOURCE selected bundle=\(selection.bundleIdentifier) auto=\(!manual)")
     }
 
@@ -417,6 +539,8 @@ public final class CastCoordinator {
     }
 
     public func stopBackgroundMonitors() {
+        coldRetryTask?.cancel()
+        coldRetryTask = nil
         autoDetector?.stop()
         nowPlayingBridge.stopPolling()
         hardwareVolumeKeyInterceptor?.stopTap()
@@ -426,7 +550,9 @@ public final class CastCoordinator {
         muteLocalAudio = mute
         preferences.muteLocalAudio = mute
         if isCasting && sourceMode == .app {
-            try? audioEngine.setMuteLocalAudio(mute)
+            Task { [weak self] in
+                try? await self?.audioEngine.setMuteLocalAudioAsync(mute)
+            }
         }
     }
 
@@ -445,7 +571,7 @@ public final class CastCoordinator {
                 logManager.castOpsLogger.record("CAST pause")
             }
         } catch {
-            lastError = String(describing: error)
+            errorNotice = CastErrorNotice(message: formatFriendlyError(error))
         }
     }
 
@@ -460,7 +586,7 @@ public final class CastCoordinator {
         do {
             _ = try await engine.setPlaybackDelay(delayMs: clean == 0 ? 0 : resolvedDelay)
         } catch {
-            lastError = String(describing: error)
+            errorNotice = CastErrorNotice(message: formatFriendlyError(error))
         }
     }
 
@@ -607,14 +733,14 @@ public final class CastCoordinator {
 
     // MARK: - Teardown (Strict 4-Step Deadlock-Free Stop)
 
-    public func stopCast() async {
+    public func stopCast(preservingError: CastErrorNotice? = nil) async {
         connectTask?.cancel()
         connectTask = nil
         statsPollingTask?.cancel()
         statsPollingTask = nil
 
-        // Step 1–2: Stop ProcessTapAudioEngine & AAC pipeline first.
-        audioEngine.stopCapture()
+        // Step 1–2: Stop ProcessTapAudioEngine & AAC pipeline off @MainActor first.
+        await audioEngine.stopCaptureAsync()
 
         // Step 3: Stop L1 CozyTingEngine cleanly.
         if let engine = l1Engine {
@@ -625,9 +751,11 @@ public final class CastCoordinator {
         // Step 4: Clear reactive cast state.
         isCasting = false
         isPaused = false
+        isStandbyWaitingForAudio = false
         selectedSpeakerIds = []
         receiverStatsByIP = [:]
         engineStats = nil
+        errorNotice = preservingError
         let resetDevices = devices.map { d in
             Device(
                 id: d.id,
@@ -660,7 +788,7 @@ public final class CastCoordinator {
             case .removeSpeaker(let id):
                 await removeSpeakerInFlight(id: id)
             case .rejectNonCastable(let id, let reason):
-                lastError = "\(id): \(reason)"
+                errorNotice = CastErrorNotice(message: "\(id): \(reason)")
                 logManager.runtimeLogger.warn(tag: "Route", "Rejected non-castable device id=\(id) reason=\(reason)")
             }
         }
@@ -676,8 +804,8 @@ public final class CastCoordinator {
 
         let isSilent = (sourceMode == .silent)
         if !isSilent && (activeSource == nil || activeSource!.bundleIdentifier.isEmpty) {
-            lastError = "No audio source selected"
-            await stopCast()
+            let notice = CastErrorNotice(message: CozyTingL10n.text(.errNoAudioSource, language: appLanguage))
+            await stopCast(preservingError: notice)
             return
         }
 
@@ -687,21 +815,30 @@ public final class CastCoordinator {
         self.isPaused = false
         self.selectedSpeakerIds = speakerIds
         self.lastSelectedSpeakerIds = speakerIds
-        self.lastError = nil
+        self.errorNotice = nil
         preferences.saveLastSelectedSpeakerIds(speakerIds)
 
         if !isSilent, let source = activeSource {
             do {
-                try audioEngine.startCapture(
+                try await audioEngine.startCaptureAsync(
                     bundleIdentifier: source.bundleIdentifier,
-                    muteLocalAudio: muteLocalAudio
+                    muteLocalAudio: muteLocalAudio,
+                    onError: { [weak self] err in
+                        Task { @MainActor [weak self] in
+                            guard let self, self.isCasting else { return }
+                            let notice = self.makeErrorNotice(for: err, speakerIds: self.selectedSpeakerIds)
+                            self.logManager.runtimeLogger.error(tag: "ProcessTap", "Async capture failed: \(err)")
+                            await self.stopCast(preservingError: notice)
+                        }
+                    }
                 ) { frame in
                     engine.pushAac(frame.rawAccessUnit)
                 }
+                self.isStandbyWaitingForAudio = audioEngine.status().isStandbyWaitingForAudio
             } catch {
-                lastError = String(describing: error)
+                let notice = makeErrorNotice(for: error, speakerIds: speakerIds)
                 logManager.runtimeLogger.error(tag: "ProcessTap", "Failed to start capture: \(error)")
-                await stopCast()
+                await stopCast(preservingError: notice)
                 return
             }
         }
@@ -734,7 +871,6 @@ public final class CastCoordinator {
                 guard let self, !Task.isCancelled else { return }
                 self.engineStats = stats
                 self.applyReceiverStats(stats.receivers)
-                // Apply per-speaker saved volumes if distinct from master.
                 for ip in speakerIds {
                     if let saved = self.speakerVolumes[ip], saved != Int(targetVol) {
                         _ = try? await engine.setVolume(
@@ -746,8 +882,10 @@ public final class CastCoordinator {
                 }
             } catch {
                 guard let self, !Task.isCancelled else { return }
-                self.lastError = String(describing: error)
+                let notice = self.makeErrorNotice(for: error, speakerIds: speakerIds)
                 self.logManager.runtimeLogger.error(tag: "Cast", "Connect failed: \(error)")
+                // Always release Process Tap & MuteGuard when initial connect fails so the user's app is never left muted!
+                await self.stopCast(preservingError: notice)
             }
         }
     }
@@ -769,7 +907,7 @@ public final class CastCoordinator {
                 confirmed: !volumeGuardEnabled || targetVol <= volumeGuardSafeLimit
             )
         } catch {
-            lastError = String(describing: error)
+            errorNotice = makeErrorNotice(for: error, speakerIds: [id])
         }
     }
 
@@ -791,6 +929,7 @@ public final class CastCoordinator {
                 do {
                     let envelope = try await engine.stats()
                     guard let self, !Task.isCancelled else { return }
+                    self.isStandbyWaitingForAudio = self.audioEngine.status().isStandbyWaitingForAudio
                     switch envelope {
                     case .active(let stats):
                         self.engineStats = stats
@@ -799,7 +938,7 @@ public final class CastCoordinator {
                     case .preSessionQueued(let receivers):
                         self.applyReceiverStats(receivers)
                     case .error(let msg):
-                        self.lastError = msg
+                        self.errorNotice = self.makeErrorNotice(for: CoreBridgeError.l1Error(msg), speakerIds: self.selectedSpeakerIds)
                     }
                 } catch {
                     // Transient poll failure while stopping; loop exits on cancellation.
@@ -807,6 +946,57 @@ public final class CastCoordinator {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    private func makeErrorNotice(for error: Error, speakerIds: [String]) -> CastErrorNotice {
+        if let tapErr = error as? ProcessTapError {
+            switch tapErr {
+            case .targetAppNotRunning(let bundleID):
+                let appName = sourceCatalog.displayName(for: bundleID)
+                return CastErrorNotice(
+                    message: CozyTingL10n.format(.errAppNotRunning, language: appLanguage, appName),
+                    action: .launchAndCast(bundleIdentifier: bundleID, appName: appName, speakerIds: speakerIds)
+                )
+            case .permissionDeniedOrTapCreationFailed, .deviceStartFailed:
+                return CastErrorNotice(
+                    message: CozyTingL10n.text(.errAudioPermission, language: appLanguage),
+                    action: .openAudioPermission
+                )
+            case .invalidBundleIdentifier:
+                return CastErrorNotice(message: CozyTingL10n.text(.errNoAudioSource, language: appLanguage))
+            case .aggregateDeviceCreationFailed, .streamFormatUnavailable, .ioProcRegistrationFailed:
+                return CastErrorNotice(
+                    message: CozyTingL10n.text(.errAudioPermission, language: appLanguage),
+                    action: .openAudioPermission
+                )
+            }
+        }
+
+        let raw = formatFriendlyError(error)
+        if raw.localizedCaseInsensitiveContains("reverse RTSP")
+            || raw.localizedCaseInsensitiveContains("timeout: reverse") {
+            return CastErrorNotice(
+                message: CozyTingL10n.text(.errFirewallBlocked, language: appLanguage),
+                action: .openFirewallSettings
+            )
+        }
+        if raw.contains("os error 65") || raw.localizedCaseInsensitiveContains("No route to host") {
+            return CastErrorNotice(
+                message: CozyTingL10n.text(.errLocalNetwork, language: appLanguage),
+                action: .openLocalNetworkSettings
+            )
+        }
+        return CastErrorNotice(
+            message: CozyTingL10n.format(.errCastFailed, language: appLanguage, raw),
+            action: .none
+        )
+    }
+
+    private func formatFriendlyError(_ error: Error) -> String {
+        if case CoreBridgeError.l1Error(let msg) = error {
+            return msg
+        }
+        return error.localizedDescription
     }
 
     private func applyReceiverStats(_ receivers: [ReceiverStats]) {

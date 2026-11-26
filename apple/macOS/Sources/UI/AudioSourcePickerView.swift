@@ -10,6 +10,7 @@ import SwiftUI
 public struct AudioSourcePickerView: View {
     @Bindable public var coordinator: CastCoordinator
     public let palette: DesignTokens.ThemePalette
+    public let preferredWidth: CGFloat
     public let onClose: () -> Void
 
     @State private var searchText: String = ""
@@ -18,10 +19,12 @@ public struct AudioSourcePickerView: View {
     public init(
         coordinator: CastCoordinator,
         palette: DesignTokens.ThemePalette,
+        preferredWidth: CGFloat = 420,
         onClose: @escaping () -> Void
     ) {
         self.coordinator = coordinator
         self.palette = palette
+        self.preferredWidth = preferredWidth
         self.onClose = onClose
     }
 
@@ -186,7 +189,7 @@ public struct AudioSourcePickerView: View {
             .frame(maxHeight: 380)
         }
         .padding(DesignTokens.Spacing.lg)
-        .frame(width: 420)
+        .frame(width: preferredWidth)
         .background(palette.panelBg)
         .onAppear {
             coordinator.sourceCatalog.refreshCatalog()
@@ -197,6 +200,7 @@ public struct AudioSourcePickerView: View {
     private func favoriteRow(_ fav: FavoriteAudioSource) -> some View {
         let name = coordinator.sourceCatalog.displayName(for: fav.bundleIdentifier)
         let isSelected = coordinator.activeSource?.bundleIdentifier.caseInsensitiveCompare(fav.bundleIdentifier) == .orderedSame
+        let isRunning = coordinator.sourceCatalog.isRunning(bundleIdentifier: fav.bundleIdentifier)
         let icon = coordinator.sourceCatalog.icon(for: fav.bundleIdentifier)
 
         VStack(alignment: .leading, spacing: 8) {
@@ -209,6 +213,11 @@ public struct AudioSourcePickerView: View {
                             .font(.system(size: DesignTokens.Typography.deviceTitle, weight: .semibold))
                             .foregroundStyle(isSelected ? palette.onSelectedPrimary : palette.textPrimary)
                             .lineLimit(1)
+                        if isRunning {
+                            Circle()
+                                .fill(palette.statusSuccess)
+                                .frame(width: 6, height: 6)
+                        }
                         if isSelected {
                             CozyTingIconView(.check, size: 11, weight: .bold)
                                 .foregroundStyle(palette.accent)

@@ -202,6 +202,23 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case updateSecFixed
     case updateSecRemoved
     case updateSecSecurity
+
+    // Live Error Notices, Standby & macOS Firewall Guidance
+    case errAppNotRunning
+    case errLaunchAndCast
+    case errAudioPermission
+    case errLocalNetwork
+    case errFirewallBlocked
+    case errOpenFirewallSettings
+    case errOpenLocalNetworkSettings
+    case errRetry
+    case errCastFailed
+    case errNoAudioSource
+    case sourceNotRunningHint
+    case sourceWaitingAudioHint
+    case settingsFirewallTitle
+    case settingsFirewallSub
+    case settingsOpenFirewall
 }
 
 public enum CozyTingL10n {
@@ -436,6 +453,22 @@ public enum CozyTingL10n {
         .updateSecFixed: "问题修复",
         .updateSecRemoved: "移除",
         .updateSecSecurity: "安全",
+
+        .errAppNotRunning: "「%@」尚未启动，启动后即可投送其音频。",
+        .errLaunchAndCast: "启动并投送",
+        .errAudioPermission: "需要授予「系统音频录制」权限才能捕获所选应用声音。",
+        .errLocalNetwork: "无法访问局域网，请在系统设置允许「本地网络」后重试。",
+        .errFirewallBlocked: "音箱回连超时，可能被 macOS 防火墙拦截；请在防火墙允许 CozyTing 传入连接。",
+        .errOpenFirewallSettings: "打开防火墙设置",
+        .errOpenLocalNetworkSettings: "打开本地网络设置",
+        .errRetry: "重试",
+        .errCastFailed: "投送连接失败：%@",
+        .errNoAudioSource: "请先选择一个音源应用后再投送。",
+        .sourceNotRunningHint: "未运行 · 点击图标启动",
+        .sourceWaitingAudioHint: "等待「%@」开始播放…",
+        .settingsFirewallTitle: "macOS 防火墙与局域网接入",
+        .settingsFirewallSub: "MiPlay 需要音箱反向连回本机；若开启了防火墙请允许 CozyTing 传入连接",
+        .settingsOpenFirewall: "打开防火墙",
     ]
 
     public static let en: [L10nKey: String] = [
@@ -624,6 +657,22 @@ public enum CozyTingL10n {
         .updateSecFixed: "Fixed",
         .updateSecRemoved: "Removed",
         .updateSecSecurity: "Security",
+
+        .errAppNotRunning: "\"%@\" is not running yet. Launch it to cast its audio.",
+        .errLaunchAndCast: "Launch & Cast",
+        .errAudioPermission: "System Audio Recording permission is required to capture app audio.",
+        .errLocalNetwork: "Local Network access denied or unreachable. Allow it in System Settings and retry.",
+        .errFirewallBlocked: "Speaker couldn't connect back (likely blocked by macOS Firewall). Allow incoming connections for CozyTing.",
+        .errOpenFirewallSettings: "Firewall Settings",
+        .errOpenLocalNetworkSettings: "Local Network Settings",
+        .errRetry: "Retry",
+        .errCastFailed: "Cast connection failed: %@",
+        .errNoAudioSource: "Choose an audio source app before casting.",
+        .sourceNotRunningHint: "Not running · Click icon to launch",
+        .sourceWaitingAudioHint: "Waiting for %@ to play audio…",
+        .settingsFirewallTitle: "macOS Firewall & Local Network",
+        .settingsFirewallSub: "MiPlay speakers connect back to your Mac; allow CozyTing if Firewall is enabled",
+        .settingsOpenFirewall: "Firewall Settings",
     ]
 
     public static let ja: [L10nKey: String] = [
@@ -812,5 +861,21 @@ public enum CozyTingL10n {
         .updateSecFixed: "修正",
         .updateSecRemoved: "削除",
         .updateSecSecurity: "セキュリティ",
+
+        .errAppNotRunning: "「%@」が起動していません。起動してからキャストしてください。",
+        .errLaunchAndCast: "起動してキャスト",
+        .errAudioPermission: "アプリの音声を取得するには「システムオーディオ録音」権限が必要です。",
+        .errLocalNetwork: "ローカルネットワークにアクセスできません。システム設定で許可して再試行してください。",
+        .errFirewallBlocked: "スピーカーからの逆接続がタイムアウトしました（macOS ファイアウォールで CozyTing の受信接続を許可してください）。",
+        .errOpenFirewallSettings: "ファイアウォール設定",
+        .errOpenLocalNetworkSettings: "ローカルネットワーク設定",
+        .errRetry: "再試行",
+        .errCastFailed: "キャスト接続に失敗しました：%@",
+        .errNoAudioSource: "キャスト前に音源アプリを選択してください。",
+        .sourceNotRunningHint: "未起動 · アイコンをクリックして起動",
+        .sourceWaitingAudioHint: "「%@」の再生開始を待機中…",
+        .settingsFirewallTitle: "macOS ファイアウォールとローカルネットワーク",
+        .settingsFirewallSub: "MiPlay はスピーカーから本機へ逆接続します。ファイアウォール有効時は CozyTing を許可してください",
+        .settingsOpenFirewall: "ファイアウォール",
     ]
 }

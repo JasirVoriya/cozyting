@@ -69,6 +69,19 @@ public enum ProcessTreeResolver {
         }
     }
 
+    /// Returns `true` if at least one non-self process with `bundleIdentifier` is currently running.
+    public static func isApplicationRunning(bundleIdentifier: String) -> Bool {
+        let targetBundle = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !targetBundle.isEmpty else { return false }
+        let selfPID = ProcessInfo.processInfo.processIdentifier
+        return NSWorkspace.shared.runningApplications.contains { app in
+            app.processIdentifier > 0
+                && app.processIdentifier != selfPID
+                && !app.isTerminated
+                && app.bundleIdentifier?.caseInsensitiveCompare(targetBundle) == .orderedSame
+        }
+    }
+
     /// Resolves a target application's `bundleIdentifier` into all Core Audio process object IDs
     /// belonging to that application's process tree (including Chromium/Electron audio helpers).
     public static func resolveAudioObjectIDs(forBundleIdentifier bundleIdentifier: String) -> [AudioObjectID] {

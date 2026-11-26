@@ -16,6 +16,7 @@ public struct SettingsWindowView: View {
     @Bindable public var coordinator: CastCoordinator
     public let updateService: UpdateService
     public let onAppearanceChanged: (ThemeMode) -> Void
+    public let onLanguageChanged: ((AppLanguage) -> Void)?
     public let onOpenUpdateDetail: (() -> Void)?
 
     @Environment(\.colorScheme) private var systemColorScheme
@@ -35,11 +36,13 @@ public struct SettingsWindowView: View {
         coordinator: CastCoordinator,
         updateService: UpdateService,
         onAppearanceChanged: @escaping (ThemeMode) -> Void,
+        onLanguageChanged: ((AppLanguage) -> Void)? = nil,
         onOpenUpdateDetail: (() -> Void)? = nil
     ) {
         self.coordinator = coordinator
         self.updateService = updateService
         self.onAppearanceChanged = onAppearanceChanged
+        self.onLanguageChanged = onLanguageChanged
         self.onOpenUpdateDetail = onOpenUpdateDetail
     }
 
@@ -79,7 +82,7 @@ public struct SettingsWindowView: View {
             }
             .padding(DesignTokens.Spacing.xl)
         }
-        .frame(width: 500, height: 620)
+        .frame(minWidth: 520, idealWidth: 540, minHeight: 540, idealHeight: 640)
         .background(palette.bgCanvas)
         .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
         .onAppear {
@@ -203,7 +206,10 @@ public struct SettingsWindowView: View {
                     Spacer()
                     Picker("", selection: Binding(
                         get: { coordinator.appLanguage },
-                        set: { coordinator.setAppLanguage($0) }
+                        set: { newLang in
+                            coordinator.setAppLanguage(newLang)
+                            onLanguageChanged?(newLang)
+                        }
                     )) {
                         Text(t(.langSystem)).tag(AppLanguage.system)
                         Text("简体中文").tag(AppLanguage.zhCN)
@@ -211,7 +217,7 @@ public struct SettingsWindowView: View {
                         Text("日本語").tag(AppLanguage.ja)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 280)
+                    .frame(width: 310)
                 }
 
                 Divider().opacity(0.25)
@@ -273,6 +279,33 @@ public struct SettingsWindowView: View {
                         }
                     } label: {
                         Text(t(.settingsOpenSystemSettings))
+                            .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
+                            .foregroundStyle(palette.accentBright)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(palette.accentSoftBg, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Divider().opacity(0.25)
+
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(t(.settingsFirewallTitle))
+                            .font(.system(size: DesignTokens.Typography.body, weight: .medium))
+                            .foregroundStyle(palette.textPrimary)
+                        Text(t(.settingsFirewallSub))
+                            .font(.system(size: DesignTokens.Typography.micro))
+                            .foregroundStyle(palette.textSecondary)
+                    }
+                    Spacer()
+                    Button {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    } label: {
+                        Text(t(.settingsOpenFirewall))
                             .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
                             .foregroundStyle(palette.accentBright)
                             .padding(.horizontal, 10)

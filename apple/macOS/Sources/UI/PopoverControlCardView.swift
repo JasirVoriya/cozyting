@@ -3,22 +3,33 @@ import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
 
-/// `352pt` frosted-glass Menu Bar Popover control card implementing `docs/MACOS_CLIENT_DESIGN.md` §2.2.
+/// `352pt` frosted-glass Menu Bar Popover control card (and responsive embedded body for Main Window)
+/// implementing `docs/MACOS_CLIENT_DESIGN.md` §2.2.
 public struct PopoverControlCardView: View {
+    private enum InlineSubView {
+        case main
+        case sourcePicker
+        case latencyGuide
+    }
+
     @Bindable public var coordinator: CastCoordinator
+    public let isEmbeddedInMainWindow: Bool
     public let onOpenMainWindow: () -> Void
     public let onOpenSettings: () -> Void
 
     @Environment(\.colorScheme) private var systemColorScheme
-    @State private var showLatencyGuide: Bool = false
-    @State private var showSourcePicker: Bool = false
+    @State private var showLatencyGuideSheet: Bool = false
+    @State private var showSourcePickerSheet: Bool = false
+    @State private var inlineSubView: InlineSubView = .main
 
     public init(
         coordinator: CastCoordinator,
+        isEmbeddedInMainWindow: Bool = false,
         onOpenMainWindow: @escaping () -> Void,
         onOpenSettings: @escaping () -> Void
     ) {
         self.coordinator = coordinator
+        self.isEmbeddedInMainWindow = isEmbeddedInMainWindow
         self.onOpenMainWindow = onOpenMainWindow
         self.onOpenSettings = onOpenSettings
     }
@@ -53,29 +64,34 @@ public struct PopoverControlCardView: View {
 
     public var body: some View {
         ZStack {
-            VStack(spacing: DesignTokens.Spacing.md) {
-                headerBar
-                if let bannerDecision = coordinator.availableUpdateBanner {
-                    CozyUpdateBannerView(
-                        latestTag: bannerDecision.latestTag,
+            Group {
+                if !isEmbeddedInMainWindow && inlineSubView == .sourcePicker {
+                    AudioSourcePickerView(
+                        coordinator: coordinator,
+                        palette: palette,
+                        preferredWidth: 352,
+                        onClose: { inlineSubView = .main }
+                    )
+                } else if !isEmbeddedInMainWindow && inlineSubView == .latencyGuide {
+                    CozyLatencyGuideSheetView(
+                        currentDelayMs: coordinator.delayMs,
+                        wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
                         language: lang,
                         palette: palette,
-                        onView: { coordinator.presentedUpdateDecision = bannerDecision },
-                        onDismiss: {
-                            coordinator.preferences.dismissedUpdateBannerTag = bannerDecision.latestTag
-                            Task {
-                                await coordinator.syncUpdatePresentation(
-                                    from: UpdateService(preferences: coordinator.preferences)
-                                )
-                            }
-                        }
+                        onSelectDelayMs: { ms in
+                            Task { await coordinator.setPlaybackDelay(ms) }
+                        },
+                        onOpenSettings: {
+                            inlineSubView = .main
+                            onOpenSettings()
+                        },
+                        onClose: { inlineSubView = .main }
                     )
+                    .frame(width: 352)
+                } else {
+                    mainCardBody
                 }
-                nowPlayingAndMasterVolumeCard
-                audioSourceStrip
-                outputDevicesSection
             }
-            .padding(DesignTokens.Spacing.md)
 
             if let pending = coordinator.pendingVolumeConfirmation {
                 Color.black.opacity(0.45)
@@ -115,11 +131,12 @@ public struct PopoverControlCardView: View {
                 .padding(DesignTokens.Spacing.lg)
             }
         }
-        .frame(width: 352)
+        .frame(width: isEmbeddedInMainWindow ? nil : 352)
+        .frame(maxWidth: isEmbeddedInMainWindow ? .infinity : 352)
         .background(.ultraThinMaterial)
         .background(palette.panelBg.opacity(0.65))
         .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
-        .sheet(isPresented: $showLatencyGuide) {
+        .sheet(isPresented: $showLatencyGuideSheet) {
             CozyLatencyGuideSheetView(
                 currentDelayMs: coordinator.delayMs,
                 wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
@@ -128,15 +145,19 @@ public struct PopoverControlCardView: View {
                 onSelectDelayMs: { ms in
                     Task { await coordinator.setPlaybackDelay(ms) }
                 },
-                onOpenSettings: onOpenSettings,
-                onClose: { showLatencyGuide = false }
+                onOpenSettings: {
+                    showLatencyGuideSheet = false
+                    onOpenSettings()
+                },
+                onClose: { showLatencyGuideSheet = false }
             )
         }
-        .sheet(isPresented: $showSourcePicker) {
+        .sheet(isPresented: $showSourcePickerSheet) {
             AudioSourcePickerView(
                 coordinator: coordinator,
                 palette: palette,
-                onClose: { showSourcePicker = false }
+                preferredWidth: 420,
+                onClose: { showSourcePickerSheet = false }
             )
         }
         .sheet(
@@ -184,16 +205,60 @@ public struct PopoverControlCardView: View {
         }
     }
 
+    private var mainCardBody: some View {
+        VStack(spacing: DesignTokens.Spacing.md) {
+            headerBar
+            if let bannerDecision = coordinator.availableUpdateBanner {
+                CozyUpdateBannerView(
+                    latestTag: bannerDecision.latestTag,
+                    language: lang,
+                    palette: palette,
+                    onView: { coordinator.presentedUpdateDecision = bannerDecision },
+                    onDismiss: {
+                        coordinator.preferences.dismissedUpdateBannerTag = bannerDecision.latestTag
+                        Task {
+                            await coordinator.syncUpdatePresentation(
+                                from: UpdateService(preferences: coordinator.preferences)
+                            )
+                        }
+                    }
+                )
+            }
+            nowPlayingAndMasterVolumeCard
+            audioSourceStrip
+            outputDevicesSection
+        }
+        .padding(DesignTokens.Spacing.md)
+    }
+
+    private func openSourcePicker() {
+        if isEmbeddedInMainWindow {
+            showSourcePickerSheet = true
+        } else {
+            inlineSubView = .sourcePicker
+        }
+    }
+
+    private func openLatencyGuide() {
+        if isEmbeddedInMainWindow {
+            showLatencyGuideSheet = true
+        } else {
+            inlineSubView = .latencyGuide
+        }
+    }
+
     // MARK: - Section 1: Header Bar
 
     private var headerBar: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            CozyTingIconView(.cozyHouse, size: 17)
-                .foregroundStyle(DesignTokens.Brand.coral)
+            if !isEmbeddedInMainWindow {
+                CozyTingIconView(.cozyHouse, size: 17)
+                    .foregroundStyle(DesignTokens.Brand.coral)
 
-            Text(brandTitle)
-                .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
-                .foregroundStyle(palette.textPrimary)
+                Text(brandTitle)
+                    .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
+                    .foregroundStyle(palette.textPrimary)
+            }
 
             CozyStatusBadge(
                 label: statusLabel,
@@ -206,30 +271,32 @@ public struct PopoverControlCardView: View {
 
             latencyMenuButton
 
-            Button(action: onOpenMainWindow) {
-                Image(systemName: "macwindow")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(palette.textSecondary)
-                    .frame(width: 26, height: 26)
-                    .background(palette.controlSurface, in: Circle())
-            }
-            .buttonStyle(.plain)
-
-            Button(action: onOpenSettings) {
-                ZStack(alignment: .topTrailing) {
-                    CozyTingIconView(.settings, size: 13, weight: .medium)
+            if !isEmbeddedInMainWindow {
+                Button(action: onOpenMainWindow) {
+                    Image(systemName: "macwindow")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(palette.textSecondary)
                         .frame(width: 26, height: 26)
                         .background(palette.controlSurface, in: Circle())
-                    if coordinator.hasUpdateBadge {
-                        Circle()
-                            .fill(palette.accent)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 1, y: -1)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onOpenSettings) {
+                    ZStack(alignment: .topTrailing) {
+                        CozyTingIconView(.settings, size: 13, weight: .medium)
+                            .foregroundStyle(palette.textSecondary)
+                            .frame(width: 26, height: 26)
+                            .background(palette.controlSurface, in: Circle())
+                        if coordinator.hasUpdateBadge {
+                            Circle()
+                                .fill(palette.accent)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 1, y: -1)
+                        }
                     }
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -248,7 +315,7 @@ public struct PopoverControlCardView: View {
                 Task { await coordinator.setPlaybackDelay(ms) }
             },
             onOpenGuide: {
-                showLatencyGuide = true
+                openLatencyGuide()
             }
         )
     }
@@ -257,13 +324,14 @@ public struct PopoverControlCardView: View {
 
     private var nowPlayingAndMasterVolumeCard: some View {
         let np = coordinator.nowPlayingBridge.snapshot
+        let sourceRunning = coordinator.isActiveSourceRunning
         return VStack(spacing: DesignTokens.Spacing.sm) {
             HStack(spacing: DesignTokens.Spacing.md) {
                 Button {
                     if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
                         coordinator.sourceCatalog.launchApplication(bundleIdentifier: bid)
                     } else {
-                        showSourcePicker = true
+                        openSourcePicker()
                     }
                 } label: {
                     ZStack(alignment: .bottomTrailing) {
@@ -319,11 +387,18 @@ public struct PopoverControlCardView: View {
                     }()
 
                     let secondarySubtitle: String = {
+                        if coordinator.isCasting, coordinator.isStandbyWaitingForAudio,
+                           let name = coordinator.activeSource?.displayName {
+                            return CozyTingL10n.format(.sourceWaitingAudioHint, language: lang, name)
+                        }
                         if let np, np.mode == .scriptablePlayer {
                             return np.artist.isEmpty ? np.appDisplayName : np.artist
                         }
                         if coordinator.isCasting {
                             return t(coordinator.muteLocalAudio ? .nowPlayingLocalMuted : .nowPlayingLocalKept)
+                        }
+                        if coordinator.activeSource != nil && !sourceRunning && coordinator.sourceMode == .app {
+                            return t(.sourceNotRunningHint)
                         }
                         return t(.nowPlayingReadyLan)
                     }()
@@ -335,7 +410,11 @@ public struct PopoverControlCardView: View {
 
                     Text(secondarySubtitle)
                         .font(.system(size: DesignTokens.Typography.caption))
-                        .foregroundStyle(palette.textSecondary)
+                        .foregroundStyle(
+                            (coordinator.activeSource != nil && !sourceRunning && !coordinator.isCasting && coordinator.sourceMode == .app)
+                                ? palette.statusWarning
+                                : palette.textSecondary
+                        )
                         .lineLimit(1)
 
                     HStack(spacing: 12) {
@@ -350,9 +429,21 @@ public struct PopoverControlCardView: View {
                         .buttonStyle(.plain)
 
                         Button {
-                            coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                            let isScriptable = coordinator.activeSource.map {
+                                NowPlayingParser.isScriptablePlayer(bundleIdentifier: $0.bundleIdentifier)
+                            } ?? false
+                            if isScriptable && sourceRunning {
+                                coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                            } else if coordinator.isCasting {
+                                Task { await coordinator.togglePauseResume() }
+                            } else {
+                                coordinator.nowPlayingBridge.playPause(source: coordinator.activeSource)
+                            }
                         } label: {
-                            let playing = np?.isPlaying ?? (coordinator.isCasting && !coordinator.isPaused)
+                            let playing: Bool = {
+                                if let np, np.mode == .scriptablePlayer { return np.isPlaying }
+                                return coordinator.isCasting && !coordinator.isPaused
+                            }()
                             CozyTingIconView(playing ? .pause : .play, size: 13, weight: .semibold)
                                 .foregroundStyle(.white)
                                 .frame(width: 30, height: 30)
@@ -455,7 +546,7 @@ public struct PopoverControlCardView: View {
                 Spacer()
 
                 Button {
-                    showSourcePicker = true
+                    openSourcePicker()
                 } label: {
                     HStack(spacing: 3) {
                         Text(t(.commonManage))
@@ -493,7 +584,7 @@ public struct PopoverControlCardView: View {
 
                     if coordinator.favoriteSources.isEmpty && coordinator.activeSource == nil {
                         Button {
-                            showSourcePicker = true
+                            openSourcePicker()
                         } label: {
                             Text(t(.sourceChooseApp))
                                 .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
@@ -512,6 +603,7 @@ public struct PopoverControlCardView: View {
 
     @ViewBuilder
     private func sourceChip(bundleIdentifier: String, name: String, selected: Bool) -> some View {
+        let running = coordinator.sourceCatalog.isRunning(bundleIdentifier: bundleIdentifier)
         Button {
             Task {
                 await coordinator.selectAudioSource(
@@ -533,6 +625,11 @@ public struct PopoverControlCardView: View {
                 Text(name)
                     .font(.system(size: DesignTokens.Typography.caption, weight: selected ? .semibold : .medium))
                     .lineLimit(1)
+                if running {
+                    Circle()
+                        .fill(palette.statusSuccess)
+                        .frame(width: 5, height: 5)
+                }
             }
             .foregroundStyle(selected ? palette.accentBright : palette.textPrimary)
             .padding(.horizontal, 9)
@@ -589,12 +686,8 @@ public struct PopoverControlCardView: View {
             }
             .padding(.horizontal, 4)
 
-            if let error = coordinator.lastError, !error.isEmpty {
-                Text(error)
-                    .font(.system(size: DesignTokens.Typography.micro))
-                    .foregroundStyle(palette.statusError)
-                    .lineLimit(2)
-                    .padding(.horizontal, 4)
+            if let notice = coordinator.errorNotice {
+                errorNoticeCard(notice)
             }
 
             ScrollView {
@@ -642,7 +735,72 @@ public struct PopoverControlCardView: View {
                     }
                 }
             }
-            .frame(maxHeight: 230)
+            .frame(
+                minHeight: isEmbeddedInMainWindow ? 180 : 170,
+                idealHeight: isEmbeddedInMainWindow ? 260 : 210,
+                maxHeight: isEmbeddedInMainWindow ? .infinity : 250
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func errorNoticeCard(_ notice: CastErrorNotice) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 6) {
+                Text(notice.message)
+                    .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
+                    .foregroundStyle(palette.statusError)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 4)
+
+                Button {
+                    coordinator.clearError()
+                } label: {
+                    CozyTingIconView(.close, size: 9, weight: .semibold)
+                        .foregroundStyle(palette.textTertiary)
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let buttonTitle = actionTitle(for: notice.action) {
+                Button {
+                    Task { await coordinator.performErrorAction(notice.action) }
+                } label: {
+                    Text(buttonTitle)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(palette.accent, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(palette.statusError.opacity(0.11), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(palette.statusError.opacity(0.28), lineWidth: 1)
+        )
+    }
+
+    private func actionTitle(for action: CastErrorNotice.Action) -> String? {
+        switch action {
+        case .none:
+            return nil
+        case .launchAndCast:
+            return t(.errLaunchAndCast)
+        case .openAudioPermission:
+            return t(.settingsOpenSystemSettings)
+        case .openFirewallSettings:
+            return t(.errOpenFirewallSettings)
+        case .openLocalNetworkSettings:
+            return t(.errOpenLocalNetworkSettings)
+        case .retryDiscovery:
+            return t(.errRetry)
         }
     }
 }

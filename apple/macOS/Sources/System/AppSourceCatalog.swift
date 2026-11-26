@@ -139,6 +139,13 @@ public final class AppSourceCatalog {
         return img
     }
 
+    /// Returns `true` if `bundleIdentifier` is currently running on macOS.
+    public func isRunning(bundleIdentifier: String) -> Bool {
+        NSWorkspace.shared.runningApplications.contains {
+            !$0.isTerminated && $0.bundleIdentifier?.caseInsensitiveCompare(bundleIdentifier) == .orderedSame
+        }
+    }
+
     /// Launches or activates the target audio application cleanly via `NSWorkspace`.
     public func launchApplication(bundleIdentifier: String) {
         let url = installedApps.first(where: { $0.bundleIdentifier.caseInsensitiveCompare(bundleIdentifier) == .orderedSame })?.appURL
@@ -147,6 +154,28 @@ public final class AppSourceCatalog {
         let config = NSWorkspace.OpenConfiguration()
         config.activates = true
         NSWorkspace.shared.openApplication(at: appURL, configuration: config) { _, _ in }
+    }
+
+    /// Launches the target audio application and waits up to `timeoutSeconds` for it to appear in `NSWorkspace`.
+    @discardableResult
+    public func launchApplicationAndWait(
+        bundleIdentifier: String,
+        timeoutSeconds: Double = 5.0
+    ) async -> Bool {
+        if isRunning(bundleIdentifier: bundleIdentifier) {
+            return true
+        }
+        launchApplication(bundleIdentifier: bundleIdentifier)
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(200))
+            if isRunning(bundleIdentifier: bundleIdentifier) {
+                refreshCatalog()
+                return true
+            }
+        }
+        refreshCatalog()
+        return isRunning(bundleIdentifier: bundleIdentifier)
     }
 
     private func seedDefaultFavoritesIfNeeded(byBundle: [String: InstalledAppItem]) {
@@ -159,14 +188,19 @@ public final class AppSourceCatalog {
         }
         preferences.saveFavoriteAudioSources(seeded)
 
-        // Pre-select the first installed music app if none is selected yet.
-        if preferences.loadSelectedAudioSource() == nil, let first = seeded.first {
-            preferences.saveSelectedAudioSource(
-                AudioSourceSelection(
-                    bundleIdentifier: first.bundleIdentifier,
-                    displayName: displayName(for: first.bundleIdentifier)
+        // Pre-select a currently running favorite app first so casting works immediately on first click;
+        // otherwise fall back to the first installed favorite.
+        if preferences.loadSelectedAudioSource() == nil {
+            let preferred = seeded.first(where: { byBundle[$0.bundleIdentifier.lowercased()]?.isRunning == true })
+                ?? seeded.first
+            if let preferred {
+                preferences.saveSelectedAudioSource(
+                    AudioSourceSelection(
+                        bundleIdentifier: preferred.bundleIdentifier,
+                        displayName: displayName(for: preferred.bundleIdentifier)
+                    )
                 )
-            )
+            }
         }
     }
 }

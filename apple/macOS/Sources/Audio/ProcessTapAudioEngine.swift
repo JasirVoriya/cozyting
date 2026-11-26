@@ -18,6 +18,7 @@ public enum ProcessTapError: Error, Sendable, Equatable {
 /// Real-time capture state reported by `ProcessTapAudioEngine`.
 public struct ProcessTapStatus: Sendable, Equatable {
     public let isCapturing: Bool
+    public let isStandbyWaitingForAudio: Bool
     public let targetBundleIdentifier: String?
     public let tappedProcessCount: Int
     public let muteLocalAudio: Bool
@@ -31,13 +32,14 @@ public struct ProcessTapStatus: Sendable, Equatable {
 /// Enforces all `apple/AGENTS.md` §3–§4 red lines:
 /// - **Fail-Closed single-app isolation**: captures ONLY the target app's process tree via
 ///   `AudioHardwareCreateProcessTap` + `CATapDescription(stereoMixdownOfProcesses:)`.
+/// - **Standby / Armed mode**: if the target app IS running but has not yet created a Core Audio
+///   process node (user hasn't pressed Play yet), stays strictly fail-closed (zero global/mic
+///   capture) and automatically attaches the single-app Process Tap the moment audio starts.
 /// - **True per-app local mute**: `.mutedWhenTapped` when `muteLocalAudio == true`, protected by `MuteGuard`.
 /// - **Real-time IOProc discipline**: zero heap allocation, zero locks, zero I/O inside `IOProc`;
 ///   writes directly into `LockFreeRingBuffer` for `AudioEncodingPipeline`.
-/// - **Hot source switch without speaker disconnect**: swaps only the Process Tap + Aggregate Device
-///   while preserving the L1 `CozyTingEngine` connection and calling `switchSource()`.
-/// - **Deadlock-free 4-step stop order**: atomic stop flag -> stop/destroy IOProc/Aggregate/Tap &
-///   drain encoder -> caller stops L1 engine -> clear state.
+/// - **Off-MainActor control queue**: async wrappers ensure `AudioDeviceStart` / TCC permission
+///   prompts and HAL teardown never freeze the macOS UI thread.
 public final class ProcessTapAudioEngine: @unchecked Sendable {
     private let stateLock = NSLock()
     private let logger: RuntimeLogger?
@@ -51,11 +53,15 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
     private var currentBundleID: String?
     private var currentMuteLocalAudio: Bool = true
     private var currentTappedObjectIDs: [AudioObjectID] = []
+    private var isStandby: Bool = false
     private var streamASBD = AudioStreamBasicDescription()
 
     private var pipeline: AudioEncodingPipeline?
+    private var captureErrorHandler: (@Sendable (Error) -> Void)?
     private var processListListenerBlock: AudioObjectPropertyListenerBlock?
+    private var standbyTimer: DispatchSourceTimer?
     private let listenerQueue = DispatchQueue(label: "com.cozyting.macos.process-tree-listener", qos: .utility)
+    private let controlQueue = DispatchQueue(label: "com.cozyting.macos.process-tap-control", qos: .userInitiated)
 
     // Pre-allocated RT context pointer read strictly by the Core Audio IOProc callback.
     private final class RTIOContext {
@@ -87,10 +93,79 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
         stopCapture()
     }
 
+    // MARK: - Async Non-Blocking Wrappers (Never Block @MainActor)
+
+    public func startCaptureAsync(
+        bundleIdentifier: String,
+        muteLocalAudio: Bool,
+        onError: (@Sendable (Error) -> Void)? = nil,
+        sink: @escaping AudioEncodingPipeline.FrameSink
+    ) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            controlQueue.async {
+                do {
+                    try self.startCapture(
+                        bundleIdentifier: bundleIdentifier,
+                        muteLocalAudio: muteLocalAudio,
+                        onError: onError,
+                        sink: sink
+                    )
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    public func hotSwitchTargetAppAsync(
+        bundleIdentifier: String,
+        muteLocalAudio: Bool
+    ) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            controlQueue.async {
+                do {
+                    try self.hotSwitchTargetApp(
+                        bundleIdentifier: bundleIdentifier,
+                        muteLocalAudio: muteLocalAudio
+                    )
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    public func setMuteLocalAudioAsync(_ muteLocalAudio: Bool) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            controlQueue.async {
+                do {
+                    try self.setMuteLocalAudio(muteLocalAudio)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    public func stopCaptureAsync() async {
+        await withCheckedContinuation { continuation in
+            controlQueue.async {
+                self.stopCapture()
+                continuation.resume()
+            }
+        }
+    }
+
+    // MARK: - Synchronous Core Audio Capture API
+
     /// Starts capturing audio exclusively from `bundleIdentifier` and feeding raw 48 kHz AAC-LC AUs to `sink`.
     public func startCapture(
         bundleIdentifier: String,
         muteLocalAudio: Bool,
+        onError: (@Sendable (Error) -> Void)? = nil,
         sink: @escaping AudioEncodingPipeline.FrameSink
     ) throws {
         let cleanBundle = bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -102,12 +177,37 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
         stopCapture()
 
         let objectIDs = ProcessTreeResolver.resolveAudioObjectIDs(forBundleIdentifier: cleanBundle)
-        guard !objectIDs.isEmpty else {
+        let appRunning = ProcessTreeResolver.isApplicationRunning(bundleIdentifier: cleanBundle)
+        guard !objectIDs.isEmpty || appRunning else {
             throw ProcessTapError.targetAppNotRunning(bundleIdentifier: cleanBundle)
         }
 
         let newPipeline = try AudioEncodingPipeline(sink: sink)
         newPipeline.start()
+
+        stateLock.withLock {
+            self.captureErrorHandler = onError
+            self.pipeline = newPipeline
+            self.currentBundleID = cleanBundle
+            self.currentMuteLocalAudio = muteLocalAudio
+        }
+
+        if objectIDs.isEmpty {
+            // App IS running but hasn't registered a Core Audio process node yet (before Play is pressed).
+            // Stay strictly fail-closed in armed standby and attach the single-app tap automatically
+            // the instant coreaudiod creates a process object for this app.
+            stateLock.withLock {
+                self.isStandby = true
+                self.currentTappedObjectIDs = []
+            }
+            installProcessListListener()
+            startStandbyTimer()
+            logger?.info(
+                tag: "ProcessTap",
+                "Armed standby for running app bundle=\(cleanBundle) (waiting for audio node) mute=\(muteLocalAudio)"
+            )
+            return
+        }
 
         do {
             try attachTapAndStartIO(
@@ -122,6 +222,12 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
                 "Started capture bundle=\(cleanBundle) processes=\(objectIDs.count) mute=\(muteLocalAudio)"
             )
         } catch {
+            stateLock.withLock {
+                self.pipeline = nil
+                self.currentBundleID = nil
+                self.captureErrorHandler = nil
+                self.isStandby = false
+            }
             newPipeline.stop()
             throw error
         }
@@ -143,13 +249,30 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
         }
 
         let objectIDs = ProcessTreeResolver.resolveAudioObjectIDs(forBundleIdentifier: cleanBundle)
-        guard !objectIDs.isEmpty else {
+        let appRunning = ProcessTreeResolver.isApplicationRunning(bundleIdentifier: cleanBundle)
+        guard !objectIDs.isEmpty || appRunning else {
             throw ProcessTapError.targetAppNotRunning(bundleIdentifier: cleanBundle)
         }
 
-        // Tear down old tap/aggregate device first, reset encoder FIFO, then attach new tap.
+        stopStandbyTimer()
         teardownTapOnly()
         existingPipeline.requestReset()
+
+        if objectIDs.isEmpty {
+            stateLock.withLock {
+                self.currentBundleID = cleanBundle
+                self.currentMuteLocalAudio = muteLocalAudio
+                self.currentTappedObjectIDs = []
+                self.isStandby = true
+            }
+            startStandbyTimer()
+            logger?.info(
+                tag: "ProcessTap",
+                "Hot-switched to standby bundle=\(cleanBundle) (waiting for audio node) mute=\(muteLocalAudio)"
+            )
+            return
+        }
+
         try attachTapAndStartIO(
             bundleIdentifier: cleanBundle,
             processObjectIDs: objectIDs,
@@ -164,24 +287,30 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
 
     /// Updates local mute behavior while capturing the same target app.
     public func setMuteLocalAudio(_ muteLocalAudio: Bool) throws {
-        let bundle: String? = stateLock.withLock { currentBundleID }
+        let (bundle, standby): (String?, Bool) = stateLock.withLock { (currentBundleID, isStandby) }
         guard let bundle else { return }
+        if standby {
+            stateLock.withLock { currentMuteLocalAudio = muteLocalAudio }
+            return
+        }
         try hotSwitchTargetApp(bundleIdentifier: bundle, muteLocalAudio: muteLocalAudio)
     }
 
     /// Deadlock-free Steps 1–2 of `apple/AGENTS.md` §3.3:
     /// 1) Flip atomic stopping flag so IOProc becomes an immediate no-op.
     /// 2) Stop/destroy IOProc, Aggregate Device, and Process Tap (`MuteGuard`), then drain encoder loop.
-    /// Caller may safely follow with Step 3 (`await engine.stop()`).
     public func stopCapture() {
+        stopStandbyTimer()
         removeProcessListListener()
         teardownTapOnly()
 
         let pipelineToStop: AudioEncodingPipeline? = stateLock.withLock {
             let p = pipeline
             pipeline = nil
+            captureErrorHandler = nil
             currentBundleID = nil
             currentTappedObjectIDs = []
+            isStandby = false
             return p
         }
         pipelineToStop?.stop()
@@ -189,7 +318,7 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
 
     /// Convenience helper enforcing the full 4-step deadlock-free stop sequence with an L1 `CozyTingEngine`.
     public func stopCaptureAndEngine(_ engine: CozyTingEngine) async {
-        stopCapture()
+        await stopCaptureAsync()
         await engine.stop()
     }
 
@@ -197,6 +326,7 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
         stateLock.withLock {
             ProcessTapStatus(
                 isCapturing: tapID != kAudioObjectUnknown && ioProcID != nil,
+                isStandbyWaitingForAudio: isStandby && pipeline != nil,
                 targetBundleIdentifier: currentBundleID,
                 tappedProcessCount: currentTappedObjectIDs.count,
                 muteLocalAudio: currentMuteLocalAudio,
@@ -228,27 +358,13 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
             throw ProcessTapError.permissionDeniedOrTapCreationFailed(status: tapStatus)
         }
 
-        let tapUUID = tapDesc.uuid.uuidString
-        let aggUID = "com.cozyting.tap-aggregate.\(UUID().uuidString)"
-        let aggDesc: [String: Any] = [
-            kAudioAggregateDeviceNameKey as String: "CozyTing Tap Aggregate",
-            kAudioAggregateDeviceUIDKey as String: aggUID,
-            kAudioAggregateDeviceIsPrivateKey as String: true,
-            kAudioAggregateDeviceIsStackedKey as String: false,
-            kAudioAggregateDeviceTapAutoStartKey as String: true,
-            kAudioAggregateDeviceTapListKey as String: [
-                [
-                    kAudioSubTapUIDKey as String: tapUUID,
-                    kAudioSubTapDriftCompensationKey as String: true,
-                ]
-            ],
-        ]
-
-        var createdAggID = AudioObjectID(kAudioObjectUnknown)
-        let aggStatus = AudioHardwareCreateAggregateDevice(aggDesc as CFDictionary, &createdAggID)
-        guard aggStatus == noErr, createdAggID != kAudioObjectUnknown else {
+        let tapUUID = readTapUID(for: createdTapID) ?? tapDesc.uuid.uuidString
+        let createdAggID: AudioObjectID
+        do {
+            createdAggID = try createTapAggregateDevice(tapUUID: tapUUID)
+        } catch {
             _ = AudioHardwareDestroyProcessTap(createdTapID)
-            throw ProcessTapError.aggregateDeviceCreationFailed(status: aggStatus)
+            throw error
         }
 
         MuteGuard.shared.register(tapID: createdTapID, aggregateDeviceID: createdAggID)
@@ -287,6 +403,7 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
             self.currentBundleID = bundleIdentifier
             self.currentMuteLocalAudio = muteLocalAudio
             self.currentTappedObjectIDs = processObjectIDs
+            self.isStandby = false
             self.streamASBD = asbd
             self.pipeline = pipeline
             self.rtContext = ctx
@@ -298,6 +415,94 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
             teardownTapOnly()
             throw ProcessTapError.deviceStartFailed(status: startStatus)
         }
+    }
+
+    private func createTapAggregateDevice(tapUUID: String) throws -> AudioObjectID {
+        let aggUID = "com.cozyting.tap-aggregate.\(UUID().uuidString)"
+        var baseDesc: [String: Any] = [
+            kAudioAggregateDeviceNameKey as String: "CozyTing Tap Aggregate",
+            kAudioAggregateDeviceUIDKey as String: aggUID,
+            kAudioAggregateDeviceIsPrivateKey as String: true,
+            kAudioAggregateDeviceIsStackedKey as String: false,
+            kAudioAggregateDeviceTapAutoStartKey as String: true,
+            kAudioAggregateDeviceTapListKey as String: [
+                [
+                    kAudioSubTapUIDKey as String: tapUUID,
+                    kAudioSubTapDriftCompensationKey as String: true,
+                ]
+            ],
+        ]
+
+        // Prefer syncing aggregate clock to the default output device WITHOUT adding any input subdevice
+        // (guarantees zero risk of accidentally exposing a microphone input stream).
+        if let clockUID = readDefaultSystemOutputDeviceUID(), !clockUID.isEmpty {
+            var clockedDesc = baseDesc
+            clockedDesc[kAudioAggregateDeviceClockDeviceKey as String] = clockUID
+            var aggID = AudioObjectID(kAudioObjectUnknown)
+            if AudioHardwareCreateAggregateDevice(clockedDesc as CFDictionary, &aggID) == noErr,
+               aggID != kAudioObjectUnknown {
+                return aggID
+            }
+        }
+
+        // Clean fallback without explicit clock device key.
+        baseDesc[kAudioAggregateDeviceUIDKey as String] = "com.cozyting.tap-aggregate.\(UUID().uuidString)"
+        var createdAggID = AudioObjectID(kAudioObjectUnknown)
+        let aggStatus = AudioHardwareCreateAggregateDevice(baseDesc as CFDictionary, &createdAggID)
+        guard aggStatus == noErr, createdAggID != kAudioObjectUnknown else {
+            throw ProcessTapError.aggregateDeviceCreationFailed(status: aggStatus)
+        }
+        return createdAggID
+    }
+
+    private func readTapUID(for tapID: AudioObjectID) -> String? {
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioTapPropertyUID,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var cfUID: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        guard AudioObjectGetPropertyData(tapID, &addr, 0, nil, &size, &cfUID) == noErr,
+              let uid = cfUID?.takeRetainedValue() as String?,
+              !uid.isEmpty else {
+            return nil
+        }
+        return uid
+    }
+
+    private func readDefaultSystemOutputDeviceUID() -> String? {
+        var devAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultSystemOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var devID = AudioObjectID(kAudioObjectUnknown)
+        var devSize = UInt32(MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &devAddr,
+            0,
+            nil,
+            &devSize,
+            &devID
+        ) == noErr, devID != kAudioObjectUnknown else {
+            return nil
+        }
+
+        var uidAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyDeviceUID,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var cfUID: Unmanaged<CFString>?
+        var uidSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        guard AudioObjectGetPropertyData(devID, &uidAddr, 0, nil, &uidSize, &cfUID) == noErr,
+              let uid = cfUID?.takeRetainedValue() as String?,
+              !uid.isEmpty else {
+            return nil
+        }
+        return uid
     }
 
     private func teardownTapOnly() {
@@ -327,7 +532,29 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
         }
     }
 
-    // MARK: - Dynamic Process-Tree Refresh (Electron / Browser Child Processes)
+    // MARK: - Dynamic Process-Tree Refresh & Standby Promotion
+
+    private func startStandbyTimer() {
+        stopStandbyTimer()
+        let timer = DispatchSource.makeTimerSource(queue: listenerQueue)
+        timer.schedule(deadline: .now() + .milliseconds(400), repeating: .milliseconds(500))
+        timer.setEventHandler { [weak self] in
+            self?.refreshProcessTreeIfNeeded()
+        }
+        timer.resume()
+        stateLock.withLock {
+            standbyTimer = timer
+        }
+    }
+
+    private func stopStandbyTimer() {
+        let timer: DispatchSourceTimer? = stateLock.withLock {
+            let t = standbyTimer
+            standbyTimer = nil
+            return t
+        }
+        timer?.cancel()
+    }
 
     private func installProcessListListener() {
         var address = AudioObjectPropertyAddress(
@@ -372,29 +599,67 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
     }
 
     private func refreshProcessTreeIfNeeded() {
-        let snapshot: (bundle: String, currentIDs: [AudioObjectID], tapID: AudioObjectID, desc: CATapDescription)? =
-            stateLock.withLock {
-                guard let b = currentBundleID,
-                      tapID != kAudioObjectUnknown,
-                      let d = tapDescription else {
-                    return nil
+        let state: (
+            bundle: String,
+            mute: Bool,
+            standby: Bool,
+            currentIDs: [AudioObjectID],
+            tapID: AudioObjectID,
+            desc: CATapDescription?,
+            pipeline: AudioEncodingPipeline?,
+            onError: (@Sendable (Error) -> Void)?
+        )? = stateLock.withLock {
+            guard let b = currentBundleID, let p = pipeline else { return nil }
+            return (b, currentMuteLocalAudio, isStandby, currentTappedObjectIDs, tapID, tapDescription, p, captureErrorHandler)
+        }
+        guard let state, let activePipeline = state.pipeline else { return }
+
+        let latestIDs = ProcessTreeResolver.resolveAudioObjectIDs(forBundleIdentifier: state.bundle)
+        guard !latestIDs.isEmpty else { return }
+
+        // Case 1: Armed standby -> target app just created its first Core Audio process node!
+        if state.standby || state.tapID == kAudioObjectUnknown {
+            controlQueue.async { [weak self] in
+                guard let self else { return }
+                let stillStandby: Bool = self.stateLock.withLock {
+                    self.isStandby && self.currentBundleID == state.bundle && self.pipeline != nil
                 }
-                return (b, currentTappedObjectIDs, tapID, d)
+                guard stillStandby else { return }
+                do {
+                    try self.attachTapAndStartIO(
+                        bundleIdentifier: state.bundle,
+                        processObjectIDs: latestIDs,
+                        muteLocalAudio: state.mute,
+                        pipeline: activePipeline
+                    )
+                    self.stopStandbyTimer()
+                    self.logger?.info(
+                        tag: "ProcessTap",
+                        "Promoted standby to active capture bundle=\(state.bundle) processes=\(latestIDs.count) mute=\(state.mute)"
+                    )
+                } catch {
+                    self.logger?.error(
+                        tag: "ProcessTap",
+                        "Standby promotion failed bundle=\(state.bundle) err=\(error)"
+                    )
+                    self.stopStandbyTimer()
+                    state.onError?(error)
+                }
             }
-        guard let snapshot else { return }
+            return
+        }
 
-        let latestIDs = ProcessTreeResolver.resolveAudioObjectIDs(forBundleIdentifier: snapshot.bundle)
-        guard !latestIDs.isEmpty, Set(latestIDs) != Set(snapshot.currentIDs) else { return }
-
-        snapshot.desc.processes = latestIDs
+        // Case 2: Active tap -> child helper process spawned/exited (Electron / Chrome / Safari).
+        guard Set(latestIDs) != Set(state.currentIDs), let desc = state.desc else { return }
+        desc.processes = latestIDs
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioTapPropertyDescription,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
-        var unmanagedDesc = Unmanaged.passUnretained(snapshot.desc)
+        var unmanagedDesc = Unmanaged.passUnretained(desc)
         let status = AudioObjectSetPropertyData(
-            snapshot.tapID,
+            state.tapID,
             &address,
             0,
             nil,
@@ -407,7 +672,7 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
             }
             logger?.info(
                 tag: "ProcessTap",
-                "Refreshed process tree bundle=\(snapshot.bundle) processes=\(latestIDs.count)"
+                "Refreshed process tree bundle=\(state.bundle) processes=\(latestIDs.count)"
             )
         }
     }

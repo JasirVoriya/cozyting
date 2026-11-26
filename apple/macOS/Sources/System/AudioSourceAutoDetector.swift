@@ -9,6 +9,7 @@ public final class AudioSourceAutoDetector {
     private var policy = AudioSourceAutoDetectPolicy(debounceSeconds: 0.7, manualCooldownSeconds: 4.0)
     private var monitorTask: Task<Void, Never>?
     private var processListListenerBlock: AudioObjectPropertyListenerBlock?
+    private let probeQueue = DispatchQueue(label: "com.cozyting.macos.autodetect-probe", qos: .utility)
     private var isStarted = false
 
     private let onDetectedBundle: @MainActor (String) async -> Void
@@ -66,7 +67,11 @@ public final class AudioSourceAutoDetector {
         let favorites = favoritesProvider()
         guard favorites.contains(where: \.autoDetectEnabled) else { return }
 
-        let outputting = ProcessTreeResolver.activeOutputBundleIdentifiers()
+        let outputting: Set<String> = await withCheckedContinuation { continuation in
+            probeQueue.async {
+                continuation.resume(returning: ProcessTreeResolver.activeOutputBundleIdentifiers())
+            }
+        }
         let now = ProcessInfo.processInfo.systemUptime
         if let targetBundle = policy.evaluate(
             activeOutputBundles: outputting,

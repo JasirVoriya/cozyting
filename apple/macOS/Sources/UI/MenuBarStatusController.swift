@@ -59,7 +59,7 @@ public final class MenuBarStatusController: NSObject {
     public func refreshStatusIcon() {
         guard let button = statusItem?.button else { return }
         button.image = PlatformAdapters.makeMenuBarBrandTemplateImage(active: castCoordinator.isCasting)
-        let appName = BrandStrings.appDisplayName(for: castCoordinator.preferences.appLanguage)
+        let appName = BrandStrings.appDisplayName(for: castCoordinator.appLanguage)
         if castCoordinator.isCasting {
             button.toolTip = "\(appName) · \(castCoordinator.selectedSpeakerIds.count)"
         } else {
@@ -82,9 +82,9 @@ public final class MenuBarStatusController: NSObject {
     private func setupPopover() {
         popover.behavior = .transient
         popover.animates = true
-        popover.contentSize = NSSize(width: 352, height: 500)
         let rootView = PopoverControlCardView(
             coordinator: castCoordinator,
+            isEmbeddedInMainWindow: false,
             onOpenMainWindow: { [weak self] in
                 self?.closePopover()
                 self?.onOpenMainWindow()
@@ -94,7 +94,9 @@ public final class MenuBarStatusController: NSObject {
                 self?.onOpenSettings()
             }
         )
-        popover.contentViewController = NSHostingController(rootView: rootView)
+        let hosting = NSHostingController(rootView: rootView)
+        hosting.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = hosting
     }
 
     @objc private func handleStatusItemClick(_ sender: NSStatusBarButton) {
@@ -103,6 +105,9 @@ public final class MenuBarStatusController: NSObject {
             return
         }
         if event.type == .rightMouseUp || (event.type == .leftMouseUp && event.modifierFlags.contains(.control)) {
+            if popover.isShown {
+                popover.performClose(nil)
+            }
             showContextMenu(for: sender)
         } else {
             togglePopover(relativeTo: sender)
@@ -114,7 +119,9 @@ public final class MenuBarStatusController: NSObject {
             popover.performClose(nil)
         } else {
             NSApp.activate(ignoringOtherApps: true)
+            castCoordinator.sourceCatalog.refreshCatalog()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
             Task { [weak self] in
                 await self?.castCoordinator.discoverDevices(manual: false)
             }
@@ -171,9 +178,7 @@ public final class MenuBarStatusController: NSObject {
         quitItem.target = self
         menu.addItem(quitItem)
 
-        statusItem?.menu = menu
-        button.performClick(nil)
-        statusItem?.menu = nil
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
     }
 
     private func installScrollWheelMonitor() {
@@ -199,13 +204,16 @@ public final class MenuBarStatusController: NSObject {
         statusIconObservationTask = Task { @MainActor [weak self] in
             var lastCasting: Bool?
             var lastCount: Int = -1
+            var lastLang: AppLanguage?
             while !Task.isCancelled {
                 guard let self else { return }
                 let casting = self.castCoordinator.isCasting
                 let count = self.castCoordinator.selectedSpeakerIds.count
-                if casting != lastCasting || count != lastCount {
+                let lang = self.castCoordinator.appLanguage
+                if casting != lastCasting || count != lastCount || lang != lastLang {
                     lastCasting = casting
                     lastCount = count
+                    lastLang = lang
                     self.refreshStatusIcon()
                 }
                 try? await Task.sleep(for: .milliseconds(350))

@@ -374,7 +374,7 @@ public struct CozyLatencyGuideSheetView: View {
             }
         }
         .padding(DesignTokens.Spacing.lg)
-        .frame(width: 360)
+        .frame(minWidth: 320, idealWidth: 352, maxWidth: 380)
         .background(palette.panelBg)
     }
 }
