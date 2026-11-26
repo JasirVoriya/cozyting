@@ -745,11 +745,24 @@ public struct UpdateDecision: Codable, Sendable, Equatable {
 
 // MARK: - Bridge Errors
 
-public enum CoreBridgeError: Error, Sendable, Equatable {
+public enum CoreBridgeError: Error, LocalizedError, Sendable, Equatable {
     case nullReturn
     case invalidJSON(String)
     case l1Error(String)
     case invalidHandle
+
+    public var errorDescription: String? {
+        switch self {
+        case .nullReturn:
+            return "Core returned null response"
+        case .invalidJSON(let detail):
+            return detail.isEmpty ? "Invalid JSON response from core" : detail
+        case .l1Error(let message):
+            return message.isEmpty ? "Core protocol error" : message
+        case .invalidHandle:
+            return "Engine handle is no longer active"
+        }
+    }
 }
 
 struct L1ErrorPayload: Decodable {

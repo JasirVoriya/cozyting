@@ -42,13 +42,13 @@ public final class MuteGuard: @unchecked Sendable {
 
     public func register(tapID: AudioObjectID, aggregateDeviceID: AudioObjectID) {
         lock.withLock {
-            handles.insert(ActiveHandle(tapID: tapID, aggregateDeviceID: aggregateDeviceID))
+            _ = handles.insert(ActiveHandle(tapID: tapID, aggregateDeviceID: aggregateDeviceID))
         }
     }
 
     public func teardown(tapID: AudioObjectID, aggregateDeviceID: AudioObjectID) {
         lock.withLock {
-            handles.remove(ActiveHandle(tapID: tapID, aggregateDeviceID: aggregateDeviceID))
+            _ = handles.remove(ActiveHandle(tapID: tapID, aggregateDeviceID: aggregateDeviceID))
         }
         Self.destroyCoreAudioHandles(tapID: tapID, aggregateDeviceID: aggregateDeviceID)
     }

@@ -223,14 +223,22 @@ public final class CastCoordinator {
         case let .launchAndCast(bundleID, _, speakerIds):
             clearError()
             let launched = await sourceCatalog.launchApplicationAndWait(bundleIdentifier: bundleID, timeoutSeconds: 5.0)
+            let name = sourceCatalog.displayName(for: bundleID)
             guard launched else {
-                let name = sourceCatalog.displayName(for: bundleID)
                 errorNotice = CastErrorNotice(
                     message: CozyTingL10n.format(.errAppNotRunning, language: appLanguage, name),
                     action: .launchAndCast(bundleIdentifier: bundleID, appName: name, speakerIds: speakerIds)
                 )
                 return
             }
+            let targetSelection = AudioSourceSelection(bundleIdentifier: bundleID, displayName: name)
+            if isCasting && l1Engine != nil {
+                // Already casting: seamlessly hot-switch to the newly launched app without dropping speakers.
+                await selectAudioSource(targetSelection, manual: true)
+                return
+            }
+            activeSource = targetSelection
+            preferences.saveSelectedAudioSource(targetSelection)
             if !speakerIds.isEmpty {
                 var working = devices
                 for id in speakerIds {
@@ -858,8 +866,6 @@ public final class CastCoordinator {
             "CAST start speakers=\(speakerIds.joined(separator: ",")) delay_ms=\(initialDelay) vol=\(targetVol) silent=\(isSilent)"
         )
 
-        startStatsPolling(engine: engine)
-
         let initialVolumeConfirmed = !volumeGuardEnabled || Int(targetVol) <= volumeGuardSafeLimit
         connectTask = Task { [weak self] in
             do {
@@ -872,8 +878,9 @@ public final class CastCoordinator {
                     sourceName: sourceName,
                     volumeConfirmed: initialVolumeConfirmed
                 )
-                guard let self, !Task.isCancelled else { return }
+                guard let self, !Task.isCancelled, self.l1Engine === engine else { return }
                 self.engineStats = stats
+                self.clearTransientCastErrorIfNeeded()
                 self.applyReceiverStats(stats.receivers)
                 for ip in speakerIds {
                     if let saved = self.speakerVolumes[ip], saved != Int(targetVol) {
@@ -885,13 +892,15 @@ public final class CastCoordinator {
                     }
                 }
             } catch {
-                guard let self, !Task.isCancelled else { return }
+                guard let self, !Task.isCancelled, self.l1Engine === engine else { return }
                 let notice = self.makeErrorNotice(for: error, speakerIds: speakerIds)
                 self.logManager.runtimeLogger.error(tag: "Cast", "Connect failed: \(error)")
                 // Always release Process Tap & MuteGuard when initial connect fails so the user's app is never left muted!
                 await self.stopCast(preservingError: notice)
             }
         }
+
+        startStatsPolling(engine: engine)
     }
 
     private func addSpeakerInFlight(id: String) async {
@@ -904,6 +913,7 @@ public final class CastCoordinator {
         logManager.castOpsLogger.record("CAST add_speaker ip=\(id)")
         do {
             _ = try await engine.addReceiver(ip: id)
+            clearTransientCastErrorIfNeeded()
             let targetVol = speakerVolumes[id] ?? masterVolume
             _ = try? await engine.setVolume(
                 ip: id,
@@ -929,10 +939,12 @@ public final class CastCoordinator {
     private func startStatsPolling(engine: CozyTingEngine) {
         statsPollingTask?.cancel()
         statsPollingTask = Task { [weak self] in
+            // Allow `connectTask` to dispatch and register `pending_connecting` before the first poll.
+            try? await Task.sleep(for: .milliseconds(150))
             while !Task.isCancelled {
                 do {
                     let envelope = try await engine.stats()
-                    guard let self, !Task.isCancelled else { return }
+                    guard let self, !Task.isCancelled, self.l1Engine === engine else { return }
                     self.isStandbyWaitingForAudio = self.audioEngine.status().isStandbyWaitingForAudio
                     switch envelope {
                     case .active(let stats):
@@ -941,8 +953,20 @@ public final class CastCoordinator {
                         self.applyReceiverStats(stats.receivers)
                     case .preSessionQueued(let receivers):
                         self.applyReceiverStats(receivers)
-                    case .error(let msg):
-                        self.errorNotice = self.makeErrorNotice(for: CoreBridgeError.l1Error(msg), speakerIds: self.selectedSpeakerIds)
+                    case .error(let rawMsg):
+                        let trimmed = rawMsg.trimmingCharacters(in: .whitespacesAndNewlines)
+                        // Ignore blank or transient pre-session/teardown sentinel errors; authoritative
+                        // connect failures are already handled by `connectTask`.
+                        guard !trimmed.isEmpty,
+                              trimmed != "no session",
+                              trimmed != "no engine",
+                              trimmed != "stopped" else {
+                            break
+                        }
+                        self.errorNotice = self.makeErrorNotice(
+                            for: CoreBridgeError.l1Error(trimmed),
+                            speakerIds: self.selectedSpeakerIds
+                        )
                     }
                 } catch {
                     // Transient poll failure while stopping; loop exits on cancellation.
@@ -976,7 +1000,7 @@ public final class CastCoordinator {
             }
         }
 
-        let raw = formatFriendlyError(error)
+        let raw = formatFriendlyError(error).trimmingCharacters(in: .whitespacesAndNewlines)
         if raw.localizedCaseInsensitiveContains("reverse RTSP")
             || raw.localizedCaseInsensitiveContains("timeout: reverse") {
             return CastErrorNotice(
@@ -990,10 +1014,21 @@ public final class CastCoordinator {
                 action: .openLocalNetworkSettings
             )
         }
+        let detail = raw.isEmpty ? String(describing: error) : raw
         return CastErrorNotice(
-            message: CozyTingL10n.format(.errCastFailed, language: appLanguage, raw),
+            message: CozyTingL10n.format(.errCastFailed, language: appLanguage, detail),
             action: .none
         )
+    }
+
+    private func clearTransientCastErrorIfNeeded() {
+        guard let notice = errorNotice else { return }
+        switch notice.action {
+        case .none, .openFirewallSettings, .openLocalNetworkSettings, .retryDiscovery:
+            errorNotice = nil
+        case .launchAndCast, .openAudioPermission:
+            break
+        }
     }
 
     private func formatFriendlyError(_ error: Error) -> String {
@@ -1024,6 +1059,13 @@ public final class CastCoordinator {
             if errorNotice?.message != msg {
                 errorNotice = CastErrorNotice(message: msg, action: .none)
             }
+            return
+        }
+
+        // If speakers are actively streaming with no errors/seizes, clear any stale connection banner.
+        if !receivers.isEmpty,
+           receivers.allSatisfy({ $0.uiState == .streaming && $0.error == nil }) {
+            clearTransientCastErrorIfNeeded()
         }
     }
 

@@ -619,31 +619,34 @@ public final class ProcessTapAudioEngine: @unchecked Sendable {
 
         // Case 1: Armed standby -> target app just created its first Core Audio process node!
         if state.standby || state.tapID == kAudioObjectUnknown {
+            let bundle = state.bundle
+            let mute = state.mute
+            let onError = state.onError
             controlQueue.async { [weak self] in
                 guard let self else { return }
                 let stillStandby: Bool = self.stateLock.withLock {
-                    self.isStandby && self.currentBundleID == state.bundle && self.pipeline != nil
+                    self.isStandby && self.currentBundleID == bundle && self.pipeline != nil
                 }
                 guard stillStandby else { return }
                 do {
                     try self.attachTapAndStartIO(
-                        bundleIdentifier: state.bundle,
+                        bundleIdentifier: bundle,
                         processObjectIDs: latestIDs,
-                        muteLocalAudio: state.mute,
+                        muteLocalAudio: mute,
                         pipeline: activePipeline
                     )
                     self.stopStandbyTimer()
                     self.logger?.info(
                         tag: "ProcessTap",
-                        "Promoted standby to active capture bundle=\(state.bundle) processes=\(latestIDs.count) mute=\(state.mute)"
+                        "Promoted standby to active capture bundle=\(bundle) processes=\(latestIDs.count) mute=\(mute)"
                     )
                 } catch {
                     self.logger?.error(
                         tag: "ProcessTap",
-                        "Standby promotion failed bundle=\(state.bundle) err=\(error)"
+                        "Standby promotion failed bundle=\(bundle) err=\(error)"
                     )
                     self.stopStandbyTimer()
-                    state.onError?(error)
+                    onError?(error)
                 }
             }
             return
