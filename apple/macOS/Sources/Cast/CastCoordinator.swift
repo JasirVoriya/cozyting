@@ -848,7 +848,11 @@ public final class CastCoordinator {
             : Int32(delayMs)
         let targetVol = Int32(masterVolume)
         let refFunc = preferences.refFunction
-        let sourceName = activeSource?.displayName ?? "CozyTing"
+        // Parity with Android `Build.MODEL`: advertise clean Mac device name on MiPlay control channel,
+        // and pass `premute = targetVol` so normal casts (> 0) reuse a single 8899 connection without
+        // extra premute-to-0 / CLOSE churn (`core/src/session.rs: needs_separate_premute_session`).
+        let sourceName = Host.current().localizedName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty ?? "Mac"
 
         logManager.castOpsLogger.record(
             "CAST start speakers=\(speakerIds.joined(separator: ",")) delay_ms=\(initialDelay) vol=\(targetVol) silent=\(isSilent)"
@@ -862,7 +866,7 @@ public final class CastCoordinator {
                 let stats = try await engine.connect(
                     ips: speakerIds,
                     delayMs: initialDelay,
-                    premute: 0,
+                    premute: targetVol,
                     volumeAfterPlay: targetVol,
                     refFunction: refFunc,
                     sourceName: sourceName,
@@ -1005,6 +1009,22 @@ public final class CastCoordinator {
             next[r.ip] = r
         }
         receiverStatsByIP = next
+
+        // Detect external MiPlay sender seizing the same speaker (`notify seize=2` + repeated reconnects).
+        if let seized = receivers.first(where: { r in
+            r.reconnects >= 1 && r.notifies.contains(where: { $0.contains("seize=2") })
+        }) {
+            let speakerName: String = {
+                if let dev = devices.first(where: { $0.id == seized.ip }) {
+                    return DeviceDisplayFormatter.displayTitle(for: dev)
+                }
+                return seized.ip
+            }()
+            let msg = CozyTingL10n.format(.errSpeakerSeized, language: appLanguage, speakerName)
+            if errorNotice?.message != msg {
+                errorNotice = CastErrorNotice(message: msg, action: .none)
+            }
+        }
     }
 
     private func applyRouteState(_ state: RouteState) {
@@ -1041,5 +1061,11 @@ public final class CastCoordinator {
             return "[]"
         }
         return json
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }

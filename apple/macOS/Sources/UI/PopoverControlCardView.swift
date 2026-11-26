@@ -3,8 +3,7 @@ import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
 
-/// `352pt` frosted-glass Menu Bar Popover control card (and responsive embedded body for Main Window)
-/// implementing `docs/MACOS_CLIENT_DESIGN.md` §2.2.
+/// Native macOS Control Center frosted-glass control panel (`NSPopover` & translucent `MainWindow`).
 public struct PopoverControlCardView: View {
     private enum InlineSubView {
         case main
@@ -64,6 +63,15 @@ public struct PopoverControlCardView: View {
 
     public var body: some View {
         ZStack {
+            if !isEmbeddedInMainWindow {
+                VisualEffectBackground(
+                    material: .popover,
+                    blendingMode: .behindWindow,
+                    state: .active
+                )
+                .ignoresSafeArea()
+            }
+
             Group {
                 if !isEmbeddedInMainWindow && inlineSubView == .sourcePicker {
                     AudioSourcePickerView(
@@ -94,7 +102,7 @@ public struct PopoverControlCardView: View {
             }
 
             if let pending = coordinator.pendingVolumeConfirmation {
-                Color.black.opacity(0.45)
+                Color.black.opacity(0.35)
                     .ignoresSafeArea()
                     .onTapGesture { coordinator.cancelPendingHighVolume() }
 
@@ -117,24 +125,45 @@ public struct PopoverControlCardView: View {
                     )
                 }()
 
-                CozyHighVolumeConfirmView(
-                    title: CozyTingL10n.format(.volumeGuardTitle, language: lang, pending.safeLimit),
-                    message: msg,
-                    keepLabel: CozyTingL10n.format(.volumeGuardKeep, language: lang, pending.currentVolume),
-                    confirmLabel: CozyTingL10n.format(.volumeGuardConfirm, language: lang, pending.targetVolume),
-                    palette: palette,
-                    onCancel: { coordinator.cancelPendingHighVolume() },
-                    onConfirm: {
-                        Task { await coordinator.confirmPendingHighVolume() }
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(
+                        CozyTingL10n.format(.volumeGuardTitle, language: lang, pending.safeLimit),
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .font(.headline)
+                    .foregroundStyle(.orange)
+
+                    Text(msg)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    HStack {
+                        Spacer()
+                        Button(CozyTingL10n.format(.volumeGuardKeep, language: lang, pending.currentVolume)) {
+                            coordinator.cancelPendingHighVolume()
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button(CozyTingL10n.format(.volumeGuardConfirm, language: lang, pending.targetVolume)) {
+                            Task { await coordinator.confirmPendingHighVolume() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
                     }
+                }
+                .padding(16)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
                 )
-                .padding(DesignTokens.Spacing.lg)
+                .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+                .padding(18)
             }
         }
         .frame(width: isEmbeddedInMainWindow ? nil : 352)
         .frame(maxWidth: isEmbeddedInMainWindow ? .infinity : 352)
-        .background(.ultraThinMaterial)
-        .background(palette.panelBg.opacity(0.65))
         .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
         .sheet(isPresented: $showLatencyGuideSheet) {
             CozyLatencyGuideSheetView(
@@ -189,7 +218,6 @@ public struct PopoverControlCardView: View {
             }
         }
         .background {
-            // In-panel keyboard shortcuts for ±5% master volume (zero Accessibility permissions).
             HStack(spacing: 0) {
                 Button("") { Task { await coordinator.stepMasterVolume(by: 5) } }
                     .keyboardShortcut(.upArrow, modifiers: [.command])
@@ -206,8 +234,9 @@ public struct PopoverControlCardView: View {
     }
 
     private var mainCardBody: some View {
-        VStack(spacing: DesignTokens.Spacing.md) {
+        VStack(spacing: 12) {
             headerBar
+
             if let bannerDecision = coordinator.availableUpdateBanner {
                 CozyUpdateBannerView(
                     latestTag: bannerDecision.latestTag,
@@ -224,11 +253,12 @@ public struct PopoverControlCardView: View {
                     }
                 )
             }
-            nowPlayingAndMasterVolumeCard
-            audioSourceStrip
+
+            nowPlayingAndMasterVolumeModule
+            audioSourceSection
             outputDevicesSection
         }
-        .padding(DesignTokens.Spacing.md)
+        .padding(14)
     }
 
     private func openSourcePicker() {
@@ -250,22 +280,29 @@ public struct PopoverControlCardView: View {
     // MARK: - Section 1: Header Bar
 
     private var headerBar: some View {
-        HStack(spacing: DesignTokens.Spacing.sm) {
+        HStack(spacing: 8) {
             if !isEmbeddedInMainWindow {
-                CozyTingIconView(.cozyHouse, size: 17)
+                CozyTingIconView(.cozyHouse, size: 16)
                     .foregroundStyle(DesignTokens.Brand.coral)
 
                 Text(brandTitle)
-                    .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
-                    .foregroundStyle(palette.textPrimary)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
             }
 
-            CozyStatusBadge(
-                label: statusLabel,
-                isActive: coordinator.isCasting,
-                isPaused: coordinator.isPaused,
-                palette: palette
-            )
+            // Native Control Center status pill
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(statusDotColor)
+                    .frame(width: 6, height: 6)
+                Text(statusLabel)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3.5)
+            .background(.quaternary.opacity(0.6), in: Capsule())
 
             Spacer(minLength: 4)
 
@@ -274,59 +311,105 @@ public struct PopoverControlCardView: View {
             if !isEmbeddedInMainWindow {
                 Button(action: onOpenMainWindow) {
                     Image(systemName: "macwindow")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(width: 26, height: 26)
-                        .background(palette.controlSurface, in: Circle())
+                        .font(.system(size: 12, weight: .medium))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
 
                 Button(action: onOpenSettings) {
                     ZStack(alignment: .topTrailing) {
-                        CozyTingIconView(.settings, size: 13, weight: .medium)
-                            .foregroundStyle(palette.textSecondary)
-                            .frame(width: 26, height: 26)
-                            .background(palette.controlSurface, in: Circle())
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 12, weight: .medium))
                         if coordinator.hasUpdateBadge {
                             Circle()
-                                .fill(palette.accent)
-                                .frame(width: 8, height: 8)
-                                .offset(x: 1, y: -1)
+                                .fill(Color.accentColor)
+                                .frame(width: 6, height: 6)
+                                .offset(x: 3, y: -3)
                         }
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
     }
 
-    private var latencyMenuButton: some View {
-        CozyLatencyPillMenu(
-            delayMs: coordinator.delayMs,
-            wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
-            palette: palette,
-            standardLabel: t(.latencyStandard),
-            balancedLabel: t(.latencyBalanced),
-            lowLabel: t(.latencyLow),
-            ultraLabel: t(.latencyUltra),
-            customLabel: t(.latencyCustom),
-            guideLabel: t(.latencyGuideButton),
-            onSelectDelayMs: { ms in
-                Task { await coordinator.setPlaybackDelay(ms) }
-            },
-            onOpenGuide: {
-                openLatencyGuide()
-            }
-        )
+    private var statusDotColor: Color {
+        if !coordinator.isCasting { return .secondary.opacity(0.6) }
+        return coordinator.isPaused ? .orange : .green
     }
 
-    // MARK: - Section 2: Now Playing & Master Volume
+    private var latencyMenuButton: some View {
+        let preset = coordinator.currentLatencyPreset
+        let effMs = coordinator.effectiveDelayMs
+        let label: String = {
+            switch preset {
+            case .standard: return "\(effMs)ms"
+            case .balanced: return "\(t(.latencyBalanced)) 400ms"
+            case .low: return "\(t(.latencyLow)) 250ms"
+            case .ultra: return "\(t(.latencyUltra)) 150ms"
+            case .custom(let ms): return "\(ms)ms"
+            }
+        }()
 
-    private var nowPlayingAndMasterVolumeCard: some View {
+        return Menu {
+            let stdMs = LatencyPreset.standard.effectiveDelayMs(wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz)
+            latencyMenuItem(title: t(.latencyStandard), ms: stdMs, selected: preset == .standard, target: 0)
+            latencyMenuItem(title: t(.latencyBalanced), ms: 400, selected: preset == .balanced, target: 400)
+            latencyMenuItem(title: t(.latencyLow), ms: 250, selected: preset == .low, target: 250)
+            latencyMenuItem(title: t(.latencyUltra), ms: 150, selected: preset == .ultra, target: 150)
+
+            if case let .custom(ms) = preset {
+                Divider()
+                Button {
+                    Task { await coordinator.setPlaybackDelay(ms) }
+                } label: {
+                    Label("\(t(.latencyCustom)) · \(ms)ms", systemImage: "checkmark")
+                }
+            }
+
+            Divider()
+
+            Button {
+                openLatencyGuide()
+            } label: {
+                Label(t(.latencyGuideButton), systemImage: "info.circle")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "waveform.path.ecg")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(label)
+                    .font(.caption.monospacedDigit().weight(.medium))
+            }
+            .foregroundStyle(preset == .ultra ? .orange : .primary)
+        }
+        .menuStyle(.borderedButton)
+        .controlSize(.small)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private func latencyMenuItem(title: String, ms: Int, selected: Bool, target: Int) -> some View {
+        Button {
+            Task { await coordinator.setPlaybackDelay(target) }
+        } label: {
+            if selected {
+                Label("\(title)  \(ms)ms", systemImage: "checkmark")
+            } else {
+                Text("\(title)  \(ms)ms")
+            }
+        }
+    }
+
+    // MARK: - Section 2: Native Glass Now Playing & Master Volume Module
+
+    private var nowPlayingAndMasterVolumeModule: some View {
         let np = coordinator.nowPlayingBridge.snapshot
         let sourceRunning = coordinator.isActiveSourceRunning
-        return VStack(spacing: DesignTokens.Spacing.sm) {
-            HStack(spacing: DesignTokens.Spacing.md) {
+
+        return VStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Button {
                     if let bid = coordinator.activeSource?.bundleIdentifier, !bid.isEmpty {
                         coordinator.sourceCatalog.launchApplication(bundleIdentifier: bid)
@@ -339,22 +422,23 @@ public struct PopoverControlCardView: View {
                             Image(nsImage: art)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 58, height: 58)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         } else if let bid = coordinator.activeSource?.bundleIdentifier,
                                   let icon = coordinator.sourceCatalog.icon(for: bid) {
                             Image(nsImage: icon)
                                 .resizable()
                                 .interpolation(.high)
-                                .frame(width: 58, height: 58)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         } else {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(palette.accentSoftBg)
-                                .frame(width: 58, height: 58)
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.accentColor.opacity(0.14))
+                                .frame(width: 52, height: 52)
                                 .overlay(
-                                    CozyTingIconView(.musicNote, size: 22, weight: .medium)
-                                        .foregroundStyle(DesignTokens.Brand.coral)
+                                    Image(systemName: "music.note")
+                                        .font(.system(size: 20, weight: .medium))
+                                        .foregroundStyle(Color.accentColor)
                                 )
                         }
 
@@ -364,16 +448,16 @@ public struct PopoverControlCardView: View {
                             Image(nsImage: badgeIcon)
                                 .resizable()
                                 .interpolation(.high)
-                                .frame(width: 20, height: 20)
+                                .frame(width: 18, height: 18)
                                 .clipShape(Circle())
-                                .overlay(Circle().strokeBorder(palette.panelBg, lineWidth: 1.5))
+                                .shadow(radius: 2)
                                 .offset(x: 3, y: 3)
                         }
                     }
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     let primaryTitle: String = {
                         if let np, np.mode == .scriptablePlayer, !np.title.isEmpty {
                             return np.title
@@ -404,29 +488,29 @@ public struct PopoverControlCardView: View {
                     }()
 
                     Text(primaryTitle)
-                        .font(.system(size: DesignTokens.Typography.body, weight: .semibold))
-                        .foregroundStyle(palette.textPrimary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
 
                     Text(secondarySubtitle)
-                        .font(.system(size: DesignTokens.Typography.caption))
+                        .font(.caption)
                         .foregroundStyle(
                             (coordinator.activeSource != nil && !sourceRunning && !coordinator.isCasting && coordinator.sourceMode == .app)
-                                ? palette.statusWarning
-                                : palette.textSecondary
+                                ? .orange
+                                : .secondary
                         )
                         .lineLimit(1)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 8) {
                         Button {
                             coordinator.nowPlayingBridge.previousTrack(source: coordinator.activeSource)
                         } label: {
-                            CozyTingIconView(.skipPrev, size: 12, weight: .semibold)
-                                .foregroundStyle(palette.textPrimary)
-                                .frame(width: 26, height: 26)
-                                .background(palette.controlSurface, in: Circle())
+                            Image(systemName: "backward.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .frame(width: 24, height: 24)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
 
                         Button {
                             let isScriptable = coordinator.activeSource.map {
@@ -444,22 +528,22 @@ public struct PopoverControlCardView: View {
                                 if let np, np.mode == .scriptablePlayer { return np.isPlaying }
                                 return coordinator.isCasting && !coordinator.isPaused
                             }()
-                            CozyTingIconView(playing ? .pause : .play, size: 13, weight: .semibold)
-                                .foregroundStyle(.white)
-                                .frame(width: 30, height: 30)
-                                .background(palette.accent, in: Circle())
+                            Image(systemName: playing ? "pause.fill" : "play.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 28, height: 24)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
 
                         Button {
                             coordinator.nowPlayingBridge.nextTrack(source: coordinator.activeSource)
                         } label: {
-                            CozyTingIconView(.skipNext, size: 12, weight: .semibold)
-                                .foregroundStyle(palette.textPrimary)
-                                .frame(width: 26, height: 26)
-                                .background(palette.controlSurface, in: Circle())
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .frame(width: 24, height: 24)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
                     .padding(.top, 2)
                 }
@@ -468,79 +552,51 @@ public struct PopoverControlCardView: View {
             }
 
             if let np, np.mode == .scriptablePlayer, np.canSeek, np.durationSeconds > 0 {
-                VStack(spacing: 3) {
-                    GeometryReader { geo in
-                        let ratio = min(max(np.positionSeconds / np.durationSeconds, 0), 1)
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(palette.trackIdle)
-                                .frame(height: 4)
-                            Capsule()
-                                .fill(palette.accent)
-                                .frame(width: max(4, geo.size.width * ratio), height: 4)
-                        }
-                        .frame(maxHeight: .infinity)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onEnded { value in
-                                    let frac = min(max(value.location.x / max(geo.size.width, 1), 0), 1)
-                                    coordinator.nowPlayingBridge.seek(
-                                        toSeconds: frac * np.durationSeconds,
-                                        source: coordinator.activeSource
-                                    )
-                                }
-                        )
-                    }
-                    .frame(height: 12)
-
+                VStack(spacing: 2) {
+                    ProgressView(value: min(max(np.positionSeconds, 0), np.durationSeconds), total: np.durationSeconds)
+                        .progressViewStyle(.linear)
                     HStack {
                         Text(NowPlayingParser.formatTime(np.positionSeconds))
                         Spacer()
                         Text(NowPlayingParser.formatTime(np.durationSeconds))
                     }
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(palette.textTertiary)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
                 }
             }
 
-            CozyVolumeTrackSlider(
+            NativeMacVolumeSlider(
                 value: coordinator.masterVolume,
                 safeLimit: coordinator.volumeGuardSafeLimit,
-                guardEnabled: coordinator.volumeGuardEnabled,
-                onSelectedSurface: false,
-                palette: palette
+                guardEnabled: coordinator.volumeGuardEnabled
             ) { newVol in
                 Task { await coordinator.requestMasterVolume(newVol) }
             }
         }
-        .padding(DesignTokens.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.Radii.card, style: .continuous)
-                .fill(palette.rowIdleBg.opacity(0.85))
-        )
+        .padding(12)
+        .background(.regularMaterial.opacity(0.65), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radii.card, style: .continuous)
-                .strokeBorder(palette.rowIdleBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
         )
     }
 
     // MARK: - Section 3: Audio Source Strip
 
-    private var audioSourceStrip: some View {
+    private var audioSourceSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: DesignTokens.Spacing.sm) {
+            HStack(spacing: 6) {
                 Text(t(.sourceSectionTitle))
-                    .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                    .foregroundStyle(palette.textSecondary)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
                 if coordinator.lastSourceSwitchWasAuto {
                     Text(t(.sourceAutoBadge))
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(palette.accentBright)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(palette.accentSoftBg, in: Capsule())
+                        .padding(.vertical, 1.5)
+                        .background(Color.accentColor.opacity(0.14), in: Capsule())
                 }
 
                 Spacer()
@@ -550,13 +606,15 @@ public struct PopoverControlCardView: View {
                 } label: {
                     HStack(spacing: 3) {
                         Text(t(.commonManage))
-                            .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
-                        CozyTingIconView(.chevronRight, size: 9, weight: .semibold)
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
                     }
-                    .foregroundStyle(palette.textSecondary)
+                    .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.horizontal, 2)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -583,22 +641,15 @@ public struct PopoverControlCardView: View {
                     }
 
                     if coordinator.favoriteSources.isEmpty && coordinator.activeSource == nil {
-                        Button {
+                        Button(t(.sourceChooseApp)) {
                             openSourcePicker()
-                        } label: {
-                            Text(t(.sourceChooseApp))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.accentBright)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(palette.accentSoftBg, in: Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
                 }
             }
         }
-        .padding(.horizontal, 4)
     }
 
     @ViewBuilder
@@ -620,78 +671,74 @@ public struct PopoverControlCardView: View {
                         .frame(width: 15, height: 15)
                         .clipShape(RoundedRectangle(cornerRadius: 3.5, style: .continuous))
                 } else {
-                    CozyTingIconView(.musicNote, size: 11)
+                    Image(systemName: "music.note")
+                        .font(.system(size: 11))
                 }
                 Text(name)
-                    .font(.system(size: DesignTokens.Typography.caption, weight: selected ? .semibold : .medium))
+                    .font(.caption.weight(selected ? .semibold : .regular))
                     .lineLimit(1)
                 if running {
                     Circle()
-                        .fill(palette.statusSuccess)
+                        .fill(.green)
                         .frame(width: 5, height: 5)
                 }
             }
-            .foregroundStyle(selected ? palette.accentBright : palette.textPrimary)
+            .foregroundStyle(selected ? Color.accentColor : .primary)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(
-                Capsule().fill(selected ? palette.accentSoftBg : palette.controlSurface)
+                Capsule().fill(selected ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.06))
             )
             .overlay(
-                Capsule().strokeBorder(selected ? palette.accent : Color.clear, lineWidth: 1)
+                Capsule().strokeBorder(selected ? Color.accentColor.opacity(0.55) : Color.primary.opacity(0.08), lineWidth: 0.75)
             )
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Section 4: Output Devices
+    // MARK: - Section 4: Native Output Devices List
 
     private var outputDevicesSection: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            HStack(spacing: DesignTokens.Spacing.sm) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
                 Text(t(.outputDevicesTitle))
-                    .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                    .foregroundStyle(palette.textSecondary)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
                 if coordinator.canRestoreLastSelection {
                     let count = coordinator.restorableLastSpeakerCount
-                    Button {
+                    Button(count > 1 ? CozyTingL10n.format(.restoreLastMulti, language: lang, count) : t(.restoreLast)) {
                         Task { await coordinator.restoreLastSelectedSpeakers() }
-                    } label: {
-                        Text(count > 1 ? CozyTingL10n.format(.restoreLastMulti, language: lang, count) : t(.restoreLast))
-                            .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
-                            .foregroundStyle(palette.accentBright)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(palette.accentSoftBg, in: Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
                 }
 
                 Button {
                     Task { await coordinator.discoverDevices(manual: true) }
                 } label: {
-                    CozyTingIconView(.refresh, size: 12, weight: .medium)
-                        .foregroundStyle(palette.textSecondary)
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .medium))
                         .rotationEffect(.degrees(coordinator.isDiscovering ? 360 : 0))
                         .animation(
                             coordinator.isDiscovering ? .linear(duration: 1).repeatForever(autoreverses: false) : .default,
                             value: coordinator.isDiscovering
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
                 .disabled(coordinator.isDiscovering)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 2)
 
             if let notice = coordinator.errorNotice {
                 errorNoticeCard(notice)
             }
 
             ScrollView {
-                LazyVStack(spacing: DesignTokens.Spacing.sm) {
+                LazyVStack(spacing: 6) {
                     ForEach(coordinator.visibleDevices) { device in
                         let stats = coordinator.receiverStatsByIP[device.id]
                         let statusDesc: String? = {
@@ -708,7 +755,7 @@ public struct PopoverControlCardView: View {
                             ? t(.thisDeviceName)
                             : DeviceDisplayFormatter.displayTitle(for: device)
 
-                        CozyDeviceRowCard(
+                        NativeMacDeviceRow(
                             device: device,
                             title: title,
                             subtitle: device.kind == .thisDevice ? t(.commonMacSpeakers) : nil,
@@ -718,7 +765,6 @@ public struct PopoverControlCardView: View {
                             volume: coordinator.speakerVolumes[device.id] ?? coordinator.masterVolume,
                             safeLimit: coordinator.volumeGuardSafeLimit,
                             guardEnabled: coordinator.volumeGuardEnabled,
-                            palette: palette,
                             onTap: {
                                 Task {
                                     if device.kind == .thisDevice {
@@ -738,7 +784,7 @@ public struct PopoverControlCardView: View {
             .frame(
                 minHeight: isEmbeddedInMainWindow ? 180 : 170,
                 idealHeight: isEmbeddedInMainWindow ? 260 : 210,
-                maxHeight: isEmbeddedInMainWindow ? .infinity : 250
+                maxHeight: isEmbeddedInMainWindow ? .infinity : 260
             )
         }
     }
@@ -747,9 +793,14 @@ public struct PopoverControlCardView: View {
     private func errorNoticeCard(_ notice: CastErrorNotice) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.top, 1)
+
                 Text(notice.message)
-                    .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
-                    .foregroundStyle(palette.statusError)
+                    .font(.caption)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 4)
@@ -757,33 +808,26 @@ public struct PopoverControlCardView: View {
                 Button {
                     coordinator.clearError()
                 } label: {
-                    CozyTingIconView(.close, size: 9, weight: .semibold)
-                        .foregroundStyle(palette.textTertiary)
-                        .frame(width: 18, height: 18)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
 
             if let buttonTitle = actionTitle(for: notice.action) {
-                Button {
+                Button(buttonTitle) {
                     Task { await coordinator.performErrorAction(notice.action) }
-                } label: {
-                    Text(buttonTitle)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(palette.accent, in: Capsule())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(palette.statusError.opacity(0.11), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(10)
+        .background(Color.red.opacity(0.11), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(palette.statusError.opacity(0.28), lineWidth: 1)
+                .strokeBorder(Color.red.opacity(0.28), lineWidth: 0.75)
         )
     }
 
@@ -802,5 +846,165 @@ public struct PopoverControlCardView: View {
         case .retryDiscovery:
             return t(.errRetry)
         }
+    }
+}
+
+// MARK: - Native macOS Control Center Volume Slider & Device Row
+
+private struct NativeMacVolumeSlider: View {
+    let value: Int
+    let safeLimit: Int
+    let guardEnabled: Bool
+    let onCommit: (Int) -> Void
+
+    @State private var localValue: Double?
+
+    private var displayed: Double {
+        localValue ?? Double(value)
+    }
+
+    private var isAboveSafeLimit: Bool {
+        guardEnabled && Int(displayed.rounded()) > safeLimit
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: displayed <= 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(isAboveSafeLimit ? .orange : .secondary)
+                .frame(width: 16)
+
+            Slider(
+                value: Binding(
+                    get: { displayed },
+                    set: { localValue = $0 }
+                ),
+                in: 0...100,
+                onEditingChanged: { editing in
+                    if !editing {
+                        let finalVal = Int((localValue ?? Double(value)).rounded())
+                        localValue = nil
+                        onCommit(finalVal)
+                    }
+                }
+            )
+            .tint(isAboveSafeLimit ? .orange : .accentColor)
+            .controlSize(.small)
+
+            Text("\(Int(displayed.rounded()))%")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(isAboveSafeLimit ? .orange : .secondary)
+                .frame(width: 34, alignment: .trailing)
+        }
+    }
+}
+
+private struct NativeMacDeviceRow: View {
+    let device: Device
+    let title: String
+    let subtitle: String?
+    let latencyBadge: String?
+    let statusText: String?
+    let protocolBadge: String?
+    let volume: Int
+    let safeLimit: Int
+    let guardEnabled: Bool
+    let onTap: () -> Void
+    let onVolumeCommit: ((Int) -> Void)?
+
+    private var isSelected: Bool { device.selected }
+
+    private var symbolName: String {
+        switch device.kind {
+        case .thisDevice: return "laptopcomputer"
+        case .tv: return "tv"
+        case .speaker: return "hifispeaker.fill"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(action: onTap) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.08))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: symbolName)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(isSelected ? .white : .secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1.5) {
+                        Text(title)
+                            .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                            .foregroundStyle(device.castable || device.kind == .thisDevice ? .primary : .tertiary)
+                            .lineLimit(1)
+
+                        if let statusText, !statusText.isEmpty {
+                            Text(statusText)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        } else if let subtitle, !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Spacer(minLength: 4)
+
+                    if let latencyBadge, !latencyBadge.isEmpty {
+                        Text(latencyBadge)
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let protocolBadge, !protocolBadge.isEmpty {
+                        Text(protocolBadge)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.06),
+                                in: Capsule()
+                            )
+                    }
+
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary.opacity(0.5))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if isSelected, device.kind != .thisDevice, let onVolumeCommit {
+                NativeMacVolumeSlider(
+                    value: volume,
+                    safeLimit: safeLimit,
+                    guardEnabled: guardEnabled,
+                    onCommit: onVolumeCommit
+                )
+                .padding(.leading, 36)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.045))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(
+                    isSelected ? Color.accentColor.opacity(0.45) : Color.primary.opacity(0.07),
+                    lineWidth: isSelected ? 1 : 0.5
+                )
+        )
+        .opacity(device.castable || device.kind == .thisDevice ? 1.0 : 0.6)
     }
 }

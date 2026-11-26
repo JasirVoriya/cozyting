@@ -537,6 +537,8 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
 
     private let encoder: AudioToolboxAACEncoder
     private let sink: FrameSink
+    private let enableSilentKeepalive: Bool
+    private let silentKeepaliveAU: Data?
     private let workerQueue = DispatchQueue(label: "com.cozyting.audio.aac-encoder", qos: .userInteractive)
     private let wakeupSemaphore = DispatchSemaphore(value: 0)
     private let isRunningFlag = AtomicFlag(false)
@@ -556,14 +558,46 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
         ringCapacityBytes: Int = LockFreeRingBuffer.defaultCapacityBytes,
         scratchCapacityBytes: Int = 256 * 1024,
         bitrateBps: UInt32 = AudioStreamFormat.canonicalBitrateBps,
+        enableSilentKeepalive: Bool = true,
         sink: @escaping FrameSink
     ) throws {
         self.ringBuffer = LockFreeRingBuffer(capacityBytes: ringCapacityBytes)
         self.pcmProbe = PcmProbe()
         self.encoder = try AudioToolboxAACEncoder(bitrateBps: bitrateBps)
+        self.enableSilentKeepalive = enableSilentKeepalive
+        self.silentKeepaliveAU = enableSilentKeepalive ? Self.makeSilentKeepaliveAU(bitrateBps: bitrateBps) : nil
         self.sink = sink
         self.scratchCapacityBytes = max(scratchCapacityBytes, 64 * 1024)
         self.scratchPayload = UnsafeMutablePointer<UInt8>.allocate(capacity: self.scratchCapacityBytes)
+    }
+
+    private static func makeSilentKeepaliveAU(bitrateBps: UInt32) -> Data? {
+        guard let tempEncoder = try? AudioToolboxAACEncoder(bitrateBps: bitrateBps) else {
+            return nil
+        }
+        let silentASBD = AudioStreamBasicDescription(
+            mSampleRate: AudioStreamFormat.canonicalSampleRate,
+            mFormatID: kAudioFormatLinearPCM,
+            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked,
+            mBytesPerPacket: 8,
+            mFramesPerPacket: 1,
+            mBytesPerFrame: 8,
+            mChannelsPerFrame: 2,
+            mBitsPerChannel: 32,
+            mReserved: 0
+        )
+        let zeros = [Float](repeating: 0, count: AudioToolboxAACEncoder.canonicalSamplesPerAU)
+        let produced: [EncodedAudioFrame]? = zeros.withUnsafeBytes { raw in
+            guard let ptr = raw.bindMemory(to: UInt8.self).baseAddress else { return nil }
+            return try? tempEncoder.encode(
+                asbd: silentASBD,
+                frameCount: AudioToolboxAACEncoder.canonicalFramesPerAU,
+                bufferCount: 1,
+                payload: ptr,
+                payloadByteCount: raw.count
+            )
+        }
+        return produced?.first?.rawAccessUnit
     }
 
     deinit {
@@ -636,6 +670,12 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
     }
 
     private func runLoop() {
+        let auIntervalNs: UInt64 = 21_333_333 // 1024 / 48000 s
+        let idleThresholdNs: UInt64 = 45_000_000 // ~2 AUs without real PCM triggers silent keepalive
+        var lastRealPcmNs: UInt64 = 0
+        var lastKeepaliveNs: UInt64 = 0
+        var keepaliveSampleTime: Int64 = 0
+
         while !isStoppingFlag.value {
             wakeupPendingFlag.value = false
 
@@ -644,6 +684,8 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
                 ringBuffer.reset()
                 encoder.reset()
                 pcmProbe.reset()
+                lastRealPcmNs = 0
+                lastKeepaliveNs = 0
             }
 
             var drainedAny = false
@@ -653,6 +695,8 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
                       maxPayloadBytes: scratchCapacityBytes
                   ) {
                 drainedAny = true
+                lastRealPcmNs = DispatchTime.now().uptimeNanoseconds
+                lastKeepaliveNs = lastRealPcmNs
                 _ = pcmProbe.analyze(header: header, payload: scratchPayload)
                 do {
                     let frames = try encoder.encode(header: header, payload: scratchPayload)
@@ -675,7 +719,30 @@ public final class AudioEncodingPipeline: @unchecked Sendable {
             }
 
             if !drainedAny && !isStoppingFlag.value {
-                _ = wakeupSemaphore.wait(timeout: .now() + .milliseconds(20))
+                if enableSilentKeepalive, let silentAU = silentKeepaliveAU {
+                    let nowNs = DispatchTime.now().uptimeNanoseconds
+                    let sinceReal = lastRealPcmNs == 0 ? idleThresholdNs : nowNs &- lastRealPcmNs
+                    let sinceKeepalive = lastKeepaliveNs == 0 ? auIntervalNs : nowNs &- lastKeepaliveNs
+                    if sinceReal >= idleThresholdNs && sinceKeepalive >= auIntervalNs {
+                        lastKeepaliveNs = nowNs
+                        let frame = EncodedAudioFrame(rawAccessUnit: silentAU, sampleTime: keepaliveSampleTime)
+                        keepaliveSampleTime &+= Int64(AudioToolboxAACEncoder.canonicalFramesPerAU)
+                        encodedFramesCounter.increment()
+                        let pushStatus = sink(frame)
+                        switch pushStatus {
+                        case .ok:
+                            pushedFramesCounter.increment()
+                        case .queueFull:
+                            droppedQueueFullCounter.increment()
+                        case .invalidOrStopped, .silentEngineNoFeed, .invalidBuffer, .unknown:
+                            break
+                        }
+                        continue
+                    }
+                    _ = wakeupSemaphore.wait(timeout: .now() + .milliseconds(10))
+                } else {
+                    _ = wakeupSemaphore.wait(timeout: .now() + .milliseconds(20))
+                }
             }
         }
     }

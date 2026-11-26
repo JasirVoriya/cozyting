@@ -3,10 +3,7 @@ import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
 
-/// Style B Favorite Audio Sources manager (`M6`, localized in `zh-CN` / `en` / `ja` in `M8`).
-///
-/// Opening or managing favorites NEVER stops an active cast session. Selecting a new app
-/// while casting performs a fail-closed Process Tap hot-switch without disconnecting speakers.
+/// Native macOS frosted-glass Favorite Audio Sources manager (`M6`, trilingual `zh-CN` / `en` / `ja`).
 public struct AudioSourcePickerView: View {
     @Bindable public var coordinator: CastCoordinator
     public let palette: DesignTokens.ThemePalette
@@ -58,139 +55,142 @@ public struct AudioSourcePickerView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(t(.pickerTitle))
-                        .font(.system(size: DesignTokens.Typography.cardTitle, weight: .bold))
-                        .foregroundStyle(palette.textPrimary)
-                    let autoCount = coordinator.favoriteSources.filter(\.autoDetectEnabled).count
-                    Text(CozyTingL10n.format(.pickerSummary, language: lang, coordinator.favoriteSources.count, autoCount))
-                        .font(.system(size: DesignTokens.Typography.micro))
-                        .foregroundStyle(palette.textSecondary)
-                }
+        ZStack {
+            VisualEffectBackground(
+                material: .popover,
+                blendingMode: .behindWindow,
+                state: .active
+            )
+            .ignoresSafeArea()
 
-                Spacer()
-
-                Button {
-                    coordinator.sourceCatalog.refreshCatalog()
-                } label: {
-                    CozyTingIconView(.refresh, size: 13, weight: .medium)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(width: 26, height: 26)
-                        .background(palette.controlSurface, in: Circle())
-                }
-                .buttonStyle(.plain)
-
-                Button(action: onClose) {
-                    CozyTingIconView(.close, size: 13, weight: .semibold)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(width: 26, height: 26)
-                        .background(palette.controlSurface, in: Circle())
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Search bar
-            HStack(spacing: DesignTokens.Spacing.sm) {
-                CozyTingIconView(.search, size: 13)
-                    .foregroundStyle(palette.textTertiary)
-                TextField(t(.pickerSearchHint), text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: DesignTokens.Typography.body))
-                    .foregroundStyle(palette.textPrimary)
-                if !searchText.isEmpty {
-                    Button { searchText = "" } label: {
-                        CozyTingIconView(.close, size: 11)
-                            .foregroundStyle(palette.textTertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(palette.controlSurface, in: RoundedRectangle(cornerRadius: DesignTokens.Radii.control, style: .continuous))
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                    HStack {
-                        Text(CozyTingL10n.format(.pickerFavoritesHeader, language: lang, filteredFavorites.count))
-                            .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                            .foregroundStyle(palette.textSecondary)
-                        Spacer()
-                        if filteredFavorites.count >= 2 && searchText.isEmpty {
-                            Text(t(.pickerDragHint))
-                                .font(.system(size: DesignTokens.Typography.micro))
-                                .foregroundStyle(palette.textTertiary)
-                        }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(t(.pickerTitle))
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        let autoCount = coordinator.favoriteSources.filter(\.autoDetectEnabled).count
+                        Text(CozyTingL10n.format(.pickerSummary, language: lang, coordinator.favoriteSources.count, autoCount))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
-                    if filteredFavorites.isEmpty {
-                        Text(t(.pickerFavoritesEmpty))
-                            .font(.system(size: DesignTokens.Typography.caption))
-                            .foregroundStyle(palette.textTertiary)
-                            .padding(.vertical, 6)
-                    } else {
-                        VStack(spacing: DesignTokens.Spacing.sm) {
-                            ForEach(filteredFavorites, id: \.bundleIdentifier) { fav in
-                                favoriteRow(fav)
-                                    .draggable(fav.bundleIdentifier) {
-                                        Text(coordinator.sourceCatalog.displayName(for: fav.bundleIdentifier))
-                                            .padding(6)
-                                            .background(palette.panelBg, in: RoundedRectangle(cornerRadius: 8))
-                                    }
-                                    .dropDestination(for: String.self) { items, _ in
-                                        guard let fromID = items.first, fromID != fav.bundleIdentifier else {
-                                            return false
-                                        }
-                                        coordinator.reorderFavoriteSource(from: fromID, to: fav.bundleIdentifier)
-                                        return true
-                                    }
-                            }
-                        }
-                    }
+                    Spacer()
 
-                    let otherApps = filteredOtherApps
                     Button {
-                        withAnimation(.easeInOut(duration: 0.16)) {
-                            showAllOtherApps.toggle()
-                        }
+                        coordinator.sourceCatalog.refreshCatalog()
                     } label: {
-                        HStack {
-                            Text(
-                                (showAllOtherApps || !searchText.isEmpty)
-                                    ? CozyTingL10n.format(.pickerOtherAppsHeader, language: lang, otherApps.count)
-                                    : CozyTingL10n.format(.pickerAddMoreApps, language: lang, otherApps.count)
-                            )
-                            .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                            .foregroundStyle(palette.accentBright)
-                            Spacer()
-                            CozyTingIconView(
-                                (showAllOtherApps || !searchText.isEmpty) ? .chevronDown : .chevronRight,
-                                size: 11,
-                                weight: .semibold
-                            )
-                            .foregroundStyle(palette.accentBright)
-                        }
-                        .padding(.top, 4)
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .medium))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
 
-                    if showAllOtherApps || !searchText.isEmpty {
-                        LazyVStack(spacing: DesignTokens.Spacing.xs) {
-                            ForEach(otherApps) { app in
-                                otherAppRow(app)
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+                // Native macOS search field
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField(t(.pickerSearchHint), text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.subheadline)
+                    if !searchText.isEmpty {
+                        Button { searchText = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.quaternary.opacity(0.7), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(CozyTingL10n.format(.pickerFavoritesHeader, language: lang, filteredFavorites.count))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            if filteredFavorites.count >= 2 && searchText.isEmpty {
+                                Text(t(.pickerDragHint))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+
+                        if filteredFavorites.isEmpty {
+                            Text(t(.pickerFavoritesEmpty))
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .padding(.vertical, 6)
+                        } else {
+                            VStack(spacing: 6) {
+                                ForEach(filteredFavorites, id: \.bundleIdentifier) { fav in
+                                    favoriteRow(fav)
+                                        .draggable(fav.bundleIdentifier) {
+                                            Text(coordinator.sourceCatalog.displayName(for: fav.bundleIdentifier))
+                                                .padding(6)
+                                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                                        }
+                                        .dropDestination(for: String.self) { items, _ in
+                                            guard let fromID = items.first, fromID != fav.bundleIdentifier else {
+                                                return false
+                                            }
+                                            coordinator.reorderFavoriteSource(from: fromID, to: fav.bundleIdentifier)
+                                            return true
+                                        }
+                                }
+                            }
+                        }
+
+                        let otherApps = filteredOtherApps
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.16)) {
+                                showAllOtherApps.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Text(
+                                    (showAllOtherApps || !searchText.isEmpty)
+                                        ? CozyTingL10n.format(.pickerOtherAppsHeader, language: lang, otherApps.count)
+                                        : CozyTingL10n.format(.pickerAddMoreApps, language: lang, otherApps.count)
+                                )
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                                Spacer()
+                                Image(systemName: (showAllOtherApps || !searchText.isEmpty) ? "chevron.down" : "chevron.right")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                            .padding(.top, 4)
+                        }
+                        .buttonStyle(.plain)
+
+                        if showAllOtherApps || !searchText.isEmpty {
+                            LazyVStack(spacing: 4) {
+                                ForEach(otherApps) { app in
+                                    otherAppRow(app)
+                                }
                             }
                         }
                     }
                 }
+                .frame(maxHeight: 380)
             }
-            .frame(maxHeight: 380)
+            .padding(14)
         }
-        .padding(DesignTokens.Spacing.lg)
         .frame(width: preferredWidth)
-        .background(palette.panelBg)
         .onAppear {
             coordinator.sourceCatalog.refreshCatalog()
         }
@@ -204,28 +204,29 @@ public struct AudioSourcePickerView: View {
         let icon = coordinator.sourceCatalog.icon(for: fav.bundleIdentifier)
 
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: DesignTokens.Spacing.sm) {
+            HStack(spacing: 8) {
                 appIconView(icon, size: 28)
 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 5) {
                         Text(name)
-                            .font(.system(size: DesignTokens.Typography.deviceTitle, weight: .semibold))
-                            .foregroundStyle(isSelected ? palette.onSelectedPrimary : palette.textPrimary)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
                         if isRunning {
                             Circle()
-                                .fill(palette.statusSuccess)
+                                .fill(.green)
                                 .frame(width: 6, height: 6)
                         }
                         if isSelected {
-                            CozyTingIconView(.check, size: 11, weight: .bold)
-                                .foregroundStyle(palette.accent)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(Color.accentColor)
                         }
                     }
                     Text(fav.bundleIdentifier)
-                        .font(.system(size: 10.5, design: .monospaced))
-                        .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textTertiary)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
 
@@ -235,15 +236,16 @@ public struct AudioSourcePickerView: View {
                     coordinator.sourceCatalog.launchApplication(bundleIdentifier: fav.bundleIdentifier)
                 } label: {
                     Image(systemName: "arrow.up.forward.app")
-                        .font(.system(size: 12))
-                        .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help("\(t(.commonOpen)) \(name)")
 
                 if filteredFavorites.count >= 2 && searchText.isEmpty {
-                    CozyTingIconView(.dragHandle, size: 12)
-                        .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textTertiary)
+                    Image(systemName: "line.3.horizontal")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
             }
             .contentShape(Rectangle())
@@ -256,7 +258,7 @@ public struct AudioSourcePickerView: View {
                 }
             }
 
-            HStack(spacing: DesignTokens.Spacing.sm) {
+            HStack {
                 Toggle(isOn: Binding(
                     get: { fav.autoDetectEnabled },
                     set: { enabled in
@@ -264,32 +266,30 @@ public struct AudioSourcePickerView: View {
                     }
                 )) {
                     Text(t(fav.autoDetectEnabled ? .pickerAutoDetectOn : .pickerAutoDetectOff))
-                        .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
-                        .foregroundStyle(isSelected ? palette.onSelectedSecondary : palette.textSecondary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
                 .toggleStyle(.switch)
                 .controlSize(.mini)
 
                 Spacer()
 
-                Button {
+                Button(t(.pickerRemove)) {
                     coordinator.removeFavoriteSource(bundleIdentifier: fav.bundleIdentifier)
-                } label: {
-                    Text(t(.pickerRemove))
-                        .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
-                        .foregroundStyle(palette.statusError)
                 }
                 .buttonStyle(.plain)
+                .font(.caption2)
+                .foregroundStyle(.red)
             }
         }
-        .padding(DesignTokens.Spacing.md)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: DesignTokens.Radii.control, style: .continuous)
-                .fill(isSelected ? palette.rowSelectedBg : palette.rowIdleBg)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.05))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.Radii.control, style: .continuous)
-                .strokeBorder(isSelected ? palette.rowSelectedBorder : palette.rowIdleBorder, lineWidth: isSelected ? 1.5 : 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(isSelected ? Color.accentColor.opacity(0.45) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1 : 0.5)
         )
     }
 
@@ -298,46 +298,40 @@ public struct AudioSourcePickerView: View {
         let icon = coordinator.sourceCatalog.icon(for: app.bundleIdentifier)
         let isSelected = coordinator.activeSource?.bundleIdentifier.caseInsensitiveCompare(app.bundleIdentifier) == .orderedSame
 
-        HStack(spacing: DesignTokens.Spacing.sm) {
+        HStack(spacing: 8) {
             appIconView(icon, size: 24)
 
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     Text(app.displayName)
-                        .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                        .foregroundStyle(palette.textPrimary)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                     if app.isRunning {
                         Circle()
-                            .fill(palette.statusSuccess)
+                            .fill(.green)
                             .frame(width: 5, height: 5)
                     }
                 }
                 Text(app.bundleIdentifier)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(palette.textTertiary)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 4)
 
-            Button {
+            Button(t(.pickerAddFav)) {
                 coordinator.addFavoriteSource(bundleIdentifier: app.bundleIdentifier)
-            } label: {
-                Text(t(.pickerAddFav))
-                    .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
-                    .foregroundStyle(palette.accentBright)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(palette.accentSoftBg, in: Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: DesignTokens.Radii.control, style: .continuous)
-                .fill(isSelected ? palette.accentSoftBg : palette.rowIdleBg.opacity(0.6))
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04))
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -360,9 +354,9 @@ public struct AudioSourcePickerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
         } else {
             RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .fill(palette.controlSurface)
+                .fill(Color.primary.opacity(0.08))
                 .frame(width: size, height: size)
-                .overlay(CozyTingIconView(.musicNote, size: size * 0.5).foregroundStyle(palette.textSecondary))
+                .overlay(Image(systemName: "music.note").font(.system(size: size * 0.45)).foregroundStyle(.secondary))
         }
     }
 }

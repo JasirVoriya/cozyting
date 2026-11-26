@@ -159,7 +159,7 @@ struct AudioToolboxAACEncoderTests {
     @Test("AudioEncodingPipeline drains ring buffer, probes PCM, and counts -4 queueFull drops")
     func pipelineDrainsAndCountsQueueFullDrops() async throws {
         let dropEverySecond = AtomicCounter(0)
-        let pipeline = try AudioEncodingPipeline { _ in
+        let pipeline = try AudioEncodingPipeline(enableSilentKeepalive: false) { _ in
             let n = dropEverySecond.increment()
             return (n % 2 == 0) ? .queueFull : .ok
         }
@@ -199,4 +199,29 @@ struct AudioToolboxAACEncoderTests {
         #expect(stats.pcmProbe.isSilent == false)
         #expect(stats.pcmProbe.nonSilentFrames == 4096)
     }
+
+    @Test("AudioEncodingPipeline emits valid raw AAC-LC silent keepalive AUs while idle")
+    func pipelineEmitsSilentKeepaliveWhenIdle() async throws {
+        let receivedSizes = LockedIntList()
+        let pipeline = try AudioEncodingPipeline(enableSilentKeepalive: true) { frame in
+            receivedSizes.append(frame.rawAccessUnit.count)
+            return .ok
+        }
+        pipeline.start()
+        try await Task.sleep(for: .milliseconds(160))
+        pipeline.stop()
+
+        let sizes = receivedSizes.snapshot()
+        #expect(sizes.count >= 3)
+        for sz in sizes {
+            #expect(sz >= 4)
+        }
+    }
+}
+
+private final class LockedIntList: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [Int] = []
+    func append(_ v: Int) { lock.withLock { values.append(v) } }
+    func snapshot() -> [Int] { lock.withLock { values } }
 }

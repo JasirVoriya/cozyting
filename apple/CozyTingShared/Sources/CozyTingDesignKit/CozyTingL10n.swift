@@ -219,6 +219,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case settingsFirewallTitle
     case settingsFirewallSub
     case settingsOpenFirewall
+    case errSpeakerSeized
 }
 
 public enum CozyTingL10n {
@@ -469,6 +470,7 @@ public enum CozyTingL10n {
         .settingsFirewallTitle: "macOS 防火墙与局域网接入",
         .settingsFirewallSub: "MiPlay 需要音箱反向连回本机；若开启了防火墙请允许 CozyTing 传入连接",
         .settingsOpenFirewall: "打开防火墙",
+        .errSpeakerSeized: "检测到局域网内其他设备（如手机端窝爱听或小米播控）正在抢占「%@」，导致反复断开重连；请先停止另一台设备的投送。",
     ]
 
     public static let en: [L10nKey: String] = [
@@ -673,6 +675,7 @@ public enum CozyTingL10n {
         .settingsFirewallTitle: "macOS Firewall & Local Network",
         .settingsFirewallSub: "MiPlay speakers connect back to your Mac; allow CozyTing if Firewall is enabled",
         .settingsOpenFirewall: "Firewall Settings",
+        .errSpeakerSeized: "Another device on your LAN (such as CozyTing on a phone) is seizing \"%@\", causing repeated disconnects. Stop casting on the other device first.",
     ]
 
     public static let ja: [L10nKey: String] = [
@@ -877,5 +880,6 @@ public enum CozyTingL10n {
         .settingsFirewallTitle: "macOS ファイアウォールとローカルネットワーク",
         .settingsFirewallSub: "MiPlay はスピーカーから本機へ逆接続します。ファイアウォール有効時は CozyTing を許可してください",
         .settingsOpenFirewall: "ファイアウォール",
+        .errSpeakerSeized: "LAN 内の別端末（スマホ版 CozyTing など）が「%@」を占有しており再接続が繰り返されています。別端末のキャストを先に停止してください。",
     ]
 }

@@ -3,15 +3,7 @@ import CozyTingCoreKit
 import CozyTingDesignKit
 import SwiftUI
 
-/// 4-Card Style B Settings Window (`design/UI_SPEC.md` §3 & `docs/MACOS_CLIENT_DESIGN.md` §2.3).
-///
-/// Cards:
-/// 1. Appearance & Discovery (3-state theme, 4-state language, show all discovered, rescan)
-/// 2. Audio & Permissions (System Audio Recording deep-link, local app mute, volume guard + 30–90% slider,
-///    auto-detect toggle, opt-in F11/F12 hardware volume keys)
-/// 3. Connection & Debug (Direct Runtime Logs row with live byte size + collapsible manual IP / source mode /
-///    custom delay ms / ref_function / auth mode)
-/// 4. About & Updates (Single entry row with version / update badge → `CozyAboutView`)
+/// Native macOS System Settings (`Form().formStyle(.grouped)`) over behind-window frosted glass.
 public struct SettingsWindowView: View {
     @Bindable public var coordinator: CastCoordinator
     public let updateService: UpdateService
@@ -73,17 +65,348 @@ public struct SettingsWindowView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.lg) {
-                appearanceAndDiscoveryCard
-                audioAndPermissionsCard
-                connectionAndDebugCard
-                aboutAndUpdatesCard
+        ZStack {
+            VisualEffectBackground(
+                material: .underWindowBackground,
+                blendingMode: .behindWindow,
+                state: .followsWindowActiveState
+            )
+            .ignoresSafeArea()
+
+            Form {
+                // Section 1: Appearance & Discovery
+                Section(t(.settingsSectionAppearance)) {
+                    Picker(t(.settingsThemeTitle), selection: Binding(
+                        get: { coordinator.themeMode },
+                        set: { newMode in
+                            coordinator.setThemeMode(newMode)
+                            onAppearanceChanged(newMode)
+                        }
+                    )) {
+                        Text(t(.themeSystem)).tag(ThemeMode.system)
+                        Text(t(.themeLight)).tag(ThemeMode.light)
+                        Text(t(.themeDark)).tag(ThemeMode.dark)
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker(t(.settingsLanguageTitle), selection: Binding(
+                        get: { coordinator.appLanguage },
+                        set: { newLang in
+                            coordinator.setAppLanguage(newLang)
+                            onLanguageChanged?(newLang)
+                        }
+                    )) {
+                        Text(t(.langSystem)).tag(AppLanguage.system)
+                        Text("简体中文").tag(AppLanguage.zhCN)
+                        Text("English").tag(AppLanguage.en)
+                        Text("日本語").tag(AppLanguage.ja)
+                    }
+                    .pickerStyle(.menu)
+
+                    Toggle(isOn: Binding(
+                        get: { coordinator.showAllDiscovered },
+                        set: { coordinator.setShowAllDiscovered($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsShowAllTitle))
+                            Text(t(.settingsShowAllSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            Task { await coordinator.discoverDevices(manual: true) }
+                        } label: {
+                            Label(t(.settingsRescanBtn), systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(coordinator.isDiscovering)
+                    }
+                }
+
+                // Section 2: Audio & Permissions
+                Section(t(.settingsSectionAudio)) {
+                    LabeledContent {
+                        Button(t(.settingsOpenSystemSettings)) {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsAudioPermTitle))
+                            Text(t(.settingsAudioPermSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    LabeledContent {
+                        Button(t(.settingsOpenFirewall)) {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsFirewallTitle))
+                            Text(t(.settingsFirewallSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: Binding(
+                        get: { coordinator.muteLocalAudio },
+                        set: { coordinator.setMuteLocalAudio($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsLocalMuteTitle))
+                            Text(t(.settingsLocalMuteSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: Binding(
+                        get: { coordinator.volumeGuardEnabled },
+                        set: { coordinator.setVolumeGuard(enabled: $0, safeLimit: coordinator.volumeGuardSafeLimit) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsVolumeGuardTitle))
+                            Text(t(.settingsVolumeGuardSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    if coordinator.volumeGuardEnabled {
+                        LabeledContent(t(.settingsVolumeLimitTitle)) {
+                            HStack(spacing: 8) {
+                                Slider(
+                                    value: Binding(
+                                        get: { Double(coordinator.volumeGuardSafeLimit) },
+                                        set: { coordinator.setVolumeGuard(enabled: true, safeLimit: Int($0)) }
+                                    ),
+                                    in: 30...90,
+                                    step: 5
+                                )
+                                .frame(width: 150)
+                                Text("\(coordinator.volumeGuardSafeLimit)%")
+                                    .font(.caption.monospacedDigit().weight(.semibold))
+                                    .foregroundStyle(.orange)
+                                    .frame(width: 36, alignment: .trailing)
+                            }
+                        }
+                    }
+
+                    Toggle(isOn: Binding(
+                        get: { coordinator.autoDetectAudioSource },
+                        set: { coordinator.setAutoDetectAudioSource($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsAutoDetectTitle))
+                            Text(t(.settingsAutoDetectSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle(isOn: Binding(
+                            get: { coordinator.hardwareVolumeKeysEnabled },
+                            set: { enabled in
+                                let ok = coordinator.setHardwareVolumeKeysEnabled(enabled)
+                                accessibilityGranted = HardwareVolumeKeyInterceptor.isAccessibilityGranted()
+                                if enabled && !ok {
+                                    HardwareVolumeKeyInterceptor.openAccessibilitySettings()
+                                }
+                            }
+                        )) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(t(.settingsHwVolKeysTitle))
+                                Text(t(.settingsHwVolKeysSub))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        HStack(spacing: 8) {
+                            Text(accessibilityGranted ? t(.settingsAccessibilityGranted) : t(.settingsAccessibilityNeeded))
+                                .font(.caption)
+                                .foregroundStyle(accessibilityGranted ? .green : .secondary)
+                            if !accessibilityGranted {
+                                Button(t(.settingsOpenSystemSettings)) {
+                                    HardwareVolumeKeyInterceptor.openAccessibilitySettings()
+                                }
+                                .buttonStyle(.link)
+                                .font(.caption)
+                            }
+                        }
+                    }
+                }
+
+                // Section 3: Connection & Debug
+                Section(t(.settingsSectionDebug)) {
+                    Button {
+                        refreshLogSize()
+                        showLogViewer = true
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(t(.settingsLogsTitle))
+                                    .foregroundStyle(.primary)
+                                Text(CozyTingL10n.format(.settingsLogsSub, language: lang, logSizeLabel))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    DisclosureGroup(isExpanded: $showAdvancedDebug) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(t(.settingsManualIPLabel))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    TextField(t(.settingsManualIPHint), text: $manualIPText)
+                                        .textFieldStyle(.roundedBorder)
+                                    Button(t(.commonAdd)) {
+                                        let trimmed = manualIPText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        if coordinator.addManualSpeaker(ip: trimmed) {
+                                            manualIPFeedback = CozyTingL10n.format(.settingsManualIPAdded, language: lang, trimmed)
+                                            manualIPText = ""
+                                        } else {
+                                            manualIPFeedback = t(.settingsManualIPInvalid)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                if let manualIPFeedback {
+                                    Text(manualIPFeedback)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+
+                            Picker(t(.settingsSourceModeLabel), selection: Binding(
+                                get: { coordinator.sourceMode },
+                                set: { coordinator.setSourceMode($0) }
+                            )) {
+                                Text(t(.settingsSourceModeApp)).tag(SourceMode.app)
+                                Text(t(.settingsSourceModeSilent)).tag(SourceMode.silent)
+                            }
+                            .pickerStyle(.segmented)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(t(.settingsCustomDelayLabel))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    TextField("\(coordinator.delayMs)", text: $customDelayText)
+                                        .textFieldStyle(.roundedBorder)
+                                    Button(t(.commonApply)) {
+                                        let trimmed = customDelayText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        let parsed = trimmed.isEmpty ? 0 : Int(trimmed)
+                                        if let ms = parsed, ms == 0 || (50...5000).contains(ms) {
+                                            customDelayFeedback = nil
+                                            Task { await coordinator.setPlaybackDelay(ms) }
+                                        } else {
+                                            customDelayFeedback = t(.settingsCustomDelayInvalid)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                if let customDelayFeedback {
+                                    Text(customDelayFeedback)
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                }
+                            }
+
+                            Picker(t(.settingsRefModeLabel), selection: Binding(
+                                get: { coordinator.preferences.refFunction },
+                                set: { coordinator.preferences.refFunction = $0 }
+                            )) {
+                                Text(t(.settingsRefAuto)).tag("")
+                                Text(t(.settingsRefSingle)).tag("single")
+                                Text(t(.settingsRefMulti)).tag("multi")
+                                Text(t(.settingsRefStereo)).tag("stereo")
+                            }
+                            .pickerStyle(.segmented)
+
+                            Picker(t(.settingsAuthModeLabel), selection: Binding(
+                                get: { coordinator.authMode },
+                                set: { coordinator.setAuthMode($0) }
+                            )) {
+                                Text(t(.settingsAuthAuto)).tag(AuthMode.auto)
+                                Text(t(.settingsAuthLegacy)).tag(AuthMode.legacy)
+                                Text(t(.settingsAuthSafety)).tag(AuthMode.safety)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        .padding(.top, 6)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(t(.settingsAdvancedHeader))
+                            Text(t(.settingsAdvancedSub))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                // Section 4: About & Updates
+                Section(t(.settingsSectionAbout)) {
+                    Button { showAboutSheet = true } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(t(.aboutTitle))
+                                    .foregroundStyle(.primary)
+                                Text(t(.aboutFooterNote))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if hasNewUpdate, case .ready(let decision, _, _) = updateState {
+                                Text(decision.latestTag)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2.5)
+                                    .background(Color.accentColor, in: Capsule())
+                            } else {
+                                Text("v\(UpdateChannel.stripBuildSuffixes(appVersion))")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .padding(DesignTokens.Spacing.xl)
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .padding(.top, 24)
         }
-        .frame(minWidth: 520, idealWidth: 540, minHeight: 540, idealHeight: 640)
-        .background(palette.bgCanvas)
+        .frame(minWidth: 500, idealWidth: 540, minHeight: 520, idealHeight: 640)
         .preferredColorScheme(PlatformAdapters.preferredColorScheme(for: coordinator.themeMode))
         .onAppear {
             refreshVolatileStates()
@@ -172,443 +495,6 @@ public struct SettingsWindowView: View {
         }
     }
 
-    // MARK: - Card 1: Appearance & Discovery
-
-    private var appearanceAndDiscoveryCard: some View {
-        settingsCard(title: t(.settingsSectionAppearance)) {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                HStack {
-                    Text(t(.settingsThemeTitle))
-                        .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                        .foregroundStyle(palette.textPrimary)
-                    Spacer()
-                    Picker("", selection: Binding(
-                        get: { coordinator.themeMode },
-                        set: { newMode in
-                            coordinator.setThemeMode(newMode)
-                            onAppearanceChanged(newMode)
-                        }
-                    )) {
-                        Text(t(.themeSystem)).tag(ThemeMode.system)
-                        Text(t(.themeLight)).tag(ThemeMode.light)
-                        Text(t(.themeDark)).tag(ThemeMode.dark)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 220)
-                }
-
-                Divider().opacity(0.25)
-
-                HStack {
-                    Text(t(.settingsLanguageTitle))
-                        .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                        .foregroundStyle(palette.textPrimary)
-                    Spacer()
-                    Picker("", selection: Binding(
-                        get: { coordinator.appLanguage },
-                        set: { newLang in
-                            coordinator.setAppLanguage(newLang)
-                            onLanguageChanged?(newLang)
-                        }
-                    )) {
-                        Text(t(.langSystem)).tag(AppLanguage.system)
-                        Text("简体中文").tag(AppLanguage.zhCN)
-                        Text("English").tag(AppLanguage.en)
-                        Text("日本語").tag(AppLanguage.ja)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 310)
-                }
-
-                Divider().opacity(0.25)
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t(.settingsShowAllTitle))
-                            .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                            .foregroundStyle(palette.textPrimary)
-                        Text(t(.settingsShowAllSub))
-                            .font(.system(size: DesignTokens.Typography.micro))
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { coordinator.showAllDiscovered },
-                        set: { coordinator.setShowAllDiscovered($0) }
-                    ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                }
-
-                Button {
-                    Task { await coordinator.discoverDevices(manual: true) }
-                } label: {
-                    HStack {
-                        CozyTingIconView(.refresh, size: 12, weight: .semibold)
-                        Text(t(.settingsRescanBtn))
-                            .font(.system(size: DesignTokens.Typography.caption, weight: .semibold))
-                    }
-                    .foregroundStyle(palette.accentBright)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(palette.accentSoftBg, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Card 2: Audio & System Permissions
-
-    private var audioAndPermissionsCard: some View {
-        settingsCard(title: t(.settingsSectionAudio)) {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t(.settingsAudioPermTitle))
-                            .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                            .foregroundStyle(palette.textPrimary)
-                        Text(t(.settingsAudioPermSub))
-                            .font(.system(size: DesignTokens.Typography.micro))
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    Spacer()
-                    Button {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    } label: {
-                        Text(t(.settingsOpenSystemSettings))
-                            .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
-                            .foregroundStyle(palette.accentBright)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(palette.accentSoftBg, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Divider().opacity(0.25)
-
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t(.settingsFirewallTitle))
-                            .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                            .foregroundStyle(palette.textPrimary)
-                        Text(t(.settingsFirewallSub))
-                            .font(.system(size: DesignTokens.Typography.micro))
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    Spacer()
-                    Button {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.Network-Settings.extension") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    } label: {
-                        Text(t(.settingsOpenFirewall))
-                            .font(.system(size: DesignTokens.Typography.micro, weight: .semibold))
-                            .foregroundStyle(palette.accentBright)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(palette.accentSoftBg, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Divider().opacity(0.25)
-
-                toggleRow(
-                    title: t(.settingsLocalMuteTitle),
-                    subtitle: t(.settingsLocalMuteSub),
-                    isOn: Binding(
-                        get: { coordinator.muteLocalAudio },
-                        set: { coordinator.setMuteLocalAudio($0) }
-                    )
-                )
-
-                Divider().opacity(0.25)
-
-                toggleRow(
-                    title: t(.settingsVolumeGuardTitle),
-                    subtitle: t(.settingsVolumeGuardSub),
-                    isOn: Binding(
-                        get: { coordinator.volumeGuardEnabled },
-                        set: { coordinator.setVolumeGuard(enabled: $0, safeLimit: coordinator.volumeGuardSafeLimit) }
-                    )
-                )
-
-                if coordinator.volumeGuardEnabled {
-                    HStack(spacing: DesignTokens.Spacing.sm) {
-                        Text(t(.settingsVolumeLimitTitle))
-                            .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                            .foregroundStyle(palette.textSecondary)
-                        Slider(
-                            value: Binding(
-                                get: { Double(coordinator.volumeGuardSafeLimit) },
-                                set: { coordinator.setVolumeGuard(enabled: true, safeLimit: Int($0)) }
-                            ),
-                            in: 30...90,
-                            step: 5
-                        )
-                        Text("\(coordinator.volumeGuardSafeLimit)%")
-                            .font(.system(size: DesignTokens.Typography.caption, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(palette.statusWarning)
-                            .frame(width: 38, alignment: .trailing)
-                    }
-                }
-
-                Divider().opacity(0.25)
-
-                toggleRow(
-                    title: t(.settingsAutoDetectTitle),
-                    subtitle: t(.settingsAutoDetectSub),
-                    isOn: Binding(
-                        get: { coordinator.autoDetectAudioSource },
-                        set: { coordinator.setAutoDetectAudioSource($0) }
-                    )
-                )
-
-                Divider().opacity(0.25)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    toggleRow(
-                        title: t(.settingsHwVolKeysTitle),
-                        subtitle: t(.settingsHwVolKeysSub),
-                        isOn: Binding(
-                            get: { coordinator.hardwareVolumeKeysEnabled },
-                            set: { enabled in
-                                let ok = coordinator.setHardwareVolumeKeysEnabled(enabled)
-                                accessibilityGranted = HardwareVolumeKeyInterceptor.isAccessibilityGranted()
-                                if enabled && !ok {
-                                    HardwareVolumeKeyInterceptor.openAccessibilitySettings()
-                                }
-                            }
-                        )
-                    )
-                    HStack(spacing: 8) {
-                        Text(accessibilityGranted ? t(.settingsAccessibilityGranted) : t(.settingsAccessibilityNeeded))
-                            .font(.system(size: 10.5, weight: .medium))
-                            .foregroundStyle(accessibilityGranted ? palette.statusSuccess : palette.textTertiary)
-                        if !accessibilityGranted {
-                            Button {
-                                HardwareVolumeKeyInterceptor.openAccessibilitySettings()
-                            } label: {
-                                Text(t(.settingsOpenSystemSettings))
-                                    .font(.system(size: 10.5, weight: .semibold))
-                                    .foregroundStyle(palette.accentBright)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Card 3: Connection & Debug
-
-    private var connectionAndDebugCard: some View {
-        settingsCard(title: t(.settingsSectionDebug)) {
-            VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                // Direct top-level Runtime Logs row
-                Button {
-                    refreshLogSize()
-                    showLogViewer = true
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(t(.settingsLogsTitle))
-                                .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                                .foregroundStyle(palette.textPrimary)
-                            Text(CozyTingL10n.format(.settingsLogsSub, language: lang, logSizeLabel))
-                                .font(.system(size: DesignTokens.Typography.micro))
-                                .foregroundStyle(palette.textSecondary)
-                        }
-                        Spacer()
-                        CozyTingIconView(.chevronRight, size: 12, weight: .semibold)
-                            .foregroundStyle(palette.textTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                Divider().opacity(0.25)
-
-                // Collapsible Advanced Debug section
-                Button {
-                    withAnimation(.easeInOut(duration: 0.16)) {
-                        showAdvancedDebug.toggle()
-                    }
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(t(.settingsAdvancedHeader))
-                                .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                                .foregroundStyle(palette.textPrimary)
-                            Text(t(.settingsAdvancedSub))
-                                .font(.system(size: DesignTokens.Typography.micro))
-                                .foregroundStyle(palette.textSecondary)
-                        }
-                        Spacer()
-                        CozyTingIconView(showAdvancedDebug ? .chevronDown : .chevronRight, size: 12, weight: .semibold)
-                            .foregroundStyle(palette.textTertiary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if showAdvancedDebug {
-                    VStack(alignment: .leading, spacing: DesignTokens.Spacing.md) {
-                        // Manual IP
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(t(.settingsManualIPLabel))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.textSecondary)
-                            HStack(spacing: 8) {
-                                TextField(t(.settingsManualIPHint), text: $manualIPText)
-                                    .textFieldStyle(.roundedBorder)
-                                Button(t(.commonAdd)) {
-                                    let trimmed = manualIPText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    if coordinator.addManualSpeaker(ip: trimmed) {
-                                        manualIPFeedback = CozyTingL10n.format(.settingsManualIPAdded, language: lang, trimmed)
-                                        manualIPText = ""
-                                    } else {
-                                        manualIPFeedback = t(.settingsManualIPInvalid)
-                                    }
-                                }
-                            }
-                            if let manualIPFeedback {
-                                Text(manualIPFeedback)
-                                    .font(.system(size: 10.5))
-                                    .foregroundStyle(palette.textSecondary)
-                            }
-                        }
-
-                        // Source Mode
-                        HStack {
-                            Text(t(.settingsSourceModeLabel))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.textSecondary)
-                            Spacer()
-                            Picker("", selection: Binding(
-                                get: { coordinator.sourceMode },
-                                set: { coordinator.setSourceMode($0) }
-                            )) {
-                                Text(t(.settingsSourceModeApp)).tag(SourceMode.app)
-                                Text(t(.settingsSourceModeSilent)).tag(SourceMode.silent)
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 210)
-                        }
-
-                        // Custom Delay ms
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(t(.settingsCustomDelayLabel))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.textSecondary)
-                            HStack(spacing: 8) {
-                                TextField("\(coordinator.delayMs)", text: $customDelayText)
-                                    .textFieldStyle(.roundedBorder)
-                                Button(t(.commonApply)) {
-                                    let trimmed = customDelayText.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    let parsed = trimmed.isEmpty ? 0 : Int(trimmed)
-                                    if let ms = parsed, ms == 0 || (50...5000).contains(ms) {
-                                        customDelayFeedback = nil
-                                        Task { await coordinator.setPlaybackDelay(ms) }
-                                    } else {
-                                        customDelayFeedback = t(.settingsCustomDelayInvalid)
-                                    }
-                                }
-                            }
-                            if let customDelayFeedback {
-                                Text(customDelayFeedback)
-                                    .font(.system(size: 10.5))
-                                    .foregroundStyle(palette.statusError)
-                            }
-                        }
-
-                        // Ref Function
-                        HStack {
-                            Text(t(.settingsRefModeLabel))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.textSecondary)
-                            Spacer()
-                            Picker("", selection: Binding(
-                                get: { coordinator.preferences.refFunction },
-                                set: { coordinator.preferences.refFunction = $0 }
-                            )) {
-                                Text(t(.settingsRefAuto)).tag("")
-                                Text(t(.settingsRefSingle)).tag("single")
-                                Text(t(.settingsRefMulti)).tag("multi")
-                                Text(t(.settingsRefStereo)).tag("stereo")
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 240)
-                        }
-
-                        // Auth Mode
-                        HStack {
-                            Text(t(.settingsAuthModeLabel))
-                                .font(.system(size: DesignTokens.Typography.caption, weight: .medium))
-                                .foregroundStyle(palette.textSecondary)
-                            Spacer()
-                            Picker("", selection: Binding(
-                                get: { coordinator.authMode },
-                                set: { coordinator.setAuthMode($0) }
-                            )) {
-                                Text(t(.settingsAuthAuto)).tag(AuthMode.auto)
-                                Text(t(.settingsAuthLegacy)).tag(AuthMode.legacy)
-                                Text(t(.settingsAuthSafety)).tag(AuthMode.safety)
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 240)
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-            }
-        }
-    }
-
-    // MARK: - Card 4: About & Updates
-
-    private var aboutAndUpdatesCard: some View {
-        settingsCard(title: t(.settingsSectionAbout)) {
-            Button { showAboutSheet = true } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(t(.aboutTitle))
-                            .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                            .foregroundStyle(palette.textPrimary)
-                        Text(t(.aboutFooterNote))
-                            .font(.system(size: DesignTokens.Typography.micro))
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    Spacer()
-                    if hasNewUpdate, case .ready(let decision, _, _) = updateState {
-                        HStack(spacing: 5) {
-                            Circle().fill(palette.accent).frame(width: 7, height: 7)
-                            Text(decision.latestTag)
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Color.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(palette.accent, in: Capsule())
-                        }
-                    } else {
-                        Text("v\(UpdateChannel.stripBuildSuffixes(appVersion))")
-                            .font(.system(size: DesignTokens.Typography.caption, design: .monospaced))
-                            .foregroundStyle(palette.textSecondary)
-                    }
-                    CozyTingIconView(.chevronRight, size: 12, weight: .semibold)
-                        .foregroundStyle(palette.textTertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
     // MARK: - Helpers
 
     private var isCheckingUpdates: Bool {
@@ -670,45 +556,6 @@ public struct SettingsWindowView: View {
         try? FileManager.default.removeItem(at: dst)
         if (try? FileManager.default.copyItem(at: src, to: dst)) != nil {
             NSWorkspace.shared.activateFileViewerSelecting([dst])
-        }
-    }
-
-    @ViewBuilder
-    private func settingsCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: DesignTokens.Spacing.sm) {
-            Text(title)
-                .font(.system(size: DesignTokens.Typography.sectionTitle, weight: .semibold))
-                .foregroundStyle(palette.textSecondary)
-                .padding(.horizontal, 4)
-
-            content()
-                .padding(DesignTokens.Spacing.lg)
-                .background(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radii.card, style: .continuous)
-                        .fill(palette.panelBg)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DesignTokens.Radii.card, style: .continuous)
-                        .strokeBorder(palette.panelBorder, lineWidth: 1)
-                )
-        }
-    }
-
-    @ViewBuilder
-    private func toggleRow(title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: DesignTokens.Spacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: DesignTokens.Typography.body, weight: .medium))
-                    .foregroundStyle(palette.textPrimary)
-                Text(subtitle)
-                    .font(.system(size: DesignTokens.Typography.micro))
-                    .foregroundStyle(palette.textSecondary)
-            }
-            Spacer()
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .toggleStyle(.switch)
         }
     }
 }

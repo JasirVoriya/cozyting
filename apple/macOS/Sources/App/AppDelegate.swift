@@ -37,11 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         )
 
-        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched (MenuBar + Style B)")
+        logManager.runtimeLogger.info(tag: "App", "CozyTingMac launched (Native macOS Frosted Glass)")
         castCoordinator.refreshWifiFrequency()
 
-        // Present the unified Main Window on launch so users double-clicking CozyTing.app
-        // see the full control panel immediately, while closing it keeps the Menu Bar active.
         openMainWindow()
 
         Task { [weak self] in
@@ -58,7 +56,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        // Keep Menu Bar status item running cleanly in the background when windows are closed.
         false
     }
 
@@ -102,17 +99,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         )
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 640),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         let hosting = NSHostingController(rootView: content)
         hosting.sizingOptions = [.minSize]
         window.title = title
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.contentViewController = hosting
-        window.setContentSize(NSSize(width: 460, height: 640))
-        window.contentMinSize = NSSize(width: 420, height: 540)
+        window.setContentSize(NSSize(width: 440, height: 620))
+        window.contentMinSize = NSSize(width: 400, height: 520)
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
@@ -144,16 +146,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 540, height: 640),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         let hosting = NSHostingController(rootView: content)
         hosting.sizingOptions = [.minSize]
         window.title = CozyTingL10n.text(.settingsTitle, language: castCoordinator.appLanguage)
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
         window.contentViewController = hosting
         window.setContentSize(NSSize(width: 540, height: 640))
-        window.contentMinSize = NSSize(width: 520, height: 540)
+        window.contentMinSize = NSSize(width: 500, height: 520)
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
@@ -172,8 +177,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         let closingWindow = notification.object as? NSWindow
-        // Defer check until window order-out finishes so we cleanly return to Menu Bar accessory mode
-        // when no CozyTing windows remain visible.
         Task { @MainActor [weak self] in
             guard let self else { return }
             let mainVisible = (self.mainWindowController?.window != closingWindow)
