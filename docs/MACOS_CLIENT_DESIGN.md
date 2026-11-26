@@ -196,13 +196,12 @@ cozyting_engine_push_aac(handle, ptr, len)
     - `apple/macOS/Sources/UI/`：`MenuBarStatusController`（`NSStatusItem` + `NSPopover` 352pt 悬浮卡 + 右键菜单 + 悬停图标滚轮调音量）、`PopoverControlCardView`（四段式毛玻璃控制卡）与 `MainWindowView`（可选独立主窗口 + 跟随系统/浅色/深色切换）。
   - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `CozyTingDesignKitTests` 图标/矢量/主题单测）+ `./scripts/build-macos.sh` Release 构建全绿。（注：浅/深/跟随系统实机桌面视觉与真机滑块手势流畅度待人工交互验收。）
 
-- [ ] **M5 · 音量持久化、高音量二次确认、上次组合一键恢复与 4 档延迟热切**
+- [x] **M5 · 音量持久化、高音量二次确认、上次组合一键恢复与 4 档延迟热切**
   - **交付物**：
-    - 总音量与最近 32 台单音箱独立音量 `UserDefaults` 持久化 + 冷启动高音量安全钳制；
-    - L1 高音量保护跨线 Style B 二次确认弹窗；
-    - 上次音箱组合置顶与「恢复上次」胶囊；
-    - 顶栏 4 档延迟快捷胶囊（标准/均衡/低延迟/极速 + 自定义 `ms`）+ `CoreWLAN` 频段探测与无权限回退 + 菜单栏滚轮/面板快捷键调音量。
-  - **验收**：重启恢复音量钳制、跨线确认与投送中 4 档免断连热切均实机验证通过，补齐单元契约测试。
+    - `CozyTingCoreKit`：`VolumeGroupEvaluator`（多音箱总音量联动跨安全上限二次确认，委托 L1 `evaluateVolumeGuard` 逐箱裁决）+ `LatencyPreset.startupRunwayAUs` + `VolumeAndLatencyM5Tests`（冷启动高音量钳制、32 台 LRU、多箱跨线确认、4 档 + 自定义延迟与预热 AU 契约单测）；
+    - `CozyTingDesignKit`：`CozyLatencyPillMenu`（顶栏 4 档 + 自定义 `ms` 语义图标胶囊与精简菜单）+ `CozyLatencyGuideSheetView`（4 档参数与预热 AU 说明弹窗）；
+    - `apple/macOS`：`WiFiFrequencyProbe`（`CoreWLAN` 频段探测，无定位权限/有线网安全回退 `0 → 1000ms`）、上次音箱组合置顶与 `Restore Last · N` 恢复胶囊、菜单栏滚轮与面板快捷键（`Cmd+↑/↓`、`=`/`-`）±5% 调节总音量。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `VolumeAndLatencyM5Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：真实局域网多箱投送中 4 档免断连热切听感与真机 Wi-Fi 切换频段实测待人工交互验收。）
 
 - [ ] **M6 · 常用音源管理、进程发声自动识别热切与一键唤起音源 App**
   - **交付物**：

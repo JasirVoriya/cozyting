@@ -118,10 +118,25 @@ public final class CastCoordinator {
         currentLatencyPreset.effectiveDelayMs(wifiFrequencyMHz: activeWifiFrequencyMHz)
     }
 
+    public var effectiveStartupRunwayAUs: Int {
+        currentLatencyPreset.startupRunwayAUs(wifiFrequencyMHz: activeWifiFrequencyMHz)
+    }
+
+    public var restorableLastSpeakerCount: Int {
+        let availableIDs = Set(devices.filter { $0.kind != .thisDevice && $0.castable }.map(\.id))
+        return lastSelectedSpeakerIds.filter { availableIDs.contains($0) }.count
+    }
+
     // MARK: - LAN Discovery
 
     public func updateWifiFrequencyMHz(_ mhz: Int32) {
         activeWifiFrequencyMHz = mhz
+    }
+
+    public func refreshWifiFrequency() {
+        let detected = WiFiFrequencyProbe.currentFrequencyMHz()
+        activeWifiFrequencyMHz = detected
+        logManager.runtimeLogger.info(tag: "WiFi", "Detected Wi-Fi band frequency=\(detected)MHz")
     }
 
     public func discoverDevices(manual: Bool, timeoutMs: Int32 = 1500) async {
@@ -130,6 +145,7 @@ public final class CastCoordinator {
         defer { isDiscovering = false }
 
         let localIP = NetworkInterfaceHelper.primaryLocalIPv4()
+        refreshWifiFrequency()
         let cachedForMerge: [Device] = manual ? [] : preferences.loadCachedDevices()
         logManager.castOpsLogger.record("DISCOVER start manual=\(manual) local_ip=\(localIP)")
 
@@ -319,35 +335,36 @@ public final class CastCoordinator {
     // MARK: - Volume Control & High-Volume Guard (L1 Adjudicated)
 
     public func requestMasterVolume(_ targetVolume: Int, confirmed: Bool = false) async {
-        let clamped = min(max(targetVolume, 0), 100)
-        if !confirmed {
-            if let decision = try? CozyTingCoreBridge.evaluateVolumeGuard(
-                enabled: volumeGuardEnabled,
-                safeLimit: Int32(volumeGuardSafeLimit),
-                currentVolume: Int32(masterVolume),
-                targetVolume: Int32(clamped)
-            ), case let .requireConfirm(current, target, safeLimit) = decision {
-                pendingVolumeConfirmation = PendingVolumeConfirmation(
-                    speakerID: nil,
-                    currentVolume: current,
-                    targetVolume: target,
-                    safeLimit: safeLimit
-                )
-                return
+        let evaluation = VolumeGroupEvaluator.evaluateMasterChange(
+            currentMaster: masterVolume,
+            targetMaster: targetVolume,
+            selectedSpeakerIds: selectedSpeakerIds,
+            speakerVolumes: speakerVolumes,
+            guardEnabled: volumeGuardEnabled,
+            safeLimit: volumeGuardSafeLimit,
+            confirmed: confirmed
+        )
+        switch evaluation {
+        case let .requireConfirm(current, target, safeLimit):
+            pendingVolumeConfirmation = PendingVolumeConfirmation(
+                speakerID: nil,
+                currentVolume: current,
+                targetVolume: target,
+                safeLimit: safeLimit
+            )
+            return
+
+        case let .allow(clampedMaster, speakerTargets):
+            masterVolume = clampedMaster
+            preferences.saveMasterVolume(clampedMaster)
+
+            guard isCasting, let engine = l1Engine else { return }
+            for ip in selectedSpeakerIds {
+                let nextSpeaker = speakerTargets[ip] ?? clampedMaster
+                speakerVolumes[ip] = nextSpeaker
+                preferences.saveSpeakerVolume(deviceID: ip, volume: nextSpeaker)
+                _ = try? await engine.setVolume(ip: ip, volume: Int32(nextSpeaker), confirmed: confirmed)
             }
-        }
-
-        let delta = clamped - masterVolume
-        masterVolume = clamped
-        preferences.saveMasterVolume(clamped)
-
-        guard isCasting, let engine = l1Engine else { return }
-        for ip in selectedSpeakerIds {
-            let currentSpeaker = speakerVolumes[ip] ?? masterVolume
-            let nextSpeaker = min(max(currentSpeaker + delta, 0), 100)
-            speakerVolumes[ip] = nextSpeaker
-            preferences.saveSpeakerVolume(deviceID: ip, volume: nextSpeaker)
-            _ = try? await engine.setVolume(ip: ip, volume: Int32(nextSpeaker), confirmed: confirmed)
         }
     }
 

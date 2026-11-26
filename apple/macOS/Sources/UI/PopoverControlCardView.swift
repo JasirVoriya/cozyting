@@ -10,6 +10,7 @@ public struct PopoverControlCardView: View {
 
     @Environment(\.colorScheme) private var systemColorScheme
     @State private var themeMode: ThemeMode = .system
+    @State private var showLatencyGuide: Bool = false
 
     public init(
         coordinator: CastCoordinator,
@@ -77,6 +78,33 @@ public struct PopoverControlCardView: View {
         .onAppear {
             themeMode = coordinator.preferences.themeMode
         }
+        .sheet(isPresented: $showLatencyGuide) {
+            CozyLatencyGuideSheetView(
+                currentDelayMs: coordinator.delayMs,
+                wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
+                palette: palette,
+                onSelectDelayMs: { ms in
+                    Task { await coordinator.setPlaybackDelay(ms) }
+                },
+                onOpenSettings: onOpenSettings,
+                onClose: { showLatencyGuide = false }
+            )
+        }
+        .background {
+            // In-panel keyboard shortcuts for ±5% master volume (zero Accessibility permissions).
+            HStack(spacing: 0) {
+                Button("") { Task { await coordinator.stepMasterVolume(by: 5) } }
+                    .keyboardShortcut(.upArrow, modifiers: [.command])
+                Button("") { Task { await coordinator.stepMasterVolume(by: -5) } }
+                    .keyboardShortcut(.downArrow, modifiers: [.command])
+                Button("") { Task { await coordinator.stepMasterVolume(by: 5) } }
+                    .keyboardShortcut("=", modifiers: [])
+                Button("") { Task { await coordinator.stepMasterVolume(by: -5) } }
+                    .keyboardShortcut("-", modifiers: [])
+            }
+            .opacity(0)
+            .allowsHitTesting(false)
+        }
     }
 
     // MARK: - Section 1: Header Bar
@@ -121,32 +149,17 @@ public struct PopoverControlCardView: View {
     }
 
     private var latencyMenuButton: some View {
-        Menu {
-            Button("Standard (\(LatencyPreset.standard.effectiveDelayMs(wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz))ms)") {
-                Task { await coordinator.setPlaybackDelay(0) }
+        CozyLatencyPillMenu(
+            delayMs: coordinator.delayMs,
+            wifiFrequencyMHz: coordinator.activeWifiFrequencyMHz,
+            palette: palette,
+            onSelectDelayMs: { ms in
+                Task { await coordinator.setPlaybackDelay(ms) }
+            },
+            onOpenGuide: {
+                showLatencyGuide = true
             }
-            Button("Balanced (400ms)") {
-                Task { await coordinator.setPlaybackDelay(400) }
-            }
-            Button("Low (250ms)") {
-                Task { await coordinator.setPlaybackDelay(250) }
-            }
-            Button("Ultra (150ms)") {
-                Task { await coordinator.setPlaybackDelay(150) }
-            }
-        } label: {
-            HStack(spacing: 3) {
-                Text("\(coordinator.effectiveDelayMs)ms")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                CozyTingIconView(.chevronDown, size: 9, weight: .semibold)
-            }
-            .foregroundStyle(palette.textPrimary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(palette.controlSurface, in: Capsule())
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        )
     }
 
     // MARK: - Section 2: Now Playing & Master Volume
@@ -258,10 +271,11 @@ public struct PopoverControlCardView: View {
                 Spacer()
 
                 if coordinator.canRestoreLastSelection {
+                    let count = coordinator.restorableLastSpeakerCount
                     Button {
                         Task { await coordinator.restoreLastSelectedSpeakers() }
                     } label: {
-                        Text("Restore Last")
+                        Text(count > 1 ? "Last · \(count)" : "Restore Last")
                             .font(.system(size: DesignTokens.Typography.micro, weight: .medium))
                             .foregroundStyle(palette.accentBright)
                             .padding(.horizontal, 8)
