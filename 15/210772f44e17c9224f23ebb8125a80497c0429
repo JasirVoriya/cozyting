@@ -1,0 +1,50 @@
+.github/workflows/ci.yml
+  h_75f437d5bc136b 44,57,71,81,88-90,94-95,216-240
+.gitignore
+  h_75f437d5bc136b 28
+README.md
+  h_75f437d5bc136b 34,43-45
+README_EN.md
+  h_75f437d5bc136b 34,43-45
+README_JA.md
+  h_75f437d5bc136b 34,43-45
+apple/CozyTingShared/Sources/CozyTingCoreKit/DMGDownloader.swift
+  h_75f437d5bc136b 1-164
+apple/CozyTingShared/Sources/CozyTingDesignKit/ChangelogMarkdownView.swift
+  h_75f437d5bc136b 1-186
+apple/CozyTingShared/Sources/CozyTingDesignKit/UpdateDetailSheetView.swift
+  h_75f437d5bc136b 1-311
+apple/CozyTingShared/Tests/CozyTingDesignKitTests/ChangelogMarkdownM9Tests.swift
+  h_75f437d5bc136b 1-55
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 42-45
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 62-64,589-607
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 58-73,142-169,219-230
+apple/macOS/Sources/UI/SettingsWindowView.swift
+  h_75f437d5bc136b 115,117,121,123,125,145-169
+core/src/update.rs
+  h_75f437d5bc136b 691-780,791-843,928-937,1537-1612
+docs/COMPATIBILITY.md
+  h_75f437d5bc136b 37
+docs/MACOS_CLIENT_DESIGN.md
+  h_75f437d5bc136b 226,228-232
+docs/llms.txt
+  h_75f437d5bc136b 31
+scripts/generate-update-manifest.py
+  h_75f437d5bc136b 166-199,223,240-244,259,295,304,342,361
+scripts/package-macos-dmg.sh
+  h_75f437d5bc136b 1-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "15210772f44e17c9224f23ebb8125a80497c0429",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
