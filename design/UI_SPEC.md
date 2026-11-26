@@ -1,6 +1,6 @@
-# 窝爱听（CozyTing）跨端 UI 设计规范（Android + 未来 iOS）
+# 窝爱听（CozyTing）跨端 UI 设计规范（Android + macOS + 未来 iOS）
 
-本目录是 **第 3 层（UI 表现层）** 的唯一视觉事实来源：Android（Kotlin 原生 View）与后续 iOS（SwiftUI）分别按原生方式实现界面，但严格共用本目录的 `tokens.json`、`icons/*.svg` 与页面信息架构。
+本目录是 **第 3 层（UI 表现层）** 的唯一视觉事实来源：Android（Kotlin 原生 View）与 Apple 端（`apple/CozyTingShared` `CozyTingDesignKit` + macOS / 未来 iOS 原生 SwiftUI 壳）分别按原生方式实现界面，但严格共用本目录的 `tokens.json`、`icons/*.svg` 与页面信息架构。
 
 - **品牌名与协议名解耦约定**：C 端产品名称在简体中文 locale 为 **窝爱听**，在英文与日文等非中文 locale 统一为 **CozyTing**；底层协议与引擎标识统一保留 **MiPlay**（如设备行协议徽标 `MiPlay`、设置项中的「未声明 MiPlay 能力的节点」、L1 Rust 核心 `cozyting-core`）。
 - **全链路多语言（i18n）基线**：双端原生支持至少 **简体中文（`zh-CN`）**、**英文（`en`）**、**日文（`ja`）** 三语且可扩展至更多语种。Android 端所有用户可见文案统一收敛至 `res/values/`、`res/values-en/`、`res/values-ja/` 的 `strings.xml`，并在 API 29–36 提供零外部依赖的应用内语言切换（API 33+ 经 `compat/LocaleCompat` 同步系统分应用语言 `LocaleManager`）；iOS 端同步维护 `Localizable.xcstrings`（支持在系统「设置 → CozyTing → 语言」及应用内入口切换），L1 `core/` 通过结构化 `error_code` / `notes_is_fallback` 与文案解耦，严禁硬编码单语种句子。
@@ -144,3 +144,19 @@
 - **iOS 端对齐与平台边界（SwiftUI / WidgetKit）**：
   - iOS 18+ 在系统控制中心通过 `ControlWidget`（WidgetKit）提供对等「CozyTing / 窝爱听」快捷控制项，支持点击 Deep Link 呼出 App 内轻量 `.sheet` / `.presentationDetents([.medium, .large])` 悬浮控制卡（复用主界面的正在播放卡、总音量条与样式 B 音箱列表）；主界面底部在用户未关闭引导时提供对等的可关闭轻量添加指引条（受 iOS 限制无法一键弹窗添加控制中心项，点击展示手动编辑控制中心步骤）。
   - 受 iOS 沙箱与 `ControlWidget` 交互限制，iOS 无法在第三方 App 画面上方直接叠透底层页面级浮窗，也无法通过 `ControlWidget` 跳过系统 `RPSystemBroadcastPickerView` 首次录屏授权弹窗；需统一由 Deep Link 唤起 App 轻量控制面板承载。
+
+## 8. macOS 端视觉与交互映射（Menu Bar 优先 · `apple/` 方案 A）
+
+> 完整产品雏形、架构与 M1–M9 任务清单见 [`docs/MACOS_CLIENT_DESIGN.md`](../docs/MACOS_CLIENT_DESIGN.md)，工程红线见 [`apple/AGENTS.md`](../apple/AGENTS.md)。
+
+- **主入口形态（对应移动端控制中心磁贴 + 悬浮卡 + 常驻通知）**：
+  - 顶部菜单栏常驻新版 F2「深夜亮灯小屋 + 垂尾小猫」单色模板图标（Template Image），待机常规单色、投送中呈现活跃态；鼠标悬停图标支持滚轮按 ±`5%` 快速调节投送总音量（跨安全上限仍触发 Style B 高音量二次确认）。
+  - 左键点击在任意桌面或全屏应用上方直接弹出毛玻璃悬浮控制卡（宽约 `352pt`，复用 `CozyTingDesignKit` 共享组件，承载四段式核心高频操作：顶栏与 4 档延迟胶囊 / 正在播放与总音量 / 单 App 常用音源快捷胶囊 / 输出设备多选与行内独立音量）；右键菜单提供快捷暂停/恢复、切回本机、打开完整主窗口、设置与退出。
+- **视觉主题与品牌一致性**：
+  - 严格消费 `design/tokens.json` 的 Style B 深/浅色语义色板与 `design/icons/*.svg`（设为 Template Image），支持 `跟随系统 / 浅色 / 深色` 三态切换与 `zh-CN / en / ja` 三语（集中收口在 `CozyTingDesignKit` 的 `Localizable.xcstrings`）。
+  - 悬浮卡与可选主窗口采用原生 `.ultraThinMaterial` 毛玻璃与专辑封面柔和氛围底；设备行选中反显、高音量琥珀告警轨道、跨版本结构化更新日志弹窗与结构化时间线日志页（`LogViewerView`）与 Android 保持 1:1 语义一致。
+- **平台能力与诚实降级边界（macOS 14.2+）**：
+  - **单 App 捕获与本机静音**：直接通过原生 Core Audio Process Tap + `CATapDescription(.mutedWhenTapped)` 实现真·单 App 隔离与真·单 App 本机静音，无需无线调试配对向导，设置页仅保留「系统音频录制」权限状态引导与静音开关。
+  - **常用音源管理**：通过 `NSWorkspace` 完整支持应用枚举、高清原图标、拖动排序、点击唤起与不断箱热切，配合 `kAudioProcessPropertyIsRunningOutput` 实现发声自动识别热切。
+  - **正在播放区**：受 macOS 15.4+ `mediaremoted` 私有权限限制，对支持 AppleScript 的播放器（Apple Music、Spotify 等）展示完整封面/歌名/进度与播控；对其余客户端诚实降级展示「正在投送 · \<音源 App 图标与名称\>」及系统媒体键控制。
+  - **音量键接管**：默认以菜单栏滚轮与面板快捷键调音量（零额外权限）；全局拦截 F11/F12 硬件音量键仅作为设置页可选高级开关并显式说明需要辅助功能权限。
