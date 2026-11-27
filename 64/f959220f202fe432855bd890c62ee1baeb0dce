@@ -1,0 +1,52 @@
+README.md
+  h_75f437d5bc136b 140
+README_EN.md
+  h_75f437d5bc136b 139
+README_JA.md
+  h_75f437d5bc136b 138
+docs/en/index.html
+  h_75f437d5bc136b 100-111,1338-1352
+docs/index.html
+  h_75f437d5bc136b 100-111,1338-1352
+docs/ja/index.html
+  h_75f437d5bc136b 100-111,1338-1352
+docs/llms.txt
+  h_75f437d5bc136b 69-72
+docs/sitemap.xml
+  h_75f437d5bc136b 21-27,45-51,69-75
+promo/.gitignore
+  h_75f437d5bc136b 5
+promo/README.md
+  h_75f437d5bc136b 3-7,51,54-58
+promo/package.json
+  h_75f437d5bc136b 8,17-20,22-24
+promo/scripts/covers-quick-panel.mjs
+  h_75f437d5bc136b 1-67
+promo/scripts/make-quick-panel-music.mjs
+  h_75f437d5bc136b 1-436
+promo/src/QuickPanelCover.tsx
+  h_75f437d5bc136b 1-515
+promo/src/QuickPanelFeaturePromo.tsx
+  h_75f437d5bc136b 1-1001
+promo/src/i18n/en.ts
+  h_75f437d5bc136b 250-284
+promo/src/i18n/ja.ts
+  h_75f437d5bc136b 250-284
+promo/src/i18n/types.ts
+  h_75f437d5bc136b 177-211
+promo/src/i18n/zh-CN.ts
+  h_75f437d5bc136b 250-284
+promo/src/index.tsx
+  h_75f437d5bc136b 5-6,101-192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "64f959220f202fe432855bd890c62ee1baeb0dce",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
