@@ -1,0 +1,22 @@
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 87-89,91-92,185-187,199-226
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 38,40-41,113
+apple/macOS/Sources/System/NowPlayingBridge.swift
+  h_75f437d5bc136b 72-74,90-95,97-99,111-116,118-120,131-133,140-142,151-153,155,162-164,342,350-352
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 39-42,220-225,228,270,590,592-606
+apple/macOS/Sources/UI/VisualEffectBackground.swift
+  h_75f437d5bc136b 33-44,265-279,281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0530143c3abea081a2698a0624219860da11281f",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
