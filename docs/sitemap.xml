@@ -18,6 +18,13 @@
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4</video:content_loc>
       <video:duration>66</video:duration>
     </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-poster.jpg</video:thumbnail_loc>
+      <video:title>24 秒专题演示：窝爱听控制中心磁贴与通知栏秒弹磨砂悬浮控制卡</video:title>
+      <video:description>无旁白专题演示：不离开当前 App，下拉控制中心磁贴或轻点通知栏秒弹磨砂悬浮控制卡，支持多音箱随时加减、独立音量、物理音量键直控总音量与深浅双主题。</video:description>
+      <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel.mp4</video:content_loc>
+      <video:duration>24</video:duration>
+    </video:video>
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/en/</loc>
@@ -35,6 +42,13 @@
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4</video:content_loc>
       <video:duration>66</video:duration>
     </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-en-poster.jpg</video:thumbnail_loc>
+      <video:title>24-Second Spotlight: CozyTing Quick Settings Tile &amp; Notification Floating Control Panel</video:title>
+      <video:description>Narration-free spotlight showing how to pop up a frosted floating control panel over any app via Android Quick Settings or casting notification, with per-speaker volume sliders, hardware Volume keys, and dark/light glass themes.</video:description>
+      <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-en.mp4</video:content_loc>
+      <video:duration>24</video:duration>
+    </video:video>
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/ja/</loc>
@@ -51,6 +65,13 @@
       <video:description>ナレーションなしのビジュアルデモ：端末メーカー不問・単一アプリ音声分離・最大 63 台ミリ秒同期・4 段階遅延切替・コントロールセンター＆通知から即表示するフローティング操作パネルと物理音量キー直操作・Android 13+ Root 不要サイレント送信を紹介。</video:description>
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4</video:content_loc>
       <video:duration>66</video:duration>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-ja-poster.jpg</video:thumbnail_loc>
+      <video:title>24 秒特集デモ：CozyTing クイック設定タイル＆通知から即起動するフローティング操作パネル</video:title>
+      <video:description>ナレーションなしの特集デモ：アプリを離れずにコントロールセンターや通知から半透明フローティング操作パネルを即表示。スピーカー切替・個別音量・物理音量キー直操作・ダーク/ライト切替を紹介。</video:description>
+      <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-ja.mp4</video:content_loc>
+      <video:duration>24</video:duration>
     </video:video>
   </url>
   <url>

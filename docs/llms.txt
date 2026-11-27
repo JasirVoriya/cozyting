@@ -66,6 +66,10 @@
   - 简体中文: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4
   - English: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4
   - 日本語: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4
+- [Quick Control Floating Panel Spotlight Videos (MP4, 1280x720, 24s)](https://jasirvoriya.github.io/cozyting/#quick-panel-video):
+  - 简体中文: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel.mp4
+  - English: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-en.mp4
+  - 日本語: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-quick-panel-ja.mp4
 - [Interactive Architecture Explorer (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting/architecture.html): Zero-dependency interactive module graph tracing upstream producers and downstream consumers across L1 Rust, FFI, and L2/L3 native layers.
 - [Device Compatibility Matrix](https://github.com/JasirVoriya/cozyting/blob/main/docs/COMPATIBILITY.md): Evidence-backed speaker and sender compatibility matrix.
 - [Known Limitations](https://github.com/JasirVoriya/cozyting/blob/main/docs/LIMITATIONS.md): Verified vs. unverified boundaries and explicit non-guarantees.

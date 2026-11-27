@@ -136,7 +136,7 @@ When you get home and just want to unwind with music playing through your Xiaomi
 
 ![CozyTing frosted floating Quick Cast panel launched from Quick Settings tile or notification in dark and light themes, showing compact Now Playing, speaker selection, independent volume bars, and top-right open-app button](docs/assets/screenshots/en/09-quick-panel-dark-vs-light.png)
 
-> 📸 **Full App + Instant Floating Panel**: Pull down Quick Settings or tap the casting notification to control speakers over any app without switching away. Visit the **[Product Website · Full UI Gallery (9 Dark & Light Dual-Theme Screenshots)](https://jasirvoriya.github.io/cozyting/en/#screenshots)** for 4-tier latency switching, favorite audio sources, the guided wireless debugging setup, settings, and verified in-app update dialogs.
+> 📸 **Full App + Instant Floating Panel**: Pull down Quick Settings or tap the casting notification to control speakers over any app without switching away. **[▶ Watch the 24-second Quick Panel Spotlight Video](https://jasirvoriya.github.io/cozyting/en/#quick-panel-video)** · Visit the **[Product Website · Full UI Gallery (9 Dark & Light Dual-Theme Screenshots)](https://jasirvoriya.github.io/cozyting/en/#screenshots)**.
 
 ---
 

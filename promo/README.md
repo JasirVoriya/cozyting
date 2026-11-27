@@ -1,6 +1,10 @@
 # 窝爱听（CozyTing）多语言产品宣传片工程（Remotion · zh-CN / en / ja）
 
-本目录包含 **窝爱听（CozyTing）** 的 60 秒 1080p 60fps 纯视觉产品宣传视频源码，原生支持 **简体中文（`zh`）**、**英文（`en`）** 与 **日文（`ja`）** 三语独立成片。全片**零旁白、零人声说教**，文案全部抽离至 `src/i18n/`，并自动按语种匹配 `docs/assets/screenshots/{,en/,ja/}` 裁切的实机界面素材与中/英/日独立字体回退栈。
+本目录包含 **窝爱听（CozyTing）** 的纯视觉产品宣传视频与三尺寸封面源码，原生支持 **简体中文（`zh`）**、**英文（`en`）** 与 **日文（`ja`）** 三语独立成片：
+- **全景主宣传片（`CozyTingPromo*`，66 秒 / 33 小节 @ 120 BPM）**：覆盖痛点破题、品牌破壁、自动跟源与双区焦点隔离、多房间同频与 4 档延迟、无感纯局域网、控制中心与通知栏悬浮控制卡、双主题界面与 GitHub 定格。
+- **悬浮控制卡独立新功能短片（`QuickPanelPromo*`，24 秒 / 12 小节 @ 120 BPM）**：专注展示「不切 App，下拉控制中心 / 点通知栏秒弹磨砂悬浮控制卡 + 物理音量键直控 + 深浅双主题毛玻璃」，配套 16:9 / 4:3 / 3:4 三尺寸专属封面（`QuickPanelCover*`）。
+
+全片**零旁白、零人声说教**，文案全部抽离至 `src/i18n/`，并自动按语种匹配 `docs/assets/screenshots/{,en/,ja/}` 裁切的实机界面素材与中/英/日独立字体回退栈。
 
 ## 1. 视觉与分镜结构（120 BPM · 30 小节 · 60 秒）
 
@@ -44,9 +48,14 @@ npm run render:ja
 # 或一次全量渲染：
 npm run render:all
 
-# 7. 渲染独立宣传视频封面（16:9 @ 1920×1080、4:3 @ 1600×1200、3:4 @ 1200×1600，输出至 out/covers/）
+# 7. 渲染主宣传片三尺寸封面（16:9 / 4:3 / 3:4，输出至 out/covers/）
 npm run covers        # 简体中文版（16:9 + 4:3 + 3:4）
 npm run covers:all    # 中/英/日三语全量（共 9 张）
+
+# 8. 渲染 24 秒悬浮控制卡独立新功能短片与专属三尺寸封面（输出至 out/ 与 out/covers/quick-panel/）
+npm run music:quick-panel
+npm run render:quick-panel:all
+npm run covers:quick-panel:all
 ```
 
 ## 3. Web 官网压缩发布参数

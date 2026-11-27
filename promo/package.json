@@ -5,6 +5,7 @@
   "description": "CozyTing multilingual promo film (zh-CN / en / ja, no narration) built with Remotion",
   "scripts": {
     "music": "node scripts/make-music.mjs",
+    "music:quick-panel": "node scripts/make-quick-panel-music.mjs",
     "assets": "node scripts/prepare-assets.mjs",
     "studio": "remotion studio src/index.tsx",
     "typecheck": "tsc --noEmit",
@@ -13,8 +14,14 @@
     "render:en": "remotion render src/index.tsx CozyTingPromoEn out/cozyting-promo-en.mp4 --codec h264 --crf 16",
     "render:ja": "remotion render src/index.tsx CozyTingPromoJa out/cozyting-promo-ja.mp4 --codec h264 --crf 16",
     "render:all": "npm run render:zh && npm run render:en && npm run render:ja",
+    "render:quick-panel:zh": "remotion render src/index.tsx QuickPanelPromo out/cozyting-quick-panel-zh.mp4 --codec h264 --crf 16",
+    "render:quick-panel:en": "remotion render src/index.tsx QuickPanelPromoEn out/cozyting-quick-panel-en.mp4 --codec h264 --crf 16",
+    "render:quick-panel:ja": "remotion render src/index.tsx QuickPanelPromoJa out/cozyting-quick-panel-ja.mp4 --codec h264 --crf 16",
+    "render:quick-panel:all": "npm run render:quick-panel:zh && npm run render:quick-panel:en && npm run render:quick-panel:ja",
     "covers": "node scripts/covers.mjs --locale zh",
-    "covers:all": "node scripts/covers.mjs --locale all"
+    "covers:all": "node scripts/covers.mjs --locale all",
+    "covers:quick-panel": "node scripts/covers-quick-panel.mjs --locale zh",
+    "covers:quick-panel:all": "node scripts/covers-quick-panel.mjs --locale all"
   },
   "dependencies": {
     "@remotion/cli": "4.0.545",
