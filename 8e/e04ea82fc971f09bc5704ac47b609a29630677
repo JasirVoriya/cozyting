@@ -1,0 +1,90 @@
+apple/CozyTingShared/Sources/CozyTingAudioAtomics/CozyTingAudioAtomics.c
+  h_75f437d5bc136b 39-42
+apple/CozyTingShared/Sources/CozyTingAudioAtomics/include/CozyTingAudioAtomics.h
+  h_75f437d5bc136b 26-27
+apple/CozyTingShared/Sources/CozyTingAudioKit/LockFreeRingBuffer.swift
+  h_75f437d5bc136b 51-96
+apple/CozyTingShared/Sources/CozyTingCoreKit/CozyTingCoreBridge.swift
+  h_75f437d5bc136b 560-577
+apple/CozyTingShared/Sources/CozyTingCoreKit/CozyTingCoreModels.swift
+  h_75f437d5bc136b 179-184,191-192,210-212,237,241-242
+apple/CozyTingShared/Sources/CozyTingCoreKit/DMGDownloader.swift
+  h_75f437d5bc136b 85,89-96,103,105-106,108,110,115,125-126,129,134-286
+apple/CozyTingShared/Sources/CozyTingCoreKit/Logging.swift
+  h_75f437d5bc136b 330-348
+apple/CozyTingShared/Sources/CozyTingDesignKit/AboutAndSponsorView.swift
+  h_75f437d5bc136b 83,133,179,203,208,221,241,270,316,321
+apple/CozyTingShared/Sources/CozyTingDesignKit/CozyTingL10n.swift
+  h_75f437d5bc136b 226-240,495-508,717-730,939-952
+apple/CozyTingShared/Sources/CozyTingDesignKit/LatencyControlComponents.swift
+  h_75f437d5bc136b 157,159,187,197,206,297,352,362-363,367-370,373,386,391-395
+apple/CozyTingShared/Sources/CozyTingDesignKit/LogViewerView.swift
+  h_75f437d5bc136b 87,99,113,123,152,172,196,211,224,228,303,361,412,428,442-444
+apple/CozyTingShared/Sources/CozyTingDesignKit/PlatformAdapters.swift
+  h_75f437d5bc136b 4-20,27-73,140-160
+apple/CozyTingShared/Sources/CozyTingDesignKit/StyleBComponents.swift
+  h_75f437d5bc136b 294,382,393
+apple/CozyTingShared/Sources/CozyTingDesignKit/UpdateDetailSheetView.swift
+  h_75f437d5bc136b 47,55,139,172,181,224,235,253,264,275,280-310,344
+apple/CozyTingShared/Tests/CozyTingAudioKitTests/LockFreeRingBufferAndProbeTests.swift
+  h_75f437d5bc136b 117-163
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/CozyTingCoreBridgeTests.swift
+  h_75f437d5bc136b 123-140,365-384
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/LoggingTests.swift
+  h_75f437d5bc136b 187-210
+apple/CozyTingShared/Tests/CozyTingCoreKitTests/UpdateServiceTests.swift
+  h_75f437d5bc136b 284-306
+apple/CozyTingShared/Tests/CozyTingDesignKitTests/LocalizationM8Tests.swift
+  h_75f437d5bc136b 38-70
+apple/macOS/Resources/en.lproj/InfoPlist.strings
+  h_75f437d5bc136b 1-6
+apple/macOS/Resources/ja.lproj/InfoPlist.strings
+  h_75f437d5bc136b 1-6
+apple/macOS/Resources/zh-Hans.lproj/InfoPlist.strings
+  h_75f437d5bc136b 1-6
+apple/macOS/Sources/App/AppDelegate.swift
+  h_75f437d5bc136b 29,64-66
+apple/macOS/Sources/Audio/AudioProcessMonitor.swift
+  h_75f437d5bc136b 1-255
+apple/macOS/Sources/Audio/ProcessTapAudioEngine.swift
+  h_75f437d5bc136b 62-65,73,83,241-244,259,266-269,289-343,346-347,349-352,356-388,505-506,603-604,714-765,860-969,988-989,992,996
+apple/macOS/Sources/Audio/ProcessTreeResolver.swift
+  h_75f437d5bc136b 95-98,135-139,143-146,154
+apple/macOS/Sources/Cast/CastCoordinator.swift
+  h_75f437d5bc136b 25,38-55,99,107-117,122-123,128-131,158,206-207,270-290,292-294,303-304,329-335,354,357,370,372,444-454,457-462,476-481,498-503,520,526-531,539,543-544,552,554,557-558,565-575,578,586-587,648-732,742,746-763,772,776,781,786,798,803,915-920,936-947,949,954-978,980,988,992,998-1057,1095,1105,1107,1112-1134,1139,1144,1150,1154-1155,1164,1173-1178,1181-1185,1191-1194,1197,1200,1208-1213,1215,1238-1243,1248-1251,1253-1258,1261-1262,1267-1272,1276-1280,1284,1289,1292,1298,1300-1306,1309-1310,1313,1320,1323,1331,1339-1344,1426
+apple/macOS/Sources/System/AudioSourceAutoDetector.swift
+  h_75f437d5bc136b 4-5,9-12,14,22,28,36-39,45-47,50,56-61,69-79,81-82,87-90,92-93,98,102-103,105,108-115,117-129,132,134-137
+apple/macOS/Sources/System/HardwareVolumeKeyInterceptor.swift
+  h_75f437d5bc136b 96-103
+apple/macOS/Sources/System/NowPlayingBridge.swift
+  h_75f437d5bc136b 2,7-12,28,30,33,35,38-40,45-47,55-56,72,77-91,99-101,113-116,123,128,146-147,154,157,160-161,168,171,174-175,182,185,276,284-285,289,316,331-339
+apple/macOS/Sources/UI/AudioSourcePickerView.swift
+  h_75f437d5bc136b 11,21,27,62-64,110,169,173,176,179,209-240,242-243,245,247-248,258-259,288,296,300,310-336,338-339,341,343-344,358
+apple/macOS/Sources/UI/MainWindowView.swift
+  h_75f437d5bc136b 79-80,96,117,120-122
+apple/macOS/Sources/UI/MenuBarStatusController.swift
+  h_75f437d5bc136b 4,14,22,36,46,84,125,127,132-145,218-227
+apple/macOS/Sources/UI/PopoverControlCardView.swift
+  h_75f437d5bc136b 20,82,91,144,146,148-158,160-161,163,165-171,173-174,216-217,220-221,231,233,262,264,297,305-306,318,320,326,330-344,352,367,385-391,397,413,422,489,499,514,542,550,559,573-574,587,630,758,807,836-837,902,921,996,1004
+apple/macOS/Sources/UI/SettingsWindowView.swift
+  h_75f437d5bc136b 30,274,283-284,318-319,341-342,349,403,415-421,451,459,481-482,485-486,497,501
+apple/macOS/Sources/UI/VisualEffectBackground.swift
+  h_75f437d5bc136b 148,160,167,257-270
+apple/macOS/project.yml
+  h_75f437d5bc136b 4-8
+core/src/device_catalog.rs
+  h_75f437d5bc136b 502-503,508-527,529-533,540-541,551-552,643-648,763-782,1369-1412
+core/src/engine.rs
+  h_75f437d5bc136b 619-622,665,1047-1062
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ee04ea82fc971f09bc5704ac47b609a29630677",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
