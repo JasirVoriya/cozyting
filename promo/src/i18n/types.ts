@@ -174,4 +174,39 @@ export interface PromoCopy {
     tags: readonly [string, string, string, string];
     searchButton: string;
   };
+  quickPanelVideo: {
+    hookEyebrow: string;
+    hookQuestion: string;
+    hookQuestionSize: number;
+    hookSub: string;
+    hookOldSteps: readonly [string, string, string, string];
+    entryEyebrow: string;
+    entryHeadline: string;
+    entryHeadlineSize: number;
+    entrySub: string;
+    tileAddBadge: string;
+    focusEyebrow: string;
+    focusHeadline: string;
+    focusHeadlineSize: number;
+    focusCards: readonly [
+      { badge: string; title: string; desc: string },
+      { badge: string; title: string; desc: string },
+      { badge: string; title: string; desc: string },
+    ];
+    volThemeEyebrow1: string;
+    volThemeHeadline1: string;
+    volThemeEyebrow2: string;
+    volThemeHeadline2: string;
+    volThemeHeadlineSize: number;
+    volSafeNote: string;
+    themeDarkLabel: string;
+    themeLightLabel: string;
+    outroSubtitle: string;
+    outroTags: readonly [string, string, string];
+    coverBadge: string;
+    coverHeadline: string;
+    coverHeadline3x4: readonly [string, string];
+    coverSubtitle: string;
+    coverPills: readonly [string, string, string];
+  };
 }

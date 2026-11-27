@@ -137,7 +137,7 @@
 
 ![窝爱听 CozyTing 控制中心与通知栏秒弹磨砂悬浮控制卡深色浅色双主题截图，显示紧凑播控、多音箱勾选、独立音量条与右上角主界面入口](docs/assets/screenshots/09-quick-panel-dark-vs-light.png)
 
-> 📸 **完整主界面 + 随手悬浮控制卡双形态**：下拉控制中心或轻点通知栏即可在任意 App 上方弹出悬浮控制卡（点空白处即关，不切出当前应用）。前往 **[产品官网 · 完整界面实机画廊（9 组深浅双主题截图）](https://jasirvoriya.github.io/cozyting/#screenshots)** 查看 4 档延迟热切、常用音源管理、无线调试无感向导与安全更新弹窗。
+> 📸 **完整主界面 + 随手悬浮控制卡双形态**：下拉控制中心或轻点通知栏即可在任意 App 上方弹出悬浮控制卡（点空白处即关，不切出当前应用）。**[▶ 观看 24 秒悬浮控制卡专题演示视频](https://jasirvoriya.github.io/cozyting/#quick-panel-video)** · 前往 **[产品官网 · 完整界面实机画廊（9 组深浅双主题截图）](https://jasirvoriya.github.io/cozyting/#screenshots)** 查看更多页面。
 
 ---
 

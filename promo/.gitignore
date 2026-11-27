@@ -2,5 +2,6 @@ node_modules
 out/
 stills/
 public/music.wav
+public/quick-panel-music.wav
 public/ui/
 public/logo.svg
