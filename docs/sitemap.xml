@@ -4,7 +4,7 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/</loc>
-    <lastmod>2026-11-26</lastmod>
+    <lastmod>2026-11-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -14,14 +14,14 @@
     <video:video>
       <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-poster.jpg</video:thumbnail_loc>
       <video:title>一分钟看懂窝爱听（CozyTing）：任意安卓手机局域网投音到多台小米 / 小爱音箱</video:title>
-      <video:description>无旁白实机风格演示：单 App 音频隔离、多台小米 / 小爱音箱毫秒级同频、4 档延迟热切与 Android 13+ 免 Root 无感采集。</video:description>
+      <video:description>无旁白实机风格演示：单 App 音频隔离、多台小米 / 小爱音箱毫秒级同频、4 档延迟热切、控制中心与通知栏秒弹悬浮控制卡及物理音量键直控、Android 13+ 免 Root 无感采集。</video:description>
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4</video:content_loc>
-      <video:duration>60</video:duration>
+      <video:duration>66</video:duration>
     </video:video>
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/en/</loc>
-    <lastmod>2026-11-26</lastmod>
+    <lastmod>2026-11-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -31,14 +31,14 @@
     <video:video>
       <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en-poster.jpg</video:thumbnail_loc>
       <video:title>CozyTing in 1 Minute: Cast Single-App Audio from Any Android Phone to Xiaomi Speakers</video:title>
-      <video:description>Narration-free walkthrough covering brand-free Android support, single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4 live latency tiers, and Android 13+ rootless silent capture.</video:description>
+      <video:description>Narration-free walkthrough covering brand-free Android support, single-app audio isolation, up to 63 synchronized Xiaomi / XiaoAi speakers, 4 live latency tiers, Quick Settings &amp; notification floating control panel with hardware Volume keys, and Android 13+ rootless silent capture.</video:description>
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4</video:content_loc>
-      <video:duration>60</video:duration>
+      <video:duration>66</video:duration>
     </video:video>
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/ja/</loc>
-    <lastmod>2026-11-26</lastmod>
+    <lastmod>2026-11-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/"/>
@@ -48,9 +48,9 @@
     <video:video>
       <video:thumbnail_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja-poster.jpg</video:thumbnail_loc>
       <video:title>1 分でわかる CozyTing：あらゆる Android 端末から Xiaomi スピーカーへ LAN 送信</video:title>
-      <video:description>ナレーションなしのビジュアルデモ：端末メーカー不問・単一アプリ音声分離・最大 63 台ミリ秒同期・4 段階遅延切替・Android 13+ Root 不要サイレント送信を紹介。</video:description>
+      <video:description>ナレーションなしのビジュアルデモ：端末メーカー不問・単一アプリ音声分離・最大 63 台ミリ秒同期・4 段階遅延切替・コントロールセンター＆通知から即表示するフローティング操作パネルと物理音量キー直操作・Android 13+ Root 不要サイレント送信を紹介。</video:description>
       <video:content_loc>https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4</video:content_loc>
-      <video:duration>60</video:duration>
+      <video:duration>66</video:duration>
     </video:video>
   </url>
   <url>
@@ -85,7 +85,7 @@
   </url>
   <url>
     <loc>https://jasirvoriya.github.io/cozyting/llms.txt</loc>
-    <lastmod>2026-11-26</lastmod>
+    <lastmod>2026-11-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

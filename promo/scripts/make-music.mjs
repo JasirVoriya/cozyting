@@ -1,5 +1,5 @@
 // Procedurally synthesises the promo soundtrack (no samples, no voice).
-// 120 BPM, 30 bars (60 s). Bar boundaries line up with scene cuts in src/theme.ts.
+// 120 BPM, 33 bars (66 s). Bar boundaries line up with scene cuts in src/theme.ts.
 // Bar 0 (0-2s): Poised groove from beat 1 for the pain-point question; Bar 1 (2.0s): clean drop into brand reveal.
 import { writeFileSync, mkdirSync } from "node:fs";
 
@@ -7,8 +7,8 @@ const SR = 48000;
 const BPM = 120;
 const BEAT = 60 / BPM; // 0.5 s
 const BAR = BEAT * 4; // 2 s
-const BARS = 30;
-const TOTAL = BARS * BAR; // 60 s
+const BARS = 33;
+const TOTAL = BARS * BAR; // 66 s
 const N = Math.ceil(TOTAL * SR);
 const L = new Float32Array(N);
 const R = new Float32Array(N);
@@ -74,15 +74,15 @@ const CHORDS = [
 ];
 const chordAt = (bar) => CHORDS[((bar % 4) + 4) % 4];
 
-// section intensities by bar (30 bars total = 60s)
-// 0-2 intro (0-2s pain-point hook + 2-6s brand lockup), 3-5 anyPhone, 6-10 oneApp, 11-17 multiRoom+latency,
-// 18-20 lan breakdown, 21-23 uiShowcase, 24-25 search, 26-29 outro
+// section intensities by bar (33 bars total = 66s)
+// 0-2 intro, 3-5 anyPhone, 6-10 oneApp, 11-17 multiRoom+latency,
+// 18-20 lan breakdown, 21-23 quickPanel drop, 24-26 uiShowcase, 27-28 search, 29-32 outro
 const has = {
-  kick: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
-  hat: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 25),
-  clap: (b) => b === 1 || b === 2 || (b >= 11 && b <= 17) || (b >= 21 && b <= 23),
-  bass: (b) => (b >= 0 && b <= 25 && !(b >= 18 && b <= 20)),
-  arp: (b) => b >= 1 && b <= 27,
+  kick: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 28),
+  hat: (b) => (b >= 0 && b <= 17) || (b >= 21 && b <= 28),
+  clap: (b) => b === 1 || b === 2 || (b >= 11 && b <= 17) || (b >= 21 && b <= 26),
+  bass: (b) => b >= 0 && b <= 28 && !(b >= 18 && b <= 20),
+  arp: (b) => b >= 1 && b <= 30,
 };
 
 // ---- PAD
@@ -91,7 +91,7 @@ function renderPad() {
     const ch = chordAt(bar);
     const t0 = bar * BAR;
     const dur = BAR + 0.6;
-    const level = bar < 3 ? 0.072 : bar >= 18 && bar <= 20 ? 0.085 : bar >= 26 ? 0.09 : 0.075;
+    const level = bar < 3 ? 0.072 : bar >= 18 && bar <= 20 ? 0.085 : bar >= 29 ? 0.09 : 0.075;
     const notes = ch.notes;
     notes.forEach((m, ni) => {
       for (let v = 0; v < 3; v++) {
@@ -242,10 +242,10 @@ function renderArp() {
     if (!has.arp(bar)) continue;
     const ch = chordAt(bar);
     const steps =
-      (bar >= 11 && bar <= 17) || (bar >= 21 && bar <= 23) ? 16 : 8;
+      (bar >= 11 && bar <= 17) || (bar >= 21 && bar <= 26) ? 16 : 8;
     const g =
-      bar >= 26
-        ? 0.05 * (1 - (bar - 26) / 2)
+      bar >= 29
+        ? 0.05 * (1 - (bar - 29) / 2)
         : bar >= 18 && bar <= 20
         ? 0.075
         : 0.06;
@@ -357,15 +357,15 @@ clapAt(1 * BAR, 0.85);
 chime(1 * BAR, 84, 0.065, 0.46);
 chime(1 * BAR + 0.04, 88, 0.05, 0.58);
 
-// breath before big sections (30-bar / 60s structure)
+// breath before big sections (33-bar / 66s structure)
 riser(3 * BAR, 1.5, 0.75);
 riser(11 * BAR, 2.0, 1.1);
 riser(21 * BAR, 3.0, 1.1);
-riser(26 * BAR, 2.0, 1.0);
+riser(29 * BAR, 2.0, 1.0);
 impact(3 * BAR, 0.55);
 impact(11 * BAR, 0.8);
-impact(21 * BAR, 0.8);
-impact(26 * BAR, 1.0);
+impact(21 * BAR, 0.85);
+impact(29 * BAR, 1.0);
 
 // auto-switch chimes (NetEase -> QQ Music -> Soda Music)
 chime(6 * BAR + 1.9, 79, 0.04, 0.5);
@@ -377,13 +377,19 @@ for (let bar = 14; bar <= 17; bar++) {
   const rate = [4, 8, 8, 16][bar - 14];
   for (let i = 0; i < rate; i++) tick(bar * BAR + i * (BAR / rate), 0.03);
 }
+// quickPanel: tile/notification tap + floating panel pop + hardware volume key clicks (bars 21..23)
+tick(21 * BAR + 1.0, 0.06);
+chime(21 * BAR + 1.04, 84, 0.05, 0.35);
+chime(21 * BAR + 2.0, 88, 0.055, 0.58);
+tick(21 * BAR + 4.3, 0.055);
+tick(21 * BAR + 4.8, 0.06);
 // search click chime
-tick(24 * BAR + 2.77, 0.06);
-chime(24 * BAR + 2.8, 86, 0.045, 0.5);
+tick(27 * BAR + 2.77, 0.06);
+chime(27 * BAR + 2.8, 86, 0.045, 0.5);
 // final logo & CTA click chime
-chime(26 * BAR + 0.02, 84, 0.06, 0.5);
-chime(26 * BAR + BEAT, 88, 0.04, 0.6);
-tick(26 * BAR + 4.1, 0.055);
+chime(29 * BAR + 0.02, 84, 0.06, 0.5);
+chime(29 * BAR + BEAT, 88, 0.04, 0.6);
+tick(29 * BAR + 4.1, 0.055);
 
 renderPad();
 renderBass();

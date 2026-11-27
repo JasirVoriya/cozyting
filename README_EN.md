@@ -60,7 +60,7 @@
   </p>
 </div>
 
-> Narration-free walkthrough highlighting **single-app audio isolation**, **up to 63-speaker multi-room sync**, **4-tier live latency switching**, and **Android 13+ root-free seamless capture**. *(UI scenes are rendered demos using placeholder device names and RFC 5737 addresses.)*
+> Narration-free walkthrough highlighting **single-app audio isolation**, **up to 63-speaker multi-room sync**, **4-tier live latency switching**, **Quick Settings & notification floating control panel**, and **Android 13+ root-free seamless capture**. *(UI scenes are rendered demos using placeholder device names and RFC 5737 addresses.)*
 
 ---
 
@@ -83,6 +83,7 @@ When you get home and just want to unwind with music playing through your Xiaomi
 | **Strict Per-App Audio Isolation** | ✅ **Only your chosen music app**—works even without a DLNA button | ⚠️ Limited to apps with built-in DLNA / AirPlay casting | ❌ Broadcasts all phone audio | ✅ App-level routing | ❌ Broadcasts all audio & video |
 | **Watch Videos Without Pausing Speaker** | ✅ **Dual-zone AudioFocus isolation** (Android 13+ Seamless Mode) | ✅ Independent when pushing media URLs | ❌ Videos steal audio focus | ⚠️ ROM-dependent | ❌ Cannot isolate |
 | **Range & Audio Quality** | ✅ **Full home Wi-Fi coverage** (48kHz 256kbps AAC) | ✅ Wi-Fi (often HTTP proxy or cloud-dispatched URL) | ❌ Short range, lossy codecs | ✅ Local Wi-Fi | ⚠️ Heavy overhead, recording dot |
+| **Quick Control Without Leaving Your App** | ✅ **Quick Settings Tile & Notification tap → frosted floating panel + hardware volume keys** | ⚠️ Must switch back to bridge app or web UI | ⚠️ System Bluetooth menu only; no per-speaker control | ✅ System Control Center card | ⚠️ Must open system cast menu |
 | **Live Latency Switching** | ✅ **4 presets (150ms–1000ms) + custom `ms` hot-switch** | ❌ Fixed | ❌ Fixed | ❌ Fixed | ❌ Fixed |
 | **Privacy, Account & License** | ✅ **Pure-LAN native MiPlay, zero Xiaomi account/cloud, AGPL-3.0** | ❌ Most require Xiaomi account login / Xiaomi Cloud API | ✅ Local (proprietary) | ❌ Tied to Xiaomi ecosystem | ⚠️ Vendor-dependent |
 
@@ -109,14 +110,19 @@ When you get home and just want to unwind with music playing through your Xiaomi
 - Check multiple speakers at once for synchronized whole-home playback, each with its own **independent volume slider**, room badge, and live inline latency readout (`ms`).
 - Add or remove speakers on the fly while music keeps playing uninterrupted.
 
-### 5. 4-Tier Live Latency Switching Without Reconnecting
+### 5. Quick Settings Tile & Notification Floating Panel — Native-Like Instant Control
+- **System Quick Settings Tile (Android 10–16)**: Add CozyTing to your Quick Settings shade. **Tap the tile** to collapse the shade and pop up a translucent frosted floating control panel right over your current app (system window blur on Android 12+); **long-press the tile** to jump straight to the full app home screen (one-tap system add prompt on Android 13+, 3-step guide on Android 10–12).
+- **Notification Direct Entry · Zero Context Switch**: While casting, tap the ongoing notification body or the *Speakers & Volume* action to open the exact same floating panel. Runs in an isolated transparent task (excluded from Recents); tap outside or press Back to dismiss and stay right in the app you were using.
+- **Full Daily Controls + Hardware Volume Keys**: Includes compact Now Playing controls, live multi-speaker add/remove, per-speaker volume sliders, and one-tap **Restore Last** speaker group. Whenever the main screen or floating panel is open, press your phone's **hardware Volume `+/-` keys** to adjust cast master volume directly (no system volume HUD, with high-volume safety confirmation).
+
+### 6. 4-Tier Live Latency Switching Without Reconnecting
 - Tap the top-bar latency pill to switch buffer targets mid-stream—no disconnect or rebuffering required (plus custom `ms` in Settings):
   - **Standard (5GHz 800ms / 2.4GHz 1000ms)**: Maximum jitter resilience for multi-room and through-wall Wi-Fi listening;
   - **Balanced (400ms)**: Smooth daily multi-speaker default with ~2× faster track-skip response;
   - **Low Latency (250ms)**: Snappy skip & scrub responsiveness for strong 5GHz single-speaker rooms;
   - **Ultra-Low (150ms)**: Experimental minimal-buffer mode for same-room 5GHz single-speaker setups.
 
-### 6. Favorite Audio Sources, Auto-Detect & Modern Dual-Theme UI
+### 7. Favorite Audio Sources, Auto-Detect & Modern Dual-Theme UI
 - Curate and drag-reorder your favorite music/podcast apps with per-app **Auto-Detect** toggles so playback switches smoothly when you open your favorite player.
 - Album-art ambient backdrop, Dark / Light / Follow-System themes, quick launch back into the active music app, and transparent SHA-256 + signature-verified in-app updates (can be turned off with one tap for 100% zero outbound traffic).
 
@@ -128,7 +134,9 @@ When you get home and just want to unwind with music playing through your Xiaomi
 
 ![CozyTing main screen showing multi-room synchronized casting in dark and light themes with album backdrop, room names, inline latency ms, and individual speaker volume sliders](docs/assets/screenshots/en/01-main-casting-dark-vs-light.png)
 
-> 📸 **Want to see all screens?** Visit the **[Product Website · Full UI Gallery (8 Dark & Light Dual-Theme Screenshots)](https://jasirvoriya.github.io/cozyting/en/#screenshots)** for 4-tier latency switching, favorite audio sources, the 4-step wireless debugging wizard, settings, and verified in-app update dialogs.
+![CozyTing frosted floating Quick Cast panel launched from Quick Settings tile or notification in dark and light themes, showing compact Now Playing, speaker selection, independent volume bars, and top-right open-app button](docs/assets/screenshots/en/09-quick-panel-dark-vs-light.png)
+
+> 📸 **Full App + Instant Floating Panel**: Pull down Quick Settings or tap the casting notification to control speakers over any app without switching away. Visit the **[Product Website · Full UI Gallery (9 Dark & Light Dual-Theme Screenshots)](https://jasirvoriya.github.io/cozyting/en/#screenshots)** for 4-tier latency switching, favorite audio sources, the guided wireless debugging setup, settings, and verified in-app update dialogs.
 
 ---
 
@@ -142,6 +150,7 @@ When you get home and just want to unwind with music playing through your Xiaomi
 3. **Pick Your Music App & Speakers**
    - Choose your music app (or start playing and let Auto-Detect pick it up), check one or more speakers, and enjoy synchronized playback.
    - **Standard vs. Seamless Mode**: Standard Mode works out of the box on Android 10+. On Android 13+, open *Settings → Capture Engine → Seamless Mode (Wireless Debugging)* and follow the 4-step on-device wizard to eliminate capture popups and enable true per-app mute + dual-zone AudioFocus isolation.
+   - **💡 Everyday Tip (Recommended)**: Tap the compact *Add to Quick Settings* card at the bottom of the home screen (or in *Settings → Quick Settings Tile*; one-tap confirmation on Android 13+). Anytime you want to switch speakers or adjust volume, just pull down and tap the tile—or tap the casting notification—to pop up the floating control panel without leaving your current app.
 
 ---
 
@@ -161,6 +170,9 @@ Unlike Bluetooth (single speaker, short range, lossy audio, leaks all phone soun
 
 ### Does Seamless Mode require root, a PC, or Shizuku?
 **No.** CozyTing embeds a lightweight local wireless ADB client. You only pair once on-device using Android's 6-digit Wireless Debugging pairing code—no root, no computer, and no third-party privilege apps required. Standard Mode remains available on all Android 10+ devices with zero setup.
+
+### How can I quickly adjust speaker volume or switch speakers without leaving the app I'm using?
+**Pull down Quick Settings or tap the casting notification to open the floating control panel.** Once you add the CozyTing Quick Settings tile (one-tap on Android 13+ from the home screen or Settings), tapping the tile—or tapping the ongoing casting notification / *Speakers & Volume* action—pops up a frosted floating control panel directly over your current app. You can skip tracks, add/remove speakers, tune per-speaker volume, or press your phone's **hardware Volume keys** to control cast master volume, then tap outside to dismiss cleanly without cluttering Recents. Long-press the tile to open the full app.
 
 ### Does CozyTing upload audio or require a Xiaomi account?
 **Never.** Discovery and audio streaming happen 100% inside your local LAN with zero cloud APIs, zero accounts, and zero telemetry. The only outbound request is a read-only 24-hour check against the public static `update.json` release feed (anonymous HTTPS + `ETag 304`, zero cookies/device parameters, verified via SHA-256 + APK signature), and full LAN casting works seamlessly offline.

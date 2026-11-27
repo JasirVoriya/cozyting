@@ -82,7 +82,8 @@ export_showcase_set() {
   cp "${src_dir}/12_settings_update_card_dark_vs_light.png" "${dst_dir}/06-settings-update-dark-vs-light.png"
   cp "${src_dir}/13_main_update_banner_dark_vs_light.png" "${dst_dir}/07-main-update-banner-dark-vs-light.png"
   cp "${src_dir}/16_update_dialog_dark_vs_light.png" "${dst_dir}/08-update-dialog-dark-vs-light.png"
-  echo "[ui-preview] Exported 8 official ${loc} showcase PNGs -> ${dst_dir}"
+  cp "${src_dir}/19_quick_panel_dark_vs_light.png" "${dst_dir}/09-quick-panel-dark-vs-light.png"
+  echo "[ui-preview] Exported 9 official ${loc} showcase PNGs -> ${dst_dir}"
 }
 
 LAST_OUT="${BASE_OUT}"

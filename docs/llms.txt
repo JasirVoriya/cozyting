@@ -39,6 +39,7 @@
 3. **Strict Per-App Audio Isolation (No Accidental Leaks)**: Captures only the selected music/podcast app (Fail-Closed single-UID + SHA-256 signature verification; never silently degrades to full-system screen recording or microphone capture). Chat voice notes, short videos, and notifications stay off your living-room speakers.
 4. **Rootless Silent Capture & Dual-Zone AudioFocus (Android 13+)**: Built-in on-device Wireless Debugging pairing wizard (no root, no PC, no Shizuku) eliminates recurring MediaProjection popups and system casting indicators, enables true per-app local mute, and isolates AudioFocus into dual zones so watching videos on your phone does not pause speaker playback.
 5. **Live 4-Tier Latency Switching**: Switch between Standard (5GHz 800ms / 2.4GHz 1000ms), Balanced (400ms), Low Latency (250ms), Ultra-Low (150ms), or custom `ms` mid-stream via runtime `TIME_OFFSET` rebasing without disconnecting.
+6. **System-Native Quick Cast Floating Panel & Hardware Volume Keys**: Launch a translucent frosted floating control panel directly over any app via the Android Quick Settings tile (tap to pop up panel, long-press to open the full app; one-tap add prompt on Android 13+) or by tapping the ongoing casting notification. Includes compact Now Playing controls, live multi-speaker add/remove, per-speaker sliders, one-tap "Restore Last" speaker group, and hardware Volume `+/-` key interception for cast master volume (excluded from Recents; tap outside to dismiss cleanly).
 
 ## How CozyTing Differs from DLNA / AirPlay Bridges & Cloud-API Relays
 
@@ -46,6 +47,7 @@
 - **Native Pure-LAN MiPlay — Zero Xiaomi Account & Zero Cloud APIs**: Unlike mobile DLNA-to-Xiaomi-Cloud relays that require Xiaomi account login and translate casting commands through Xiaomi Cloud APIs, CozyTing speaks the native local-LAN MiPlay protocol directly to speakers with zero cloud dependency and works even with no internet access.
 - **Works with Any Capturable Music App (No DLNA Button Needed)**: Works with NetEase Cloud Music, QQ Music, Apple Music, Spotify, YouTube Music, podcasts, etc. via Fail-Closed single-app audio isolation—not restricted to apps that expose a built-in DLNA button.
 - **Native Multi-Room Sync & Live Latency Tuning**: Synchronizes up to 63 MiPlay-capable Xiaomi / XiaoAi speakers in millisecond sync with live add/remove and 4-tier runtime latency switching (150ms–1000ms).
+- **Instant Control Without Switching Apps**: Pull down Android Quick Settings or tap the casting notification to open a frosted floating control panel over any app, with hardware Volume key control for cast master volume—delivering stock-MiPlay-like convenience on any Android 10+ brand.
 
 ## Honest Scope & Known Limitations
 
@@ -60,7 +62,7 @@
 - [README (English)](https://github.com/JasirVoriya/cozyting/blob/main/README_EN.md): Complete English product & developer documentation.
 - [README (日本語)](https://github.com/JasirVoriya/cozyting/blob/main/README_JA.md): Complete Japanese product & developer documentation.
 - [Product Website (zh-CN / en / ja)](https://jasirvoriya.github.io/cozyting/): Multilingual landing pages with comparison table, localized screenshots, localized promo videos, download CTA, and structured FAQ.
-- [CozyTing in 1 Minute Videos (MP4, 1280x720, 60s)](https://jasirvoriya.github.io/cozyting/#video):
+- [CozyTing in 1 Minute Videos (MP4, 1280x720, 66s)](https://jasirvoriya.github.io/cozyting/#video):
   - 简体中文: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo.mp4
   - English: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4
   - 日本語: https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-ja.mp4

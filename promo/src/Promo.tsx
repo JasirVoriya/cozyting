@@ -7,6 +7,7 @@ import { AnyPhone } from "./scenes/AnyPhone";
 import { OneApp } from "./scenes/OneApp";
 import { MultiRoomLatency } from "./scenes/MultiRoomLatency";
 import { Lan } from "./scenes/Lan";
+import { QuickPanel } from "./scenes/QuickPanel";
 import { UiShowcase } from "./scenes/UiShowcase";
 import { Search } from "./scenes/Search";
 import { Outro } from "./scenes/Outro";
@@ -28,6 +29,7 @@ export const Promo: React.FC<{ locale?: PromoLocale }> = ({ locale = "zh" }) => 
     <S r={T.oneApp}>{(d) => <OneApp dur={d} locale={locale} />}</S>
     <S r={T.multiRoomLatency}>{(d) => <MultiRoomLatency dur={d} locale={locale} />}</S>
     <S r={T.lan}>{(d) => <Lan dur={d} locale={locale} />}</S>
+    <S r={T.quickPanel}>{(d) => <QuickPanel dur={d} locale={locale} />}</S>
     <S r={T.ui}>{(d) => <UiShowcase dur={d} locale={locale} />}</S>
     <S r={T.search}>{(d) => <Search dur={d} locale={locale} />}</S>
     <S r={T.outro}>{(d) => <Outro dur={d} locale={locale} />}</S>

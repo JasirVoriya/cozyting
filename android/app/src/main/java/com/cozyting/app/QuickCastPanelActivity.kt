@@ -1474,4 +1474,41 @@ class QuickCastPanelActivity : Activity() {
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
     private fun dpf(v: Float): Float = v * resources.displayMetrics.density
+
+    internal fun applyUiPreviewStateForTest(
+        isDark: Boolean,
+        previewNowPlaying: NowPlayingInfo,
+        previewDevices: List<CastRouteSelection.Device>,
+        previewSelectedSpeakerIds: Set<String>,
+        previewSelectedPackage: String,
+        previewSelectedLabel: String,
+        previewMasterVolume: Int,
+        previewSpeakerVolumes: Map<String, Int>,
+        previewCasting: Boolean,
+        previewStats: JSONObject?,
+    ) {
+        palette = UiPalette.forMode(isDark)
+        nowPlaying = previewNowPlaying
+        nowPlayingUpdatedAtMs = System.currentTimeMillis()
+        selectedPackage = previewSelectedPackage
+        selectedLabel = previewSelectedLabel
+        masterVolume = previewMasterVolume.coerceIn(0, 100)
+        speakerVolume.clear()
+        speakerVolume.putAll(previewSpeakerVolumes)
+        castRequested = false
+        stopRequested = false
+        routeState = CastRouteSelection.syncActiveSpeakers(
+            CastRouteSelection.initial(previewDevices),
+            previewSelectedSpeakerIds,
+        )
+        CastService.running.set(previewCasting)
+        CastService.lastFailMessage = ""
+        CastService.lastStats = previewStats?.toString().orEmpty()
+        buildUi()
+        volumeBar.progress = masterVolume
+        applyMasterVolumeVisual(masterVolume)
+        bindNowPlaying()
+        renderDevices()
+        updateLatencyAndSubtitleIndicators(previewStats)
+    }
 }
