@@ -130,6 +130,27 @@ export interface PromoCopy {
     footerTitle: string;
     footerSub: string;
   };
+  quickPanel: {
+    eyebrow: string;
+    headline: string;
+    headlineSize: number;
+    subtitle: string;
+    subtitleSize: number;
+    tileBadge: string;
+    tileHint: string;
+    tileTitle: string;
+    tileSub: string;
+    notifBadge: string;
+    notifHint: string;
+    notifTitle: string;
+    notifSub: string;
+    notifAction: string;
+    volBadge: string;
+    volHint: string;
+    volLabel: string;
+    phoneTag: string;
+    footerPill: string;
+  };
   uiShowcase: {
     eyebrow1: string;
     headline1: string;

@@ -15,6 +15,7 @@ import android.view.View
 import com.cozyting.app.AppPickerActivity
 import com.cozyting.app.CastService
 import com.cozyting.app.MainActivity
+import com.cozyting.app.QuickCastPanelActivity
 import com.cozyting.app.SettingsActivity
 import com.cozyting.app.capture.FavoriteAudioSource
 import com.cozyting.app.capture.LaunchableApp
@@ -269,7 +270,13 @@ class UiPreviewRenderTest {
         )
         savePng(floatingKeypadOverview, "18_floating_pairing_keypad_dark_vs_light.png")
 
-        println("[UiPreviewRenderTest] Saved 19 preview PNGs to: ${outDir.absolutePath}")
+        val quickPanelOverview = composeSideBySide(
+            renderQuickCastPanel(isDark = true),
+            renderQuickCastPanel(isDark = false),
+        )
+        savePng(quickPanelOverview, "19_quick_panel_dark_vs_light.png")
+
+        println("[UiPreviewRenderTest] Saved 20 preview PNGs to: ${outDir.absolutePath}")
     }
 
     private fun renderMainCasting(isDark: Boolean): Bitmap {
@@ -859,6 +866,114 @@ class UiPreviewRenderTest {
             color = Color.argb(46, 255, 255, 255)
         }
         c.drawRoundRect(RectF(36f, size * 0.74f, size - 36f, size * 0.80f), 12f, 12f, wave)
+        return bmp
+    }
+
+    private fun renderQuickCastPanel(isDark: Boolean): Bitmap {
+        val fx = fixturesFor(previewLang)
+        val controller = Robolectric.buildActivity(
+            QuickCastPanelActivity::class.java,
+            Intent().putExtra("ui_preview", true),
+        ).setup()
+        val activity = controller.get()
+
+        val devices = listOf(
+            CastRouteSelection.Device("this", fx.thisDeviceName, Kind.THIS_DEVICE, true, selected = false),
+            CastRouteSelection.Device("192.0.2.10", "Sound Pro-0001", Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.speaker1Room),
+            CastRouteSelection.Device("192.0.2.11", fx.speaker2Name, Kind.SPEAKER, selected = true, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.speaker2Room),
+            CastRouteSelection.Device("192.0.2.12", "REDMI G Pro 27U", Kind.TV, selected = false, castable = true, protocol = CastProtocol.MIPLAY, roomName = fx.tvRoom),
+        )
+        val stats = JSONObject().apply {
+            put(
+                "receivers",
+                JSONArray().apply {
+                    put(JSONObject().put("ip", "192.0.2.10").put("ui_state", "streaming").put("display_latency_ms", 402))
+                    put(JSONObject().put("ip", "192.0.2.11").put("ui_state", "streaming").put("display_latency_ms", 402))
+                },
+            )
+        }
+        val nowPlaying = NowPlayingInfo(
+            title = fx.trackTitle,
+            artist = fx.trackArtist,
+            durationMs = 248_000L,
+            positionMs = 94_000L,
+            isPlaying = true,
+            artwork = createMockAlbumArt(),
+            sourcePackage = "com.example.music",
+            available = true,
+            placeholderReasonZh = "",
+        )
+        activity.applyUiPreviewStateForTest(
+            isDark = isDark,
+            previewNowPlaying = nowPlaying,
+            previewDevices = devices,
+            previewSelectedSpeakerIds = setOf("192.0.2.10", "192.0.2.11"),
+            previewSelectedPackage = "com.example.music",
+            previewSelectedLabel = fx.appMusic,
+            previewMasterVolume = 58,
+            previewSpeakerVolumes = mapOf("192.0.2.10" to 62, "192.0.2.11" to 48),
+            previewCasting = true,
+            previewStats = stats,
+        )
+
+        val dm = activity.resources.displayMetrics
+        val widthPx = dm.widthPixels.coerceAtLeast(1080)
+        val heightPx = dm.heightPixels.coerceAtLeast(2200)
+        val backdrop = createBlurredAppBackdrop(widthPx, heightPx, isDark)
+        val root = activity.findViewById<View>(android.R.id.content)
+        val wSpec = View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY)
+        val hSpec = View.MeasureSpec.makeMeasureSpec(heightPx, View.MeasureSpec.EXACTLY)
+        root.measure(wSpec, hSpec)
+        root.layout(0, 0, widthPx, heightPx)
+
+        val canvas = Canvas(backdrop)
+        root.draw(canvas)
+
+        controller.pause().stop().destroy()
+        shadowOf(Looper.getMainLooper()).idle()
+        return backdrop
+    }
+
+    private fun createBlurredAppBackdrop(widthPx: Int, heightPx: Int, isDark: Boolean): Bitmap {
+        val bmp = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(
+                0f,
+                0f,
+                widthPx.toFloat(),
+                heightPx.toFloat(),
+                if (isDark) {
+                    intArrayOf(Color.parseColor("#0E1525"), Color.parseColor("#1A2440"), Color.parseColor("#111722"))
+                } else {
+                    intArrayOf(Color.parseColor("#DCE7F7"), Color.parseColor("#F4EAE0"), Color.parseColor("#E3EAF5"))
+                },
+                floatArrayOf(0f, 0.52f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        c.drawRect(0f, 0f, widthPx.toFloat(), heightPx.toFloat(), bgPaint)
+
+        // Subtle soft ambient blobs suggesting an underlying music/feed app blurred behind the floating card
+        val glow1 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (isDark) Color.argb(66, 37, 99, 235) else Color.argb(58, 229, 109, 72)
+        }
+        val glow2 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (isDark) Color.argb(54, 229, 109, 72) else Color.argb(56, 59, 130, 246)
+        }
+        c.drawCircle(widthPx * 0.22f, heightPx * 0.24f, widthPx * 0.42f, glow1)
+        c.drawCircle(widthPx * 0.82f, heightPx * 0.72f, widthPx * 0.46f, glow2)
+
+        // Soft ghost cards of the underlying app behind the frosted floating panel
+        val ghostPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (isDark) Color.argb(32, 255, 255, 255) else Color.argb(115, 255, 255, 255)
+        }
+        val margin = widthPx * 0.06f
+        val r = widthPx * 0.04f
+        c.drawRoundRect(RectF(margin, heightPx * 0.07f, widthPx - margin, heightPx * 0.21f), r, r, ghostPaint)
+        c.drawRoundRect(RectF(margin, heightPx * 0.23f, widthPx * 0.48f, heightPx * 0.41f), r, r, ghostPaint)
+        c.drawRoundRect(RectF(widthPx * 0.52f, heightPx * 0.23f, widthPx - margin, heightPx * 0.41f), r, r, ghostPaint)
+        c.drawRoundRect(RectF(margin, heightPx * 0.79f, widthPx - margin, heightPx * 0.91f), r, r, ghostPaint)
         return bmp
     }
 

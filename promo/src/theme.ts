@@ -8,17 +8,19 @@ export const BAR = 120;
 
 // Scene boundaries (frames). Every cut lands on a bar line of the 120 BPM soundtrack.
 // Intro (6s / 3 bars): 0-2s (0..120) calm pain-point question; 2-6s (120..360) brand lockup + real UI.
+// Total: 33 bars (66s) including dedicated 6s QuickPanel spotlight at Bar 21.
 export const T = {
   intro: [0, 3 * BAR],
   anyPhone: [3 * BAR, 6 * BAR],
   oneApp: [6 * BAR, 11 * BAR],
   multiRoomLatency: [11 * BAR, 18 * BAR],
   lan: [18 * BAR, 21 * BAR],
-  ui: [21 * BAR, 24 * BAR],
-  search: [24 * BAR, 26 * BAR],
-  outro: [26 * BAR, 30 * BAR],
+  quickPanel: [21 * BAR, 24 * BAR],
+  ui: [24 * BAR, 27 * BAR],
+  search: [27 * BAR, 29 * BAR],
+  outro: [29 * BAR, 33 * BAR],
 } as const;
-export const TOTAL_FRAMES = 30 * BAR;
+export const TOTAL_FRAMES = 33 * BAR;
 
 export const C = {
   bg: "#0B0D12",

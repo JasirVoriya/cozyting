@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <title>CozyTing — Come Home. Fill Every Room with Your Music | Open-Source Pure-LAN MiPlay Casting</title>
-  <meta name="description" content="Come home. Fill every room with your music. CozyTing is a free, open-source (AGPL-3.0) third-party MiPlay pure-LAN audio casting app for Android 10+. Stream exclusively from one chosen music app on Samsung, Pixel, OnePlus, OPPO, vivo, or Huawei phones to up to 63 Xiaomi / XiaoAi speakers in millisecond sync—zero cloud, zero Xiaomi account, no root.">
-  <meta name="keywords" content="CozyTing,MiPlay,Xiaomi speaker casting,XiaoAi speaker audio cast,XiaoAi DLNA alternative,XiaoAi AirPlay alternative,cast to Xiaomi speaker without NAS,multi-room Wi-Fi audio,Android AudioPlaybackCapture,per-app audio isolation,pure LAN audio cast,open source MiPlay sender,Rust audio sync engine">
+  <meta name="description" content="Come home. Fill every room with your music. CozyTing is a free, open-source (AGPL-3.0) third-party MiPlay pure-LAN audio casting app for Android 10+. Stream exclusively from one music app to up to 63 Xiaomi / XiaoAi speakers in ms sync—with Quick Settings tile & notification floating control panel, zero cloud, no root.">
+  <meta name="keywords" content="CozyTing,MiPlay,Xiaomi speaker casting,XiaoAi speaker audio cast,XiaoAi DLNA alternative,XiaoAi AirPlay alternative,cast to Xiaomi speaker without NAS,Quick Settings tile audio cast,floating cast control panel,multi-room Wi-Fi audio,Android AudioPlaybackCapture,per-app audio isolation,pure LAN audio cast,open source MiPlay sender,Rust audio sync engine">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jasirvoriya.github.io/cozyting/en/">
   <link rel="alternate" hreflang="zh-CN" href="https://jasirvoriya.github.io/cozyting/">
@@ -81,6 +81,7 @@
           "Synchronizes up to 63 Xiaomi / XiaoAi speakers in millisecond lockstep with per-speaker volume and live add/remove",
           "4 live latency presets (Standard 800/1000ms, Balanced 400ms, Low 250ms, Ultra 150ms) plus custom ms hot-switched without reconnecting",
           "Built-in Wireless Debugging Silent Mode on Android 13+: no root, no PC, no Shizuku; eliminates capture prompts and isolates dual-zone AudioFocus",
+          "Quick Settings tile and notification-tap frosted floating control panel: switch speakers, adjust per-speaker volume, and use hardware Volume keys over any app without switching away",
           "100% pure LAN streaming, zero cloud servers, no Xiaomi account login, AGPL-3.0 open source"
         ]
       },
@@ -88,11 +89,11 @@
         "@type": "VideoObject",
         "@id": "https://jasirvoriya.github.io/cozyting/en/#video",
         "name": "CozyTing in 1 Minute: Cast Single-App Audio from Any Android Phone to Xiaomi Speakers",
-        "description": "Narration-free product demo showcasing brand-free Android support, automatic music-app switching, simultaneous short-video browsing and speaker playback, up to 63-speaker multi-room sync with 4 live latency tiers, and pure-LAN zero-cloud privacy.",
+        "description": "Narration-free product demo showcasing brand-free Android support, automatic music-app switching, simultaneous short-video browsing and speaker playback, up to 63-speaker multi-room sync with 4 live latency tiers, Quick Settings & notification floating control panel with hardware Volume key control, and pure-LAN zero-cloud privacy.",
         "thumbnailUrl": "https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en-poster.jpg",
         "contentUrl": "https://jasirvoriya.github.io/cozyting/assets/video/cozyting-promo-en.mp4",
-        "uploadDate": "2026-11-24",
-        "duration": "PT1M",
+        "uploadDate": "2026-11-27",
+        "duration": "PT1M6S",
         "inLanguage": "en",
         "about": { "@id": "https://jasirvoriya.github.io/cozyting/en/#app" }
       },
@@ -138,6 +139,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "No. CozyTing embeds a lightweight on-device Wireless Debugging client. Pair once using Android's 6-digit pairing code via the guided wizard—no root, no PC, and no Shizuku needed. Standard Mode also works out of the box on Android 10+."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How can I quickly adjust speaker volume or switch speakers without leaving the app I'm using?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Pull down Android Quick Settings and tap the CozyTing tile—or tap the ongoing casting notification / Speakers & Volume action—to pop up a frosted floating control panel right over your current app. Skip tracks, add or remove speakers, adjust individual volume sliders, or press hardware Volume keys for cast master volume, then tap outside to dismiss cleanly without cluttering Recents. Long-press the tile to open the full app."
             }
           },
           {
@@ -483,8 +492,14 @@
         box-shadow: var(--shadow);
       }
 
+      .story-panel.quick-control-panel {
+        margin-block-start: 1.5rem;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      }
+
       @media (max-width: 820px) {
-        .story-panel {
+        .story-panel,
+        .story-panel.quick-control-panel {
           grid-template-columns: minmax(0, 1fr);
         }
       }
@@ -1077,6 +1092,7 @@
             <li class="chip">Up to 63 Synced Speakers</li>
             <li class="chip">Strict Single-App Isolation</li>
             <li class="chip">4 Live Latency Tiers (150–1000ms)</li>
+            <li class="chip">Quick Tile &amp; Notification Floating Panel</li>
             <li class="chip">Android 13+ Rootless Silent Capture</li>
           </ul>
         </div>
@@ -1197,6 +1213,14 @@
                 <td>Cannot isolate</td>
               </tr>
               <tr>
+                <th scope="row">Quick Control Over Any App</th>
+                <td class="highlight">Quick Settings tile &amp; notification tap → frosted floating panel + hardware Volume keys</td>
+                <td>Must switch back to bridge app or web UI</td>
+                <td>System Bluetooth menu only; no per-speaker control</td>
+                <td>System Control Center card</td>
+                <td>Must open system cast menu</td>
+              </tr>
+              <tr>
                 <th scope="row">Live Latency Tuning</th>
                 <td class="highlight">4 tiers (150–1000ms) + custom ms without reconnecting</td>
                 <td>Not adjustable</td>
@@ -1264,6 +1288,41 @@
             <p>Curate and drag-reorder favorite music apps with per-app Auto-Detect toggles, enjoy album-art ambient backdrops in Dark / Light / System themes, and optional SHA-256 verified updates.</p>
           </article>
         </div>
+
+        <!-- Quick Control Spotlight -->
+        <div class="story-panel quick-control-panel" id="quick-control">
+          <div>
+            <span class="section-eyebrow">Quick Control · Instant Floating Panel</span>
+            <h3 style="font-size: clamp(1.35rem, 2.4vw, 1.85rem); letter-spacing: -0.02em; line-height: 1.28; margin-block-end: 0.55rem;">Control speakers without leaving your current app.</h3>
+            <p style="color: var(--text-2); font-size: 0.96rem;">
+              Native-grade everyday convenience for a third-party caster: pull down once while browsing or listening to add a room or nudge volume, then tap outside to jump right back.
+            </p>
+            <div class="story-pillars">
+              <div class="story-pillar">
+                <strong>Quick Settings Tile · Tap for Panel, Long-Press for Home</strong>
+                <span>Works across Android 10–16 (one-tap system add prompt on Android 13+). Tap to pop up a frosted floating control panel over any app; long-press to jump straight to the full app.</span>
+              </div>
+              <div class="story-pillar">
+                <strong>Notification Direct Entry · Excluded from Recents</strong>
+                <span>While casting, tapping the ongoing notification body or <em>Speakers &amp; Volume</em> opens the same floating panel in an isolated transparent task—tap outside or press Back to dismiss cleanly.</span>
+              </div>
+              <div class="story-pillar">
+                <strong>Hardware Volume Keys &amp; One-Tap Restore Last</strong>
+                <span>Press your phone&rsquo;s side Volume <code>+/-</code> keys inside the panel or home screen to control cast master volume directly (no system volume HUD, with safe-limit confirmation), plus one-tap <em>Restore Last</em> speaker groups.</span>
+              </div>
+            </div>
+          </div>
+
+          <figure class="hero-shot" style="margin: 0;">
+            <img
+              src="../assets/screenshots/en/09-quick-panel-dark-vs-light.png"
+              alt="CozyTing frosted floating Quick Cast panel in dark and light themes showing compact Now Playing, multi-speaker selection, per-speaker volume bars, and top-right app button"
+              width="2608"
+              height="2841"
+              loading="lazy">
+            <figcaption>Quick Settings &amp; notification floating panel render: Android 12+ window blur with 1:1 playback and per-speaker volume controls</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
 
@@ -1273,7 +1332,7 @@
         <div class="section-head">
           <span class="section-eyebrow">Video Overview</span>
           <h2 id="video-heading">CozyTing in 1 Minute: Any Android Phone to Every Xiaomi Speaker</h2>
-          <p>Narration-free visual walkthrough: brand-free Android support, automatic music-app following, watching short videos without interrupting speaker music, whole-home sync with 4 live latency tiers, and pure-LAN zero-cloud privacy.</p>
+          <p>Narration-free visual walkthrough: brand-free Android support, automatic music-app following, watching short videos without interrupting speaker music, whole-home sync with 4 live latency tiers, Quick Settings &amp; notification floating control panel, and pure-LAN zero-cloud privacy.</p>
         </div>
         <figure class="promo-video">
           <div class="promo-video-stage">
@@ -1352,7 +1411,7 @@
           <article class="step-item">
             <span class="step-num">3</span>
             <h3>Pick Your Music App &amp; Speakers</h3>
-            <p>Standard Mode works out of the box on Android 10+. On Android 13+, optionally configure Silent Mode in Settings for zero-prompt capture and dual-zone AudioFocus.</p>
+            <p>Standard Mode works out of the box on Android 10+. On Android 13+, optionally enable Silent Mode and add the CozyTing Quick Settings tile in one tap for instant floating control over any app.</p>
           </article>
         </div>
       </div>
@@ -1391,6 +1450,11 @@
           <details>
             <summary>Does Silent Mode require root, a computer, or Shizuku?</summary>
             <div class="faq-answer">No. CozyTing includes a built-in wireless debugging client—just pair once on-device with Android&rsquo;s 6-digit pairing code via the guided wizard. If you prefer zero setup, Standard Mode works out of the box on Android 10+.</div>
+          </details>
+
+          <details>
+            <summary>How can I quickly adjust speaker volume or switch speakers without leaving the app I&rsquo;m using?</summary>
+            <div class="faq-answer">Add the CozyTing Quick Settings tile (one-tap prompt on Android 13+ from the home screen banner or Settings). Anytime you want to change speakers or adjust volume, pull down and tap the tile—or tap the ongoing casting notification / <em>Speakers &amp; Volume</em> action—to open a frosted floating control panel directly over your current app. You can also press your phone&rsquo;s hardware Volume keys to control cast master volume, tap outside to dismiss cleanly, or long-press the tile to jump straight to the full app.</div>
           </details>
 
           <details>
