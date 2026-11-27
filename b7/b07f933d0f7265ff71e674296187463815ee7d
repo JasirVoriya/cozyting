@@ -1,0 +1,50 @@
+README.md
+  h_75f437d5bc136b 63,86,113-118,125,138-140,157,182-185,189,192
+README_EN.md
+  h_75f437d5bc136b 63,86,113-118,125,137-139,153,174-176
+README_JA.md
+  h_75f437d5bc136b 63,86,112-117,124,136-138,152,173-175
+android/app/src/main/java/com/cozyting/app/QuickCastPanelActivity.kt
+  h_75f437d5bc136b 1477-1513
+android/app/src/test/java/com/cozyting/app/ui/UiPreviewRenderTest.kt
+  h_75f437d5bc136b 18,273-279,872-979
+docs/en/index.html
+  h_75f437d5bc136b 8-9,84,92,95-96,144-151,495-499,501-502,1095,1215-1222,1291-1325,1335,1414,1455-1459
+docs/index.html
+  h_75f437d5bc136b 8-9,84,92,95-96,144-151,495-499,501-502,1095,1215-1222,1291-1325,1335,1414,1455-1459
+docs/ja/index.html
+  h_75f437d5bc136b 8-9,84,92,95-96,144-151,495-499,501-502,1095,1215-1222,1291-1325,1335,1414,1455-1459
+docs/llms.txt
+  h_75f437d5bc136b 42,50,65
+docs/sitemap.xml
+  h_75f437d5bc136b 7,17,19,24,34,36,41,51,53,88
+promo/scripts/make-music.mjs
+  h_75f437d5bc136b 2,10-11,77-79,81-85,94,245,247-248,360,364,367-368,380-385,387-388,390-392
+promo/src/Promo.tsx
+  h_75f437d5bc136b 10,32
+promo/src/i18n/en.ts
+  h_75f437d5bc136b 206-226
+promo/src/i18n/ja.ts
+  h_75f437d5bc136b 206-226
+promo/src/i18n/types.ts
+  h_75f437d5bc136b 133-153
+promo/src/i18n/zh-CN.ts
+  h_75f437d5bc136b 206-226
+promo/src/scenes/QuickPanel.tsx
+  h_75f437d5bc136b 1-492
+promo/src/theme.ts
+  h_75f437d5bc136b 11,18-21,23
+scripts/ui-preview.sh
+  h_75f437d5bc136b 85-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7b07f933d0f7265ff71e674296187463815ee7d",
+  "prompts": {},
+  "humans": {
+    "h_75f437d5bc136b": {
+      "author": "JasirVoriya <jasirvoriya@gmail.com>"
+    }
+  }
+}
