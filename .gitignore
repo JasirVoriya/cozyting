@@ -13,6 +13,18 @@ android/testtones/build/
 android/hiddenapi-stubs/build/
 ._*
 .DS_Store
-.local/
+.local
 .worktrees/
+
+# Apple / Swift / Xcode
+apple/Frameworks/
+*.xcframework
+apple/macOS/*.xcodeproj/
+apple/**/.build/
+.build/
+DerivedData/
+.swiftpm/
+build/
+dist/
+
 

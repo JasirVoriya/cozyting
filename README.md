@@ -31,6 +31,7 @@
   <a href="#支持窝爱听"><img alt="请作者喝杯热茶" src="https://img.shields.io/badge/Sponsor-%E8%B5%9E%E8%B5%8F%E6%94%AF%E6%8C%81-E56D48?style=flat-square&logo=githubsponsors&logoColor=white"></a>
   <a href="LICENSE"><img alt="License: AGPL-3.0-only" src="https://img.shields.io/badge/License-AGPL--3.0--only-1F2430?style=flat-square&logo=gnu&logoColor=white"></a>
   <img alt="Android 10+ (API 29-36)" src="https://img.shields.io/badge/Android-10%2B%20(API%2029--36)-3DDC84?style=flat-square&logo=android&logoColor=white">
+  <img alt="macOS 14.2+ Native Client (Process Tap)" src="https://img.shields.io/badge/macOS-14.2%2B%20Process%20Tap-0A84FF?style=flat-square&logo=apple&logoColor=white">
   <img alt="iOS FFI Ready · SwiftUI Planned" src="https://img.shields.io/badge/iOS-Core%20Ready%20%C2%B7%20SwiftUI%20Planned-1F2430?style=flat-square&logo=apple&logoColor=white">
   <img alt="Pure LAN · Zero Cloud" src="https://img.shields.io/badge/Network-Pure%20LAN%20%C2%B7%20Zero%20Cloud-0EA5E9?style=flat-square">
   <img alt="Multi-Room Up to 63 Speakers" src="https://img.shields.io/badge/Multi--Room-Up%20to%2063%20Speakers-10B981?style=flat-square">
@@ -39,7 +40,9 @@
 </div>
 
 > **窝爱听（CozyTing）是什么？**
-> **窝爱听（CozyTing）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 Android 10+，iOS 端规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 以及任意 Android 手机**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
+> **窝爱听（CozyTing）** 是一款免费开源的第三方 **MiPlay 局域网音频投送客户端**（支持 **Android 10+** 与原生 **macOS 14.2+ 菜单栏客户端**，iOS 端基于同一共享 Rust 核心规划推进中）。它让**华为、三星、OPPO、vivo、一加、Pixel 等任意 Android 手机，以及无需虚拟声卡的 Mac（Core Audio Process Tap 原生单 App 隔离与本机静音）**都能免 Root、免登录小米账号，通过家庭 Wi-Fi 局域网直接将指定音乐 App（如网易云音乐、QQ 音乐、Apple Music、Spotify、汽水音乐、小宇宙等）的声音高保真投送到家里一台或多台支持 MiPlay 协议的小米 / 小爱音箱（最多支持 63 台同频同步播放），真正做到**「只投音乐、不串杂音、零云端隐私直连」**。
+>
+> *(诚实测试边界：macOS 14.2+ 原生客户端 M1–M9 已完成离线编译、单测与 DMG 打包脚本验证；真机 TCC 系统音频录制授权、五类音源 DRM 表现与实箱多机听感待人工交互验收并登记于 [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md)。)*
 >
 > 🏠 **为什么叫「窝爱听」？** 忙碌一天深夜回到自己温暖的小窝，点亮一盏暖灯，打开喜欢的歌单让音乐自然流满房间、卸下疲惫——不被手机品牌生态拦在门外，也不被微信工作语音与系统通知打断。这正是「窝爱听 / CozyTing」与暖灯小屋图标的由来。
 >

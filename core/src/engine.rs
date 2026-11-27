@@ -918,6 +918,9 @@ pub fn stats_json(handle: i64) -> String {
         return format!("{{\"receivers\":[{}]}}", receivers.join(","));
     }
     let last = e.last_error.lock().unwrap().clone();
+    if !e.stopped.load(Ordering::SeqCst) && last.is_empty() {
+        return "{\"receivers\":[]}".into();
+    }
     err_json(last)
 }
 
@@ -983,6 +986,15 @@ mod tests {
         assert!(queue_remove_receiver(h, "192.0.2.40"));
         let st2 = stats_json(h);
         assert!(!st2.contains("192.0.2.40"), "stats after remove={st2}");
+        assert_eq!(st2, "{\"receivers\":[]}", "pre-connect stats must not emit empty error");
+        stop(h);
+    }
+
+    #[test]
+    fn stats_json_before_connect_returns_empty_receivers_not_blank_error() {
+        let h = create(true);
+        let st = stats_json(h);
+        assert_eq!(st, "{\"receivers\":[]}", "stats before connect={st}");
         stop(h);
     }
 

@@ -41,6 +41,7 @@ jobs:
     outputs:
       rust: ${{ steps.filter.outputs.rust }}
       android: ${{ steps.filter.outputs.android }}
+      macos: ${{ steps.filter.outputs.macos }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -53,6 +54,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "rust=true" >> "$GITHUB_OUTPUT"
             echo "android=true" >> "$GITHUB_OUTPUT"
+            echo "macos=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -66,6 +68,7 @@ jobs:
             echo "Base commit unavailable; running all CI jobs."
             echo "rust=true" >> "$GITHUB_OUTPUT"
             echo "android=true" >> "$GITHUB_OUTPUT"
+            echo "macos=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -75,16 +78,21 @@ jobs:
 
           RUST="false"
           ANDROID="false"
+          MACOS="false"
           if echo "${CHANGED}" | grep -Eq '^(Cargo\.(toml|lock)|core/|cli/|\.github/workflows/ci\.yml)'; then
             RUST="true"
           fi
           if echo "${CHANGED}" | grep -Eq '^(Cargo\.(toml|lock)|core/|android/|scripts/|\.github/workflows/ci\.yml)'; then
             ANDROID="true"
           fi
+          if echo "${CHANGED}" | grep -Eq '^(Cargo\.(toml|lock)|core/|apple/|scripts/(build-macos|package-macos-dmg)\.sh|\.github/workflows/ci\.yml)'; then
+            MACOS="true"
+          fi
 
           echo "rust=${RUST}" >> "$GITHUB_OUTPUT"
           echo "android=${ANDROID}" >> "$GITHUB_OUTPUT"
-          echo "Affected jobs -> rust=${RUST}, android=${ANDROID}"
+          echo "macos=${MACOS}" >> "$GITHUB_OUTPUT"
+          echo "Affected jobs -> rust=${RUST}, android=${ANDROID}, macos=${MACOS}"
 
   rust-core:
     name: Rust Core & CLI
@@ -205,3 +213,28 @@ jobs:
           path: android/app/build/outputs/apk/standard/debug/app-standard-debug.apk
           retention-days: 14
           if-no-files-found: error
+
+  macos-build-and-test:
+    name: macOS Shared SwiftPM Tests & App Build
+    needs: changes
+    if: needs.changes.outputs.macos == 'true'
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Rust toolchain (aarch64-apple-darwin)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build XCFramework, run SwiftPM tests & build CozyTingMac
+        run: |
+          chmod +x scripts/build-macos.sh scripts/package-macos-dmg.sh
+          ./scripts/build-macos.sh

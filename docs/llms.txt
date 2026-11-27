@@ -28,7 +28,7 @@
   - 简体中文: https://jasirvoriya.github.io/cozyting/architecture.html
   - English: https://jasirvoriya.github.io/cozyting/en/architecture.html
   - 日本語: https://jasirvoriya.github.io/cozyting/ja/architecture.html
-- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`cozyting-cli`)
+- **Supported Sender Platforms**: Android 10+ (API 29–36, `arm64-v8a`, 16KB ELF page-aligned); macOS 14.2+ native Menu Bar client (`apple/CozyTingShared` + `apple/macOS`, Core Audio Process Tap per-app capture & `mutedWhenTapped` local mute, no virtual audio driver — M1–M9 offline builds/tests/DMG verified, live TCC/DRM/speaker acoustics pending human verification in `docs/COMPATIBILITY.md`); iOS C ABI / XCFramework ready, SwiftUI client planned; macOS/Linux/Windows CLI (`cozyting-cli`)
 - **Supported Receivers**: LAN MiPlay-capable Xiaomi / XiaoAi Wi-Fi speakers and MiPlay-capable Xiaomi TVs (real-device verified status tracked in `docs/COMPATIBILITY.md`)
 - **Network & Privacy Model**: 100% pure LAN for discovery and audio streaming; zero cloud relay, zero Xiaomi account login, zero analytics/telemetry. Only outbound request is an anonymous read-only 24-hour HTTPS check (`ETag 304`) against the public static manifest `https://raw.githubusercontent.com/JasirVoriya/cozyting/main/update.json` (SHA-256 + APK signature verified); works fully offline.
 

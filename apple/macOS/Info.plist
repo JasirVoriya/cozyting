@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>CozyTing</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>CozyTing</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>CozyTing captures audio only from the selected music application via Core Audio Process Tap to cast it to MiPlay speakers on your local network.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>CozyTing optionally reads current track metadata and playback controls from Apple Music or Spotify when selected as your audio source.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_mi-connect._udp</string>
+		<string>_lyra-mdns._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>CozyTing discovers and streams audio to MiPlay speakers on your local Wi-Fi network.</string>
+</dict>
+</plist>

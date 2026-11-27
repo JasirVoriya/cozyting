@@ -688,6 +688,96 @@ fn pick_ios_asset_from_manifest(ios_obj: &JsonVal, fallback_release_url: &str) -
     }
 }
 
+fn normalize_macos_arch(raw: &str) -> &'static str {
+    let lower = raw.trim().to_ascii_lowercase();
+    if lower.contains("universal") {
+        "universal"
+    } else if lower.contains("x86_64") || lower.contains("x64") || lower.contains("amd64") {
+        "x86_64"
+    } else {
+        "arm64"
+    }
+}
+
+fn pick_macos_asset_from_manifest(
+    macos_obj: &JsonVal,
+    abi: &str,
+    fallback_release_url: &str,
+) -> AssetChoice {
+    let min_os_raw = macos_obj.str_field("min_os");
+    let min_os = if min_os_raw.is_empty() {
+        "14.2".to_string()
+    } else {
+        min_os_raw
+    };
+    let wanted_arch = normalize_macos_arch(abi);
+
+    let mut universal_fallback: Option<AssetChoice> = None;
+    if let Some(assets) = macos_obj.get("assets").and_then(|v| v.as_arr()) {
+        for a in assets {
+            let signed = a.bool_field("signed").unwrap_or(true);
+            let name = a.str_field("name");
+            let lower = name.to_ascii_lowercase();
+            if !signed || lower.contains("-unsigned") || lower.contains("-debug") || !lower.ends_with(".dmg") {
+                continue;
+            }
+            let url = a.str_field("download_url");
+            if !is_valid_https_url(&url) {
+                continue;
+            }
+            let sha = a.str_field("sha256").trim().to_ascii_lowercase();
+            let valid_sha = sha.len() == 64 && sha.bytes().all(|b| b.is_ascii_hexdigit());
+            let choice = AssetChoice {
+                name,
+                download_url: url,
+                size_bytes: a.i64_field("size_bytes").unwrap_or(0).max(0),
+                sha256: if valid_sha { sha } else { String::new() },
+                sha256sums_url: String::new(),
+                min_os: min_os.clone(),
+                installable: true,
+            };
+
+            let raw_arch = {
+                let arch_field = a.str_field("arch");
+                if !arch_field.is_empty() {
+                    arch_field
+                } else {
+                    a.str_field("abi")
+                }
+            };
+            let asset_arch = if raw_arch.is_empty() {
+                normalize_macos_arch(&lower)
+            } else {
+                normalize_macos_arch(&raw_arch)
+            };
+
+            if asset_arch == wanted_arch {
+                return choice;
+            }
+            if asset_arch == "universal" && universal_fallback.is_none() {
+                universal_fallback = Some(choice);
+            }
+        }
+    }
+
+    if let Some(u) = universal_fallback {
+        return u;
+    }
+
+    let rel = macos_obj.str_field("release_url");
+    let download_url = if is_valid_https_url(&rel) {
+        rel
+    } else {
+        fallback_release_url.to_string()
+    };
+    AssetChoice {
+        download_url,
+        min_os,
+        installable: false,
+        ..AssetChoice::default()
+    }
+}
+
 fn pick_asset_from_gh_release(rel: &JsonVal, platform: &str, abi: &str, release_url: &str) -> AssetChoice {
     if platform.eq_ignore_ascii_case("ios") {
         return AssetChoice {
@@ -695,6 +785,59 @@ fn pick_asset_from_gh_release(rel: &JsonVal, platform: &str, abi: &str, release_
             min_os: "16.0".to_string(),
             installable: false,
             ..AssetChoice::default()
+        };
+    }
+
+    if platform.eq_ignore_ascii_case("macos") {
+        let wanted_arch = normalize_macos_arch(abi);
+        let mut sha256sums_url = String::new();
+        let mut exact: Option<AssetChoice> = None;
+        let mut universal: Option<AssetChoice> = None;
+
+        if let Some(assets) = rel.get("assets").and_then(|v| v.as_arr()) {
+            for a in assets {
+                let name = a.str_field("name");
+                let url = a.str_field("browser_download_url");
+                if !is_valid_https_url(&url) {
+                    continue;
+                }
+                if name.eq_ignore_ascii_case("SHA256SUMS.txt") {
+                    sha256sums_url = url;
+                    continue;
+                }
+                let lower = name.to_ascii_lowercase();
+                if !lower.ends_with(".dmg") || lower.contains("-unsigned") || lower.contains("-debug") {
+                    continue;
+                }
+                let choice = AssetChoice {
+                    name,
+                    download_url: url,
+                    size_bytes: a.i64_field("size").unwrap_or(0).max(0),
+                    sha256: String::new(),
+                    sha256sums_url: String::new(),
+                    min_os: "14.2".to_string(),
+                    installable: true,
+                };
+                if lower.contains("universal") {
+                    universal = Some(choice);
+                } else if normalize_macos_arch(&lower) == wanted_arch {
+                    exact = Some(choice);
+                }
+            }
+        }
+
+        return match exact.or(universal) {
+            Some(mut c) => {
+                c.sha256sums_url = sha256sums_url;
+                c
+            }
+            None => AssetChoice {
+                download_url: release_url.to_string(),
+                sha256sums_url,
+                min_os: "14.2".to_string(),
+                installable: false,
+                ..AssetChoice::default()
+            },
         };
     }
 
@@ -780,6 +923,16 @@ fn parse_manifest_channel_entry(entry: &JsonVal, platform: &str, abi: &str) -> O
             .map(|ios| pick_ios_asset_from_manifest(ios, &release_url))
             .unwrap_or_else(|| AssetChoice {
                 download_url: release_url.clone(),
+                ..AssetChoice::default()
+            })
+    } else if platform.eq_ignore_ascii_case("macos") {
+        entry
+            .get("macos")
+            .map(|mac| pick_macos_asset_from_manifest(mac, abi, &release_url))
+            .unwrap_or_else(|| AssetChoice {
+                download_url: release_url.clone(),
+                min_os: "14.2".to_string(),
+                installable: false,
                 ..AssetChoice::default()
             })
     } else {
@@ -1380,5 +1533,81 @@ mod tests {
             cleaned,
             "> 摘要导语\n\n### Added\n- **主功能**：\n  - 子条目一\n    - 孙条目"
         );
+    }
+
+    #[test]
+    fn macos_dmg_manifest_and_github_fallback_and_min_os_gate() {
+        let manifest = r####"{
+          "schema_version": 1,
+          "channels": {
+            "stable": {
+              "tag": "v0.10.0",
+              "prerelease": false,
+              "published_at": "2026-11-26T12:00:00Z",
+              "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.10.0",
+              "notes": "### Added\n- Native macOS 14.2+ Core Audio Process Tap client",
+              "macos": {
+                "min_os": "14.2",
+                "release_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.10.0",
+                "assets": [
+                  {
+                    "arch": "arm64",
+                    "name": "cozyting-v0.10.0-macos-arm64.dmg",
+                    "download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.10.0/cozyting-v0.10.0-macos-arm64.dmg",
+                    "size_bytes": 12345678,
+                    "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                    "signed": true
+                  }
+                ]
+              }
+            }
+          }
+        }"####;
+
+        let supported = evaluate_update_json("0.9.12", "stable", "macos", "arm64", "14.2.0", "", manifest);
+        let parsed = parse_json(&supported).unwrap();
+        assert_eq!(parsed.str_field("status"), "update_available");
+        assert_eq!(parsed.str_field("asset_name"), "cozyting-v0.10.0-macos-arm64.dmg");
+        assert_eq!(parsed.bool_field("installable"), Some(true));
+        assert_eq!(
+            parsed.str_field("sha256"),
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        );
+
+        let too_old = evaluate_update_json("0.9.12", "stable", "macos", "arm64", "14.1.0", "", manifest);
+        assert_eq!(parse_json(&too_old).unwrap().str_field("status"), "unsupported_os");
+
+        // GitHub Releases API fallback picks .dmg and SHA256SUMS.txt while ignoring .apk
+        let gh_api = r#"[{
+          "tag_name": "v0.10.0",
+          "prerelease": false,
+          "draft": false,
+          "published_at": "2026-11-26T12:00:00Z",
+          "html_url": "https://github.com/JasirVoriya/cozyting/releases/tag/v0.10.0",
+          "body": "- macOS DMG release",
+          "assets": [
+            {
+              "name": "cozyting-v0.10.0-arm64-v8a.apk",
+              "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.10.0/cozyting-v0.10.0-arm64-v8a.apk",
+              "size": 3100000
+            },
+            {
+              "name": "cozyting-v0.10.0-macos-arm64.dmg",
+              "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.10.0/cozyting-v0.10.0-macos-arm64.dmg",
+              "size": 12000000
+            },
+            {
+              "name": "SHA256SUMS.txt",
+              "browser_download_url": "https://github.com/JasirVoriya/cozyting/releases/download/v0.10.0/SHA256SUMS.txt",
+              "size": 256
+            }
+          ]
+        }]"#;
+        let gh_out = evaluate_update_json("0.9.12", "stable", "macos", "arm64", "15.4.0", "", gh_api);
+        let gh_parsed = parse_json(&gh_out).unwrap();
+        assert_eq!(gh_parsed.str_field("status"), "update_available");
+        assert_eq!(gh_parsed.str_field("asset_name"), "cozyting-v0.10.0-macos-arm64.dmg");
+        assert_eq!(gh_parsed.bool_field("installable"), Some(true));
+        assert!(gh_parsed.str_field("sha256sums_url").ends_with("SHA256SUMS.txt"));
     }
 }

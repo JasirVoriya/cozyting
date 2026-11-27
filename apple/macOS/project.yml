@@ -1,0 +1,41 @@
+name: CozyTingMac
+options:
+  bundleIdPrefix: com.cozyting
+  deploymentTarget:
+    macOS: "14.2"
+packages:
+  CozyTingShared:
+    path: ../CozyTingShared
+targets:
+  CozyTingMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.2"
+    sources:
+      - path: Sources
+      - path: Resources
+        excludes:
+          - CozyTingMac.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cozyting.app
+        PRODUCT_NAME: CozyTingMac
+        MARKETING_VERSION: "0.9.12"
+        CURRENT_PROJECT_VERSION: "1"
+        MACOSX_DEPLOYMENT_TARGET: "14.2"
+        SWIFT_VERSION: "6.0"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ENABLE_SPONSOR_ENTRY"
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_ENTITLEMENTS: Resources/CozyTingMac.entitlements
+        ENABLE_HARDENED_RUNTIME: NO
+    dependencies:
+      - package: CozyTingShared
+        product: CozyTingCoreKit
+      - package: CozyTingShared
+        product: CozyTingAudioKit
+      - package: CozyTingShared
+        product: CozyTingDesignKit

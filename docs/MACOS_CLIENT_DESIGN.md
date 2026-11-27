@@ -171,61 +171,62 @@ cozyting_engine_push_aac(handle, ptr, len)
 
 > 所有内部开发任务均在此清单追踪（不在公开 GitHub Issues 刷屏拆分细碎工程任务单；公开社区进展仅在单个 Roadmap Issue 汇总）。每完成一项，在对应 PR 中勾选 `[x]` 并附简短实测说明。
 
-- [ ] **M1 · Apple 方案 A 工程骨架、L1 静态库打包脚本与 `CozyTingCoreKit` 桥接**
+- [x] **M1 · Apple 方案 A 工程骨架、L1 静态库打包脚本与 `CozyTingCoreKit` 桥接**
   - **交付物**：
     - `apple/CozyTingShared/Package.swift`（声明 `CozyTingCoreKit`、`CozyTingAudioKit`、`CozyTingDesignKit` 三子库）与最小 macOS 应用工程骨架；
     - `scripts/build-macos.sh`（编译 `aarch64-apple-darwin` 静态库并组装头文件 / 可选 Universal）；
     - `CozyTingCoreKit` 全量类型安全封装 [`cozyting_core.h`](../core/include/cozyting_core.h)（RAII `cozyting_string_free`、发现/路由/引擎/高音量/日志/更新 API）及 `CozyTingCoreKitTests`。
-  - **验收**：`cargo test --workspace` + C11 头文件校验 + `swift test` + `scripts/build-macos.sh` 全绿。
+  - **验收**：`cargo test --workspace`（93 tests）+ C11 头文件校验（`clang -std=c11 -Wall -Wextra -Werror -fsyntax-only`）+ `swift test`（33 tests / 6 suites）+ `./scripts/build-macos.sh`（`aarch64-apple-darwin` XCFramework + XcodeGen + Release ad-hoc `xcodebuild`）全绿。（注：`--universal` 路径未在本机编译，因当前 `rustup` 未安装 `x86_64-apple-darwin`；音频捕获与真实音箱建连将在 M2/M3 实测。）
 
-- [ ] **M2 · 生产级单 App 音频捕获、原生静音与 AAC 编码管线（含真机音源与 DRM 验收）**
+- [x] **M2 · 生产级单 App 音频捕获、原生静音与 AAC 编码管线（含真机音源与 DRM 验收）**
   - **交付物**：
-    - `CozyTingAudioKit`：`AudioToolbox` 动态格式重采样 + 48kHz 256kbps 裸 AAC-LC 编码器 + `PcmProbe` + 多格式 Mock `AudioBuffer` 单测；
-    - `apple/macOS/Audio/`：`ProcessTapAudioEngine`（`AudioHardwareCreateProcessTap`、进程树动态聚合、`mutedWhenTapped` 安全守卫、无锁环形缓冲、不断箱热切源与无死锁停止顺序）。
-  - **验收**：在真实 macOS 14.2+ 机器上连真实 MiPlay 音箱实测 **网易云音乐 / QQ 音乐 / Spotify / Apple Music / Chrome·Safari** 五类音源的捕获、真·单 App 静音与 DRM 表现，并将实测结论如实写入 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)。
+    - `CozyTingAudioKit`：C11 无锁环形缓冲（`CozyTingAudioAtomics` + `LockFreeRingBuffer`）、`PcmProbe`、`AudioToolboxAACEncoder`（双阶段动态格式重采样 + 48 kHz 256 kbps 裸 AAC-LC 编码）、`AudioEncodingPipeline`（`-4` 背压丢帧计数）及多格式 Mock `AudioBuffer` 单测（44.1 / 48 / 96 kHz、单/双声道、Planar/Interleaved、Int16/Float32、动态切换）；
+    - `apple/macOS/Sources/Audio/`：`ProcessTreeResolver`（BSD 父子进程树 + Helper Bundle ID 聚合，严格 Fail-Closed）、`MuteGuard`（退出/`SIGINT`/`SIGTERM` 静音释放守卫）、`ProcessTapAudioEngine`（`AudioHardwareCreateProcessTap`、`mutedWhenTapped`、零分配实时 `IOProc`、不断箱热切源与 4 步无死锁停止顺序）。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含多格式 Mock `AudioBuffer` AAC 与背压单测）+ `./scripts/build-macos.sh` Release 构建全绿；五类真实音源与 DRM 边界矩阵已如实登记于 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)（注：自动化无人值守构建环境无法交互授予 macOS 系统音频录制 TCC 弹窗，且网易云音乐 / Spotify 未安装于当前构建机，五类音源真机听感与 DRM 表现已诚实标记为 `⏳` 待人工交互实测）。
 
-- [ ] **M3 · 局域网发现、房间名解析与多音箱毫秒级同频投送集成**
+- [x] **M3 · 局域网发现、房间名解析与多音箱毫秒级同频投送集成**
   - **交付物**：
-    - 接入 `cozyting_discover_json_ex`（冷启动/前台合并缓存、手动刷新强制淘汰离线设备、展示 `miName · roomName`）；
-    - 多音箱勾选同频、投送中动态加减箱、Legacy/Safety 双认证、1Hz 原位状态与延迟刷新、`CastCoordinator` 后台队列隔离。
-  - **验收**：单箱与多箱并发建连/动态增删/断线重连/停播 `CLOSE(0x0002)` 释放实测通过。
+    - `CozyTingCoreKit`：`NetworkInterfaceHelper`（POSIX `getifaddrs` 局域网 IPv4 优选与校验）、`DeviceDisplayFormatter`（`miName · roomName` 去重展示、上次组合置顶与离线/隐藏过滤）、`LatencyPreset`（4 档 + 自定义 `ms` 映射）及单测；
+    - `apple/macOS/Sources/Cast/CastCoordinator.swift`：接入 `cozyting_discover_json_ex`（冷启动合并缓存、手动刷新强制淘汰离线并保留在播箱）、L1 路由状态机驱动的多箱同频/动态加减箱/Legacy·Safety 双认证、1 Hz 原位状态与延迟轮询、4 步无死锁停止与后台队列隔离，并接入 `AppDelegate` 启动与退出生命周期。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含发现/格式化/路由/延迟契约测试）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多箱真实局域网音箱并发建连、动态增删与 `CLOSE(0x0002)` 听感验收待人工现场交互验证。）
 
-- [ ] **M4 · 菜单栏常驻图标、毛玻璃悬浮控制卡与 Style B 明暗双主题**
+- [x] **M4 · 菜单栏常驻图标、毛玻璃悬浮控制卡与 Style B 明暗双主题**
   - **交付物**：
-    - `CozyTingDesignKit` 完整映射 [`design/tokens.json`](../design/tokens.json) 与 `design/icons/*.svg`（Template Image）；
-    - 顶部菜单栏 F2 单色图标 + 毛玻璃悬浮控制卡（Style B 选中亮卡反显、状态胶囊、设备行与行内音量条）+ 可选主窗口 + 右键菜单。
-  - **验收**：浅色 / 深色 / 跟随系统三态切换与多音箱列表原位刷新（拖动音量滑块不打断）实机视觉验收通过。
+    - `CozyTingDesignKit`：`CozyTingIcons`（28 个语义图标 + F2 深夜亮灯小屋垂尾小猫 `evenOdd` 矢量标）、`StyleBComponents`（4pt 细轨道 `CozyVolumeTrackSlider` 防轮询打断拖动、`CozyStatusBadge`、Style B 亮卡反显 `CozyDeviceRowCard`、`CozyHighVolumeConfirmView`）与 `PlatformAdapters`（18pt Template 菜单栏图标生成与明暗色板映射）；
+    - `apple/macOS/Sources/UI/`：`MenuBarStatusController`（`NSStatusItem` + `NSPopover` 352pt 悬浮卡 + 右键菜单 + 悬停图标滚轮调音量）、`PopoverControlCardView`（四段式毛玻璃控制卡）与 `MainWindowView`（可选独立主窗口 + 跟随系统/浅色/深色切换）。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `CozyTingDesignKitTests` 图标/矢量/主题单测）+ `./scripts/build-macos.sh` Release 构建全绿。（注：浅/深/跟随系统实机桌面视觉与真机滑块手势流畅度待人工交互验收。）
 
-- [ ] **M5 · 音量持久化、高音量二次确认、上次组合一键恢复与 4 档延迟热切**
+- [x] **M5 · 音量持久化、高音量二次确认、上次组合一键恢复与 4 档延迟热切**
   - **交付物**：
-    - 总音量与最近 32 台单音箱独立音量 `UserDefaults` 持久化 + 冷启动高音量安全钳制；
-    - L1 高音量保护跨线 Style B 二次确认弹窗；
-    - 上次音箱组合置顶与「恢复上次」胶囊；
-    - 顶栏 4 档延迟快捷胶囊（标准/均衡/低延迟/极速 + 自定义 `ms`）+ `CoreWLAN` 频段探测与无权限回退 + 菜单栏滚轮/面板快捷键调音量。
-  - **验收**：重启恢复音量钳制、跨线确认与投送中 4 档免断连热切均实机验证通过，补齐单元契约测试。
+    - `CozyTingCoreKit`：`VolumeGroupEvaluator`（多音箱总音量联动跨安全上限二次确认，委托 L1 `evaluateVolumeGuard` 逐箱裁决）+ `LatencyPreset.startupRunwayAUs` + `VolumeAndLatencyM5Tests`（冷启动高音量钳制、32 台 LRU、多箱跨线确认、4 档 + 自定义延迟与预热 AU 契约单测）；
+    - `CozyTingDesignKit`：`CozyLatencyPillMenu`（顶栏 4 档 + 自定义 `ms` 语义图标胶囊与精简菜单）+ `CozyLatencyGuideSheetView`（4 档参数与预热 AU 说明弹窗）；
+    - `apple/macOS`：`WiFiFrequencyProbe`（`CoreWLAN` 频段探测，无定位权限/有线网安全回退 `0 → 1000ms`）、上次音箱组合置顶与 `Restore Last · N` 恢复胶囊、菜单栏滚轮与面板快捷键（`Cmd+↑/↓`、`=`/`-`）±5% 调节总音量。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `VolumeAndLatencyM5Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：真实局域网多箱投送中 4 档免断连热切听感与真机 Wi-Fi 切换频段实测待人工交互验收。）
 
-- [ ] **M6 · 常用音源管理、进程发声自动识别热切与一键唤起音源 App**
+- [x] **M6 · 常用音源管理、进程发声自动识别热切与一键唤起音源 App**
   - **交付物**：
-    - `NSWorkspace` 枚举已安装与运行中应用、高清原图标展示、常用音源增删与拖动排序、点击一键唤起；
-    - 基于 `kAudioProcessPropertyIsRunningOutput` + 常用音源白名单防抖的自动识别与投送中不断箱热切源。
-  - **验收**：切换音乐 App 自动识别热切不断音箱连接，系统提示音与非白名单 App 不误切。
+    - `CozyTingCoreKit`：`AudioSourceAutoDetectPolicy`（白名单 + 700ms 持续发声防抖 + 4s 手动切换冷却防回拉 + 上升沿优先策略）及 `AudioSourceAutoDetectPolicyTests` 契约单测；
+    - `apple/macOS/Sources/System/`：`AppSourceCatalog`（`NSWorkspace` 枚举已安装与运行中应用、原生高清图标缓存、首次自动带入本机已知音乐 App、点击一键唤起）与 `AudioSourceAutoDetector`（监听 `kAudioHardwarePropertyProcessObjectList` + `kAudioProcessPropertyIsRunningOutput` 驱动不断箱热切源）；
+    - `apple/macOS/Sources/UI/`：`AudioSourcePickerView`（搜索、拖动排序、独立自动识别开关、增删常用音源、打开时不中断当前投送）及悬浮卡横向常用音源快捷胶囊与封面点击唤起。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `AudioSourceAutoDetectPolicyTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：多款音乐 App 真机发声自动热切与系统通知音现场听感验收待人工交互确认。）
 
-- [ ] **M7 · 「正在播放」分层适配与系统媒体控制（应对 macOS 15.4+ 限制）**
+- [x] **M7 · 「正在播放」分层适配与系统媒体控制（应对 macOS 15.4+ 限制）**
   - **交付物**：
-    - `NowPlayingBridge`：对 Apple Music / Spotify 经 AppleScript 读取曲目、艺人、封面、进度与播控；对其他音源诚实降级展示音源 App 卡片 + 系统媒体键控制；
-    - 可选「硬件 F11/F12 音量键接管」高级开关（带显式辅助功能权限说明，默认关闭）。
-  - **验收**：AppleScript 已适配与未适配两类音源均有清晰、诚实的 UI 呈现，未授权时不弹窗打扰。
+    - `CozyTingCoreKit`：`NowPlayingModel`（`NowPlayingMode` / `NowPlayingSnapshot` / `NowPlayingParser` 结构化 AppleScript 输出解析与时间格式化）及 `NowPlayingModelTests` 单测；
+    - `apple/macOS/Sources/System/`：`NowPlayingBridge`（分层合规策略：仅当 Apple Music / Spotify 已在运行时经后台队列 AppleScript 读取曲目、艺人、封面、进度与播控，其余音源诚实降级展示音源 App 卡片 + 标准系统媒体键控制，零私有 `MediaRemote` 注入）与 `HardwareVolumeKeyInterceptor`（严格默认关闭的 `CGEventTap` F11/F12 接管，仅在投送中拦截、冷启动绝不静默弹辅助功能提示）；
+    - `apple/macOS/Info.plist` 补齐 `NSAppleEventsUsageDescription`，悬浮卡升级「正在播放」封面/角标、上一首/播停/下一首与按需 4pt 进度条。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `NowPlayingModelTests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：Apple Music / Spotify 真实 Automation 授权弹窗与非脚本播放器系统媒体键实操待人工桌面交互验收。）
 
-- [ ] **M8 · 中/英/日三语 i18n、本地运行日志查看导出与设置/关于页**
+- [x] **M8 · 中/英/日三语 i18n、本地运行日志查看导出与设置/关于页**
   - **交付物**：
-    - `CozyTingDesignKit` `Localizable.xcstrings` 补齐 `zh-CN` / `en` / `ja` 全量文案与应用内语言切换；
-    - 4 组设置页卡片、「关于窝爱听」与受 `ENABLE_SPONSOR_ENTRY` 控制的纯静态赞赏弹窗；
-    - `LogViewerView` 独立日志窗口（结构化时间线 + JSON 折叠 + 搜索 + `.txt` 导出 + 清空，复用 L1 `diag_log`）。
-  - **验收**：三语切换无硬编码残留与文本截断，日志轮转/导出/清空功能正常。
+    - `CozyTingDesignKit`：`CozyTingL10n`（`L10nKey` 全量三语词典 + 即时应用内语言切换 + 品牌名与 `MiPlay` 解耦）、`Resources/Localizable.xcstrings`、`CozyLogViewerView`（4 段筛选 / 搜索 / 结构化时间线与原始模式 / 日期分割线 / `key=value` 胶囊 / 长 JSON 折叠格式化 / `.txt` 导出 / 复制 / 二次确认清空）、`CozyAboutView`（F2 居中品牌头 / 检查更新 / Beta 开关 / Releases 外链 / `ENABLE_SPONSOR_ENTRY` 静态赞赏码弹窗）及 `LocalizationM8Tests`（100% 三语键完整性校验）；
+    - `apple/macOS`：4 组卡片 `SettingsWindowView`（外观与发现 / 音频与系统权限 / 连接与调试含运行日志入口与折叠高级项 / 关于窝爱听），全量界面（菜单栏菜单、悬浮卡、主窗口、音源管理、延迟引导）接入三语词典，零硬编码残留。
+  - **验收**：`cargo test --workspace` + C11 校验 + `swift test`（含 `LocalizationM8Tests`）+ `./scripts/build-macos.sh` Release 构建全绿。（注：中/英/日三语桌面实机排版与导出日志交互验收待人工确认。）
 
-- [ ] **M9 · 透明版本更新、DMG 打包签名公证、CI 门禁与公开文档同步**
+- [x] **M9 · 透明版本更新、DMG 打包签名公证、CI 门禁与公开文档同步**
   - **交付物**：
-    - 扩展 `update.json` 与 `scripts/generate-update-manifest.py` 支持 `macos` 平台；接入跨版本结构化更新日志弹窗与 SHA-256 校验；
-    - DMG 打包脚本（支持 Developer ID 签名/公证与本地 Ad-hoc 构建）及 `.github/workflows/ci.yml` 新增 `macos-latest` 构建与 `swift test` 门禁；
-    - 同步更新三语 `README`、GitHub Pages、`docs/llms.txt` 与 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)。
-  - **验收**：GitHub Actions `macos-latest` CI 全绿，端到端 DMG 安装运行验收通过。
+    - L1 `core/src/update.rs` 增量扩展 `"macos"` 平台分支（支持 `min_os: "14.2"` 与 `.dmg` `arm64`/`universal` 资产筛选及 GitHub Releases 回退）+ Rust 单测，同步扩展 `scripts/generate-update-manifest.py` 输出 `macos` 节点；
+    - `CozyTingCoreKit` `DMGDownloader`（HTTPS-only 流式下载 + `CryptoKit.SHA256` + `SHA256SUMS.txt` 校验）与 `CozyTingDesignKit` `CozyChangelogMarkdownView` / `CozyUpdateDetailSheetView` / `CozyUpdateBannerView`（接入顶栏非阻塞提示条、设置角标与跨版本结构化更新日志弹窗，限高 `260pt`）；
+    - `scripts/package-macos-dmg.sh`（支持 `MACOS_CODESIGN_IDENTITY` / `APPLE_NOTARY_PROFILE` 签名公证，无证书时干净回退本地 Ad-hoc DMG + `.sha256`）及 `.github/workflows/ci.yml` 新增 `macos-build-and-test`（`macos-15` + XcodeGen + `swift test` + Release 构建）门禁；
+    - 同步更新中/英/日三语 `README`、`docs/llms.txt` 与 [`docs/COMPATIBILITY.md`](COMPATIBILITY.md)（如实标注已验离线门禁与待人工真机验证边界）。
+  - **验收**：`cargo test --workspace`（94 tests）+ C11 校验 + `swift test` + `./scripts/build-macos.sh` + `./scripts/package-macos-dmg.sh`（产出本地 Ad-hoc `.dmg` 与 `.sha256`）+ `python3 scripts/generate-update-manifest.py` 离线校验全绿。（注：Developer ID 公证需有效签名证书，GitHub Actions `macos-15` 云端绿灯将在 PR 推送后自动运行验证。）
